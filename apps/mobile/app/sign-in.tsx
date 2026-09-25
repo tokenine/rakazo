@@ -17,21 +17,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   apiBaseWarning,
+  authCapabilities,
   currentApiBase,
   defaultApiBase,
   displayApiHost,
   loadSessionToken,
   normalizeApiBase,
-  type PasswordResetCapabilities,
-  passwordResetCapabilities,
   probeApiBase,
-  requestPasswordReset,
   resetApiBase,
   rpc,
   saveApiBase,
-  signIn,
-  signUp,
+  sendSignInCode,
   usesCustomApiBase,
+  verifySignInCode,
 } from "../lib/api";
 import { type AuthMode, initialAuthMode } from "../lib/auth-routing";
 import { useI18n } from "../lib/i18n";
@@ -45,15 +43,15 @@ export default function SignIn() {
   const [mode, setMode] = useState<AuthMode>(() => initialAuthMode(requestedMode));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [stage, setStage] = useState<"email" | "code">("email");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [ready, setReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const [apiBase, setApiBase] = useState(() => currentApiBase());
   const [serverOpen, setServerOpen] = useState(false);
-  const [reset, setReset] = useState<PasswordResetCapabilities | null>(null);
-  const [resetSent, setResetSent] = useState(false);
+  const [otpAvailable, setOtpAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
     void loadSessionToken().then((token) => {
@@ -64,10 +62,9 @@ export default function SignIn() {
 
   useEffect(() => {
     let active = true;
-    setReset(null);
-    void passwordResetCapabilities()
+    void authCapabilities()
       .then((capabilities) => {
-        if (active) setReset(capabilities);
+        if (active) setOtpAvailable(capabilities.otp);
       })
       .catch(() => undefined);
     return () => {
@@ -76,8 +73,10 @@ export default function SignIn() {
   }, [apiBase]);
 
   useEffect(() => {
-    if (resetSent) AccessibilityInfo.announceForAccessibility(t("Check your email"));
-  }, [resetSent, t]);
+    if (stage === "code") {
+      AccessibilityInfo.announceForAccessibility(t("Check your email"));
+    }
+  }, [stage, t]);
 
   if (!ready) {
     return (
@@ -100,28 +99,12 @@ export default function SignIn() {
     setPending(true);
     setError(null);
     try {
-      if (mode === "forgot") {
-        if (!reset?.passwordReset || !reset.resetUrl) {
-          throw new Error(t("Password recovery is not configured for this server"));
-        }
-        await requestPasswordReset(email.trim(), reset.resetUrl);
-        setResetSent(true);
+      if (stage === "email") {
+        await sendSignInCode(email.trim());
+        setStage("code");
         return;
       }
-      if (mode === "up") {
-        const trimmedEmail = email.trim();
-        const result = await signUp(
-          trimmedEmail,
-          password,
-          name.trim() || trimmedEmail.split("@")[0] || "User",
-        );
-        if (result.verificationRequired) {
-          setResetSent(true);
-          return;
-        }
-      } else {
-        await signIn(email.trim(), password);
-      }
+      await verifySignInCode(email.trim(), code.trim());
       const setup =
         mode === "up"
           ? await rpc<IntegrationSetupState>("integrationSetup/get").catch(() => null)
@@ -163,31 +146,21 @@ export default function SignIn() {
                   textAlign: "center",
                 }}
               >
-                {resetSent
+                {stage === "code"
                   ? t("Check your email")
                   : mode === "in"
                     ? t("Sign in to Rakazo")
-                    : mode === "up"
-                      ? t("Sign up for Rakazo")
-                      : t("Reset your password")}
+                    : t("Sign up for Rakazo")}
               </Text>
-              {resetSent ? (
-                <View style={{ alignItems: "center", marginTop: 28 }}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setMode("in");
-                      setResetSent(false);
-                    }}
-                  >
-                    <Text style={{ color: tokens.foreground, fontSize: 15, fontWeight: "600" }}>
-                      {t("Back to sign in")}
-                    </Text>
-                  </Pressable>
-                </View>
+              {otpAvailable === false ? (
+                <Text style={{ color: tokens.destructive, marginTop: 16, textAlign: "center" }}>
+                  {t(
+                    "This server does not have email delivery configured, so sign-in codes cannot be sent.",
+                  )}
+                </Text>
               ) : (
                 <>
-                  {mode === "up" ? (
+                  {stage === "email" && mode === "up" ? (
                     <TextInput
                       autoComplete="name"
                       placeholder={t("Name")}
@@ -211,32 +184,52 @@ export default function SignIn() {
                     placeholderTextColor={tokens.mutedForeground}
                     value={email}
                     onChangeText={setEmail}
+                    editable={stage === "email"}
                     style={{
-                      marginTop: mode === "up" ? 12 : 28,
+                      marginTop: stage === "code" ? 28 : mode === "up" ? 12 : 28,
                       backgroundColor: tokens.muted,
                       borderRadius: 13,
                       padding: 16,
                       color: tokens.foreground,
                     }}
                   />
-                  {mode !== "forgot" ? (
-                    <TextInput
-                      autoComplete={mode === "in" ? "current-password" : "new-password"}
-                      placeholder={t("Password")}
-                      placeholderTextColor={tokens.mutedForeground}
-                      returnKeyType="go"
-                      secureTextEntry
-                      value={password}
-                      onChangeText={setPassword}
-                      onSubmitEditing={() => void submit()}
-                      style={{
-                        marginTop: 12,
-                        backgroundColor: tokens.muted,
-                        borderRadius: 13,
-                        padding: 16,
-                        color: tokens.foreground,
-                      }}
-                    />
+                  {stage === "code" ? (
+                    <>
+                      <TextInput
+                        autoComplete="one-time-code"
+                        keyboardType="number-pad"
+                        placeholder={t("6-digit code")}
+                        placeholderTextColor={tokens.mutedForeground}
+                        returnKeyType="go"
+                        value={code}
+                        onChangeText={(value) => setCode(value.replace(/\D/g, ""))}
+                        onSubmitEditing={() => void submit()}
+                        style={{
+                          marginTop: 12,
+                          backgroundColor: tokens.muted,
+                          borderRadius: 13,
+                          padding: 16,
+                          color: tokens.foreground,
+                          textAlign: "center",
+                          fontSize: 20,
+                          letterSpacing: 8,
+                        }}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        hitSlop={8}
+                        onPress={() => {
+                          setStage("email");
+                          setCode("");
+                          setError(null);
+                        }}
+                        style={{ alignSelf: "center", marginTop: 12 }}
+                      >
+                        <Text style={{ color: tokens.mutedForeground, fontSize: 14 }}>
+                          {t("Use a different email")}
+                        </Text>
+                      </Pressable>
+                    </>
                   ) : null}
                   {error ? (
                     <Text style={{ color: tokens.destructive, marginTop: 12 }}>{error}</Text>
@@ -256,28 +249,11 @@ export default function SignIn() {
                     <Text style={{ color: tokens.primaryForeground, fontSize: 17 }}>
                       {pending
                         ? t("Working…")
-                        : mode === "in"
-                          ? t("Sign in")
-                          : mode === "up"
-                            ? t("Sign up")
-                            : t("Send reset link")}
+                        : stage === "email"
+                          ? t("Continue with email")
+                          : t("Verify code")}
                     </Text>
                   </Pressable>
-                  {mode === "in" && reset?.passwordReset && reset.resetUrl ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() => {
-                        setMode("forgot");
-                        setError(null);
-                      }}
-                      style={{ alignSelf: "center", marginTop: 16 }}
-                    >
-                      <Text style={{ color: tokens.foreground, fontSize: 14, fontWeight: "600" }}>
-                        {t("Forgot password?")}
-                      </Text>
-                    </Pressable>
-                  ) : null}
                   <View
                     style={{
                       flexDirection: "row",
@@ -287,11 +263,7 @@ export default function SignIn() {
                     }}
                   >
                     <Text style={{ color: tokens.mutedForeground, fontSize: 15 }}>
-                      {mode === "in"
-                        ? t("Don’t have an account?")
-                        : mode === "up"
-                          ? t("Already have an account?")
-                          : ""}
+                      {mode === "in" ? t("Don’t have an account?") : t("Already have an account?")}
                     </Text>
                     <Pressable
                       accessibilityRole="button"
@@ -303,11 +275,7 @@ export default function SignIn() {
                       style={{ marginLeft: 5 }}
                     >
                       <Text style={{ color: tokens.foreground, fontSize: 15, fontWeight: "600" }}>
-                        {mode === "in"
-                          ? t("Sign up")
-                          : mode === "up"
-                            ? t("Sign in")
-                            : t("Back to sign in")}
+                        {mode === "in" ? t("Sign up") : t("Sign in")}
                       </Text>
                     </Pressable>
                   </View>

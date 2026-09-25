@@ -3,6 +3,7 @@ import {
   activeBotId,
   captureScreenshot,
   completeOnboarding,
+  otpFromEmulator,
   realSandboxTimeout,
   rpc,
   signup,
@@ -419,8 +420,9 @@ test("sign-in, spawn, and stop work in the shell", async ({ page }, testInfo) =>
   await page.context().clearCookies();
   await page.goto("/sign-in");
   await page.getByPlaceholder("Your email address").fill(email);
-  await page.getByPlaceholder("Password").fill("password12");
   await page.getByRole("button", { name: "Continue with email" }).click();
+  await page.getByPlaceholder("6-digit code").fill(await otpFromEmulator(page, email));
+  await page.getByRole("button", { name: "Verify code" }).click();
   await page.waitForURL(/\/app/, { timeout: 20_000 });
   await expect(sidebarBotButton(page, /^Chief/)).toBeVisible();
   await expect(sidebarBotButton(page, /Scout/)).toBeVisible();

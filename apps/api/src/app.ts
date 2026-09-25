@@ -20,6 +20,7 @@ import type {
 import {
   applyMessagingOutboundStatus,
   ChatSdkMessagingSurface,
+  CloudflareEmailProvider,
   ComposioConnector,
   createBackgroundJobHandlers,
   createCloudAgentConnection,
@@ -280,9 +281,15 @@ export async function createApp(
   }
   const email: TransactionalEmailProvider | undefined =
     emailOverride ??
-    (env.smtpUrl
-      ? new SmtpEmailProvider({ url: env.smtpUrl, from: env.emailFrom ?? "" })
-      : localEmailEmulator);
+    (env.cloudflareEmailApiToken && env.cloudflareAccountId
+      ? new CloudflareEmailProvider({
+          accountId: env.cloudflareAccountId,
+          apiToken: env.cloudflareEmailApiToken,
+          from: env.emailFrom ?? "",
+        })
+      : env.smtpUrl
+        ? new SmtpEmailProvider({ url: env.smtpUrl, from: env.emailFrom ?? "" })
+        : localEmailEmulator);
   const installed = new InstalledConnectorProvider(prisma, secrets, remoteConnectors);
   const integrationSettings = new IntegrationProviderSettings(prisma, secrets, env.encryptionKey, {
     composio:
@@ -486,8 +493,7 @@ export async function createApp(
   );
   app.get("/api/auth/capabilities", (c) =>
     c.json({
-      passwordReset: Boolean(email),
-      resetUrl: email ? new URL("/reset-password", env.webOrigin).href : null,
+      otp: Boolean(email),
     }),
   );
   if (localEmailEmulator && env.nodeEnv === "development") {

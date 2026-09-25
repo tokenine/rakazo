@@ -23,7 +23,6 @@ import {
   readBoundedJsonResponse,
   reduceLiveMessageBlocks,
   runFailureError,
-  signupRequiresEmailVerification,
   takeLiveMessage,
   updateCloudAgentMessages,
   upsertMessageById,
@@ -378,86 +377,50 @@ export async function captureApiRequestContext(): Promise<ApiRequestContext> {
   return { apiBase, headers };
 }
 
-async function authenticateWithEmail(
-  action: "sign-in" | "sign-up",
-  input: { email: string; password: string; name?: string },
-) {
+export type AuthCapabilities = { otp: boolean };
+
+export async function authCapabilities(): Promise<AuthCapabilities> {
+  const { response, body } = await fetchMobileJson<AuthCapabilities>(
+    `${currentApiBase()}/api/auth/capabilities`,
+    { headers: { origin: "rakazo://" } },
+    { otp: false },
+  );
+  if (!response.ok) throw new Error(t("Could not load sign-in settings"));
+  return body;
+}
+
+export async function sendSignInCode(email: string): Promise<void> {
   const { response, body } = await fetchMobileJson<unknown>(
-    `${currentApiBase()}/api/auth/${action}/email`,
+    `${currentApiBase()}/api/auth/email-otp/send-verification-otp`,
     {
       method: "POST",
       headers: { "content-type": "application/json", origin: "rakazo://" },
-      body: JSON.stringify(input),
+      body: JSON.stringify({ email, type: "sign-in" }),
     },
     {},
   );
   if (!response.ok) {
-    throw new Error(responseErrorMessage(body, `Could not ${action.replace("-", " ")}`));
+    throw new Error(responseErrorMessage(body, t("Could not send the sign-in code")));
   }
-  const token = tokenFromAuthResponse(response, body);
-  if (action === "sign-up" && signupRequiresEmailVerification(body))
-    return { verificationRequired: true };
-  if (!token)
-    throw new Error(
-      t(
-        action === "sign-in"
-          ? "Sign-in did not return a session"
-          : "Sign-up did not return a session",
-      ),
-    );
-  if (!(await clearSpace())) throw new Error(t("Could not clear the previous space"));
-  await saveSessionToken(token);
-  return { verificationRequired: false };
 }
 
-export function signIn(email: string, password: string) {
-  return authenticateWithEmail("sign-in", { email, password });
-}
-
-export function signUp(email: string, password: string, name: string) {
-  return authenticateWithEmail("sign-up", { email, password, name });
-}
-
-export type PasswordResetCapabilities = { passwordReset: boolean; resetUrl: string | null };
-
-export async function passwordResetCapabilities(): Promise<PasswordResetCapabilities> {
-  const { response, body } = await fetchMobileJson<PasswordResetCapabilities>(
-    `${currentApiBase()}/api/auth/capabilities`,
-    { headers: { origin: "rakazo://" } },
-    { passwordReset: false, resetUrl: null },
-  );
-  if (!response.ok) throw new Error("Could not load password recovery settings");
-  return body;
-}
-
-export async function requestPasswordReset(email: string, redirectTo: string): Promise<void> {
+export async function verifySignInCode(email: string, otp: string, name?: string): Promise<void> {
   const { response, body } = await fetchMobileJson<unknown>(
-    `${currentApiBase()}/api/auth/request-password-reset`,
+    `${currentApiBase()}/api/auth/sign-in/email-otp`,
     {
       method: "POST",
       headers: { "content-type": "application/json", origin: "rakazo://" },
-      body: JSON.stringify({ email, redirectTo }),
+      body: JSON.stringify({ email, otp, ...(name ? { name } : {}) }),
     },
     {},
   );
-  if (!response.ok) throw new Error(responseErrorMessage(body, t("Could not send reset email")));
-}
-
-export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
-  const { response, body } = await fetchMobileJson<unknown>(
-    `${currentApiBase()}/api/auth/change-password`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        origin: "rakazo://",
-        ...(await authHeaders()),
-      },
-      body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions: true }),
-    },
-    {},
-  );
-  if (!response.ok) throw new Error(responseErrorMessage(body, t("Could not change password")));
+  if (!response.ok) {
+    throw new Error(responseErrorMessage(body, t("Could not verify the code")));
+  }
+  const token = tokenFromAuthResponse(response, body);
+  if (!token) throw new Error(t("Sign-in did not return a session"));
+  if (!(await clearSpace())) throw new Error(t("Could not clear the previous space"));
+  await saveSessionToken(token);
 }
 
 async function fetchMobileJson<T>(

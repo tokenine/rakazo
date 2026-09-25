@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { AvatarStyle } from "@rakazo/contracts";
-import { BotAvatar, Button, Field, FieldLabel, Input, Toggle } from "@rakazo/ui-web";
+import { BotAvatar, Button, Toggle } from "@rakazo/ui-web";
 import { ChevronDown } from "lucide-react";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -12,11 +12,9 @@ import {
 } from "react";
 import { Link } from "react-router-dom";
 import { ApprovalRulesSettings } from "../components/ApprovalRulesSettings";
-import { SuccessPop } from "../components/ai/primitives";
 import { ComputersUnavailableHint } from "../components/ComputersUnavailableHint";
 import { DesktopUpdateSection } from "../components/DesktopUpdates";
 import { SoftwareUpdateSection } from "../components/SoftwareUpdateSection";
-import { authClient } from "../lib/auth";
 import { getActiveUiLocale, setUiLocale } from "../lib/i18n";
 import {
   type AppearancePreference,
@@ -85,8 +83,6 @@ export function GeneralSettingsPanels({
         <p className="mt-3 text-[14px] text-foreground/75">{name}</p>
         {email ? <p className="mt-1 text-[13px] text-muted-foreground/70">{email}</p> : null}
       </section>
-
-      <ChangePasswordSection email={email} />
 
       {messagingEnabled && onOpenMessaging ? (
         <section className="rounded-xl border border-border px-4 py-4">
@@ -240,126 +236,6 @@ export function UpdatesSettingsPanel({
       <DesktopUpdateSection />
       <SoftwareUpdateSection isDeploymentOwner={isDeploymentOwner} />
     </div>
-  );
-}
-
-function ChangePasswordSection({ email }: { email?: string | null }) {
-  const { t } = useLingui();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [pending, setPending] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function changePassword() {
-    if (pending) return;
-    if (newPassword !== confirmation) {
-      setError(t`Passwords do not match`);
-      return;
-    }
-    setPending(true);
-    setSaved(false);
-    setError(null);
-    try {
-      const result = await authClient.changePassword({
-        currentPassword,
-        newPassword,
-        revokeOtherSessions: true,
-      });
-      if (result.error) {
-        setError(result.error.message ?? t`Could not change password`);
-        return;
-      }
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmation("");
-      setSaved(true);
-    } catch {
-      setError(t`Could not reach the server`);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <section className="rounded-xl border border-border px-4 py-4">
-      <h3 className="text-[15px] font-medium text-foreground">
-        <Trans>Password</Trans>
-      </h3>
-      <div className="mt-3 grid gap-3">
-        <input
-          type="text"
-          name="username"
-          autoComplete="username"
-          value={email ?? ""}
-          readOnly
-          tabIndex={-1}
-          aria-hidden="true"
-          className="sr-only"
-        />
-        <SettingsPasswordInput
-          label={t`Current password`}
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={setCurrentPassword}
-        />
-        <SettingsPasswordInput
-          label={t`New password`}
-          autoComplete="new-password"
-          value={newPassword}
-          onChange={setNewPassword}
-        />
-        <SettingsPasswordInput
-          label={t`Confirm password`}
-          autoComplete="new-password"
-          value={confirmation}
-          onChange={setConfirmation}
-        />
-      </div>
-      {error ? (
-        <p role="alert" className="mt-3 text-[12.5px] text-destructive">
-          {error}
-        </p>
-      ) : null}
-      <div className="mt-4 flex items-center gap-3">
-        <Button
-          className="rounded-full"
-          disabled={pending || currentPassword.length < 8 || newPassword.length < 8}
-          onClick={() => void changePassword()}
-        >
-          {pending ? <Trans>Changing…</Trans> : <Trans>Change password</Trans>}
-        </Button>
-        {saved ? <SuccessPop label={t`Password updated`} /> : null}
-      </div>
-    </section>
-  );
-}
-
-function SettingsPasswordInput({
-  label,
-  autoComplete,
-  value,
-  onChange,
-}: {
-  label: string;
-  autoComplete: "current-password" | "new-password";
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const id = useId();
-  return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input
-        id={id}
-        type="password"
-        autoComplete={autoComplete}
-        minLength={8}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </Field>
   );
 }
 

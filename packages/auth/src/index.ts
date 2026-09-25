@@ -1,10 +1,11 @@
 import type { TransactionalEmail, TransactionalEmailProvider } from "@rakazo/adapter-kit";
+import { BRAND_NAME } from "@rakazo/contracts";
 import { emailAllowed, isMessagingEmail, parseAllowlist, signupPolicyFromEnv } from "@rakazo/core";
 import { bootstrapUserSpace, type PrismaClient } from "@rakazo/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { bearer, organization } from "better-auth/plugins";
+import { bearer, emailOTP, organization } from "better-auth/plugins";
 
 export interface AuthEnv {
   secret: string;
@@ -35,44 +36,42 @@ export async function resolveSignupPolicy(
   return signupPolicyFromEnv(env);
 }
 
+/** OTP endpoints that admit new users, so signup policy applies to them too. */
+const OTP_SIGNIN_PATHS = new Set(["/email-otp/send-verification-otp", "/sign-in/email-otp"]);
+
 export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   return betterAuth({
-    appName: "Rakazo",
+    appName: BRAND_NAME,
     secret: env.secret,
     baseURL: env.baseURL,
     trustedOrigins: buildTrustedOrigins(env),
     database: prismaAdapter(prisma, { provider: "postgresql" }),
-    emailAndPassword: {
-      enabled: true,
-      // Signup policy is mutable deployment state, so the request hook below
-      // enforces it instead of freezing an environment value at process start.
-      disableSignUp: false,
-      revokeSessionsOnPasswordReset: true,
-      resetPasswordTokenExpiresIn: 60 * 60,
-      sendResetPassword: env.email
-        ? async ({ user, url }) => {
-            // Keep the response timing generic. Production providers track and retry the promise,
-            // while the composition root drains accepted delivery during graceful shutdown.
-            void env.email
-              ?.send(passwordResetEmail(user, url))
-              .catch((error) => env.onEmailError?.(error));
+    // Passwordless: the only way in is a one-time code delivered by email.
+    // `overrideDefaultEmailVerification` lets a successful OTP sign-in prove
+    // mailbox ownership, which keeps the allowlist gating below fail-closed.
+    plugins: [
+      bearer(),
+      organization({
+        allowUserToCreateOrganization: false,
+        creatorRole: "owner",
+      }),
+      emailOTP({
+        otpLength: 6,
+        expiresIn: 60 * 10,
+        allowedAttempts: 3,
+        overrideDefaultEmailVerification: true,
+        sendVerificationOTP: async ({ email, otp }) => {
+          if (!env.email) {
+            throw new APIError("BAD_REQUEST", {
+              message: "This server does not have email delivery configured",
+            });
           }
-        : undefined,
-    },
-    emailVerification: {
-      sendOnSignIn: true,
-      autoSignInAfterVerification: false,
-      sendVerificationEmail: env.email
-        ? async ({ user, url }) => {
-            const verificationUrl = new URL(url);
-            verificationUrl.searchParams.set(
-              "callbackURL",
-              new URL("/sign-in", env.webOrigin).href,
-            );
-            await env.email!.send(verificationEmail(user.email, verificationUrl.href));
-          }
-        : undefined,
-    },
+          // Keep the response timing generic. Production providers track and retry
+          // the promise, while the composition root drains accepted delivery on shutdown.
+          void env.email.send(otpEmail(email, otp)).catch((error) => env.onEmailError?.(error));
+        },
+      }),
+    ],
     user: {
       deleteUser: {
         enabled: true,
@@ -108,13 +107,6 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         },
       },
     },
-    plugins: [
-      bearer(),
-      organization({
-        allowUserToCreateOrganization: false,
-        creatorRole: "owner",
-      }),
-    ],
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         for (const value of [ctx.body?.email, ctx.body?.newEmail]) {
@@ -122,33 +114,35 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
             throw new APIError("BAD_REQUEST", { message: "Email is not available" });
           }
         }
-        let policy =
-          ctx.path === "/sign-up/email" || ctx.path === "/sign-in/email"
-            ? await resolveSignupPolicy(prisma, env)
-            : undefined;
-        if (ctx.path === "/sign-up/email") {
-          if (!policy?.enabled) {
-            throw new APIError("BAD_REQUEST", { message: "Registration is closed" });
+        let policy: { enabled: boolean; allowlist: string[] } | undefined;
+        if (OTP_SIGNIN_PATHS.has(ctx.path)) {
+          policy = await resolveSignupPolicy(prisma, env);
+          const email = String(ctx.body?.email ?? "").trim();
+          if (!env.email) {
+            throw new APIError("BAD_REQUEST", {
+              message: "This server does not have email delivery configured",
+            });
           }
-          if (!emailAllowed(String(ctx.body?.email ?? ""), policy.allowlist)) {
-            throw new APIError("BAD_REQUEST", { message: "Email is not allowed to register" });
-          }
-          if (policy.allowlist.length > 0 && !env.email) {
-            throw new APIError("BAD_REQUEST", { message: "Registration requires email delivery" });
+          // Closed or allowlisted registrations still admit existing users —
+          // the gates below only apply to addresses that have never signed up.
+          const existing = email
+            ? await prisma.user.findUnique({
+                where: { email: email.toLowerCase() },
+                select: { id: true },
+              })
+            : null;
+          if (!existing) {
+            if (!policy.enabled) {
+              throw new APIError("BAD_REQUEST", { message: "Registration is closed" });
+            }
+            if (!emailAllowed(email, policy.allowlist)) {
+              throw new APIError("BAD_REQUEST", { message: "Email is not allowed to register" });
+            }
           }
         }
-        // Return a request-local override; mutating the shared auth options
-        // would leak a concurrent request's policy into another signup.
         return {
           context: {
             context: {
-              ...(policy
-                ? {
-                    options: {
-                      emailAndPassword: { requireEmailVerification: policy.allowlist.length > 0 },
-                    },
-                  }
-                : {}),
               internalAdapter: {
                 ...ctx.context.internalAdapter,
                 // Authorize at lookup: bearer conversion happens after before
@@ -212,34 +206,13 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   });
 }
 
-export function verificationEmail(email: string, url: string): TransactionalEmail {
+export function otpEmail(email: string, otp: string): TransactionalEmail {
+  const safeOtp = escapeHtml(otp);
   return {
     to: email,
-    subject: "Verify your Rakazo email",
-    text: `Verify your email, then return to Rakazo to sign in:\n\n${url}\n\nThis link expires in one hour. If you did not register, ignore this email.`,
-    html: `<p><a href="${escapeHtml(url)}">Verify email</a>, then return to Rakazo to sign in.</p><p>This link expires in one hour. If you did not register, ignore this email.</p>`,
-  };
-}
-
-export function passwordResetEmail(
-  user: { id: string; email: string; name: string },
-  resetUrl: string,
-): TransactionalEmail {
-  const name = user.name.trim() || "there";
-  const safeName = escapeHtml(name);
-  const safeUrl = escapeHtml(resetUrl);
-  return {
-    to: user.email,
-    subject: "Reset your Rakazo password",
-    text: [
-      `Hi ${name},`,
-      "",
-      "Reset your Rakazo password using this link:",
-      resetUrl,
-      "",
-      "This link expires in one hour. If you did not request this, you can ignore this email.",
-    ].join("\n"),
-    html: `<p>Hi ${safeName},</p><p>Reset your Rakazo password:</p><p><a href="${safeUrl}">Reset password</a></p><p>This link expires in one hour. If you did not request this, you can ignore this email.</p>`,
+    subject: `${BRAND_NAME} sign-in code: ${otp}`,
+    text: `Your ${BRAND_NAME} sign-in code is:\n\n${otp}\n\nThis code expires in 10 minutes. If you did not request it, ignore this email.`,
+    html: `<p>Your ${BRAND_NAME} sign-in code is:</p><p><strong style="font-size:20px;letter-spacing:4px;">${safeOtp}</strong></p><p>This code expires in 10 minutes. If you did not request it, ignore this email.</p>`,
   };
 }
 

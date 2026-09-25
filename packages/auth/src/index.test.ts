@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  blockedAuthPaths,
-  buildTrustedOrigins,
-  passwordResetEmail,
-  resolveSignupPolicy,
-} from "./index.js";
+import { blockedAuthPaths, buildTrustedOrigins, otpEmail, resolveSignupPolicy } from "./index.js";
 
 describe("auth policy", () => {
   it("blocks invitation and org-creation paths in version 1", () => {
@@ -38,21 +33,16 @@ describe("buildTrustedOrigins", () => {
   });
 });
 
-describe("passwordResetEmail", () => {
-  it("keeps the reset URL in text and escapes user-controlled HTML", () => {
-    const message = passwordResetEmail(
-      { id: "user-1", email: "ada@example.test", name: '<Ada & "team">' },
-      "https://rakazo.test/reset-password?token=secret&next=1",
-    );
+describe("otpEmail", () => {
+  it("carries the code in subject and text and escapes the rendered code", () => {
+    const message = otpEmail("ada@example.test", "123456");
 
     expect(message).toMatchObject({
       to: "ada@example.test",
-      subject: "Reset your Rakazo password",
+      subject: "Rakazo sign-in code: 123456",
     });
-    expect(message.text).toContain("https://rakazo.test/reset-password?token=secret&next=1");
-    expect(message.html).toContain("&lt;Ada &amp; &quot;team&quot;&gt;");
-    expect(message.html).toContain("token=secret&amp;next=1");
-    expect(message.html).not.toContain('<Ada & "team">');
+    expect(message.text).toContain("123456");
+    expect(message.html).toContain("123456");
   });
 });
 

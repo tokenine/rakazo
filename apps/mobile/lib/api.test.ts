@@ -7,29 +7,27 @@ import type { MobileMessage, MobileSnapshot } from "./api.js";
 import {
   adoptDeletedSpaceFallback,
   applyMobileThreadEvent,
+  authCapabilities,
   authHeaders,
   blockText,
-  changePassword,
   currentApiBase,
   deleteAccount,
   loadApiBase,
   MAX_MOBILE_AUTH_RESPONSE_BYTES,
   MAX_MOBILE_RPC_RESPONSE_BYTES,
   mergeMobileSnapshot,
-  passwordResetCapabilities,
   prependMobileMessagePage,
-  requestPasswordReset,
   resetApiBase,
   rpc,
   saveApiBase,
   selectedSpaceId,
   selectInitialSpace,
   selectSpace,
+  sendSignInCode,
   shouldApplyMobileThreadRefresh,
-  signIn,
   signOut,
-  signUp,
   subscribeThread,
+  verifySignInCode,
 } from "./api.js";
 import { resumeLiveNotifications } from "./live-notifications.js";
 import {
@@ -64,18 +62,32 @@ describe("mobile API authentication", () => {
     await restoreSessionToken("");
   });
 
-  it("persists a successful sign-in token and sends the native origin", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ token: "session-token" }));
+  it("persists a successful OTP sign-in token and sends the native origin", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ status: true }))
+      .mockResolvedValueOnce(jsonResponse({ token: "session-token" }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await signIn("ada@example.com", "correct horse");
+    await sendSignInCode("ada@example.com");
+    await verifySignInCode("ada@example.com", "123456");
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:3100/api/auth/sign-in/email",
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "http://127.0.0.1:3100/api/auth/email-otp/send-verification-otp",
       expect.objectContaining({
         method: "POST",
         headers: { "content-type": "application/json", origin: "rakazo://" },
-        body: JSON.stringify({ email: "ada@example.com", password: "correct horse" }),
+        body: JSON.stringify({ email: "ada@example.com", type: "sign-in" }),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "http://127.0.0.1:3100/api/auth/sign-in/email-otp",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "rakazo://" },
+        body: JSON.stringify({ email: "ada@example.com", otp: "123456" }),
       }),
     );
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith("rakazo.session_token", "session-token");
@@ -86,16 +98,16 @@ describe("mobile API authentication", () => {
     const fetchMock = vi.fn(async () => jsonResponse({ token: "signup-token" }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await signUp("new@example.com", "correct horse", "New User");
+    await verifySignInCode("new@example.com", "123456", "New User");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:3100/api/auth/sign-up/email",
+      "http://127.0.0.1:3100/api/auth/sign-in/email-otp",
       expect.objectContaining({
         method: "POST",
         headers: { "content-type": "application/json", origin: "rakazo://" },
         body: JSON.stringify({
           email: "new@example.com",
-          password: "correct horse",
+          otp: "123456",
           name: "New User",
         }),
       }),
@@ -103,83 +115,49 @@ describe("mobile API authentication", () => {
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith("rakazo.session_token", "signup-token");
   });
 
-  it("loads password recovery capability and requests a server-approved redirect", async () => {
+  it("loads the OTP capability and requests a sign-in code", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        jsonResponse({ passwordReset: true, resetUrl: "https://rakazo.test/reset-password" }),
-      )
+      .mockResolvedValueOnce(jsonResponse({ otp: true }))
       .mockResolvedValueOnce(jsonResponse({ status: true }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(passwordResetCapabilities()).resolves.toEqual({
-      passwordReset: true,
-      resetUrl: "https://rakazo.test/reset-password",
-    });
-    await requestPasswordReset("ada@example.test", "https://rakazo.test/reset-password");
+    await expect(authCapabilities()).resolves.toEqual({ otp: true });
+    await sendSignInCode("ada@example.test");
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "http://127.0.0.1:3100/api/auth/request-password-reset",
+      "http://127.0.0.1:3100/api/auth/email-otp/send-verification-otp",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({
-          email: "ada@example.test",
-          redirectTo: "https://rakazo.test/reset-password",
-        }),
+        body: JSON.stringify({ email: "ada@example.test", type: "sign-in" }),
       }),
     );
   });
 
-  it("treats a malformed capabilities response as password recovery being unavailable", async () => {
+  it("treats a malformed capabilities response as OTP being unavailable", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("not-json", { status: 200 })),
     );
 
-    await expect(passwordResetCapabilities()).resolves.toEqual({
-      passwordReset: false,
-      resetUrl: null,
-    });
+    await expect(authCapabilities()).resolves.toEqual({ otp: false });
   });
 
-  it("changes a password with the bearer session and revokes other sessions", async () => {
-    vi.mocked(SecureStore.getItemAsync).mockResolvedValue("session-token");
-    const fetchMock = vi.fn(async () => jsonResponse({ status: true }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await changePassword("old-password", "new-password");
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:3100/api/auth/change-password",
-      expect.objectContaining({
-        headers: expect.objectContaining({ authorization: "Bearer session-token" }),
-        body: JSON.stringify({
-          currentPassword: "old-password",
-          newPassword: "new-password",
-          revokeOtherSessions: true,
-        }),
-      }),
-    );
-  });
-
-  it("does not send a password or bearer token to a persisted public HTTP server", async () => {
+  it("does not send a sign-in code to a persisted insecure HTTP server", async () => {
     vi.mocked(SecureStore.getItemAsync).mockImplementation(async (key) => {
       if (key === "rakazo.api_base") return "http://app.example.test";
-      if (key === "rakazo.session_token") return "session-token";
       return null;
     });
     const fetchMock = vi.fn(async () => jsonResponse({ status: true }));
     vi.stubGlobal("fetch", fetchMock);
 
     await loadApiBase();
-    await changePassword("old-password", "new-password");
+    await sendSignInCode("ada@example.test");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:3100/api/auth/change-password",
-      expect.objectContaining({
-        headers: expect.objectContaining({ authorization: "Bearer session-token" }),
-      }),
+      "http://127.0.0.1:3100/api/auth/email-otp/send-verification-otp",
+      expect.anything(),
     );
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringMatching(/^http:\/\/app\.example\.test/),
@@ -205,10 +183,10 @@ describe("mobile API authentication", () => {
   it("surfaces the server message and does not persist a failed sign-in", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => jsonResponse({ message: "Invalid credentials" }, { status: 401 })),
+      vi.fn(async () => jsonResponse({ message: "Invalid code" }, { status: 401 })),
     );
 
-    await expect(signIn("ada@example.com", "wrong")).rejects.toThrow("Invalid credentials");
+    await expect(verifySignInCode("ada@example.com", "999999")).rejects.toThrow("Invalid code");
     expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
   });
 
@@ -223,7 +201,7 @@ describe("mobile API authentication", () => {
       ),
     );
 
-    await expect(signIn("ada@example.com", "correct horse")).rejects.toThrow(
+    await expect(verifySignInCode("ada@example.com", "123456")).rejects.toThrow(
       `exceeds ${MAX_MOBILE_AUTH_RESPONSE_BYTES} bytes`,
     );
     expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
@@ -237,7 +215,7 @@ describe("mobile API authentication", () => {
       vi.fn(async () => new Response(new ReadableStream({ cancel }))),
     );
 
-    const pending = signIn("ada@example.com", "correct horse");
+    const pending = verifySignInCode("ada@example.com", "123456");
     const rejection = expect(pending).rejects.toThrow("Request timed out");
     await vi.advanceTimersByTimeAsync(8_000);
 
@@ -588,7 +566,7 @@ describe("mobile API authentication", () => {
       vi.fn(async () => jsonResponse({ token: "new-session-token" })),
     );
 
-    await expect(signIn("ada@example.com", "correct horse")).rejects.toThrow(
+    await expect(verifySignInCode("ada@example.com", "123456")).rejects.toThrow(
       "Could not clear the previous space",
     );
     expect(SecureStore.setItemAsync).not.toHaveBeenCalledWith(

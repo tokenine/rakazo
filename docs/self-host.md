@@ -132,12 +132,22 @@ in. Configure SMTP below before enabling an allowlist or upgrading an allowliste
 For a public deployment, configure SMTP and an allowlist before the API's first start.
 Keep an installation without email on a trusted local network.
 
-### Verification and password recovery email
+### Sign-in email delivery (required)
 
-Password changes for signed-in users require no email configuration. Forgotten-password recovery
-appears on sign-in only when a transactional email provider is available. Rakazo uses a
-provider-neutral contract and ships an SMTP adapter, so Amazon SES, Resend, and self-hosted SMTP
-servers use the same configuration:
+Sign-in is passwordless: every login emails a short one-time code, so a deployment
+**must** configure a transactional email provider before users can sign in.
+Rakazo uses a provider-neutral contract and ships a Cloudflare Email Sending
+adapter and an SMTP adapter, so Cloudflare, Amazon SES, Resend, and self-hosted
+SMTP servers use the same configuration. For Cloudflare, onboard the sending
+domain first (`wrangler email sending enable <domain>`), then:
+
+```env
+CLOUDFLARE_EMAIL_API_TOKEN=replace-with-email-sending-token
+CLOUDFLARE_ACCOUNT_ID=replace-with-account-id
+EMAIL_FROM=Rakazo <no-reply@example.com>
+```
+
+SMTP works the same way:
 
 ```env
 SMTP_URL=smtps://smtp-user:replace-with-password@smtp.example.com:465

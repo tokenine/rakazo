@@ -1,14 +1,14 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { readBoundedJsonResponse, signupRequiresEmailVerification } from "@rakazo/core";
+import { BRAND_NAME } from "@rakazo/contracts";
+import { readBoundedJsonResponse } from "@rakazo/core";
 import { Button, Input, Label } from "@rakazo/ui-web";
-import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "../lib/auth";
 import { clearSpaceSelection } from "../lib/rpc";
 
-type AuthMode = "in" | "up" | "forgot";
-type PasswordResetCapabilities = { passwordReset: boolean; resetUrl: string | null };
+type AuthMode = "in" | "up";
+type AuthCapabilities = { otp: boolean };
 
 const fieldClass = "mt-2 h-12 rounded-xl px-4 text-base md:text-base";
 const submitClass = "mt-3 h-12 w-full rounded-xl text-base";
@@ -18,44 +18,39 @@ const MAX_AUTH_CAPABILITIES_RESPONSE_BYTES = 64 * 1024;
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const { t } = useLingui();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [stage, setStage] = useState<"email" | "code">("email");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  // Signup triggers a session refresh that remounts the anonymous auth page.
-  const sent = resetSent || searchParams.get("verify") === "email";
-  const [reset, setReset] = useState<PasswordResetCapabilities | null>(null);
-  const passwordFieldId = mode === "in" ? "current-password" : "new-password";
-  const title = sent ? (
-    <Trans>Check your email</Trans>
-  ) : mode === "in" ? (
-    <Trans>Sign in to Rakazo</Trans>
-  ) : mode === "up" ? (
-    <Trans>Create your Rakazo</Trans>
-  ) : (
-    <Trans>Reset your password</Trans>
-  );
+  const [capabilities, setCapabilities] = useState<AuthCapabilities | null>(null);
+
+  const title =
+    stage === "code" ? (
+      <Trans>Check your email</Trans>
+    ) : mode === "up" ? (
+      <Trans>Create your {BRAND_NAME}</Trans>
+    ) : (
+      <Trans>Sign in to {BRAND_NAME}</Trans>
+    );
 
   useEffect(() => {
-    if (mode === "up") return;
     let active = true;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), AUTH_CAPABILITIES_TIMEOUT_MS);
     void fetch("/api/auth/capabilities", { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("Could not load authentication capabilities");
-        return readBoundedJsonResponse<PasswordResetCapabilities>(
+        return readBoundedJsonResponse<AuthCapabilities>(
           response,
           MAX_AUTH_CAPABILITIES_RESPONSE_BYTES,
           controller.signal,
         );
       })
-      .then((capabilities) => {
-        if (active) setReset(capabilities);
+      .then((loaded) => {
+        if (active) setCapabilities(loaded);
       })
       .catch(() => undefined)
       .finally(() => clearTimeout(timer));
@@ -64,43 +59,33 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [mode]);
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
     setError(null);
     try {
-      if (mode === "forgot") {
-        if (!reset?.passwordReset || !reset.resetUrl) {
-          setError(t`Password recovery is not configured for this server`);
-          return;
-        }
-        const result = await authClient.requestPasswordReset({
+      if (stage === "email") {
+        const result = await authClient.emailOtp.sendVerificationOtp({
           email: email.trim(),
-          redirectTo: reset.resetUrl,
+          type: "sign-in",
         });
         if (result.error) {
-          setError(result.error.message ?? t`Could not send reset email`);
+          setError(result.error.message ?? t`Could not send the sign-in code`);
           return;
         }
-        setResetSent(true);
+        setStage("code");
         return;
       }
-      const result =
-        mode === "up"
-          ? await authClient.signUp.email({
-              email,
-              password,
-              name: name || email.split("@")[0] || "User",
-            })
-          : await authClient.signIn.email({ email, password });
+      const result = await authClient.signIn.emailOtp({
+        email: email.trim(),
+        otp: code.trim(),
+        // New accounts pick up the display name here; existing users are unaffected.
+        ...(mode === "up" && name.trim() ? { name: name.trim() } : {}),
+      });
       if (result.error) {
-        setError(result.error.message ?? t`Could not continue`);
-        return;
-      }
-      if (mode === "up" && signupRequiresEmailVerification(result.data)) {
-        setSearchParams({ verify: "email" });
+        setError(result.error.message ?? t`Could not verify the code`);
         return;
       }
       clearSpaceSelection();
@@ -120,15 +105,23 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
   return (
     <AuthFrame onSubmit={submit} title={title}>
-      {sent ? (
-        <div className="w-full text-center">
-          <Link to="/sign-in" className="font-medium text-foreground">
-            <Trans>Back to sign in</Trans>
-          </Link>
-        </div>
+      {capabilities && !capabilities.otp ? (
+        <>
+          <p role="alert" className="w-full text-sm text-destructive">
+            <Trans>
+              This server does not have email delivery configured, so sign-in codes cannot be sent.
+              Ask the server owner to configure email delivery.
+            </Trans>
+          </p>
+          <p className="mt-8 text-muted-foreground">
+            <Link to="/" className="font-medium text-foreground">
+              <Trans>Back to home</Trans>
+            </Link>
+          </p>
+        </>
       ) : (
         <>
-          {mode === "up" ? (
+          {stage === "email" && mode === "up" ? (
             <div className="mb-4 w-full">
               <Label htmlFor="name" className="text-muted-foreground">
                 <Trans>Name</Trans>
@@ -151,53 +144,49 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
             <Input
               id="email"
               name="email"
-              autoComplete="username"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t`Your email address`}
               type="email"
               required
+              readOnly={stage === "code"}
               className={fieldClass}
             />
           </div>
-          {mode !== "forgot" ? (
-            <div className="mt-4 w-full">
-              <Label htmlFor={passwordFieldId} className="text-muted-foreground">
-                <Trans>Password</Trans>
-              </Label>
-              <div className="relative">
+          {stage === "code" ? (
+            <>
+              <div className="mt-4 w-full">
+                <Label htmlFor="otp" className="text-muted-foreground">
+                  <Trans>Sign-in code</Trans>
+                </Label>
                 <Input
-                  id={passwordFieldId}
-                  name="password"
-                  autoComplete={mode === "in" ? "current-password" : "new-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t`Password`}
-                  type={showPassword ? "text" : "password"}
+                  id="otp"
+                  name="otp"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder={t`6-digit code`}
                   required
-                  minLength={8}
-                  className={`${fieldClass} pr-12`}
+                  autoFocus
+                  className={`${fieldClass} text-center text-2xl tracking-[0.5em]`}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowPassword((shown) => !shown)}
-                  aria-label={showPassword ? t`Hide password` : t`Show password`}
-                  aria-pressed={showPassword}
-                  className="absolute inset-y-0 right-2 my-auto text-muted-foreground"
-                >
-                  {showPassword ? <EyeOff /> : <Eye />}
-                </Button>
               </div>
-              {mode === "in" && reset?.passwordReset ? (
-                <div className="mt-2 text-right text-sm">
-                  <Link to="/forgot-password" className="font-medium text-foreground">
-                    <Trans>Forgot password?</Trans>
-                  </Link>
-                </div>
-              ) : null}
-            </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setStage("email");
+                  setCode("");
+                  setError(null);
+                }}
+                className="mt-2 text-sm text-muted-foreground underline-offset-2 hover:underline"
+              >
+                <Trans>Use a different email</Trans>
+              </button>
+            </>
           ) : null}
           {error ? (
             <p role="alert" className="mt-3 w-full text-sm text-destructive">
@@ -207,12 +196,10 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
           <Button type="submit" size="lg" disabled={pending} className={submitClass}>
             {pending ? (
               <Trans>Working…</Trans>
-            ) : mode === "in" ? (
+            ) : stage === "email" ? (
               <Trans>Continue with email</Trans>
-            ) : mode === "forgot" ? (
-              <Trans>Send reset link</Trans>
             ) : (
-              <Trans>Create account</Trans>
+              <Trans>Verify code</Trans>
             )}
           </Button>
           <p className="mt-8 text-muted-foreground">
@@ -223,102 +210,15 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                   <Trans>Sign up</Trans>
                 </Link>
               </>
-            ) : mode === "up" ? (
+            ) : (
               <>
                 <Trans>Already have an account?</Trans>{" "}
                 <Link to="/sign-in" className="font-medium text-foreground">
                   <Trans>Sign in</Trans>
                 </Link>
               </>
-            ) : (
-              <Link to="/sign-in" className="font-medium text-foreground">
-                <Trans>Back to sign in</Trans>
-              </Link>
             )}
           </p>
-        </>
-      )}
-    </AuthFrame>
-  );
-}
-
-export function PasswordResetPage() {
-  const { t } = useLingui();
-  const [params] = useSearchParams();
-  const [password, setPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [pending, setPending] = useState(false);
-  const [complete, setComplete] = useState(false);
-  const [error, setError] = useState<string | null>(
-    params.get("error") || !params.get("token") ? t`This reset link is invalid or expired` : null,
-  );
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    const token = params.get("token");
-    if (!token) return;
-    if (password !== confirmation) {
-      setError(t`Passwords do not match`);
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      const result = await authClient.resetPassword({ newPassword: password, token });
-      if (result.error) {
-        setError(result.error.message ?? t`Could not reset password`);
-        return;
-      }
-      setComplete(true);
-    } catch {
-      setError(t`Could not reach the server`);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <AuthFrame onSubmit={submit} title={<Trans>Choose a new password</Trans>}>
-      {complete ? (
-        <div role="status" className="w-full text-center">
-          <p className="text-lg">
-            <Trans>Password updated</Trans>
-          </p>
-          <Link to="/sign-in" className="mt-6 inline-block font-medium">
-            <Trans>Sign in</Trans>
-          </Link>
-        </div>
-      ) : (
-        <>
-          <PasswordField
-            id="new-password"
-            label={t`New password`}
-            value={password}
-            onChange={setPassword}
-          />
-          <PasswordField
-            id="confirm-password"
-            label={t`Confirm password`}
-            value={confirmation}
-            onChange={setConfirmation}
-            className="mt-4"
-          />
-          {error ? (
-            <p role="alert" className="mt-3 w-full text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={pending || !params.get("token")}
-            className={submitClass}
-          >
-            {pending ? <Trans>Working…</Trans> : <Trans>Reset password</Trans>}
-          </Button>
-          <Link to="/sign-in" className="mt-6 font-medium">
-            <Trans>Back to sign in</Trans>
-          </Link>
         </>
       )}
     </AuthFrame>
@@ -346,39 +246,6 @@ function AuthFrame({
         </h1>
         {children}
       </form>
-    </div>
-  );
-}
-
-function PasswordField({
-  id,
-  label,
-  value,
-  onChange,
-  className = "",
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-}) {
-  return (
-    <div className={`w-full ${className}`}>
-      <Label htmlFor={id} className="text-muted-foreground">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        name={id}
-        autoComplete="new-password"
-        type="password"
-        required
-        minLength={8}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={fieldClass}
-      />
     </div>
   );
 }

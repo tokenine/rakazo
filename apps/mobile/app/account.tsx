@@ -251,15 +251,6 @@ export default function Account() {
         </View>
         {focus !== "usage" ? usageBlock : null}
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push("/change-password")}
-          style={({ pressed }) => [styles.settingsButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.settingsTitle}>{t("Change password")}</Text>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
-
         <View accessibilityLabel={t("Appearance")} style={styles.avatarSection}>
           <Text style={styles.settingsTitle}>{t("Appearance")}</Text>
           <View style={styles.appearanceOptions}>

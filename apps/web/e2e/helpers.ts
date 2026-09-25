@@ -53,7 +53,7 @@ export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
 export async function signup(
   page: Page,
   email: string,
-  password: string,
+  _password: string,
   name: string,
   testInfo?: TestInfo,
 ) {
@@ -62,8 +62,23 @@ export async function signup(
   if (testInfo) await captureScreenshot(page, testInfo, "01-sign-up");
   await page.getByPlaceholder("Your name").fill(name);
   await page.getByPlaceholder("Your email address").fill(email);
-  await page.getByPlaceholder("Password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByRole("button", { name: "Continue with email" }).click();
+  // Sign-in is passwordless: fetch the one-time code from the dev email emulator.
+  await page.getByPlaceholder("6-digit code").fill(await otpFromEmulator(page, email));
+  await page.getByRole("button", { name: "Verify code" }).click();
+}
+
+/** Pull the newest OTP code sent to `email` from the dev-only emulator inbox. */
+export async function otpFromEmulator(page: Page, email: string): Promise<string> {
+  const response = await page.request.get("/api/dev/emails");
+  if (!response.ok()) throw new Error(`/api/dev/emails responded ${response.status()}`);
+  const messages = (await response.json()) as Array<{ to: string; text: string }>;
+  const sent = [...messages]
+    .reverse()
+    .find((message) => message.to.toLowerCase() === email.toLowerCase());
+  const code = sent?.text.match(/\b(\d{6})\b/)?.[1];
+  if (!code) throw new Error(`no OTP code captured for ${email}`);
+  return code;
 }
 
 export async function captureScreenshot(page: Page, testInfo: TestInfo, name: string) {

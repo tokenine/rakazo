@@ -57,6 +57,8 @@ export interface AppEnv {
   sendbluePhoneNumber: string | undefined;
   smtpUrl: string | undefined;
   emailFrom: string | undefined;
+  cloudflareEmailApiToken: string | undefined;
+  cloudflareAccountId: string | undefined;
   emailEmulator: boolean;
   slackBotToken: string | undefined;
   slackSigningSecret: string | undefined;
@@ -146,6 +148,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     sendbluePhoneNumber: optional(source.SENDBLUE_PHONE_NUMBER),
     smtpUrl: optional(source.SMTP_URL),
     emailFrom: optional(source.EMAIL_FROM),
+    cloudflareEmailApiToken: optional(source.CLOUDFLARE_EMAIL_API_TOKEN),
+    cloudflareAccountId: optional(source.CLOUDFLARE_ACCOUNT_ID),
     emailEmulator: source.EMAIL_EMULATOR === "true" && source.NODE_ENV !== "production",
     slackBotToken: optional(source.SLACK_BOT_TOKEN),
     slackSigningSecret: optional(source.SLACK_SIGNING_SECRET),
