@@ -36,6 +36,8 @@ TARGETS=(
   "apps/desktop/src/auto-update.ts"
   "apps/desktop/package.json"
   "apps/www/src"
+  "packages/core/src/self-update.ts"
+  "packages/core/src/secrets-guard.ts"
   "README.md"
   "CONTRIBUTING.md"
   "SECURITY.md"

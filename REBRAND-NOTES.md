@@ -11,10 +11,14 @@ not touch technical identifiers, so `git pull` from upstream keeps working.
 - `apps/web/src/pages/Welcome.tsx` (landing wordmark)
 - `apps/web/src/pages/Auth.tsx` (sign-in headings)
 - `packages/auth/src/index.ts` (`appName`, email templates)
-- `packages/core/src/self-update.ts`, `packages/core/src/secrets-guard.ts`
 - `packages/contracts/src/openai-compatible-ui.ts`
 
 **Literal — run `scripts/rebrand-display.sh <NEW_NAME>`:**
+
+- `packages/core/src/self-update.ts`, `packages/core/src/secrets-guard.ts`
+  (core stays dependency-free on purpose: Node loads `core/node/*.ts` natively
+  while bundling `vite.config.ts`, and that loader cannot remap the repo's
+  `.js`→`.ts` source imports — so core must not import `@rakazo/contracts`)
 
 - `apps/web/src/locales/*/messages.po` (Lingui catalogs, 9 languages)
 - `apps/web/index.html`, desktop setup screens and menu copy
