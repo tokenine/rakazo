@@ -66,7 +66,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
   private initialized: Promise<void> | undefined;
 
   constructor(platforms: MessagingPlatform[], options: { userName?: string } = {}) {
-    if (platforms.length === 0) throw new Error("ChatSdkMessagingSurface needs >=1 platform");
     for (const platform of platforms) this.byProvider.set(platform.provider, platform);
     this.chat = new Chat({
       userName: options.userName ?? "rakazo",

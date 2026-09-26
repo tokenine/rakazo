@@ -43,7 +43,6 @@ import {
   InstalledConnectorProvider,
   IntegrationProviderSettings,
   isComposioEnabled,
-  isMessagingSurfaceEnabled,
   isPipedreamEnabled,
   LocalAgentHomeStore,
   LocalArtifactStore,
@@ -265,14 +264,9 @@ export async function createApp(
   // see messagingPlatformsFromEnv's docstring for why a second poller
   // elsewhere (e.g. the worker) would actively break this.
   const messagingPlatforms = messagingPlatformsFromEnv(env, { pollInboundMessages: true });
-  const messaging =
-    messagingOverride ??
-    (isMessagingSurfaceEnabled(messagingPlatforms, {
-      deploymentModelKey: env.deploymentModelKey,
-      openSignup: env.messagingOpenSignup,
-    })
-      ? new ChatSdkMessagingSurface(messagingPlatforms)
-      : undefined);
+  // Always constructed: per-user Telegram bots register into this surface even
+  // when the deployment itself hosts no messaging platforms.
+  const messaging = messagingOverride ?? new ChatSdkMessagingSurface(messagingPlatforms);
   const localEmailEmulator =
     !emailOverride && !env.smtpUrl && env.emailEmulator
       ? new EmailEmulator((message) => {
