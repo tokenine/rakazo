@@ -54,6 +54,11 @@ function richResult(result: ClientJsResult): AgentToolExecutionResult {
  * only the desktop of the same account can receive the command. No approval
  * gate by deployment choice (trust level matches the bot's own shell).
  */
+export async function clientBrowserOnline(prisma: PrismaClient, userId: string): Promise<boolean> {
+  const session = await prisma.clientBrowserSession.findUnique({ where: { userId } });
+  return Boolean(session && Date.now() - session.lastSeenAt.getTime() <= AVAILABILITY_WINDOW_MS);
+}
+
 export async function clientJsFromTool(
   prisma: PrismaClient,
   run: { userId: string; threadId: string; id: string },

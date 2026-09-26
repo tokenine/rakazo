@@ -167,7 +167,7 @@ import {
 } from "./browser-tools.js";
 import { agentConnectionTools, builtinAgentTools } from "./builtin-tools.js";
 import { archiveSpawnedBot, spawnBot } from "./child-bots.js";
-import { clientJsFromTool } from "./client-browser-tools.js";
+import { clientBrowserOnline, clientJsFromTool } from "./client-browser-tools.js";
 import { type CloudAgentConnection, cloudAgentsEnabled } from "./cloud-agent-factory.js";
 import { executeCloudAgentTool } from "./cloud-agent-service.js";
 import { validCloudAgentArgs } from "./cloud-agent-tools.js";
@@ -1544,20 +1544,22 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
         }
         const graphicalToolsAllowed = graphical && acceptsImages && !heldForTakeover;
-        // User-level "built-in browser" preference (desktop app setting): deny
-        // the bot's VM browser tools entirely so browser work can only run in
-        // the user's own Browser pane via client_js. Best-effort lookup — a
-        // failed read must not fail run setup.
+        // User-level "built-in browser" preference (desktop app setting): while
+        // the user's desktop app is actually online (fresh heartbeat), deny the
+        // bot's VM browser tools so browser work can only run in the user's own
+        // Browser pane via client_js. When the desktop is closed — the user is
+        // on web or mobile — the VM browser comes back. Best-effort: a failed
+        // read must not fail run setup.
         let clientBrowserOnly = false;
         if (run.userId) {
           try {
-            clientBrowserOnly =
-              (
-                await deps.prisma.user.findUnique({
-                  where: { id: run.userId },
-                  select: { clientBrowserPreferred: true },
-                })
-              )?.clientBrowserPreferred === true;
+            const preference = await deps.prisma.user.findUnique({
+              where: { id: run.userId },
+              select: { clientBrowserPreferred: true },
+            });
+            if (preference?.clientBrowserPreferred) {
+              clientBrowserOnly = await clientBrowserOnline(deps.prisma, run.userId);
+            }
           } catch {
             clientBrowserOnly = false;
           }
