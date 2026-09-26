@@ -23,6 +23,16 @@ describe("loadEnv", () => {
     expect(loadEnv({ ...base, PI_SESSION_RECORDING: "true" }).piSessionRecording).toBe(true);
   });
 
+  it("parses extra auth origins from RAKAZO_EXTRA_ORIGINS", () => {
+    expect(loadEnv(base).extraOrigins).toEqual([]);
+    expect(
+      loadEnv({
+        ...base,
+        RAKAZO_EXTRA_ORIGINS: "https://aidex.tk9.dev, https://b.example.com",
+      }).extraOrigins,
+    ).toEqual(["https://aidex.tk9.dev", "https://b.example.com"]);
+  });
+
   it("keeps explicit emulator settings for pnpm test", () => {
     const env = loadEnv({
       ...base,

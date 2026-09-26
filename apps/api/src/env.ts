@@ -20,6 +20,8 @@ export interface AppEnv {
   authSecret: string;
   authUrl: string;
   webOrigin: string;
+  /** Auth-trusted origins beyond webOrigin/baseURL, parsed from comma-separated RAKAZO_EXTRA_ORIGINS. */
+  extraOrigins: string[];
   privacyPolicyUrl?: string;
   apiUrl: string;
   apiHost: string;
@@ -110,6 +112,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     authSecret,
     authUrl: source.BETTER_AUTH_URL ?? source.WEB_ORIGIN ?? "http://127.0.0.1:5173",
     webOrigin: source.WEB_ORIGIN ?? "http://127.0.0.1:5173",
+    extraOrigins: (source.RAKAZO_EXTRA_ORIGINS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
     privacyPolicyUrl: optional(source.PRIVACY_POLICY_URL),
     apiUrl: source.API_URL ?? "http://127.0.0.1:3100",
     apiHost: source.API_HOST ?? "127.0.0.1",

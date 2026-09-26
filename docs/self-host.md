@@ -50,6 +50,13 @@ there. Vite preview same-origin-proxies `/api` and `/rpc`, so do not expose `:31
 `BETTER_AUTH_URL`, `WEB_ORIGIN`, and `API_URL` to that same HTTPS origin, and set
 `RAKAZO_HOST` to its hostname (for example, `app.example.com`).
 
+To serve one deployment under additional origins (for example a Cloudflare Tunnel hostname next
+to the LAN URL) without moving the canonical origins, set `RAKAZO_EXTRA_ORIGINS` to the
+comma-separated list of those origins (auth trusts them for sign-in) and add their hostnames to
+`RAKAZO_HOST` (space- or comma-separated; it is the Vite preview `allowedHosts` allowlist).
+`RAKAZO_EXTRA_ORIGINS=https://aidex.example.com` plus `RAKAZO_HOST="192.168.1.199 aidex.example.com"`
+keeps both URLs working.
+
 ```Caddyfile
 app.example.com {
 	reverse_proxy 127.0.0.1:5173
