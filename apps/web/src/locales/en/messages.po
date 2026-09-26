@@ -376,6 +376,10 @@ msgstr "Allow writing"
 msgid "Allowed once"
 msgstr "Allowed once"
 
+#: src/pages/SettingsOverlay.tsx:326
+msgid "Allowlist"
+msgstr "Allowlist"
+
 #: src/pages/Auth.tsx:215
 msgid "Already have an account?"
 msgstr "Already have an account?"
@@ -766,8 +770,8 @@ msgid "Choose file"
 msgstr "Choose file"
 
 #: src/pages/ModelSettingsOverlay.tsx:383
-msgid "Choose which connected model Aidex uses."
-msgstr "Choose which connected model Aidex uses."
+msgid "Choose which connected model Ai7 uses."
+msgstr "Choose which connected model Ai7 uses."
 
 #: src/pages/shell/client-browser-panel.tsx:78
 msgid "Chrome import failed. Chrome may be running — try quitting it first."
@@ -830,7 +834,7 @@ msgid "Close MCP servers"
 msgstr "Close MCP servers"
 
 #: src/pages/MemorySettingsOverlay.tsx:168
-#: src/pages/SettingsOverlay.tsx:100
+#: src/pages/SettingsOverlay.tsx:113
 msgid "Close memory settings"
 msgstr "Close memory settings"
 
@@ -839,7 +843,7 @@ msgid "Close messaging settings"
 msgstr "Close messaging settings"
 
 #: src/pages/ModelSettingsOverlay.tsx:399
-#: src/pages/SettingsOverlay.tsx:98
+#: src/pages/SettingsOverlay.tsx:111
 msgid "Close model settings"
 msgstr "Close model settings"
 
@@ -855,11 +859,11 @@ msgstr "Close panel"
 msgid "Close preview"
 msgstr "Close preview"
 
-#: src/pages/SettingsOverlay.tsx:103
+#: src/pages/SettingsOverlay.tsx:116
 msgid "Close user settings"
 msgstr "Close user settings"
 
-#: src/pages/SettingsOverlay.tsx:102
+#: src/pages/SettingsOverlay.tsx:115
 #: src/pages/VoiceSettingsOverlay.tsx:174
 msgid "Close voice settings"
 msgstr "Close voice settings"
@@ -897,7 +901,7 @@ msgstr "Command"
 msgid "Complete"
 msgstr "Complete"
 
-#: src/pages/SettingsOverlay.tsx:88
+#: src/pages/SettingsOverlay.tsx:100
 #: src/pages/Shell.tsx:6239
 #: src/pages/shell/bot-panel.tsx:56
 msgid "Computer"
@@ -1050,6 +1054,10 @@ msgstr "Continue in Background"
 #: src/pages/Auth.tsx:200
 msgid "Continue with email"
 msgstr "Continue with email"
+
+#: src/pages/SettingsOverlay.tsx:309
+msgid "Control who can create an account. Entries are exact emails, or `@company.com` to admit everyone on that mail domain — leave empty to allow anyone."
+msgstr "Control who can create an account. Entries are exact emails, or `@company.com` to admit everyone on that mail domain — leave empty to allow anyone."
 
 #: src/pages/Shell.tsx:5752
 msgid "Copy"
@@ -1228,6 +1236,10 @@ msgstr "Could not load MCP servers"
 msgid "Could not load model settings"
 msgstr "Could not load model settings"
 
+#: src/pages/SettingsOverlay.tsx:277
+msgid "Could not load sign-up settings"
+msgstr "Could not load sign-up settings"
+
 #: src/pages/KnowledgeSection.tsx:302
 msgid "Could not load skill"
 msgstr "Could not load skill"
@@ -1332,6 +1344,10 @@ msgstr "Could not save routine"
 #: src/components/ApprovalRulesSettings.tsx:80
 msgid "Could not save rule"
 msgstr "Could not save rule"
+
+#: src/pages/SettingsOverlay.tsx:297
+msgid "Could not save sign-up settings"
+msgstr "Could not save sign-up settings"
 
 #: src/pages/KnowledgeSection.tsx:325
 msgid "Could not save skill"
@@ -1890,8 +1906,8 @@ msgstr "Free"
 msgid "Fullscreen"
 msgstr "Fullscreen"
 
-#: src/pages/SettingsOverlay.tsx:83
-#: src/pages/SettingsOverlay.tsx:94
+#: src/pages/SettingsOverlay.tsx:95
+#: src/pages/SettingsOverlay.tsx:107
 msgid "General"
 msgstr "General"
 
@@ -2192,6 +2208,7 @@ msgstr "Loading voice providers…"
 #: src/pages/IntegrationSetup.tsx:72
 #: src/pages/Onboarding.tsx:379
 #: src/pages/PeerMessagesOverlay.tsx:98
+#: src/pages/SettingsOverlay.tsx:304
 #: src/pages/Shell.tsx:4676
 msgid "Loading…"
 msgstr "Loading…"
@@ -2296,7 +2313,7 @@ msgstr "Members (pick {GROUP_MEMBER_MIN}–{GROUP_MEMBER_MAX})"
 
 #: src/pages/KnowledgeSection.tsx:39
 #: src/pages/MemorySettingsOverlay.tsx:159
-#: src/pages/SettingsOverlay.tsx:85
+#: src/pages/SettingsOverlay.tsx:97
 msgid "Memory"
 msgstr "Memory"
 
@@ -2409,7 +2426,7 @@ msgstr "Model updated."
 
 #: src/pages/LocalSettings.tsx:36
 #: src/pages/ModelSettingsOverlay.tsx:392
-#: src/pages/SettingsOverlay.tsx:84
+#: src/pages/SettingsOverlay.tsx:96
 msgid "Models"
 msgstr "Models"
 
@@ -2705,6 +2722,10 @@ msgstr "Open in full window"
 msgid "Open navigation"
 msgstr "Open navigation"
 
+#: src/pages/SettingsOverlay.tsx:317
+msgid "Open sign-ups"
+msgstr "Open sign-ups"
+
 #: src/pages/ScratchpadSection.tsx:106
 msgid "Open work"
 msgstr "Open work"
@@ -2779,8 +2800,8 @@ msgid "Paste a replacement key"
 msgstr "Paste a replacement key"
 
 #: src/pages/ModelSettingsOverlay.tsx:503
-msgid "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
-msgstr "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
+msgid "Paste the OpenAI-compatible address from your server. Ai7 adds /v1 if needed."
+msgstr "Paste the OpenAI-compatible address from your server. Ai7 adds /v1 if needed."
 
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste your API key"
@@ -3109,8 +3130,8 @@ msgid "Retry screen"
 msgstr "Retry screen"
 
 #: src/pages/McpOAuthCallback.tsx:62
-msgid "Return to Aidex"
-msgstr "Return to Aidex"
+msgid "Return to Ai7"
+msgstr "Return to Ai7"
 
 #. placeholder {0}: doc.revision
 #: src/pages/KnowledgeSection.tsx:180
@@ -3184,6 +3205,7 @@ msgstr "Runs when this bot receives a verified message from this provider."
 #: src/pages/KnowledgeSection.tsx:423
 #: src/pages/ModelSettingsOverlay.tsx:827
 #: src/pages/RoutineEditor.tsx:489
+#: src/pages/SettingsOverlay.tsx:338
 #: src/pages/shell/bot-panel.tsx:613
 #: src/pages/shell/dialogs.tsx:266
 msgid "Save"
@@ -3201,6 +3223,7 @@ msgid "Saved, but list refresh failed"
 msgstr "Saved, but list refresh failed"
 
 #: src/pages/ModelSettingsOverlay.tsx:353
+#: src/pages/SettingsOverlay.tsx:336
 msgid "Saved."
 msgstr "Saved."
 
@@ -3221,6 +3244,7 @@ msgstr "Saving..."
 #: src/pages/GroupPanel.tsx:236
 #: src/pages/ModelSettingsOverlay.tsx:825
 #: src/pages/RoutineEditor.tsx:489
+#: src/pages/SettingsOverlay.tsx:338
 #: src/pages/shell/dialogs.tsx:266
 msgid "Saving…"
 msgstr "Saving…"
@@ -3330,8 +3354,8 @@ msgid "Server URL"
 msgstr "Server URL"
 
 #: src/pages/MessagingSettingsOverlay.tsx:363
-#: src/pages/SettingsOverlay.tsx:94
-#: src/pages/SettingsOverlay.tsx:149
+#: src/pages/SettingsOverlay.tsx:107
+#: src/pages/SettingsOverlay.tsx:162
 #: src/pages/Shell.tsx:3186
 #: src/pages/Shell.tsx:3193
 #: src/pages/Shell.tsx:3491
@@ -3398,13 +3422,17 @@ msgid "Sign in to {BRAND_NAME}"
 msgstr "Sign in to {BRAND_NAME}"
 
 #: src/pages/Auth.tsx:210
-#: src/pages/Welcome.tsx:35
+#: src/pages/Welcome.tsx:53
 msgid "Sign up"
 msgstr "Sign up"
 
 #: src/pages/Auth.tsx:161
 msgid "Sign-in code"
 msgstr "Sign-in code"
+
+#: src/pages/SettingsOverlay.tsx:101
+msgid "Sign-ups"
+msgstr "Sign-ups"
 
 #. placeholder {0}: skill.name
 #: src/pages/Shell.tsx:5346
@@ -3660,8 +3688,8 @@ msgid "This server is already connected. Disconnect it first to authorize again.
 msgstr "This server is already connected. Disconnect it first to authorize again."
 
 #: src/pages/ModelSettingsOverlay.tsx:839
-msgid "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
-msgstr "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
+msgid "This subscription sign-in is not available in Ai7 yet. Use a deployment credential or choose another provider."
+msgstr "This subscription sign-in is not available in Ai7 yet. Use a deployment credential or choose another provider."
 
 #: src/pages/RoutineSchedule.tsx:217
 msgid "Time of day"
@@ -3761,7 +3789,7 @@ msgstr "Update progress"
 msgid "Updated"
 msgstr "Updated"
 
-#: src/pages/SettingsOverlay.tsx:89
+#: src/pages/SettingsOverlay.tsx:102
 msgid "Updates"
 msgstr "Updates"
 
@@ -3784,7 +3812,7 @@ msgid "Upload"
 msgstr "Upload"
 
 #: src/pages/AccountSettingsOverlay.tsx:199
-#: src/pages/SettingsOverlay.tsx:87
+#: src/pages/SettingsOverlay.tsx:99
 #: src/pages/Shell.tsx:3198
 #: src/pages/Shell.tsx:3209
 msgid "Usage"
@@ -3824,7 +3852,7 @@ msgstr "Verify code"
 msgid "Verifying…"
 msgstr "Verifying…"
 
-#: src/pages/SettingsOverlay.tsx:86
+#: src/pages/SettingsOverlay.tsx:98
 #: src/pages/Shell.tsx:5518
 #: src/pages/Shell.tsx:5519
 #: src/pages/shell/bot-panel.tsx:582
@@ -3892,6 +3920,10 @@ msgstr "What to return"
 msgid "When a webhook fires"
 msgstr "When a webhook fires"
 
+#: src/pages/SettingsOverlay.tsx:320
+msgid "When off, only existing accounts can sign in."
+msgstr "When off, only existing accounts can sign in."
+
 #: src/pages/RoutineEditor.tsx:334
 msgid "When to run"
 msgstr "When to run"
@@ -3938,6 +3970,6 @@ msgstr "Your email address"
 msgid "Your name"
 msgstr "Your name"
 
-#: src/pages/Welcome.tsx:24
+#: src/pages/Welcome.tsx:41
 msgid "Your team of always-on agents<0/>that you can give real work to."
 msgstr "Your team of always-on agents<0/>that you can give real work to."

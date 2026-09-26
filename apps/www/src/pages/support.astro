@@ -9,21 +9,21 @@ const stars = await fetchGithubStars();
 const starsLabel = stars === null ? "Star" : formatStarCount(stars);
 ---
 
-<BaseLayout title="Support · Aidex" description="Get help with the Aidex app and self-hosted Aidex.">
+<BaseLayout title="Support · Ai7" description="Get help with the Ai7 app and self-hosted Ai7.">
   <div class="container">
     <Header starsLabel={starsLabel} />
     <main id="main" class="privacy-copy">
-      <h1>Aidex support</h1>
+      <h1>Ai7 support</h1>
       <p>
-        For help with the Aidex mobile app or a hosted Aidex account, email{" "}
+        For help with the Ai7 mobile app or a hosted Ai7 account, email{" "}
         <a href="mailto:hello@rakazo.com">hello@rakazo.com</a>. Include the email address on your
         account, what you expected to happen, and any error message you saw. Do not send passwords, API keys,
         access tokens, or other secrets.
       </p>
-      <h2>Self-hosted Aidex</h2>
+      <h2>Self-hosted Ai7</h2>
       <p>
         Start with the <a href={DOCS_URL}>self-hosting guide</a>. For reproducible bugs or feature requests,
-        open an issue in the <a href={`${GITHUB_URL}/issues`}>Aidex GitHub repository</a>.
+        open an issue in the <a href={`${GITHUB_URL}/issues`}>Ai7 GitHub repository</a>.
       </p>
       <h2>Account deletion</h2>
       <p>

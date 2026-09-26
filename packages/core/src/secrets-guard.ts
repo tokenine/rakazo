@@ -10,7 +10,7 @@ export const EXAMPLE_SCREEN_PROXY_SECRET_PLACEHOLDER =
 // Display brand name is centralized in @rakazo/contracts; core stays dependency-free
 // because Node loads core/node/*.ts natively while bundling vite.config.ts.
 const RUNTIME_SECRETS_ERROR =
-  "Set BETTER_AUTH_SECRET and ENCRYPTION_KEY to long random strings before starting Aidex outside local development or tests.";
+  "Set BETTER_AUTH_SECRET and ENCRYPTION_KEY to long random strings before starting Ai7 outside local development or tests.";
 
 const DEDICATED_SECRET_PLACEHOLDERS = new Set([
   DEV_SUPERVISOR_TOKEN_PLACEHOLDER,

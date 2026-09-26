@@ -13,8 +13,8 @@
 # untouched — see REBRAND-NOTES.md.
 set -Eeuo pipefail
 
-if [[ $# -ne 1 || -z "$1" ]]; then
-  echo "Usage: scripts/rebrand-display.sh <NEW_NAME>" >&2
+if [[ $# -lt 1 || -z "$1" ]]; then
+  echo "Usage: scripts/rebrand-display.sh <NEW_NAME> [OLD_NAME]" >&2
   exit 2
 fi
 if [[ ! -f packages/contracts/src/brand.ts ]]; then
@@ -23,7 +23,7 @@ if [[ ! -f packages/contracts/src/brand.ts ]]; then
 fi
 
 NEW_NAME="$1"
-OLD_NAME="Rakazo"
+OLD_NAME="${2:-Rakazo}"
 
 TARGETS=(
   "apps/web/index.html"

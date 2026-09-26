@@ -1,5 +1,5 @@
 /**
- * Windows App-Bound Cookie decryption — DEFERRED in Aidex (macOS-first port).
+ * Windows App-Bound Cookie decryption — DEFERRED in Ai7 (macOS-first port).
  * The reader rejects with the unsupported code so Windows imports fall back to
  * the non-App-Bound path instead of pulling the Windows helper toolchain in.
  */

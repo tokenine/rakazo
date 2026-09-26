@@ -8,4 +8,4 @@
  * `dev.rakazo.desktop`, compose project names) are deliberately NOT rebranded —
  * see REBRAND-NOTES.md.
  */
-export const BRAND_NAME = "Aidex";
+export const BRAND_NAME = "Ai7";

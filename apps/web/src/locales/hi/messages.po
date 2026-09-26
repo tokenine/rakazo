@@ -376,6 +376,10 @@ msgstr ""
 msgid "Allowed once"
 msgstr "एक बार अनुमति दी गई"
 
+#: src/pages/SettingsOverlay.tsx:326
+msgid "Allowlist"
+msgstr ""
+
 #: src/pages/Auth.tsx:215
 msgid "Already have an account?"
 msgstr "पहले से खाता है?"
@@ -766,8 +770,8 @@ msgid "Choose file"
 msgstr "फ़ाइल चुनें"
 
 #: src/pages/ModelSettingsOverlay.tsx:383
-msgid "Choose which connected model Aidex uses."
-msgstr "चुनें कि Aidex किस कनेक्टेड मॉडल का उपयोग करे।"
+msgid "Choose which connected model Ai7 uses."
+msgstr "चुनें कि Ai7 किस कनेक्टेड मॉडल का उपयोग करे।"
 
 #: src/pages/shell/client-browser-panel.tsx:78
 msgid "Chrome import failed. Chrome may be running — try quitting it first."
@@ -830,7 +834,7 @@ msgid "Close MCP servers"
 msgstr "MCP सर्वर बंद करें"
 
 #: src/pages/MemorySettingsOverlay.tsx:168
-#: src/pages/SettingsOverlay.tsx:100
+#: src/pages/SettingsOverlay.tsx:113
 msgid "Close memory settings"
 msgstr "मेमोरी सेटिंग्स बंद करें"
 
@@ -839,7 +843,7 @@ msgid "Close messaging settings"
 msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx:399
-#: src/pages/SettingsOverlay.tsx:98
+#: src/pages/SettingsOverlay.tsx:111
 msgid "Close model settings"
 msgstr "मॉडल सेटिंग्स बंद करें"
 
@@ -855,11 +859,11 @@ msgstr "पैनल बंद करें"
 msgid "Close preview"
 msgstr "प्रीव्यू बंद करें"
 
-#: src/pages/SettingsOverlay.tsx:103
+#: src/pages/SettingsOverlay.tsx:116
 msgid "Close user settings"
 msgstr "उपयोगकर्ता सेटिंग्स बंद करें"
 
-#: src/pages/SettingsOverlay.tsx:102
+#: src/pages/SettingsOverlay.tsx:115
 #: src/pages/VoiceSettingsOverlay.tsx:174
 msgid "Close voice settings"
 msgstr "आवाज़ सेटिंग्स बंद करें"
@@ -897,7 +901,7 @@ msgstr "कमांड"
 msgid "Complete"
 msgstr "पूर्ण"
 
-#: src/pages/SettingsOverlay.tsx:88
+#: src/pages/SettingsOverlay.tsx:100
 #: src/pages/Shell.tsx:6239
 #: src/pages/shell/bot-panel.tsx:56
 msgid "Computer"
@@ -1050,6 +1054,10 @@ msgstr ""
 #: src/pages/Auth.tsx:200
 msgid "Continue with email"
 msgstr "ईमेल से जारी रखें"
+
+#: src/pages/SettingsOverlay.tsx:309
+msgid "Control who can create an account. Entries are exact emails, or `@company.com` to admit everyone on that mail domain — leave empty to allow anyone."
+msgstr ""
 
 #: src/pages/Shell.tsx:5752
 msgid "Copy"
@@ -1228,6 +1236,10 @@ msgstr "MCP सर्वर लोड नहीं हो सके"
 msgid "Could not load model settings"
 msgstr "मॉडल सेटिंग्स लोड नहीं हो सकीं"
 
+#: src/pages/SettingsOverlay.tsx:277
+msgid "Could not load sign-up settings"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx:302
 msgid "Could not load skill"
 msgstr "स्किल लोड नहीं हो सकी"
@@ -1332,6 +1344,10 @@ msgstr "रूटीन सहेजा नहीं जा सका"
 #: src/components/ApprovalRulesSettings.tsx:80
 msgid "Could not save rule"
 msgstr "नियम सहेजा नहीं जा सका"
+
+#: src/pages/SettingsOverlay.tsx:297
+msgid "Could not save sign-up settings"
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx:325
 msgid "Could not save skill"
@@ -1890,8 +1906,8 @@ msgstr ""
 msgid "Fullscreen"
 msgstr "फ़ुलस्क्रीन"
 
-#: src/pages/SettingsOverlay.tsx:83
-#: src/pages/SettingsOverlay.tsx:94
+#: src/pages/SettingsOverlay.tsx:95
+#: src/pages/SettingsOverlay.tsx:107
 msgid "General"
 msgstr "सामान्य"
 
@@ -2192,6 +2208,7 @@ msgstr "आवाज़ प्रोवाइडर्स लोड हो र�
 #: src/pages/IntegrationSetup.tsx:72
 #: src/pages/Onboarding.tsx:379
 #: src/pages/PeerMessagesOverlay.tsx:98
+#: src/pages/SettingsOverlay.tsx:304
 #: src/pages/Shell.tsx:4676
 msgid "Loading…"
 msgstr "लोड हो रहा है…"
@@ -2296,7 +2313,7 @@ msgstr "सदस्य ({GROUP_MEMBER_MIN}–{GROUP_MEMBER_MAX} चुनें
 
 #: src/pages/KnowledgeSection.tsx:39
 #: src/pages/MemorySettingsOverlay.tsx:159
-#: src/pages/SettingsOverlay.tsx:85
+#: src/pages/SettingsOverlay.tsx:97
 msgid "Memory"
 msgstr "मेमोरी"
 
@@ -2409,7 +2426,7 @@ msgstr "मॉडल अपडेट किया गया।"
 
 #: src/pages/LocalSettings.tsx:36
 #: src/pages/ModelSettingsOverlay.tsx:392
-#: src/pages/SettingsOverlay.tsx:84
+#: src/pages/SettingsOverlay.tsx:96
 msgid "Models"
 msgstr "मॉडल्स"
 
@@ -2705,6 +2722,10 @@ msgstr "पूरी विंडो में खोलें"
 msgid "Open navigation"
 msgstr "नेविगेशन खोलें"
 
+#: src/pages/SettingsOverlay.tsx:317
+msgid "Open sign-ups"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx:106
 msgid "Open work"
 msgstr "खुला कार्य"
@@ -2779,8 +2800,8 @@ msgid "Paste a replacement key"
 msgstr "बदलने के लिए नई कुंजी पेस्ट करें"
 
 #: src/pages/ModelSettingsOverlay.tsx:503
-msgid "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
-msgstr "अपने सर्वर से OpenAI-संगत पता पेस्ट करें। ज़रूरत होने पर Aidex /v1 जोड़ देता है।"
+msgid "Paste the OpenAI-compatible address from your server. Ai7 adds /v1 if needed."
+msgstr "अपने सर्वर से OpenAI-संगत पता पेस्ट करें। ज़रूरत होने पर Ai7 /v1 जोड़ देता है।"
 
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste your API key"
@@ -3109,8 +3130,8 @@ msgid "Retry screen"
 msgstr ""
 
 #: src/pages/McpOAuthCallback.tsx:62
-msgid "Return to Aidex"
-msgstr "Aidex पर लौटें"
+msgid "Return to Ai7"
+msgstr "Ai7 पर लौटें"
 
 #. placeholder {0}: doc.revision
 #: src/pages/KnowledgeSection.tsx:180
@@ -3184,6 +3205,7 @@ msgstr ""
 #: src/pages/KnowledgeSection.tsx:423
 #: src/pages/ModelSettingsOverlay.tsx:827
 #: src/pages/RoutineEditor.tsx:489
+#: src/pages/SettingsOverlay.tsx:338
 #: src/pages/shell/bot-panel.tsx:613
 #: src/pages/shell/dialogs.tsx:266
 msgid "Save"
@@ -3201,6 +3223,7 @@ msgid "Saved, but list refresh failed"
 msgstr "सहेजा गया, लेकिन सूची रिफ़्रेश विफल रही"
 
 #: src/pages/ModelSettingsOverlay.tsx:353
+#: src/pages/SettingsOverlay.tsx:336
 msgid "Saved."
 msgstr "सहेजा गया।"
 
@@ -3221,6 +3244,7 @@ msgstr ""
 #: src/pages/GroupPanel.tsx:236
 #: src/pages/ModelSettingsOverlay.tsx:825
 #: src/pages/RoutineEditor.tsx:489
+#: src/pages/SettingsOverlay.tsx:338
 #: src/pages/shell/dialogs.tsx:266
 msgid "Saving…"
 msgstr "सहेजा जा रहा है…"
@@ -3330,8 +3354,8 @@ msgid "Server URL"
 msgstr "सर्वर URL"
 
 #: src/pages/MessagingSettingsOverlay.tsx:363
-#: src/pages/SettingsOverlay.tsx:94
-#: src/pages/SettingsOverlay.tsx:149
+#: src/pages/SettingsOverlay.tsx:107
+#: src/pages/SettingsOverlay.tsx:162
 #: src/pages/Shell.tsx:3186
 #: src/pages/Shell.tsx:3193
 #: src/pages/Shell.tsx:3491
@@ -3398,12 +3422,16 @@ msgid "Sign in to {BRAND_NAME}"
 msgstr ""
 
 #: src/pages/Auth.tsx:210
-#: src/pages/Welcome.tsx:35
+#: src/pages/Welcome.tsx:53
 msgid "Sign up"
 msgstr "साइन अप करें"
 
 #: src/pages/Auth.tsx:161
 msgid "Sign-in code"
+msgstr ""
+
+#: src/pages/SettingsOverlay.tsx:101
+msgid "Sign-ups"
 msgstr ""
 
 #. placeholder {0}: skill.name
@@ -3660,8 +3688,8 @@ msgid "This server is already connected. Disconnect it first to authorize again.
 msgstr "यह सर्वर पहले से कनेक्टेड है। पुनः ऑथराइज़ करने के लिए पहले इसे डिस्कनेक्ट करें।"
 
 #: src/pages/ModelSettingsOverlay.tsx:839
-msgid "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
-msgstr "यह सब्सक्रिप्शन साइन-इन अभी Aidex में उपलब्ध नहीं है। किसी डिप्लॉयमेंट क्रेडेंशियल का उपयोग करें या दूसरा प्रोवाइडर चुनें।"
+msgid "This subscription sign-in is not available in Ai7 yet. Use a deployment credential or choose another provider."
+msgstr "यह सब्सक्रिप्शन साइन-इन अभी Ai7 में उपलब्ध नहीं है। किसी डिप्लॉयमेंट क्रेडेंशियल का उपयोग करें या दूसरा प्रोवाइडर चुनें।"
 
 #: src/pages/RoutineSchedule.tsx:217
 msgid "Time of day"
@@ -3761,7 +3789,7 @@ msgstr ""
 msgid "Updated"
 msgstr ""
 
-#: src/pages/SettingsOverlay.tsx:89
+#: src/pages/SettingsOverlay.tsx:102
 msgid "Updates"
 msgstr "अपडेट"
 
@@ -3784,7 +3812,7 @@ msgid "Upload"
 msgstr "अपलोड"
 
 #: src/pages/AccountSettingsOverlay.tsx:199
-#: src/pages/SettingsOverlay.tsx:87
+#: src/pages/SettingsOverlay.tsx:99
 #: src/pages/Shell.tsx:3198
 #: src/pages/Shell.tsx:3209
 msgid "Usage"
@@ -3824,7 +3852,7 @@ msgstr ""
 msgid "Verifying…"
 msgstr "पुष्टि की जा रही है…"
 
-#: src/pages/SettingsOverlay.tsx:86
+#: src/pages/SettingsOverlay.tsx:98
 #: src/pages/Shell.tsx:5518
 #: src/pages/Shell.tsx:5519
 #: src/pages/shell/bot-panel.tsx:582
@@ -3892,6 +3920,10 @@ msgstr "क्या लौटाना है"
 msgid "When a webhook fires"
 msgstr ""
 
+#: src/pages/SettingsOverlay.tsx:320
+msgid "When off, only existing accounts can sign in."
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx:334
 msgid "When to run"
 msgstr "कब चलाएं"
@@ -3938,6 +3970,6 @@ msgstr "आपका ईमेल पता"
 msgid "Your name"
 msgstr "आपका नाम"
 
-#: src/pages/Welcome.tsx:24
+#: src/pages/Welcome.tsx:41
 msgid "Your team of always-on agents<0/>that you can give real work to."
 msgstr "हमेशा चालू रहने वाले एजेंटों की आपकी टीम<0/>जिन्हें आप असली काम सौंप सकते हैं।"

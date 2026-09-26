@@ -149,8 +149,8 @@ export default function SignIn() {
                 {stage === "code"
                   ? t("Check your email")
                   : mode === "in"
-                    ? t("Sign in to Aidex")
-                    : t("Sign up for Aidex")}
+                    ? t("Sign in to Ai7")
+                    : t("Sign up for Ai7")}
               </Text>
               {otpAvailable === false ? (
                 <Text style={{ color: tokens.destructive, marginTop: 16, textAlign: "center" }}>
@@ -425,7 +425,7 @@ function ServerSheet({
           <Text
             style={{ color: tokens.mutedForeground, marginTop: 28, fontSize: 15, lineHeight: 22 }}
           >
-            {t("Enter your Aidex server address.")}
+            {t("Enter your Ai7 server address.")}
           </Text>
           <TextInput
             autoCapitalize="none"

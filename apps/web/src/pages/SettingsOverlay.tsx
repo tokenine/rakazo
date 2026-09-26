@@ -1,9 +1,20 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { AvatarStyle, SpaceMemoryConfig } from "@rakazo/contracts";
-import { Button, Dialog, DialogClose, DialogContent, DialogTitle } from "@rakazo/ui-web";
-import { Brain, CloudDownload, Cpu, Gauge, Monitor, Settings, Volume2, XIcon } from "lucide-react";
+import { Button, Dialog, DialogClose, DialogContent, DialogTitle, Switch } from "@rakazo/ui-web";
+import {
+  Brain,
+  CloudDownload,
+  Cpu,
+  Gauge,
+  Monitor,
+  Settings,
+  UserPlus,
+  Volume2,
+  XIcon,
+} from "lucide-react";
 import { type ComponentType, useEffect, useRef, useState } from "react";
 import { computersAreUnavailable } from "../components/ComputersUnavailableHint";
+import { rpc } from "../lib/rpc";
 import {
   ComputerSettingsPanel,
   GeneralSettingsPanels,
@@ -16,6 +27,7 @@ import { VoiceSettingsOverlay } from "./VoiceSettingsOverlay";
 
 export type SettingsSection =
   | "general"
+  | "signups"
   | "models"
   | "memory"
   | "voice"
@@ -86,6 +98,7 @@ export function SettingsOverlay({
     { id: "voice", label: t`Voice`, icon: Volume2 },
     { id: "usage", label: t`Usage`, icon: Gauge },
     ...(showComputer ? [{ id: "computer" as const, label: t`Computer`, icon: Monitor }] : []),
+    ...(isDeploymentOwner ? [{ id: "signups" as const, label: t`Sign-ups`, icon: UserPlus }] : []),
     { id: "updates", label: t`Updates`, icon: CloudDownload },
   ];
 
@@ -211,6 +224,7 @@ export function SettingsOverlay({
                 <UsageSettingsPanel usage={usage} panelRef={usageRef} />
               ) : null}
               {section === "computer" && showComputer ? <ComputerSettingsPanel /> : null}
+              {section === "signups" && isDeploymentOwner ? <SignupsSettingsPanel /> : null}
               {section === "updates" ? (
                 <UpdatesSettingsPanel isDeploymentOwner={isDeploymentOwner} />
               ) : null}
@@ -234,5 +248,95 @@ export function SettingsOverlay({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Deployment-owner signup policy: toggle open sign-ups and edit the
+ * allowlist. Entries are full emails (exact) or `@domain.com` to admit a
+ * whole mail domain — the same list powers demo whitelisting and
+ * per-customer domain licensing.
+ */
+function SignupsSettingsPanel() {
+  const { t } = useLingui();
+  const [enabled, setEnabled] = useState(true);
+  const [allowlist, setAllowlist] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    rpc.deployment
+      .get()
+      .then((settings) => {
+        setEnabled(settings.signupsEnabled);
+        setAllowlist(settings.signupAllowlist.join("\n"));
+        setLoaded(true);
+      })
+      .catch(() => setError(t`Could not load sign-up settings`));
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const entries = allowlist
+        .split(/[\n,]+/)
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      const updated = await rpc.deployment.update({
+        signupsEnabled: enabled,
+        signupAllowlist: entries,
+      });
+      setEnabled(updated.signupsEnabled);
+      setAllowlist(updated.signupAllowlist.join("\n"));
+      setSaved(true);
+    } catch {
+      setError(t`Could not save sign-up settings`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) {
+    return <p className="text-[13.5px] text-muted-foreground/70">{error ?? t`Loading…`}</p>;
+  }
+  return (
+    <div data-testid="signups-settings" className="max-w-[560px] space-y-5">
+      <p className="text-[13.5px] leading-6 text-muted-foreground/80">
+        <Trans>
+          Control who can create an account. Entries are exact emails, or `@company.com` to admit
+          everyone on that mail domain — leave empty to allow anyone.
+        </Trans>
+      </p>
+      <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+        <div>
+          <div className="text-[14px] font-medium text-foreground">
+            <Trans>Open sign-ups</Trans>
+          </div>
+          <div className="text-[12.5px] text-muted-foreground/70">
+            <Trans>When off, only existing accounts can sign in.</Trans>
+          </div>
+        </div>
+        <Switch checked={enabled} onCheckedChange={setEnabled} />
+      </div>
+      <label className="block text-[14px] text-muted-foreground">
+        <Trans>Allowlist</Trans>
+        <textarea
+          value={allowlist}
+          onChange={(event) => setAllowlist(event.target.value)}
+          rows={7}
+          placeholder={"dome@company.com\n@customer-domain.com"}
+          className="mt-2 w-full rounded-xl border border-border bg-transparent px-3 py-2.5 font-mono text-[13px] text-foreground outline-none focus:border-foreground/40"
+        />
+      </label>
+      {error ? <p className="text-[13px] text-destructive">{error}</p> : null}
+      {saved ? <p className="text-[13px] text-success">{t`Saved.`}</p> : null}
+      <Button disabled={saving} onClick={() => void save()}>
+        {saving ? <Trans>Saving…</Trans> : <Trans>Save</Trans>}
+      </Button>
+    </div>
   );
 }

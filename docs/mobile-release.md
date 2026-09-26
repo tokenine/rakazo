@@ -1,10 +1,10 @@
 # Mobile builds and store releases
 
-Aidex's public repository does not contain production App Store Connect,
+Ai7's public repository does not contain production App Store Connect,
 Google Play, Apple team, or private EAS submission identifiers. Those values
 belong in the release operator's private configuration.
 
-Self-hosters normally do not need to publish their own mobile app: the Aidex
+Self-hosters normally do not need to publish their own mobile app: the Ai7
 client can select a compatible server from the sign-in screen. If you distribute
 your own branded build, use your own Expo and store accounts.
 

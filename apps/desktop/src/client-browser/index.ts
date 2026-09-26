@@ -1,5 +1,5 @@
 /**
- * Client built-in browser (Aidex desktop): a user-visible <webview> pane the
+ * Client built-in browser (Ai7 desktop): a user-visible <webview> pane the
  * agent can also drive. Two capabilities live here:
  *  1. Chrome data import (ported from ZCode's browserDataManager family) into
  *     the persistent partition below — cookies + localStorage, macOS keychain.

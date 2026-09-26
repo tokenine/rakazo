@@ -79,7 +79,7 @@ export async function probeApiBase(
     );
     if (!res.ok) {
       cancelResponseBody(res);
-      return { ok: false, error: t("That URL did not look like a Aidex server") };
+      return { ok: false, error: t("That URL did not look like a Ai7 server") };
     }
     let body: HealthResponse;
     try {
@@ -93,7 +93,7 @@ export async function probeApiBase(
       body = {};
     }
     if (body.error || body.json?.ok !== true) {
-      return { ok: false, error: t("That URL did not look like a Aidex server") };
+      return { ok: false, error: t("That URL did not look like a Ai7 server") };
     }
     return parsed;
   } catch {

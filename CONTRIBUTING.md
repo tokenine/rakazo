@@ -1,6 +1,6 @@
-# Contributing to Aidex
+# Contributing to Ai7
 
-Thanks for helping improve Aidex. Keep changes focused and testable.
+Thanks for helping improve Ai7. Keep changes focused and testable.
 
 ## Run locally
 
