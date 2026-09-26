@@ -97,27 +97,41 @@ export async function runClientBrowserJs(payload: {
 }): Promise<KernelResult> {
   if (cdpPort === null) throw new Error("client browser CDP is not initialized");
   const timeoutMs = Math.min(Math.max(Number(payload.timeoutMs) || 60_000, 1_000), 120_000);
-  const hardStop = setTimeout(() => {
-    throw new Error(`client_js timed out after ${timeoutMs} ms`);
-  }, timeoutMs + 5_000);
+  let browser: import("playwright-core").Browser | null = null;
+  let page: import("playwright-core").Page | null = null;
+  let timedOut = false;
+  const timeoutResult: KernelResult = {
+    ok: false,
+    url: "",
+    title: "",
+    error: `client_js timed out after ${timeoutMs} ms — the page or step was too slow. Retry with a larger timeout_ms or break the work into smaller steps.`,
+  };
+  // A timeout must NEVER throw from a timer — an uncaught throw in the main
+  // process kills the whole app. Race the run against a graceful result.
+  const timeoutGate = new Promise<KernelResult>((resolve) => {
+    setTimeout(() => {
+      timedOut = true;
+      resolve(timeoutResult);
+    }, timeoutMs);
+  });
   try {
     const { chromium } = loadPlaywright();
-    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdpPort}`);
+    browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdpPort}`);
     const pages = browser
       .contexts()
       .flatMap((context: { pages(): unknown[] }) => context.pages()) as Array<
       import("playwright-core").Page
     >;
-    const eligible = pages.filter((page) => {
-      const url = page.url();
+    const eligible = pages.filter((candidate) => {
+      const url = candidate.url();
       if (url.startsWith("devtools://")) return false;
       if (payload.targetUrl) return url === payload.targetUrl;
       return appOrigin ? !url.startsWith(appOrigin) : true;
     });
     // Prefer a real page; a freshly opened pane sits at about:blank and is still
     // the user's tab — attaching is fine (page.goto navigates it).
-    const real = eligible.filter((page) => page.url() !== "about:blank");
-    const page = real[real.length - 1] ?? eligible[eligible.length - 1] ?? null;
+    const real = eligible.filter((candidate) => candidate.url() !== "about:blank");
+    page = real[real.length - 1] ?? eligible[eligible.length - 1] ?? null;
     if (!page) {
       return {
         ok: false,
@@ -129,18 +143,19 @@ export async function runClientBrowserJs(payload: {
     }
 
     const output: string[] = [];
+    const activePage: import("playwright-core").Page = page;
     const tab = {
-      page,
-      url: () => page.url(),
-      title: () => page.title(),
+      page: activePage,
+      url: () => activePage.url(),
+      title: () => activePage.title(),
       domSnapshot: async () =>
-        (await page
+        (await activePage
           .locator("body")
           .ariaSnapshot()
           .catch(() => null)) ??
-        (await page.evaluate(() => document.body?.innerText?.slice(0, 20_000) ?? "")),
+        (await activePage.evaluate(() => document.body?.innerText?.slice(0, 20_000) ?? "")),
       screenshot: async (options: { fullPage?: boolean } = {}) => {
-        const buffer = await page.screenshot({ type: "png", ...options });
+        const buffer = await activePage.screenshot({ type: "png", ...options });
         return { imageBase64: buffer.toString("base64"), imageMimeType: "image/png" };
       },
     };
@@ -160,24 +175,31 @@ export async function runClientBrowserJs(payload: {
       "tab",
       `"use strict";\nreturn (async () => {\n${payload.code}\n})();`,
     );
-    const returned = await run(agent, tab);
+    const runPromise: Promise<unknown> = run(agent, tab);
+    // The race may settle before the model's code does (timeout) — the loser's
+    // rejection must never become an unhandled rejection.
+    runPromise.catch(() => undefined);
+    const settled = await Promise.race([runPromise, timeoutGate]);
+    if (timedOut) return settled as KernelResult;
+    const returned = settled;
     let text = output.join("\n");
     if (returned !== undefined && returned !== null) {
       const rendered = typeof returned === "string" ? returned : JSON.stringify(returned, null, 2);
       text = text ? `${text}\n${rendered}` : rendered;
-      if (returned && typeof returned === "object" && returned.imageBase64) {
-        clearTimeout(hardStop);
+      if (returned && typeof returned === "object" && "imageBase64" in returned) {
         return {
           ok: true,
           url: page.url(),
           title: await page.title().catch(() => ""),
           text: text.slice(0, 400_000),
           imageBase64: String(returned.imageBase64).slice(0, 3_000_000),
-          imageMimeType: returned.imageMimeType === "image/jpeg" ? "image/jpeg" : "image/png",
+          imageMimeType:
+            (returned as { imageMimeType?: string }).imageMimeType === "image/jpeg"
+              ? "image/jpeg"
+              : "image/png",
         };
       }
     }
-    clearTimeout(hardStop);
     return {
       ok: true,
       url: page.url(),
@@ -185,12 +207,15 @@ export async function runClientBrowserJs(payload: {
       text: text.slice(0, 400_000),
     };
   } catch (error) {
-    clearTimeout(hardStop);
     return {
       ok: false,
-      url: "",
+      url: page?.url() ?? "",
       title: "",
       error: error instanceof Error ? error.message : String(error),
     };
+  } finally {
+    // Disconnect this call's CDP connection (never kills the app — for
+    // connectOverCDP browsers close() only disconnects).
+    await browser?.close().catch(() => undefined);
   }
 }
