@@ -36,15 +36,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-thai-tlwg \
     fonts-noto-core \
     fonts-noto-color-emoji \
-    sudo \
+    pcmanfm \
+    zip \
+    unzip \
+    jq \
+    less \
+    nano \
+    sqlite3 \
     dbus-x11 \
     xdg-utils \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --gid 1000 rakazo \
   && useradd --uid 1000 --gid rakazo --create-home --shell /bin/bash rakazo \
-  && install -d -m 0755 /etc/sudoers.d \
-  && printf '%s\n' 'rakazo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/rakazo \
-  && chmod 0440 /etc/sudoers.d/rakazo \
   && mkdir -p /etc/rakazo/fluxbox \
   && printf '%s\n' '#!/bin/sh' 'exec xsetroot -solid "#111113" "$@"' > /usr/bin/fbsetbg \
   && chmod +x /usr/bin/fbsetbg \
@@ -99,5 +102,8 @@ RUN install -d /usr/local/share/fonts/thai-google \
     done \
   && fc-cache -fs || true
 EXPOSE 7070 6080 6081 6082 6083 6084 6085 6086 6087 6088 6089 6090 6091 6092 6093 6094 6095
+# Containers run with CapDrop ALL + no-new-privileges (supervisor computer-spec):
+# agents can never gain root at runtime, so anything a task might need — fonts,
+# file manager, archive/JSON/SQLite tools — must be baked in above.
 USER 1000:1000
 CMD ["/usr/local/bin/rakazo-computer"]
