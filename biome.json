@@ -22,7 +22,8 @@
       "!**/data",
       "!**/*.astro",
       "!**/apps/www",
-      "!**/packages/contracts/src/expert-avatars.ts"
+      "!**/packages/contracts/src/expert-avatars.ts",
+      "!**/packages/contracts/src/cloudflare-skills.ts"
     ]
   },
   "formatter": {

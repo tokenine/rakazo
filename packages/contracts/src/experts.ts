@@ -8,6 +8,7 @@
  * preference; refine copy here without touching any flow code.
  */
 
+import { CLOUDFLARE_SKILLS } from "./cloudflare-skills.js";
 import type { ThinkingLevel } from "./domain.js";
 
 export type ExpertMcpPreset = {
@@ -50,6 +51,7 @@ export type ExpertSkillDefinition = {
 
 /** Skills bundled with the deployment; seeded into a space when an Expert is created. */
 export const EXPERT_SKILLS: Record<string, ExpertSkillDefinition> = {
+  ...CLOUDFLARE_SKILLS,
   "thaifi-wallet": {
     name: "thaifi-wallet",
     description:
@@ -284,7 +286,17 @@ export const EXPERT_CATALOG: ExpertDefinition[] = [
     modelId: null,
     thinkingLevel: null,
     mcpPresetKeys: ["github"],
-    skillKeys: ["thaifi-wallet", "control-browser"],
+    skillKeys: [
+      "thaifi-wallet",
+      "control-browser",
+      "workers-best-practices",
+      "agents-sdk",
+      "durable-objects",
+      "nextjs-on-cloudflare",
+      "sandbox-stable",
+      "sandbox-next",
+      "sandbox-migrate-to-next",
+    ],
     instructions: CODER_INSTRUCTIONS,
   },
   {
@@ -300,7 +312,24 @@ export const EXPERT_CATALOG: ExpertDefinition[] = [
     modelId: null,
     thinkingLevel: null,
     mcpPresetKeys: ["cloudflare"],
-    skillKeys: ["thaifi-wallet", "control-browser"],
+    skillKeys: [
+      "thaifi-wallet",
+      "control-browser",
+      "wrangler",
+      "workers-best-practices",
+      "agents-sdk",
+      "durable-objects",
+      "cloudflare-email-service",
+      "cloudflare-one",
+      "cloudflare-one-migrations",
+      "cloudflare",
+      "turnstile-spin",
+      "web-perf",
+      "nextjs-on-cloudflare",
+      "sandbox-stable",
+      "sandbox-next",
+      "sandbox-migrate-to-next",
+    ],
     instructions: CLOUDOPS_INSTRUCTIONS,
   },
   {
