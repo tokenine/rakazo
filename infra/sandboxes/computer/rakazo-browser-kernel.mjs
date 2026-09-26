@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { writeFileSync } from "node:fs";
 /**
  * Browser JS kernel for the `js` tool — ZCode-style: the model's code runs
  * with Playwright locators against the live Chromium on this computer's

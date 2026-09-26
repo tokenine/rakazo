@@ -26,7 +26,6 @@ export function ClientBrowserPanel() {
     addEventListener(type: string, listener: () => void): void;
     removeEventListener(type: string, listener: () => void): void;
   } | null>(null);
-  const [currentUrl, setCurrentUrl] = useState("");
   const [addressInput, setAddressInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -37,7 +36,6 @@ export function ClientBrowserPanel() {
     const webview = webviewRef.current;
     if (!webview) return;
     const onDidNavigate = () => {
-      setCurrentUrl(webview.getURL());
       setAddressInput(webview.getURL());
       setLoading(false);
     };

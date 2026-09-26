@@ -530,7 +530,7 @@ export async function createApp(
     }
     const { matched, response } = await rpc.handle(c.req.raw, {
       prefix: "/rpc",
-      context: { actor, signal: c.req.raw.signal },
+      context: { actor, signal: c.req.raw.signal, requestOrigin: rpcRequestOrigin(c.req.raw, env) },
     });
     if (matched) return c.newResponse(response.body, response);
     await next();
@@ -889,6 +889,48 @@ function isTrustedOrigin(origin: string, env: AppEnv) {
 
 function isLoopbackHost(host: string): boolean {
   return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+}
+
+/**
+ * The trusted origin this RPC request actually came from, for sealing
+ * browser-facing capability URLs (computer screen embeds). Clients on extra
+ * origins (e.g. a Cloudflare tunnel in front of a LAN web origin) must get a
+ * same-origin embed URL, otherwise Chromium blocks the http-in-https iframe and
+ * the panel renders black. Untrusted or non-http(s) candidates fall through to
+ * the caller's fallback (env.webOrigin).
+ */
+export function rpcRequestOrigin(request: Request, env: AppEnv): string | undefined {
+  const extra = new Set(
+    env.extraOrigins.map((value) => {
+      try {
+        return new URL(value).origin;
+      } catch {
+        return value;
+      }
+    }),
+  );
+  const origin = request.headers.get("origin")?.trim();
+  const host = request.headers.get("host")?.trim();
+  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const candidates = [origin, host ? `${proto || "http"}://${host}` : undefined];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== "http:" && url.protocol !== "https:") continue;
+      const normalized = url.origin;
+      const trusted =
+        normalized === env.webOrigin ||
+        normalized === env.apiUrl ||
+        normalized === env.authUrl ||
+        extra.has(normalized) ||
+        isLoopbackHost(url.hostname);
+      if (trusted) return normalized;
+    } catch {
+      // Not a parseable origin; try the next candidate.
+    }
+  }
+  return undefined;
 }
 
 function sessionHeaders(request: Request) {

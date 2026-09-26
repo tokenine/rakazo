@@ -32,11 +32,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     fonts-liberation \
     fonts-dejavu-core \
+    fontconfig \
+    fonts-thai-tlwg \
+    fonts-noto-core \
+    fonts-noto-color-emoji \
+    sudo \
     dbus-x11 \
     xdg-utils \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --gid 1000 rakazo \
   && useradd --uid 1000 --gid rakazo --create-home --shell /bin/bash rakazo \
+  && install -d -m 0755 /etc/sudoers.d \
+  && printf '%s\n' 'rakazo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/rakazo \
+  && chmod 0440 /etc/sudoers.d/rakazo \
   && mkdir -p /etc/rakazo/fluxbox \
   && printf '%s\n' '#!/bin/sh' 'exec xsetroot -solid "#111113" "$@"' > /usr/bin/fbsetbg \
   && chmod +x /usr/bin/fbsetbg \
@@ -74,6 +82,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
   && npm install -g thaifi-wallet-cli@0.3.6 playwright-core@1.59.1 \
   && npm cache clean --force \
   && rm -rf /var/lib/apt/lists/*
+# Popular Thai Google families on top of the TLWG/Noto base, so Thai sites in
+# Chromium render with real Thai typefaces (Sarabun, Prompt, Kanit, ...).
+# Best-effort: a failed download just leaves fewer families behind.
+RUN install -d /usr/local/share/fonts/thai-google \
+  && for fam in Sarabun Prompt Kanit Mitr "Bai+Jamjuree" "Chakra+Petch" K2D KoHo Krub \
+                Pridi Maitree "IBM+Plex+Sans+Thai" "IBM+Plex+Sans+Thai+Looped" Anuphan "Noto+Sans+Thai"; do \
+      css=$(curl -fsSL "https://fonts.googleapis.com/css2?family=${fam}:wght@400;500;700" || true); \
+      [ -n "$css" ] || continue; \
+      i=0; \
+      for url in $(printf '%s\n' "$css" | grep -oE 'https://[^)]+\.ttf' | sort -u); do \
+        i=$((i + 1)); \
+        curl -fsSL -o "/usr/local/share/fonts/thai-google/$(printf '%s' "$fam" | tr -d '+')-${i}.ttf" "$url" \
+          || rm -f "/usr/local/share/fonts/thai-google/$(printf '%s' "$fam" | tr -d '+')-${i}.ttf"; \
+      done; \
+    done \
+  && fc-cache -fs || true
 EXPOSE 7070 6080 6081 6082 6083 6084 6085 6086 6087 6088 6089 6090 6091 6092 6093 6094 6095
 USER 1000:1000
 CMD ["/usr/local/bin/rakazo-computer"]

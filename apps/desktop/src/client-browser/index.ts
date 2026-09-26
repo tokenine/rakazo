@@ -9,14 +9,13 @@
  */
 
 import { createRequire } from "node:module";
-import { app, type BrowserWindow, ipcMain } from "electron";
+import { app, ipcMain } from "electron";
 import { clearEmbeddedBrowserData, importChromeBrowserData } from "./browserDataManager.js";
 import { logger } from "./logger-shim.js";
 
 export const CLIENT_BROWSER_PARTITION = "persist:aidex-client-browser";
 
 let cdpPort: number | null = null;
-let mainWindow: (() => BrowserWindow | null) | null = null;
 let appOrigin = "";
 
 /** The bundled renderer's origin — used to tell app tabs from browsing tabs. */
@@ -31,8 +30,7 @@ export function setupClientBrowserCdp(): void {
   app.commandLine.appendSwitch("remote-allow-origins", "http://127.0.0.1");
 }
 
-export function registerClientBrowserIpc(getWindow: () => BrowserWindow | null): void {
-  mainWindow = getWindow;
+export function registerClientBrowserIpc(): void {
   ipcMain.handle("desktop.clientBrowser.importChrome", async () => {
     const result = await importChromeBrowserData({ logger, platform: process.platform });
     logger.info("[client-browser] chrome import finished", { success: result.success });
