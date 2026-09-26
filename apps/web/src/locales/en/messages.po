@@ -565,19 +565,9 @@ msgstr "Avatars"
 msgid "Back"
 msgstr "Back"
 
-#: src/pages/Shell.tsx:3285
-#~ msgid "Back to computer"
-#~ msgstr "Back to computer"
-
 #: src/pages/Auth.tsx:118
 msgid "Back to home"
 msgstr "Back to home"
-
-#: src/pages/Auth.tsx:126
-#: src/pages/Auth.tsx:235
-#: src/pages/Auth.tsx:320
-#~ msgid "Back to sign in"
-#~ msgstr "Back to sign in"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx:47
 msgid "Base URL"
@@ -621,10 +611,6 @@ msgstr "Bot screen"
 #: src/pages/Shell.tsx:3479
 msgid "Bot screen preview"
 msgstr "Bot screen preview"
-
-#: src/pages/Shell.tsx:3157
-#~ msgid "Bot settings"
-#~ msgstr "Bot settings"
 
 #: src/pages/MessagingSettingsOverlay.tsx:151
 msgid "Bot to link"
@@ -692,14 +678,6 @@ msgstr "cancelled"
 msgid "Cancelled"
 msgstr "Cancelled"
 
-#: src/pages/AccountSettingsOverlay.tsx:327
-#~ msgid "Change password"
-#~ msgstr "Change password"
-
-#: src/pages/AccountSettingsOverlay.tsx:327
-#~ msgid "Changing…"
-#~ msgstr "Changing…"
-
 #: src/pages/MessagingSettingsOverlay.tsx:190
 msgid "Channels"
 msgstr "Channels"
@@ -756,17 +734,13 @@ msgstr "Choose a bot shape, color, or upload an image"
 msgid "Choose a bot…"
 msgstr "Choose a bot…"
 
-#: src/pages/Auth.tsx:281
-#~ msgid "Choose a new password"
-#~ msgstr "Choose a new password"
-
 #: src/pages/shell/avatar-studio-popover.tsx:271
 msgid "Choose file"
 msgstr "Choose file"
 
 #: src/pages/ModelSettingsOverlay.tsx:383
-msgid "Choose which connected model Rakazo uses."
-msgstr "Choose which connected model Rakazo uses."
+msgid "Choose which connected model Aidex uses."
+msgstr "Choose which connected model Aidex uses."
 
 #: src/pages/shell/dialogs.tsx:319
 msgid "Clear"
@@ -876,9 +850,6 @@ msgstr "Collapse {0}"
 msgid "Color"
 msgstr "Color"
 
-#~ msgid "Color {0}"
-#~ msgstr "Color {0}"
-
 #: src/pages/shell/avatar-studio-popover.tsx:222
 msgid "Color {color}"
 msgstr "Color {color}"
@@ -937,11 +908,6 @@ msgstr "Configured servers"
 #: src/pages/McpServersOverlay.tsx:506
 msgid "Confirm delete"
 msgstr "Confirm delete"
-
-#: src/pages/AccountSettingsOverlay.tsx:310
-#: src/pages/Auth.tsx:301
-#~ msgid "Confirm password"
-#~ msgstr "Confirm password"
 
 #: src/components/integrations/IntegrationSetup.tsx:222
 #: src/components/integrations/IntegrationSetup.tsx:267
@@ -1064,10 +1030,6 @@ msgstr "Could not approve this server"
 #: src/pages/shell/message-cards.tsx:191
 msgid "Could not authorize this app"
 msgstr "Could not authorize this app"
-
-#: src/pages/AccountSettingsOverlay.tsx:267
-#~ msgid "Could not change password"
-#~ msgstr "Could not change password"
 
 #: src/pages/ModelSettingsOverlay.tsx:274
 msgid "Could not change the default model"
@@ -1288,10 +1250,6 @@ msgstr "Could not rename section"
 msgid "Could not render chart"
 msgstr "Could not render chart"
 
-#: src/pages/Auth.tsx:269
-#~ msgid "Could not reset password"
-#~ msgstr "Could not reset password"
-
 #: src/pages/PluginsOverlay.tsx:285
 #: src/pages/PluginsOverlay.tsx:308
 msgid "Could not revoke connection"
@@ -1346,10 +1304,6 @@ msgstr "Could not save this choice"
 #: src/pages/PluginsOverlay.tsx:356
 msgid "Could not search catalog"
 msgstr "Could not search catalog"
-
-#: src/pages/Auth.tsx:84
-#~ msgid "Could not send reset email"
-#~ msgstr "Could not send reset email"
 
 #: src/pages/CallView.tsx:113
 msgid "Could not send that"
@@ -1422,10 +1376,6 @@ msgstr "Create"
 msgid "Create a section and move {0} into it."
 msgstr "Create a section and move {0} into it."
 
-#: src/pages/Auth.tsx:215
-#~ msgid "Create account"
-#~ msgstr "Create account"
-
 #: src/pages/GroupPanel.tsx:144
 msgid "Create group"
 msgstr "Create group"
@@ -1456,10 +1406,6 @@ msgstr "Create space"
 #: src/pages/Auth.tsx:34
 msgid "Create your {BRAND_NAME}"
 msgstr "Create your {BRAND_NAME}"
-
-#: src/pages/Auth.tsx:38
-#~ msgid "Create your Rakazo"
-#~ msgstr "Create your Rakazo"
 
 #: src/components/AskCard.tsx:21
 msgid "Created"
@@ -1492,10 +1438,6 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx:273
 msgid "Cron expression"
 msgstr "Cron expression"
-
-#: src/pages/AccountSettingsOverlay.tsx:298
-#~ msgid "Current password"
-#~ msgstr "Current password"
 
 #: src/pages/shell/dialogs.tsx:81
 msgid "Customer support"
@@ -1879,10 +1821,6 @@ msgstr "Finishing MCP connection…"
 msgid "Flag unexpected actions"
 msgstr "Flag unexpected actions"
 
-#: src/pages/Auth.tsx:196
-#~ msgid "Forgot password?"
-#~ msgstr "Forgot password?"
-
 #: src/pages/ModelSettingsOverlay.tsx:1205
 msgid "Free"
 msgstr "Free"
@@ -1969,10 +1907,6 @@ msgstr "Hi, this is how I'll sound when I read replies out loud."
 #: src/pages/Shell.tsx:3179
 msgid "Hide bots"
 msgstr "Hide bots"
-
-#: src/pages/Auth.tsx:186
-#~ msgid "Hide password"
-#~ msgstr "Hide password"
 
 #: src/pages/ModelSettingsOverlay.tsx:590
 #: src/pages/Onboarding.tsx:511
@@ -2474,11 +2408,6 @@ msgstr "New group"
 msgid "New open-work item"
 msgstr "New open-work item"
 
-#: src/pages/AccountSettingsOverlay.tsx:304
-#: src/pages/Auth.tsx:295
-#~ msgid "New password"
-#~ msgstr "New password"
-
 #: src/pages/BotContextMenu.tsx:114
 #: src/pages/shell/dialogs.tsx:180
 msgid "New section"
@@ -2744,27 +2673,13 @@ msgstr "Park"
 msgid "Password"
 msgstr "Password"
 
-#: src/pages/Auth.tsx:76
-#~ msgid "Password recovery is not configured for this server"
-#~ msgstr "Password recovery is not configured for this server"
-
-#: src/pages/AccountSettingsOverlay.tsx:329
-#: src/pages/Auth.tsx:285
-#~ msgid "Password updated"
-#~ msgstr "Password updated"
-
-#: src/pages/AccountSettingsOverlay.tsx:254
-#: src/pages/Auth.tsx:261
-#~ msgid "Passwords do not match"
-#~ msgstr "Passwords do not match"
-
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste a replacement key"
 msgstr "Paste a replacement key"
 
 #: src/pages/ModelSettingsOverlay.tsx:503
-msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
+msgid "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
+msgstr "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
 
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste your API key"
@@ -3044,14 +2959,6 @@ msgstr "Reset computer"
 msgid "Reset computer?"
 msgstr "Reset computer?"
 
-#: src/pages/Auth.tsx:317
-#~ msgid "Reset password"
-#~ msgstr "Reset password"
-
-#: src/pages/Auth.tsx:40
-#~ msgid "Reset your password"
-#~ msgstr "Reset your password"
-
 #: src/components/ComputerMaintenanceActions.tsx:100
 #: src/components/ComputerMaintenanceActions.tsx:140
 msgid "Resetting…"
@@ -3085,8 +2992,8 @@ msgid "Retry screen"
 msgstr "Retry screen"
 
 #: src/pages/McpOAuthCallback.tsx:62
-msgid "Return to Rakazo"
-msgstr "Return to Rakazo"
+msgid "Return to Aidex"
+msgstr "Return to Aidex"
 
 #. placeholder {0}: doc.revision
 #: src/pages/KnowledgeSection.tsx:180
@@ -3273,10 +3180,6 @@ msgstr "Send answer"
 msgid "Send it"
 msgstr "Send it"
 
-#: src/pages/Auth.tsx:213
-#~ msgid "Send reset link"
-#~ msgstr "Send reset link"
-
 #: src/components/AskCard.tsx:129
 #: src/components/AskCard.tsx:176
 #: src/components/AskCard.tsx:193
@@ -3358,10 +3261,6 @@ msgstr "Show computer"
 msgid "Show more"
 msgstr "Show more"
 
-#: src/pages/Auth.tsx:186
-#~ msgid "Show password"
-#~ msgstr "Show password"
-
 #: src/pages/Shell.tsx:3447
 msgid "Show settings"
 msgstr "Show settings"
@@ -3376,10 +3275,6 @@ msgstr "Sign in"
 #: src/pages/Auth.tsx:36
 msgid "Sign in to {BRAND_NAME}"
 msgstr "Sign in to {BRAND_NAME}"
-
-#: src/pages/Auth.tsx:36
-#~ msgid "Sign in to Rakazo"
-#~ msgstr "Sign in to Rakazo"
 
 #: src/pages/Auth.tsx:210
 #: src/pages/Welcome.tsx:35
@@ -3623,10 +3518,6 @@ msgstr "this Mac"
 msgid "This permanently removes every message and stops current work. The chat remains available."
 msgstr "This permanently removes every message and stops current work. The chat remains available."
 
-#: src/pages/Auth.tsx:253
-#~ msgid "This reset link is invalid or expired"
-#~ msgstr "This reset link is invalid or expired"
-
 #: src/pages/shell/message-cards.tsx:351
 msgid "This server cannot be assigned without a bot."
 msgstr "This server cannot be assigned without a bot."
@@ -3644,8 +3535,8 @@ msgid "This server is already connected. Disconnect it first to authorize again.
 msgstr "This server is already connected. Disconnect it first to authorize again."
 
 #: src/pages/ModelSettingsOverlay.tsx:839
-msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
+msgid "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
+msgstr "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
 
 #: src/pages/RoutineSchedule.tsx:217
 msgid "Time of day"

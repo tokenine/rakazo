@@ -1,4 +1,4 @@
-# Self-hosting Rakazo
+# Self-hosting Aidex
 
 The signed-in product is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor, E2B, Daytona, CreateOS, or Box). It is not a static site. The marketing site in `apps/www` can be hosted separately.
 
@@ -136,7 +136,7 @@ Keep an installation without email on a trusted local network.
 
 Sign-in is passwordless: every login emails a short one-time code, so a deployment
 **must** configure a transactional email provider before users can sign in.
-Rakazo uses a provider-neutral contract and ships a Cloudflare Email Sending
+Aidex uses a provider-neutral contract and ships a Cloudflare Email Sending
 adapter and an SMTP adapter, so Cloudflare, Amazon SES, Resend, and self-hosted
 SMTP servers use the same configuration. For Cloudflare, onboard the sending
 domain first (`wrangler email sending enable <domain>`), then:
@@ -144,21 +144,21 @@ domain first (`wrangler email sending enable <domain>`), then:
 ```env
 CLOUDFLARE_EMAIL_API_TOKEN=replace-with-email-sending-token
 CLOUDFLARE_ACCOUNT_ID=replace-with-account-id
-EMAIL_FROM=Rakazo <no-reply@example.com>
+EMAIL_FROM=Aidex <no-reply@example.com>
 ```
 
 SMTP works the same way:
 
 ```env
 SMTP_URL=smtps://smtp-user:replace-with-password@smtp.example.com:465
-EMAIL_FROM=Rakazo <no-reply@example.com>
+EMAIL_FROM=Aidex <no-reply@example.com>
 ```
 
 For Resend, use `smtp.resend.com`, username `resend`, and an API key as the password. For Amazon
 SES, use the regional SMTP endpoint and SES SMTP credentials; these are different from ordinary AWS
 access keys. Verify the sender/domain with the provider before testing delivery. Keep credentials in
 `.env`, never in tracked files. `smtps://` uses implicit TLS; `smtp://` is also supported but requires
-STARTTLS. Rakazo rejects configuration that disables TLS or certificate verification.
+STARTTLS. Aidex rejects configuration that disables TLS or certificate verification.
 
 Local source development can use the offline email emulator instead. It captures email without
 contacting a provider:
@@ -215,7 +215,7 @@ RAKAZO_LOCAL_MAX_TOKENS=4096
 RAKAZO_LOCAL_VISION_MODELS=qwen3-vl
 ```
 
-The loopback default is suitable when running Rakazo from a source checkout. From containers,
+The loopback default is suitable when running Aidex from a source checkout. From containers,
 prefer a stable LAN RFC1918 address (not Compose service DNS alone). On Docker Desktop,
 `host.docker.internal` also works.
 On Docker Desktop, a bot computer shell can often reach services bound to host `127.0.0.1`
@@ -223,7 +223,7 @@ through that same hostname. Do not run sensitive unauthenticated services on loo
 bots run, or firewall / block that path. Linux does not get `host.docker.internal` the same
 way by default.
 Only configure an endpoint you control: prompts, attachments, and tool results sent to that model
-leave Rakazo through this URL. Leave `RAKAZO_LOCAL_MODELS` blank to disable the provider.
+leave Aidex through this URL. Leave `RAKAZO_LOCAL_MODELS` blank to disable the provider.
 
 Each user can also connect their own OpenAI-compatible endpoint from **Connect a model** /
 **Settings → Models** on web and mobile. Choose **OpenAI-compatible**, enter the server base URL
@@ -241,7 +241,7 @@ Existing connections default to disabled. Reconnect former Qwen-list or deployme
 via **Settings → Models** and turn it on; the old environment list is no longer read.
 
 Enabled connections default to medium thinking. Web and desktop expose **Thinking** in a bot's
-advanced settings; mobile inherits the same backend policy. Rakazo sends standard
+advanced settings; mobile inherits the same backend policy. Aidex sends standard
 `reasoning_effort` (`minimal`, `low`, `medium`, `high`, or `none` when off); the server owns
 model-specific translation. Leave **Supports thinking** off when the server lacks standard effort
 support. Existing token limits still apply; effort is not a separate reasoning-token budget.
@@ -260,17 +260,17 @@ The Electron desktop app is a client of the same API. Docker and E2B still apply
 - **Docker** is the quick-start default for published images and for a source checkout / full local
   Compose stack. Workspace bots share a persistent Team Computer by default; Private computers are
   optional. Keep the supervisor private, as the included Compose files do.
-- **E2B** runs bot computers away from the Rakazo host and is a good choice for public or multi-user
-  production deployments. Rakazo checkpoints the portable workspace and browser-profile directory to
+- **E2B** runs bot computers away from the Aidex host and is a good choice for public or multi-user
+  production deployments. Aidex checkpoints the portable workspace and browser-profile directory to
   `DATA_DIR`; the E2B disk is a runtime cache, not the durable source of truth.
 - **Daytona** provides the same remote-computer contract through Daytona sandboxes. Configure
   `DAYTONA_API_KEY` and optionally `DAYTONA_API_URL` / `DAYTONA_TARGET`.
 - **CreateOS** provides the same remote-computer contract through CreateOS desktop sandboxes.
   Configure `CREATEOS_SANDBOX_API_KEY` and optionally `CREATEOS_SANDBOX_BASE_URL`,
-  `CREATEOS_SANDBOX_SHAPE`, or `CREATEOS_SANDBOX_ROOTFS`. Rakazo defaults to
+  `CREATEOS_SANDBOX_SHAPE`, or `CREATEOS_SANDBOX_ROOTFS`. Aidex defaults to
   `https://api.sb.createos.sh`, `s-2vcpu-2gb`, and `desktop:1`.
 - **Box by ASCII** provides a managed Linux desktop through `BOX_API_KEY` and optionally
-  `BOX_API_URL`. Rakazo always creates or resumes boxes with `noEnv: true`, keeps the portable
+  `BOX_API_URL`. Aidex always creates or resumes boxes with `noEnv: true`, keeps the portable
   workspace under `/home/user/rakazo-home`, and refreshes a two-hour TTL. Box uses the shared Linux
   desktop runtime and protected port routes for concurrent bot desktops. Each bot has its own
   persistent Chrome profile; logins are not shared between bots.

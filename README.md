@@ -1,15 +1,15 @@
-# Rakazo
+# Aidex
 
 [![GitHub stars](https://img.shields.io/github/stars/elie222/rakazo?labelColor=black&style=for-the-badge&color=2563EB)](https://github.com/elie222/rakazo/stargazers)
 [![Discord](https://img.shields.io/badge/Discord-Join%20the%20community-5865F2?labelColor=black&style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/RWwKa2Sn7h)
 
-![Rakazo — AI teammates you actually own](./docs/readme-hero.png)
+![Aidex — AI teammates you actually own](./docs/readme-hero.png)
 
-Rakazo is an open-source platform for running persistent AI teammates. It is available on the web,
+Aidex is an open-source platform for running persistent AI teammates. It is available on the web,
 as an Electron desktop app, and through an Expo mobile app. Bring your own model and computer
 provider, or run the complete stack locally.
 
-Rakazo is in beta. Learn more at [rakazo.com](https://rakazo.com).
+Aidex is in beta. Learn more at [rakazo.com](https://rakazo.com).
 
 ## Features
 
@@ -49,7 +49,7 @@ curl -fsSLO https://raw.githubusercontent.com/elie222/rakazo/main/infra/compose/
 bash install-images.sh
 ```
 
-The installer downloads the Compose files, creates `.env` with random secrets, and starts Rakazo.
+The installer downloads the Compose files, creates `.env` with random secrets, and starts Aidex.
 It preserves an existing `.env` when rerun.
 
 Open [http://127.0.0.1:5173](http://127.0.0.1:5173), create an account, and connect a model.
@@ -142,7 +142,7 @@ and `desktop:1`.
 
 ## Desktop and mobile
 
-The Electron and Expo apps are clients of the same Rakazo API used by the web app.
+The Electron and Expo apps are clients of the same Aidex API used by the web app.
 
 With the development stack running, launch Electron with:
 
@@ -150,18 +150,18 @@ With the development stack running, launch Electron with:
 pnpm --filter @rakazo/desktop dev
 ```
 
-On first run the desktop app asks whether to run Rakazo on this computer or connect to an existing
+On first run the desktop app asks whether to run Aidex on this computer or connect to an existing
 server. **This computer** installs and starts the published images with Docker Compose (the same
 files as `infra/compose/install-images.sh`) under the app's data directory, so Docker Desktop,
 OrbStack, or Docker Engine must be installed; the app links to them when it is not. Installed
 builds pin the image tag to their own version; unpackaged builds pull `edge`. Developers running
 `pnpm dev` should pick **Existing instance** with `http://127.0.0.1:5173` instead. Public servers
 must use HTTPS; HTTP is accepted only for loopback and private LAN addresses (not link-local). The
-app verifies Rakazo's health endpoint before saving, and later launches go straight to that
+app verifies Aidex's health endpoint before saving, and later launches go straight to that
 instance. The stack keeps running after the app quits; **Stop Local Stack** in the application
 menu turns it off.
 
-Use **Change Rakazo Server…** in the application menu to reconnect. Closing that window without
+Use **Change Aidex Server…** in the application menu to reconnect. Closing that window without
 saving returns to the previous instance. For development automation, set `RAKAZO_WEB_URL` to point
 the shell somewhere else without changing the saved instance, or `RAKAZO_FORCE_SETUP=1` to run
 setup again.
@@ -213,6 +213,6 @@ Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) befo
 request. For security vulnerabilities, follow [SECURITY.md](./SECURITY.md) instead of filing a public
 issue.
 
-Rakazo is licensed under the [Apache License 2.0](./LICENSE).
+Aidex is licensed under the [Apache License 2.0](./LICENSE).
 
-Questions and ideas are welcome in the [Rakazo Discord community](https://discord.gg/RWwKa2Sn7h).
+Questions and ideas are welcome in the [Aidex Discord community](https://discord.gg/RWwKa2Sn7h).

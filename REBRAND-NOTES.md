@@ -82,8 +82,14 @@ value automatically.
 scripts/rebrand-display.sh "NewName"
 ```
 
-The script sed-replaces the capitalized word `Rakazo` in the targets listed
-above and skips technical identifiers. Review the diff — especially
+The script sed-replaces the standalone capitalized word `Rakazo` (word-boundary
+match, so `RakazoDesktop`/`isRakazoHealth` and lowercase identifiers survive),
+covers the targets listed above **plus** `apps/web/src/pages`,
+`apps/web/e2e`, `apps/desktop/src`, `apps/desktop/e2e`, and `apps/mobile/app`
++ `apps/mobile/lib` (mobile `t("…")` ids contain the brand word and must match
+the swept ru/zh catalogs). Icon asset paths (`…/assets/Rakazo.icon`) are
+re-pointed back to the existing artwork automatically — swap them only when
+the logo itself changes. Review the diff — especially
 `apps/desktop/package.json` (`productName` only must change; `appId` must not)
 and `apps/mobile/app.json` (display `name` only; `bundleIdentifier`/`package`
 /`scheme` must not).

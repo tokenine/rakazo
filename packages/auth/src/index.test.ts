@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@rakazo/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { blockedAuthPaths, buildTrustedOrigins, otpEmail, resolveSignupPolicy } from "./index.js";
 
@@ -39,7 +40,7 @@ describe("otpEmail", () => {
 
     expect(message).toMatchObject({
       to: "ada@example.test",
-      subject: "Rakazo sign-in code: 123456",
+      subject: `${BRAND_NAME} sign-in code: 123456`,
     });
     expect(message.text).toContain("123456");
     expect(message.html).toContain("123456");

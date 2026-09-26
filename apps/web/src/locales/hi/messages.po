@@ -565,19 +565,9 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: src/pages/Shell.tsx:3285
-#~ msgid "Back to computer"
-#~ msgstr "कंप्यूटर पर वापस जाएं"
-
 #: src/pages/Auth.tsx:118
 msgid "Back to home"
 msgstr ""
-
-#: src/pages/Auth.tsx:126
-#: src/pages/Auth.tsx:235
-#: src/pages/Auth.tsx:320
-#~ msgid "Back to sign in"
-#~ msgstr "साइन इन पर वापस जाएँ"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx:47
 msgid "Base URL"
@@ -621,10 +611,6 @@ msgstr "बॉट स्क्रीन"
 #: src/pages/Shell.tsx:3479
 msgid "Bot screen preview"
 msgstr "बॉट स्क्रीन प्रीव्यू"
-
-#: src/pages/Shell.tsx:3157
-#~ msgid "Bot settings"
-#~ msgstr "बॉट सेटिंग्स"
 
 #: src/pages/MessagingSettingsOverlay.tsx:151
 msgid "Bot to link"
@@ -692,14 +678,6 @@ msgstr "रद्द"
 msgid "Cancelled"
 msgstr "रद्द किया गया"
 
-#: src/pages/AccountSettingsOverlay.tsx:327
-#~ msgid "Change password"
-#~ msgstr "पासवर्ड बदलें"
-
-#: src/pages/AccountSettingsOverlay.tsx:327
-#~ msgid "Changing…"
-#~ msgstr "बदला जा रहा है…"
-
 #: src/pages/MessagingSettingsOverlay.tsx:190
 msgid "Channels"
 msgstr ""
@@ -756,17 +734,13 @@ msgstr "बॉट का आकार और रंग चुनें, या �
 msgid "Choose a bot…"
 msgstr ""
 
-#: src/pages/Auth.tsx:281
-#~ msgid "Choose a new password"
-#~ msgstr "नया पासवर्ड चुनें"
-
 #: src/pages/shell/avatar-studio-popover.tsx:271
 msgid "Choose file"
 msgstr "फ़ाइल चुनें"
 
 #: src/pages/ModelSettingsOverlay.tsx:383
-msgid "Choose which connected model Rakazo uses."
-msgstr "चुनें कि Rakazo किस कनेक्टेड मॉडल का उपयोग करे।"
+msgid "Choose which connected model Aidex uses."
+msgstr "चुनें कि Aidex किस कनेक्टेड मॉडल का उपयोग करे।"
 
 #: src/pages/shell/dialogs.tsx:319
 msgid "Clear"
@@ -876,9 +850,6 @@ msgstr ""
 msgid "Color"
 msgstr "रंग"
 
-#~ msgid "Color {0}"
-#~ msgstr "रंग {0}"
-
 #: src/pages/shell/avatar-studio-popover.tsx:222
 msgid "Color {color}"
 msgstr "रंग {color}"
@@ -937,11 +908,6 @@ msgstr "कॉन्फ़िगर किए गए सर्वर"
 #: src/pages/McpServersOverlay.tsx:506
 msgid "Confirm delete"
 msgstr "डिलीट की पुष्टि करें"
-
-#: src/pages/AccountSettingsOverlay.tsx:310
-#: src/pages/Auth.tsx:301
-#~ msgid "Confirm password"
-#~ msgstr "पासवर्ड की पुष्टि करें"
 
 #: src/components/integrations/IntegrationSetup.tsx:222
 #: src/components/integrations/IntegrationSetup.tsx:267
@@ -1064,10 +1030,6 @@ msgstr "इस सर्वर को अनुमोदित नहीं क�
 #: src/pages/shell/message-cards.tsx:191
 msgid "Could not authorize this app"
 msgstr "इस ऐप को ऑथराइज़ नहीं किया जा सका"
-
-#: src/pages/AccountSettingsOverlay.tsx:267
-#~ msgid "Could not change password"
-#~ msgstr "पासवर्ड बदला नहीं जा सका"
 
 #: src/pages/ModelSettingsOverlay.tsx:274
 msgid "Could not change the default model"
@@ -1288,10 +1250,6 @@ msgstr "अनुभाग का नाम नहीं बदला जा स
 msgid "Could not render chart"
 msgstr "चार्ट रेंडर नहीं हो सका"
 
-#: src/pages/Auth.tsx:269
-#~ msgid "Could not reset password"
-#~ msgstr "पासवर्ड रीसेट नहीं किया जा सका"
-
 #: src/pages/PluginsOverlay.tsx:285
 #: src/pages/PluginsOverlay.tsx:308
 msgid "Could not revoke connection"
@@ -1346,10 +1304,6 @@ msgstr "यह विकल्प सहेजा नहीं जा सका"
 #: src/pages/PluginsOverlay.tsx:356
 msgid "Could not search catalog"
 msgstr ""
-
-#: src/pages/Auth.tsx:84
-#~ msgid "Could not send reset email"
-#~ msgstr "रीसेट ईमेल नहीं भेजा जा सका"
 
 #: src/pages/CallView.tsx:113
 msgid "Could not send that"
@@ -1422,10 +1376,6 @@ msgstr "बनाएं"
 msgid "Create a section and move {0} into it."
 msgstr "एक सेक्शन बनाएं और {0} को उसमें ले जाएं।"
 
-#: src/pages/Auth.tsx:215
-#~ msgid "Create account"
-#~ msgstr "खाता बनाएं"
-
 #: src/pages/GroupPanel.tsx:144
 msgid "Create group"
 msgstr "समूह बनाएं"
@@ -1456,10 +1406,6 @@ msgstr ""
 #: src/pages/Auth.tsx:34
 msgid "Create your {BRAND_NAME}"
 msgstr ""
-
-#: src/pages/Auth.tsx:38
-#~ msgid "Create your Rakazo"
-#~ msgstr "अपना Rakazo बनाएं"
 
 #: src/components/AskCard.tsx:21
 msgid "Created"
@@ -1492,10 +1438,6 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx:273
 msgid "Cron expression"
 msgstr "Cron एक्सप्रेशन"
-
-#: src/pages/AccountSettingsOverlay.tsx:298
-#~ msgid "Current password"
-#~ msgstr "वर्तमान पासवर्ड"
 
 #: src/pages/shell/dialogs.tsx:81
 msgid "Customer support"
@@ -1879,10 +1821,6 @@ msgstr "MCP कनेक्शन पूरा हो रहा है…"
 msgid "Flag unexpected actions"
 msgstr ""
 
-#: src/pages/Auth.tsx:196
-#~ msgid "Forgot password?"
-#~ msgstr "पासवर्ड भूल गए?"
-
 #: src/pages/ModelSettingsOverlay.tsx:1205
 msgid "Free"
 msgstr ""
@@ -1969,10 +1907,6 @@ msgstr "नमस्ते, उत्तर पढ़कर सुनाते �
 #: src/pages/Shell.tsx:3179
 msgid "Hide bots"
 msgstr ""
-
-#: src/pages/Auth.tsx:186
-#~ msgid "Hide password"
-#~ msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx:590
 #: src/pages/Onboarding.tsx:511
@@ -2474,11 +2408,6 @@ msgstr "नया समूह"
 msgid "New open-work item"
 msgstr "नया खुला-कार्य आइटम"
 
-#: src/pages/AccountSettingsOverlay.tsx:304
-#: src/pages/Auth.tsx:295
-#~ msgid "New password"
-#~ msgstr "नया पासवर्ड"
-
 #: src/pages/BotContextMenu.tsx:114
 #: src/pages/shell/dialogs.tsx:180
 msgid "New section"
@@ -2744,27 +2673,13 @@ msgstr "पार्क करें"
 msgid "Password"
 msgstr "पासवर्ड"
 
-#: src/pages/Auth.tsx:76
-#~ msgid "Password recovery is not configured for this server"
-#~ msgstr "इस सर्वर के लिए पासवर्ड पुनर्प्राप्ति कॉन्फ़िगर नहीं है"
-
-#: src/pages/AccountSettingsOverlay.tsx:329
-#: src/pages/Auth.tsx:285
-#~ msgid "Password updated"
-#~ msgstr "पासवर्ड अपडेट हो गया"
-
-#: src/pages/AccountSettingsOverlay.tsx:254
-#: src/pages/Auth.tsx:261
-#~ msgid "Passwords do not match"
-#~ msgstr "पासवर्ड मेल नहीं खाते"
-
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste a replacement key"
 msgstr "बदलने के लिए नई कुंजी पेस्ट करें"
 
 #: src/pages/ModelSettingsOverlay.tsx:503
-msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "अपने सर्वर से OpenAI-संगत पता पेस्ट करें। ज़रूरत होने पर Rakazo /v1 जोड़ देता है।"
+msgid "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
+msgstr "अपने सर्वर से OpenAI-संगत पता पेस्ट करें। ज़रूरत होने पर Aidex /v1 जोड़ देता है।"
 
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste your API key"
@@ -3044,14 +2959,6 @@ msgstr "कंप्यूटर रीसेट करें"
 msgid "Reset computer?"
 msgstr "कंप्यूटर रीसेट करें?"
 
-#: src/pages/Auth.tsx:317
-#~ msgid "Reset password"
-#~ msgstr "पासवर्ड रीसेट करें"
-
-#: src/pages/Auth.tsx:40
-#~ msgid "Reset your password"
-#~ msgstr "अपना पासवर्ड रीसेट करें"
-
 #: src/components/ComputerMaintenanceActions.tsx:100
 #: src/components/ComputerMaintenanceActions.tsx:140
 msgid "Resetting…"
@@ -3085,8 +2992,8 @@ msgid "Retry screen"
 msgstr ""
 
 #: src/pages/McpOAuthCallback.tsx:62
-msgid "Return to Rakazo"
-msgstr "Rakazo पर लौटें"
+msgid "Return to Aidex"
+msgstr "Aidex पर लौटें"
 
 #. placeholder {0}: doc.revision
 #: src/pages/KnowledgeSection.tsx:180
@@ -3273,10 +3180,6 @@ msgstr "उत्तर भेजें"
 msgid "Send it"
 msgstr "इसे भेजें"
 
-#: src/pages/Auth.tsx:213
-#~ msgid "Send reset link"
-#~ msgstr "रीसेट लिंक भेजें"
-
 #: src/components/AskCard.tsx:129
 #: src/components/AskCard.tsx:176
 #: src/components/AskCard.tsx:193
@@ -3358,10 +3261,6 @@ msgstr ""
 msgid "Show more"
 msgstr "और दिखाएँ"
 
-#: src/pages/Auth.tsx:186
-#~ msgid "Show password"
-#~ msgstr ""
-
 #: src/pages/Shell.tsx:3447
 msgid "Show settings"
 msgstr "सेटिंग्स दिखाएं"
@@ -3376,10 +3275,6 @@ msgstr "साइन इन करें"
 #: src/pages/Auth.tsx:36
 msgid "Sign in to {BRAND_NAME}"
 msgstr ""
-
-#: src/pages/Auth.tsx:36
-#~ msgid "Sign in to Rakazo"
-#~ msgstr "Rakazo में साइन इन करें"
 
 #: src/pages/Auth.tsx:210
 #: src/pages/Welcome.tsx:35
@@ -3623,10 +3518,6 @@ msgstr "यह Mac"
 msgid "This permanently removes every message and stops current work. The chat remains available."
 msgstr ""
 
-#: src/pages/Auth.tsx:253
-#~ msgid "This reset link is invalid or expired"
-#~ msgstr "यह रीसेट लिंक अमान्य है या इसकी समय-सीमा समाप्त हो गई है"
-
 #: src/pages/shell/message-cards.tsx:351
 msgid "This server cannot be assigned without a bot."
 msgstr "बॉट के बिना यह सर्वर असाइन नहीं किया जा सकता।"
@@ -3644,8 +3535,8 @@ msgid "This server is already connected. Disconnect it first to authorize again.
 msgstr "यह सर्वर पहले से कनेक्टेड है। पुनः ऑथराइज़ करने के लिए पहले इसे डिस्कनेक्ट करें।"
 
 #: src/pages/ModelSettingsOverlay.tsx:839
-msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "यह सब्सक्रिप्शन साइन-इन अभी Rakazo में उपलब्ध नहीं है। किसी डिप्लॉयमेंट क्रेडेंशियल का उपयोग करें या दूसरा प्रोवाइडर चुनें।"
+msgid "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
+msgstr "यह सब्सक्रिप्शन साइन-इन अभी Aidex में उपलब्ध नहीं है। किसी डिप्लॉयमेंट क्रेडेंशियल का उपयोग करें या दूसरा प्रोवाइडर चुनें।"
 
 #: src/pages/RoutineSchedule.tsx:217
 msgid "Time of day"

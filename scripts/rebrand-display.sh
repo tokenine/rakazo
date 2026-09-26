@@ -28,12 +28,13 @@ OLD_NAME="Rakazo"
 TARGETS=(
   "apps/web/index.html"
   "apps/web/src/locales"
+  "apps/web/src/pages"
+  "apps/web/e2e"
   "apps/mobile/app.json"
-  "apps/mobile/lib/locales"
-  "apps/desktop/src/setup.html"
-  "apps/desktop/src/setup.js"
-  "apps/desktop/src/main.ts"
-  "apps/desktop/src/auto-update.ts"
+  "apps/mobile/app"
+  "apps/mobile/lib"
+  "apps/desktop/src"
+  "apps/desktop/e2e"
   "apps/desktop/package.json"
   "apps/www/src"
   "packages/core/src/self-update.ts"
@@ -46,14 +47,27 @@ TARGETS=(
 
 for target in "${TARGETS[@]}"; do
   if [[ -e "$target" ]]; then
-    grep -rl "$OLD_NAME" "$target" 2>/dev/null | while read -r file; do
+    # `|| true`: with pipefail, grep exiting 1 on "no remaining matches"
+    # (already-rebranded targets) would otherwise abort the whole script.
+    (grep -rl "$OLD_NAME" "$target" 2>/dev/null || true) | while read -r file; do
       case "$file" in
         *.po | *.html | *.js | *.ts | *.tsx | *.json | *.md | *.astro)
-          sed -i.bak "s/$OLD_NAME/$NEW_NAME/g" "$file" && rm -f "$file.bak"
+          # Word-boundary match so compound identifiers (RakazoDesktop,
+          # isRakazoHealth) and lowercase technical names (@rakazo/*, RAKAZO_*,
+          # persist:rakazo-*) survive; only the standalone display word changes.
+          sed -i.bak "s/[[:<:]]$OLD_NAME[[:>:]]/$NEW_NAME/g" "$file" && rm -f "$file.bak"
           echo "rebranded: $file"
           ;;
       esac
     done
+  fi
+done
+
+# Icon/asset file paths keep pointing at the existing artwork until the logo
+# itself is swapped (assets live under packages/ui-tokens/assets/).
+for cfg in apps/desktop/package.json apps/mobile/app.json; do
+  if [[ -f "$cfg" ]]; then
+    sed -i.bak "s|assets/$NEW_NAME.icon|assets/$OLD_NAME.icon|g" "$cfg" && rm -f "$cfg.bak"
   fi
 done
 

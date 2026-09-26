@@ -565,19 +565,9 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: src/pages/Shell.tsx:3285
-#~ msgid "Back to computer"
-#~ msgstr "Bilgisayara dön"
-
 #: src/pages/Auth.tsx:118
 msgid "Back to home"
 msgstr ""
-
-#: src/pages/Auth.tsx:126
-#: src/pages/Auth.tsx:235
-#: src/pages/Auth.tsx:320
-#~ msgid "Back to sign in"
-#~ msgstr "Oturum açmaya geri dön"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx:47
 msgid "Base URL"
@@ -621,10 +611,6 @@ msgstr "Bot ekranı"
 #: src/pages/Shell.tsx:3479
 msgid "Bot screen preview"
 msgstr "Bot ekranı önizlemesi"
-
-#: src/pages/Shell.tsx:3157
-#~ msgid "Bot settings"
-#~ msgstr "Bot ayarları"
 
 #: src/pages/MessagingSettingsOverlay.tsx:151
 msgid "Bot to link"
@@ -692,14 +678,6 @@ msgstr "iptal edildi"
 msgid "Cancelled"
 msgstr "İptal edildi"
 
-#: src/pages/AccountSettingsOverlay.tsx:327
-#~ msgid "Change password"
-#~ msgstr "Parolayı değiştir"
-
-#: src/pages/AccountSettingsOverlay.tsx:327
-#~ msgid "Changing…"
-#~ msgstr "Değiştiriliyor…"
-
 #: src/pages/MessagingSettingsOverlay.tsx:190
 msgid "Channels"
 msgstr ""
@@ -756,17 +734,13 @@ msgstr "Bir bot şekli ve rengi seçin veya görüntü yükleyin"
 msgid "Choose a bot…"
 msgstr ""
 
-#: src/pages/Auth.tsx:281
-#~ msgid "Choose a new password"
-#~ msgstr "Yeni bir parola seçin"
-
 #: src/pages/shell/avatar-studio-popover.tsx:271
 msgid "Choose file"
 msgstr "Dosya seç"
 
 #: src/pages/ModelSettingsOverlay.tsx:383
-msgid "Choose which connected model Rakazo uses."
-msgstr "Rakazo'nun hangi bağlı modeli kullanacağını seç."
+msgid "Choose which connected model Aidex uses."
+msgstr "Aidex'nun hangi bağlı modeli kullanacağını seç."
 
 #: src/pages/shell/dialogs.tsx:319
 msgid "Clear"
@@ -876,9 +850,6 @@ msgstr ""
 msgid "Color"
 msgstr "Renk"
 
-#~ msgid "Color {0}"
-#~ msgstr "Renk {0}"
-
 #: src/pages/shell/avatar-studio-popover.tsx:222
 msgid "Color {color}"
 msgstr "Renk {color}"
@@ -937,11 +908,6 @@ msgstr "Yapılandırılmış sunucular"
 #: src/pages/McpServersOverlay.tsx:506
 msgid "Confirm delete"
 msgstr "Silmeyi onayla"
-
-#: src/pages/AccountSettingsOverlay.tsx:310
-#: src/pages/Auth.tsx:301
-#~ msgid "Confirm password"
-#~ msgstr "Parolayı doğrulayın"
 
 #: src/components/integrations/IntegrationSetup.tsx:222
 #: src/components/integrations/IntegrationSetup.tsx:267
@@ -1064,10 +1030,6 @@ msgstr "Bu sunucu onaylanamadı"
 #: src/pages/shell/message-cards.tsx:191
 msgid "Could not authorize this app"
 msgstr "Bu uygulama yetkilendirilemedi"
-
-#: src/pages/AccountSettingsOverlay.tsx:267
-#~ msgid "Could not change password"
-#~ msgstr "Parola değiştirilemedi"
 
 #: src/pages/ModelSettingsOverlay.tsx:274
 msgid "Could not change the default model"
@@ -1288,10 +1250,6 @@ msgstr "Bölüm yeniden adlandırılamadı"
 msgid "Could not render chart"
 msgstr "Grafik çizilemedi"
 
-#: src/pages/Auth.tsx:269
-#~ msgid "Could not reset password"
-#~ msgstr "Parola sıfırlanamadı"
-
 #: src/pages/PluginsOverlay.tsx:285
 #: src/pages/PluginsOverlay.tsx:308
 msgid "Could not revoke connection"
@@ -1346,10 +1304,6 @@ msgstr "Bu seçim kaydedilemedi"
 #: src/pages/PluginsOverlay.tsx:356
 msgid "Could not search catalog"
 msgstr ""
-
-#: src/pages/Auth.tsx:84
-#~ msgid "Could not send reset email"
-#~ msgstr "Sıfırlama e-postası gönderilemedi"
 
 #: src/pages/CallView.tsx:113
 msgid "Could not send that"
@@ -1422,10 +1376,6 @@ msgstr "Oluştur"
 msgid "Create a section and move {0} into it."
 msgstr "Bir bölüm oluştur ve {0} botunu içine taşı."
 
-#: src/pages/Auth.tsx:215
-#~ msgid "Create account"
-#~ msgstr "Hesap oluştur"
-
 #: src/pages/GroupPanel.tsx:144
 msgid "Create group"
 msgstr "Grup oluştur"
@@ -1456,10 +1406,6 @@ msgstr ""
 #: src/pages/Auth.tsx:34
 msgid "Create your {BRAND_NAME}"
 msgstr ""
-
-#: src/pages/Auth.tsx:38
-#~ msgid "Create your Rakazo"
-#~ msgstr "Rakazo hesabını oluştur"
 
 #: src/components/AskCard.tsx:21
 msgid "Created"
@@ -1492,10 +1438,6 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx:273
 msgid "Cron expression"
 msgstr "Cron ifadesi"
-
-#: src/pages/AccountSettingsOverlay.tsx:298
-#~ msgid "Current password"
-#~ msgstr "Mevcut parola"
 
 #: src/pages/shell/dialogs.tsx:81
 msgid "Customer support"
@@ -1879,10 +1821,6 @@ msgstr "MCP bağlantısı tamamlanıyor…"
 msgid "Flag unexpected actions"
 msgstr ""
 
-#: src/pages/Auth.tsx:196
-#~ msgid "Forgot password?"
-#~ msgstr "Parolanızı mı unuttunuz?"
-
 #: src/pages/ModelSettingsOverlay.tsx:1205
 msgid "Free"
 msgstr ""
@@ -1969,10 +1907,6 @@ msgstr "Merhaba, yanıtları sesli okuduğumda böyle duyulacağım."
 #: src/pages/Shell.tsx:3179
 msgid "Hide bots"
 msgstr ""
-
-#: src/pages/Auth.tsx:186
-#~ msgid "Hide password"
-#~ msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx:590
 #: src/pages/Onboarding.tsx:511
@@ -2474,11 +2408,6 @@ msgstr "Yeni grup"
 msgid "New open-work item"
 msgstr "Yeni açık iş öğesi"
 
-#: src/pages/AccountSettingsOverlay.tsx:304
-#: src/pages/Auth.tsx:295
-#~ msgid "New password"
-#~ msgstr "Yeni parola"
-
 #: src/pages/BotContextMenu.tsx:114
 #: src/pages/shell/dialogs.tsx:180
 msgid "New section"
@@ -2744,27 +2673,13 @@ msgstr "Beklet"
 msgid "Password"
 msgstr "Parola"
 
-#: src/pages/Auth.tsx:76
-#~ msgid "Password recovery is not configured for this server"
-#~ msgstr "Bu sunucu için parola kurtarma yapılandırılmamış"
-
-#: src/pages/AccountSettingsOverlay.tsx:329
-#: src/pages/Auth.tsx:285
-#~ msgid "Password updated"
-#~ msgstr "Parola güncellendi"
-
-#: src/pages/AccountSettingsOverlay.tsx:254
-#: src/pages/Auth.tsx:261
-#~ msgid "Passwords do not match"
-#~ msgstr "Parolalar eşleşmiyor"
-
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste a replacement key"
 msgstr "Yeni bir anahtar yapıştır"
 
 #: src/pages/ModelSettingsOverlay.tsx:503
-msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Sunucundaki OpenAI uyumlu adresi yapıştır. Gerekirse Rakazo /v1 ekler."
+msgid "Paste the OpenAI-compatible address from your server. Aidex adds /v1 if needed."
+msgstr "Sunucundaki OpenAI uyumlu adresi yapıştır. Gerekirse Aidex /v1 ekler."
 
 #: src/pages/VoiceSettingsOverlay.tsx:255
 msgid "Paste your API key"
@@ -3044,14 +2959,6 @@ msgstr ""
 msgid "Reset computer?"
 msgstr ""
 
-#: src/pages/Auth.tsx:317
-#~ msgid "Reset password"
-#~ msgstr "Parolayı sıfırla"
-
-#: src/pages/Auth.tsx:40
-#~ msgid "Reset your password"
-#~ msgstr "Parolanızı sıfırlayın"
-
 #: src/components/ComputerMaintenanceActions.tsx:100
 #: src/components/ComputerMaintenanceActions.tsx:140
 msgid "Resetting…"
@@ -3085,8 +2992,8 @@ msgid "Retry screen"
 msgstr ""
 
 #: src/pages/McpOAuthCallback.tsx:62
-msgid "Return to Rakazo"
-msgstr "Rakazo'ya dön"
+msgid "Return to Aidex"
+msgstr "Aidex'ya dön"
 
 #. placeholder {0}: doc.revision
 #: src/pages/KnowledgeSection.tsx:180
@@ -3273,10 +3180,6 @@ msgstr "Yanıtı gönder"
 msgid "Send it"
 msgstr "Gönder"
 
-#: src/pages/Auth.tsx:213
-#~ msgid "Send reset link"
-#~ msgstr "Sıfırlama bağlantısı gönder"
-
 #: src/components/AskCard.tsx:129
 #: src/components/AskCard.tsx:176
 #: src/components/AskCard.tsx:193
@@ -3358,10 +3261,6 @@ msgstr ""
 msgid "Show more"
 msgstr "Daha fazla göster"
 
-#: src/pages/Auth.tsx:186
-#~ msgid "Show password"
-#~ msgstr ""
-
 #: src/pages/Shell.tsx:3447
 msgid "Show settings"
 msgstr "Ayarları göster"
@@ -3376,10 +3275,6 @@ msgstr "Oturum aç"
 #: src/pages/Auth.tsx:36
 msgid "Sign in to {BRAND_NAME}"
 msgstr ""
-
-#: src/pages/Auth.tsx:36
-#~ msgid "Sign in to Rakazo"
-#~ msgstr "Rakazo'da oturum aç"
 
 #: src/pages/Auth.tsx:210
 #: src/pages/Welcome.tsx:35
@@ -3623,10 +3518,6 @@ msgstr "bu Mac"
 msgid "This permanently removes every message and stops current work. The chat remains available."
 msgstr ""
 
-#: src/pages/Auth.tsx:253
-#~ msgid "This reset link is invalid or expired"
-#~ msgstr "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş"
-
 #: src/pages/shell/message-cards.tsx:351
 msgid "This server cannot be assigned without a bot."
 msgstr "Bu sunucu bir bot olmadan atanamaz."
@@ -3644,8 +3535,8 @@ msgid "This server is already connected. Disconnect it first to authorize again.
 msgstr "Bu sunucu zaten bağlı. Yeniden yetkilendirmek için önce bağlantısını kes."
 
 #: src/pages/ModelSettingsOverlay.tsx:839
-msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "Bu abonelik girişi Rakazo'da henüz kullanılamıyor. Bir dağıtım kimlik bilgisi kullan veya başka bir sağlayıcı seç."
+msgid "This subscription sign-in is not available in Aidex yet. Use a deployment credential or choose another provider."
+msgstr "Bu abonelik girişi Aidex'da henüz kullanılamıyor. Bir dağıtım kimlik bilgisi kullan veya başka bir sağlayıcı seç."
 
 #: src/pages/RoutineSchedule.tsx:217
 msgid "Time of day"
