@@ -1,19 +1,23 @@
 /**
- * Client built-in browser (Ai7 desktop): a user-visible <webview> pane the
+ * Client built-in browser (Ai7 desktop): a user-visible Browser pane the
  * agent can also drive. Two capabilities live here:
  *  1. Chrome data import (ported from ZCode's browserDataManager family) into
  *     the persistent partition below — cookies + localStorage, macOS keychain.
  *  2. The `client_js` kernel: playwright-core connects over the app's own
  *     remote-debugging port and hands model code a real Page (locators) bound
- *     to the pane's webview target.
+ *     to the pane's WebContentsView.
+ *
+ * The pane's content itself is a main-process WebContentsView (see pane.ts):
+ * its CDP target is a full "page" the kernel can attach to.
  */
 
 import { createRequire } from "node:module";
-import { app, ipcMain } from "electron";
+import { app, type BrowserWindow, ipcMain } from "electron";
 import { clearEmbeddedBrowserData, importChromeBrowserData } from "./browserDataManager.js";
 import { logger } from "./logger-shim.js";
+import { actionPane, hidePane, navigatePane, showPane, statePane } from "./pane.js";
 
-export const CLIENT_BROWSER_PARTITION = "persist:aidex-client-browser";
+export { CLIENT_BROWSER_PARTITION } from "./pane.js";
 
 let cdpPort: number | null = null;
 let appOrigin = "";
@@ -30,7 +34,7 @@ export function setupClientBrowserCdp(): void {
   app.commandLine.appendSwitch("remote-allow-origins", "http://127.0.0.1");
 }
 
-export function registerClientBrowserIpc(): void {
+export function registerClientBrowserIpc(getWindow: () => BrowserWindow | null): void {
   ipcMain.handle("desktop.clientBrowser.importChrome", async () => {
     const result = await importChromeBrowserData({ logger, platform: process.platform });
     logger.info("[client-browser] chrome import finished", { success: result.success });
@@ -48,6 +52,26 @@ export function registerClientBrowserIpc(): void {
       return runClientBrowserJs(payload);
     },
   );
+  ipcMain.handle(
+    "desktop.clientBrowser.show",
+    (_event, bounds: { x: number; y: number; width: number; height: number }) => {
+      const window = getWindow();
+      if (!window) return;
+      showPane(window, bounds);
+    },
+  );
+  ipcMain.handle("desktop.clientBrowser.hide", () => {
+    hidePane();
+  });
+  ipcMain.handle("desktop.clientBrowser.navigate", (_event, payload: { url: string }) => {
+    navigatePane(payload.url);
+  });
+  ipcMain.handle("desktop.clientBrowser.action", (_event, payload: { verb: string }) => {
+    actionPane(payload.verb as "back" | "forward" | "reload");
+  });
+  ipcMain.handle("desktop.clientBrowser.state", () => {
+    return statePane();
+  });
 }
 
 type KernelResult = {

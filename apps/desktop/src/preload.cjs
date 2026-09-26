@@ -22,6 +22,16 @@ contextBridge.exposeInMainWorld("rakazoDesktop", {
     importChrome: () => ipcRenderer.invoke("desktop.clientBrowser.importChrome"),
     clearData: (mode) => ipcRenderer.invoke("desktop.clientBrowser.clearData", { mode }),
     runJs: (payload) => ipcRenderer.invoke("desktop.clientBrowser.runJs", payload),
+    show: (bounds) => ipcRenderer.invoke("desktop.clientBrowser.show", bounds),
+    hide: () => ipcRenderer.invoke("desktop.clientBrowser.hide"),
+    navigate: (url) => ipcRenderer.invoke("desktop.clientBrowser.navigate", { url }),
+    action: (verb) => ipcRenderer.invoke("desktop.clientBrowser.action", { verb }),
+    state: () => ipcRenderer.invoke("desktop.clientBrowser.state"),
+    onState: (listener) => {
+      const handler = (_event, state) => listener(state);
+      ipcRenderer.on("desktop.clientBrowser.state", handler);
+      return () => ipcRenderer.off("desktop.clientBrowser.state", handler);
+    },
   },
   oauth: {
     open: (url) => ipcRenderer.invoke("desktop.oauth.open", url),

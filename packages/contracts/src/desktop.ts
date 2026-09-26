@@ -69,6 +69,18 @@ export interface RakazoDesktop {
       imageMimeType?: string;
       error?: string;
     }>;
+    /**
+     * The pane's content is a native WebContentsView owned by the main
+     * process (its CDP target is a full "page" the agent kernel can drive).
+     * The renderer lays a placeholder <div> and reports its window-space
+     * rect; main overlays the view there.
+     */
+    show: (bounds: { x: number; y: number; width: number; height: number }) => Promise<void>;
+    hide: () => Promise<void>;
+    navigate: (url: string) => Promise<void>;
+    action: (verb: "back" | "forward" | "reload") => Promise<void>;
+    state: () => Promise<{ url: string; loading: boolean }>;
+    onState: (listener: (state: { url: string; loading: boolean }) => void) => () => void;
   };
   oauth: {
     /**

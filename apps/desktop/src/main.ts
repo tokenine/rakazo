@@ -1009,7 +1009,7 @@ function safeOrigin(targetUrl: string) {
 
 setupClientBrowserCdp();
 app.whenReady().then(async () => {
-  registerClientBrowserIpc();
+  registerClientBrowserIpc(() => mainWindow);
   installSessionPermissions(session.defaultSession, permissionTarget);
   const userDataDir = app.getPath("userData");
   localStack = new LocalStackController({

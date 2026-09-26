@@ -11,21 +11,15 @@ type ImportResult = NonNullable<ReturnType<typeof desktopBridge>>["clientBrowser
   : never;
 
 /**
- * Client built-in browser pane (desktop app only): a user-visible <webview>
- * with its own persistent session (imported Chrome logins live here) that the
- * agent can also drive via the client_js tool.
+ * Client built-in browser pane (desktop app only). The visible content is a
+ * main-process WebContentsView laid over this component's placeholder — the
+ * placeholder reports its window-space rect on mount/resize and must stretch
+ * to the bottom of the window (full height). Navigation chrome talks to the
+ * main process over IPC; URL/loading state is pushed back on the same channel.
  */
 export function ClientBrowserPanel() {
   const { t } = useLingui();
-  const webviewRef = useRef<{
-    getURL(): string;
-    loadURL(url: string): Promise<void>;
-    goBack(): void;
-    goForward(): void;
-    reload(): void;
-    addEventListener(type: string, listener: () => void): void;
-    removeEventListener(type: string, listener: () => void): void;
-  } | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const [addressInput, setAddressInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -33,118 +27,146 @@ export function ClientBrowserPanel() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const webview = webviewRef.current;
-    if (!webview) return;
-    const onDidNavigate = () => {
-      setAddressInput(webview.getURL());
-      setLoading(false);
+    const bridge = desktopBridge()?.clientBrowser;
+    if (!bridge?.onState) return;
+    const off = bridge.onState((state) => {
+      setAddressInput(state.url);
+      setLoading(state.loading);
+    });
+    void bridge.state?.().then((state) => {
+      setAddressInput(state.url);
+      setLoading(state.loading);
+    });
+    return off;
+  }, []);
+
+  useEffect(() => {
+    const bridge = desktopBridge()?.clientBrowser;
+    const host = hostRef.current;
+    if (!bridge?.show || !host) return;
+    const report = () => {
+      const rect = host.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return;
+      void bridge.show({
+        x: Math.round(rect.left),
+        y: Math.round(rect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
     };
-    const onStarted = () => setLoading(true);
-    const onFailed = () => setLoading(false);
-    webview.addEventListener("did-navigate", onDidNavigate);
-    webview.addEventListener("did-navigate-in-page", onDidNavigate);
-    webview.addEventListener("did-start-loading", onStarted);
-    webview.addEventListener("did-stop-loading", onDidNavigate);
-    webview.addEventListener("did-fail-load", onFailed);
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(host);
+    window.addEventListener("resize", report);
     return () => {
-      webview.removeEventListener("did-navigate", onDidNavigate);
-      webview.removeEventListener("did-navigate-in-page", onDidNavigate);
-      webview.removeEventListener("did-start-loading", onStarted);
-      webview.removeEventListener("did-stop-loading", onDidNavigate);
-      webview.removeEventListener("did-fail-load", onFailed);
+      observer.disconnect();
+      window.removeEventListener("resize", report);
+      void bridge.hide?.();
     };
   }, []);
 
   function navigate(input: string) {
-    const webview = webviewRef.current;
-    if (!webview || !input.trim()) return;
+    const bridge = desktopBridge()?.clientBrowser;
     const raw = input.trim();
+    if (!bridge?.navigate || !raw) return;
     const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
     setError(null);
-    webview.loadURL(url).catch(() => setError(t`Could not load that address.`));
+    void bridge.navigate(url).catch(() => setError(t`Could not load that address.`));
   }
 
   async function importChrome() {
-    const bridge = desktopBridge();
-    if (!bridge?.clientBrowser || importing) return;
+    const bridge = desktopBridge()?.clientBrowser;
+    if (!bridge?.importChrome || importing) return;
     setImporting(true);
-    setImportResult(null);
     setError(null);
     try {
-      setImportResult(await bridge.clientBrowser.importChrome());
+      setImportResult(await bridge.importChrome());
     } catch {
-      setError(t`Chrome import failed. Chrome may be running — try quitting it first.`);
+      setError(t`Import failed — check that Chrome is installed.`);
     } finally {
       setImporting(false);
     }
   }
 
+  function action(verb: "back" | "forward" | "reload") {
+    void desktopBridge()?.clientBrowser?.action?.(verb);
+  }
+
   return (
-    <div data-testid="client-browser-panel" className="flex h-full flex-col">
-      <div className="flex items-center gap-1.5 px-2 py-1.5">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-1.5 px-2 pt-2">
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           aria-label={t`Back`}
-          onClick={() => webviewRef.current?.goBack()}
+          onClick={() => action("back")}
+          className="h-8 w-8 shrink-0"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={15} />
         </Button>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           aria-label={t`Forward`}
-          onClick={() => webviewRef.current?.goForward()}
+          onClick={() => action("forward")}
+          className="h-8 w-8 shrink-0"
         >
-          <ArrowRight size={16} />
+          <ArrowRight size={15} />
         </Button>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           aria-label={t`Reload`}
-          onClick={() => webviewRef.current?.reload()}
+          onClick={() => action("reload")}
+          className="h-8 w-8 shrink-0"
         >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <RotateCw size={16} />}
+          {loading ? <Loader2 size={15} className="animate-spin" /> : <RotateCw size={15} />}
         </Button>
         <Input
           value={addressInput}
+          placeholder={t`Search or type a URL`}
           onChange={(event) => setAddressInput(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") navigate(addressInput);
           }}
-          placeholder={t`Search or enter address`}
-          className="h-8 flex-1 rounded-full text-[13px]"
+          className="h-8 min-w-0 flex-1 rounded-full text-[13px]"
         />
         <Button
-          variant="secondary"
-          className="rounded-full"
-          disabled={importing}
+          variant="outline"
+          size="sm"
           onClick={() => void importChrome()}
+          disabled={importing}
+          className="shrink-0 rounded-full"
         >
-          {importing ? <Trans>Importing…</Trans> : <Trans>Import Chrome</Trans>}
+          {importing ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Trans>Import Chrome</Trans>
+          )}
         </Button>
       </div>
-      {error ? <p className="px-3 pb-1 text-[12.5px] text-destructive">{error}</p> : null}
-      {importResult ? (
-        <p
-          className="px-3 pb-1 text-[12.5px] text-muted-foreground"
-          data-testid="chrome-import-result"
-        >
-          <Trans>
-            Imported {importResult.cookies.imported} cookies,{" "}
-            {importResult.localStorage.entriesImported} localStorage entries.
-          </Trans>
+      {error ? (
+        <p role="alert" className="px-3 pt-2 text-[12.5px] text-destructive">
+          {error}
         </p>
       ) : null}
-      <div className="min-h-0 flex-1">
-        <webview
-          ref={webviewRef as never}
-          partition="persist:aidex-client-browser"
-          allowpopups={"true" as never}
-          src="https://www.google.com"
-          className="h-full w-full border-t border-border"
-        />
-      </div>
+      {importResult ? (
+        <p className="px-3 pt-2 text-[12.5px] text-muted-foreground">
+          {importResult.success ? (
+            <Trans>
+              Imported {importResult.cookies.imported} cookies ·{" "}
+              {importResult.localStorage.originsImported} sites of local storage.
+            </Trans>
+          ) : (
+            (importResult.error ?? t`Import failed — check that Chrome is installed.`)
+          )}
+        </p>
+      ) : null}
+      {/*
+        The native WebContentsView is laid exactly over this placeholder by
+        the main process. min-h-0 + flex-1 make it reach the window bottom.
+      */}
+      <div ref={hostRef} className="min-h-0 flex-1" data-testid="client-browser-host" />
     </div>
   );
 }
