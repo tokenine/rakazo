@@ -8,7 +8,7 @@
  * preference; refine copy here without touching any flow code.
  */
 
-import type { ThinkingLevel } from "@rakazo/contracts";
+import type { ThinkingLevel } from "./domain.js";
 
 export type ExpertMcpPreset = {
   slug: string;

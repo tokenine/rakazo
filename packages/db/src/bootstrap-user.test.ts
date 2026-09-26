@@ -26,6 +26,7 @@ function makePrisma(settings: { id: string; ownerUserId: string | null } | null)
     },
     memoryDocument: { findFirst: vi.fn(async () => null), create: create() },
     notificationPreference: { create: create() },
+    agentSkill: { findFirst: vi.fn(async () => null), create: create() },
   };
   return prisma;
 }
@@ -173,6 +174,7 @@ describe("bootstrapUserSpace concurrency", () => {
         create: vi.fn(async () => ({})),
       },
       notificationPreference: { create: vi.fn(uniqueViolation) },
+      agentSkill: { findFirst: vi.fn(async () => null), create: vi.fn(async () => ({})) },
     };
     const result = await bootstrapUserSpace(
       prisma as unknown as PrismaClient,

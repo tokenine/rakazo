@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { EXPERT_SKILLS } from "@rakazo/contracts";
 import { signupPolicyFromEnv } from "@rakazo/core";
 import type { PrismaClient } from "./client.js";
 
@@ -135,5 +136,27 @@ export async function bootstrapUserSpace(
     .catch((error: unknown) => {
       if (!isUniqueViolation(error)) throw error;
     });
+  // Bundle the built-in wallet skill so every fresh space knows how to use the
+  // preinstalled `thaifi` CLI from its first run. Idempotent across races.
+  for (const skill of Object.values(EXPERT_SKILLS)) {
+    const existing = await prisma.agentSkill.findFirst({
+      where: { spaceId: orgId, userId: user.id, name: { equals: skill.name, mode: "insensitive" } },
+    });
+    if (existing) continue;
+    await prisma.agentSkill
+      .create({
+        data: {
+          spaceId: orgId,
+          userId: user.id,
+          name: skill.name,
+          description: skill.description,
+          content: skill.content,
+          source: "plugin",
+        },
+      })
+      .catch((error: unknown) => {
+        if (!isUniqueViolation(error)) throw error;
+      });
+  }
   return { spaceId: orgId };
 }

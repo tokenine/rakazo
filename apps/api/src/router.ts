@@ -46,12 +46,8 @@ import {
   deploymentAutoReviewDefault,
   destroyBot,
   displayBotWorkspacePath,
-  EXPERT_CATALOG,
-  EXPERT_MCP_PRESETS,
-  EXPERT_SKILLS,
   enqueueTakeoverContinuation,
   expireComputerControl,
-  findExpert,
   hasActiveComputerControl,
   isAutoReviewCheckerConfigured,
   isComputerScreenUnavailable,
@@ -89,6 +85,10 @@ import type { Auth } from "@rakazo/auth";
 import type { Actor, ComputerStatus, McpServer, Me, SpaceNavigation } from "@rakazo/contracts";
 import {
   appContract,
+  EXPERT_CATALOG,
+  EXPERT_MCP_PRESETS,
+  EXPERT_SKILLS,
+  findExpert,
   IntegrationProviderIdSchema,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,

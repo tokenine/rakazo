@@ -62,6 +62,15 @@ COPY --chmod=644 mobile-keyboard.js /usr/share/novnc/mobile-keyboard.js
 RUN ldconfig \
   && sed -i 's/\r$//' /usr/local/bin/rakazo-computer /usr/local/bin/rakazo-computer-control /usr/local/bin/rakazo-browser /usr/local/bin/rakazo-page-browser \
     /etc/rakazo/fluxbox/init /etc/rakazo/fluxbox/apps /etc/rakazo/fluxbox/menu
+# Node 22 + ThaiFi wallet CLI, baked in so every bot starts with a runtime and
+# wallet commands instead of self-installing them during tasks (the install used
+# to eat minutes of each new bot's first runs).
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && npm install -g thaifi-wallet-cli@0.3.6 \
+  && npm cache clean --force \
+  && rm -rf /var/lib/apt/lists/*
 EXPOSE 7070 6080 6081 6082 6083 6084 6085 6086 6087 6088 6089 6090 6091 6092 6093 6094 6095
 USER 1000:1000
 CMD ["/usr/local/bin/rakazo-computer"]
