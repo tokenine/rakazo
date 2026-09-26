@@ -53,6 +53,8 @@ function mapBot(
     modelProvider?: string | null;
     modelId?: string | null;
     thinkingLevel?: string | null;
+    expertKey?: string | null;
+    avatarKey?: string | null;
     teamChatAmbientEnabled?: boolean;
     teamChatRules?: string;
     webhookSecretId?: string | null;
@@ -94,6 +96,8 @@ function mapBot(
     teamChatRules: bot.teamChatRules ?? "",
     webhookConfigured: Boolean(bot.webhookSecretId),
     spawnKey: bot.spawnKey ?? null,
+    expertKey: bot.expertKey ?? null,
+    avatarKey: bot.avatarKey ?? null,
   };
 }
 
@@ -387,6 +391,8 @@ export function createRepos(prisma: PrismaClient) {
         modelProvider?: string | null;
         modelId?: string | null;
         thinkingLevel?: string | null;
+        expertKey?: string | null;
+        avatarKey?: string | null;
         initialMessage?: {
           role: "user" | "bot" | "system";
           blocks: MessageBlock[];
@@ -456,6 +462,8 @@ export function createRepos(prisma: PrismaClient) {
               modelProvider,
               modelId,
               thinkingLevel,
+              expertKey: input.expertKey ?? null,
+              avatarKey: input.avatarKey ?? null,
             },
           });
           const thread = await tx.thread.create({

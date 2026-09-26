@@ -46,8 +46,12 @@ import {
   deploymentAutoReviewDefault,
   destroyBot,
   displayBotWorkspacePath,
+  EXPERT_CATALOG,
+  EXPERT_MCP_PRESETS,
+  EXPERT_SKILLS,
   enqueueTakeoverContinuation,
   expireComputerControl,
+  findExpert,
   hasActiveComputerControl,
   isAutoReviewCheckerConfigured,
   isComputerScreenUnavailable,
@@ -769,6 +773,39 @@ export function createRouter(deps: RouterDeps) {
         }
       }),
     },
+    experts: {
+      list: authed.experts.list.handler(async () =>
+        EXPERT_CATALOG.map((expert) => ({
+          key: expert.key,
+          name: expert.name,
+          title: expert.title,
+          description: expert.description,
+          expertiseTags: [...expert.expertiseTags],
+          avatarKey: expert.avatarKey,
+          color: expert.color,
+          modelProvider: expert.modelProvider,
+          modelId: expert.modelId,
+          thinkingLevel: expert.thinkingLevel,
+          connectors: expert.mcpPresetKeys.flatMap((presetKey) => {
+            const preset = EXPERT_MCP_PRESETS[presetKey];
+            return preset
+              ? [
+                  {
+                    slug: preset.slug,
+                    name: preset.name,
+                    description: preset.description,
+                    endpoint: preset.endpoint,
+                  },
+                ]
+              : [];
+          }),
+          skills: expert.skillKeys.flatMap((skillKey) => {
+            const skill = EXPERT_SKILLS[skillKey];
+            return skill ? [{ name: skill.name, description: skill.description }] : [];
+          }),
+        })),
+      ),
+    },
     models: {
       list: authed.models.list.handler(async () => [...listPiCatalog(), scriptedCatalogEntry]),
       credentials: authed.models.credentials.handler(async ({ context }) => {
@@ -948,6 +985,98 @@ export function createRouter(deps: RouterDeps) {
         } catch (error) {
           throw mapSpaceLifecycleError(error);
         }
+      }),
+      createFromExpert: authed.bots.createFromExpert.handler(async ({ context, input }) => {
+        const expert = findExpert(input.expertKey);
+        if (!expert) throw new ORPCError("NOT_FOUND", { message: "Unknown expert" });
+        const bot = await repos
+          .createBot(context.actor, {
+            name: input.name?.trim() || expert.name,
+            title: expert.title,
+            description: expert.description,
+            instructions: expert.instructions,
+            notifyOnFinish: true,
+            color: expert.color,
+            computerMode: "team",
+            modelProvider: expert.modelProvider,
+            modelId: expert.modelId,
+            thinkingLevel: expert.thinkingLevel,
+            expertKey: expert.key,
+            avatarKey: input.avatarKey?.trim() || expert.avatarKey,
+          })
+          .catch((error: unknown) => {
+            throw mapSpaceLifecycleError(error);
+          });
+
+        // Find-or-create the preset remote MCP servers at space level, then assign
+        // them to the bot with all tools allowed. OAuth still needs the user's
+        // one-time authorization from the MCP Servers page.
+        for (const presetKey of expert.mcpPresetKeys) {
+          const preset = EXPERT_MCP_PRESETS[presetKey];
+          if (!preset) continue;
+          let server = await deps.prisma.mcpServer.findFirst({
+            where: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              slug: preset.slug,
+            },
+          });
+          if (!server) {
+            server = await deps.prisma.mcpServer.create({
+              data: {
+                spaceId: context.actor.spaceId,
+                userId: context.actor.userId,
+                slug: preset.slug,
+                name: preset.name,
+                description: preset.description,
+                transport: "streamable_http",
+                endpoint: preset.endpoint,
+                env: {} as Prisma.InputJsonValue,
+                headers: {} as Prisma.InputJsonValue,
+                enabled: true,
+              },
+            });
+          }
+          await deps.prisma.botMcpServer.upsert({
+            where: {
+              botId_serverId: { botId: bot.id, serverId: server.id },
+            },
+            create: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              botId: bot.id,
+              serverId: server.id,
+              allowAllTools: true,
+              allowedTools: [],
+            },
+            update: {},
+          });
+        }
+
+        // Seed the expert's bundled skills (read-only, plugin-sourced).
+        for (const skillKey of expert.skillKeys) {
+          const skill = EXPERT_SKILLS[skillKey];
+          if (!skill) continue;
+          const existing = await deps.prisma.agentSkill.findFirst({
+            where: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              name: { equals: skill.name, mode: "insensitive" },
+            },
+          });
+          if (existing) continue;
+          await deps.prisma.agentSkill.create({
+            data: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              name: skill.name,
+              description: skill.description,
+              content: skill.content,
+              source: "plugin",
+            },
+          });
+        }
+        return bot;
       }),
       duplicate: authed.bots.duplicate.handler(async ({ context, input }) => {
         const source = await repos.getBot(context.actor, input.botId);

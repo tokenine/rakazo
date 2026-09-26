@@ -66,6 +66,8 @@ export const BotSchema = z.object({
   modelProvider: z.string().nullable(),
   modelId: z.string().nullable(),
   thinkingLevel: ThinkingLevelSchema.nullable(),
+  expertKey: z.string().nullable(),
+  avatarKey: z.string().nullable(),
   teamChatAmbientEnabled: z.boolean(),
   teamChatRules: z.string(),
   webhookConfigured: z.boolean(),
@@ -293,6 +295,45 @@ export const CreateBotInput = z.object({
   spawnKey: z.string().trim().min(1).max(120).optional(),
 });
 export type CreateBotInput = z.infer<typeof CreateBotInput>;
+
+export const ExpertConnectorSummarySchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  description: z.string(),
+  endpoint: z.string(),
+});
+export type ExpertConnectorSummary = z.infer<typeof ExpertConnectorSummarySchema>;
+
+export const ExpertSkillSummarySchema = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+export type ExpertSkillSummary = z.infer<typeof ExpertSkillSummarySchema>;
+
+/** One entry of the bundled Expert catalog (read-only, ships with the deployment). */
+export const ExpertSummarySchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  expertiseTags: z.array(z.string()),
+  avatarKey: z.string().nullable(),
+  color: z.string(),
+  /** null = follows the deployment's default model (like AutoClaw's "Follows primary model"). */
+  modelProvider: z.string().nullable(),
+  modelId: z.string().nullable(),
+  thinkingLevel: ThinkingLevelSchema.nullable(),
+  connectors: z.array(ExpertConnectorSummarySchema),
+  skills: z.array(ExpertSkillSummarySchema),
+});
+export type ExpertSummary = z.infer<typeof ExpertSummarySchema>;
+
+export const CreateBotFromExpertInput = z.object({
+  expertKey: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(BOT_NAME_MAX_LENGTH).optional(),
+  avatarKey: z.string().trim().min(1).max(80).optional(),
+});
+export type CreateBotFromExpertInput = z.infer<typeof CreateBotFromExpertInput>;
 
 export function normalizeCreateBotProfile(
   input: Pick<CreateBotInput, "name" | "title" | "description">,

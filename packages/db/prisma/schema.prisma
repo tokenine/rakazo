@@ -368,6 +368,10 @@ model Bot {
   modelProvider     String?
   modelId           String?
   thinkingLevel     String?
+  /// Expert preset key when the bot was created from the Expert catalog.
+  expertKey         String?
+  /// Avatar preset key from the bundled cartoon avatar set.
+  avatarKey         String?
   webhookSecretId   String?
   teamChatAmbientEnabled Boolean @default(false)
   teamChatRules          String  @default("")
