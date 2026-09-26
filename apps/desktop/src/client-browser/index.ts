@@ -84,19 +84,23 @@ export async function runClientBrowserJs(payload: {
       .flatMap((context: { pages(): unknown[] }) => context.pages()) as Array<
       import("playwright-core").Page
     >;
-    const candidates = pages.filter((page) => {
+    const eligible = pages.filter((page) => {
       const url = page.url();
-      if (url.startsWith("devtools://") || url === "about:blank") return false;
+      if (url.startsWith("devtools://")) return false;
       if (payload.targetUrl) return url === payload.targetUrl;
       return appOrigin ? !url.startsWith(appOrigin) : true;
     });
-    const page = candidates[candidates.length - 1] ?? null;
+    // Prefer a real page; a freshly opened pane sits at about:blank and is still
+    // the user's tab — attaching is fine (page.goto navigates it).
+    const real = eligible.filter((page) => page.url() !== "about:blank");
+    const page = real[real.length - 1] ?? eligible[eligible.length - 1] ?? null;
     if (!page) {
       return {
         ok: false,
         url: "",
         title: "",
-        error: "No client browser tab is open. The user must open the Browser pane first.",
+        error:
+          "No client browser tab is open. Ask the user to open the Browser pane (Globe icon in the desktop app), then retry — a freshly opened blank pane is fine, just page.goto the target.",
       };
     }
 

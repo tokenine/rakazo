@@ -1544,8 +1544,29 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
         }
         const graphicalToolsAllowed = graphical && acceptsImages && !heldForTakeover;
+        // User-level "built-in browser" preference (desktop app setting): deny
+        // the bot's VM browser tools entirely so browser work can only run in
+        // the user's own Browser pane via client_js. Best-effort lookup — a
+        // failed read must not fail run setup.
+        let clientBrowserOnly = false;
+        if (run.userId) {
+          try {
+            clientBrowserOnly =
+              (
+                await deps.prisma.user.findUnique({
+                  where: { id: run.userId },
+                  select: { clientBrowserPreferred: true },
+                })
+              )?.clientBrowserPreferred === true;
+          } catch {
+            clientBrowserOnly = false;
+          }
+        }
         const pageBrowserAllowed =
-          graphical && browser.describe().capabilities.page && !heldForTakeover;
+          !clientBrowserOnly &&
+          graphical &&
+          browser.describe().capabilities.page &&
+          !heldForTakeover;
         const builtins = [
           ...selectBuiltinToolsForRun({
             graphicalToolsAllowed,

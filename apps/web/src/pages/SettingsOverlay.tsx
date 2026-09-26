@@ -52,6 +52,8 @@ export function SettingsOverlay({
   sandboxProvider,
   messagingEnabled = false,
   onOpenMessaging,
+  clientBrowserPreferred = false,
+  onClientBrowserPreferredChange,
   memoryConfig,
   onMemoryConfigChange,
   onClose,
@@ -67,6 +69,8 @@ export function SettingsOverlay({
   sandboxProvider?: string | null;
   messagingEnabled?: boolean;
   onOpenMessaging?: () => void;
+  clientBrowserPreferred?: boolean;
+  onClientBrowserPreferredChange?: (value: boolean) => Promise<void>;
   memoryConfig: SpaceMemoryConfig | null | undefined;
   onMemoryConfigChange: (config: SpaceMemoryConfig | null) => void;
   onClose: () => void;
@@ -218,6 +222,8 @@ export function SettingsOverlay({
                     onOpenMessaging ? () => leaveSettings(onOpenMessaging) : undefined
                   }
                   isDeploymentOwner={isDeploymentOwner}
+                  clientBrowserPreferred={clientBrowserPreferred}
+                  onClientBrowserPreferredChange={onClientBrowserPreferredChange}
                 />
               ) : null}
               {section === "usage" ? (

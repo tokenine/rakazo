@@ -37,6 +37,7 @@ export const CANCEL_COMPUTER_RUN_WORK = [
   '    target="$(readlink "$fd" 2>/dev/null)" || continue',
   '    case "$target" in',
   '      "$prefix"*)',
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
   '        pid="${fd#/proc/}"; pid="${pid%%/*}"',
   '        if [ -n "$pid" ] && [ "$pid" -eq "$pid" ] 2>/dev/null; then',
   // Never kill -PID (process group): sandbox work often shares the caller's PGID.
@@ -60,6 +61,7 @@ export const CANCEL_COMPUTER_RUN_WORK = [
   '    target="$(readlink "$fd" 2>/dev/null)" || continue',
   '    case "$target" in',
   '      "$prefix"*)',
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
   '        pid="${fd#/proc/}"; pid="${pid%%/*}"',
   '        if [ -n "$pid" ] && [ "$pid" -eq "$pid" ] 2>/dev/null; then',
   '          kill -KILL "$pid" 2>/dev/null || true',
@@ -94,6 +96,7 @@ export const CANCEL_PRIMARY_BROWSER_WORK = [
   '  argv0=""; IFS= read -r -d "" argv0 <"$pid/cmdline" || true',
   '  case "$argv0" in',
   "    */google-chrome|*/google-chrome-*|google-chrome|google-chrome-*|*/chromium|*/chromium-*|chromium|chromium-*|*/chrome|chrome|*/firefox|*/firefox-*|firefox|firefox-*)",
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
   '      kill -TERM "${pid#/proc/}" 2>/dev/null || true',
   "      ;;",
   "  esac",
@@ -107,6 +110,7 @@ export const CANCEL_PRIMARY_BROWSER_WORK = [
   '  argv0=""; IFS= read -r -d "" argv0 <"$pid/cmdline" || true',
   '  case "$argv0" in',
   "    */google-chrome|*/google-chrome-*|google-chrome|google-chrome-*|*/chromium|*/chromium-*|chromium|chromium-*|*/chrome|chrome|*/firefox|*/firefox-*|firefox|firefox-*)",
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
   '      kill -KILL "${pid#/proc/}" 2>/dev/null || true',
   "      ;;",
   "  esac",

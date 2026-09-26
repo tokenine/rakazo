@@ -124,7 +124,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "client_js",
     description:
-      "Run JavaScript with Playwright locators in the USER's desktop app browser — the browser pane with the user's own imported logins (TikTok, Facebook, etc). Only available when the user's desktop app is online (recent heartbeat). The code gets `agent.browsers.tab()` with `tab.page` (Playwright Page: getByRole, getByText, locator, goto, click, fill, evaluate, waitFor), `await tab.domSnapshot()`, `await tab.screenshot()`, and `agent.write(text)`. Prefer this over the bot browser when the task needs the user's logged-in sessions. Returns written text and an optional screenshot.",
+      "Run JavaScript with Playwright locators in the USER's desktop app browser — the built-in Browser pane with the user's own imported logins (TikTok, Facebook, etc). This is what 'built-in browser' means: when the user asks to use it or to act on sites they are logged into, use THIS tool, not the bot's own browser. The code gets `agent.browsers.tab()` with `tab.page` (Playwright Page: getByRole, getByText, locator, goto, click, fill, evaluate, waitFor), `await tab.domSnapshot()`, `await tab.screenshot()`, and `agent.write(text)`. A freshly opened blank pane is fine — page.goto navigates it. If the result says no tab is open, ask the user to open the Browser pane (Globe icon) and retry once; only fall back to the bot browser if they cannot.",
     inputSchema: {
       type: "object",
       properties: {

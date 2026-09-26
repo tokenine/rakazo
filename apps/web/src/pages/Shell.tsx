@@ -4270,6 +4270,15 @@ export function ShellPage() {
               const nextMe = await rpc.preferences.update({ avatarStyle });
               setBootstrapMe(nextMe);
             }}
+            clientBrowserPreferred={bootstrapMe?.clientBrowserPreferred ?? false}
+            onClientBrowserPreferredChange={
+              desktopBridge()
+                ? async (value) => {
+                    const nextMe = await rpc.preferences.update({ clientBrowserPreferred: value });
+                    setBootstrapMe(nextMe);
+                  }
+                : undefined
+            }
             memoryConfig={memoryProviderConfig}
             onMemoryConfigChange={(config) => {
               memoryProviderConfigRevision.current += 1;

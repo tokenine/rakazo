@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { AvatarStyle } from "@rakazo/contracts";
-import { BotAvatar, Button, Toggle } from "@rakazo/ui-web";
+import { BotAvatar, Button, Switch, Toggle } from "@rakazo/ui-web";
 import { ChevronDown } from "lucide-react";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -31,6 +31,9 @@ export type SettingsGeneralProps = {
   messagingEnabled?: boolean;
   onOpenMessaging?: () => void;
   isDeploymentOwner?: boolean;
+  /** Desktop app only: force bots into the client Browser pane (client_js). */
+  clientBrowserPreferred?: boolean;
+  onClientBrowserPreferredChange?: (value: boolean) => Promise<void>;
 };
 
 export function GeneralSettingsPanels({
@@ -41,6 +44,8 @@ export function GeneralSettingsPanels({
   messagingEnabled = false,
   onOpenMessaging,
   isDeploymentOwner = false,
+  clientBrowserPreferred = false,
+  onClientBrowserPreferredChange,
 }: SettingsGeneralProps) {
   const { t } = useLingui();
   const [locale, setLocale] = useState<UiLocale>(() => getActiveUiLocale());
@@ -50,6 +55,21 @@ export function GeneralSettingsPanels({
   );
   const [avatarPending, setAvatarPending] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [browserPending, setBrowserPending] = useState(false);
+  const [browserError, setBrowserError] = useState<string | null>(null);
+
+  async function chooseClientBrowser(value: boolean) {
+    if (browserPending || !onClientBrowserPreferredChange) return;
+    setBrowserPending(true);
+    setBrowserError(null);
+    try {
+      await onClientBrowserPreferredChange(value);
+    } catch {
+      setBrowserError(t`Couldn't update the built-in browser setting`);
+    } finally {
+      setBrowserPending(false);
+    }
+  }
 
   function chooseLocale(next: UiLocale) {
     if (next === locale) return;
@@ -83,6 +103,38 @@ export function GeneralSettingsPanels({
         <p className="mt-3 text-[14px] text-foreground/75">{name}</p>
         {email ? <p className="mt-1 text-[13px] text-muted-foreground/70">{email}</p> : null}
       </section>
+
+      {onClientBrowserPreferredChange ? (
+        <section
+          className="rounded-xl border border-border px-4 py-4"
+          data-testid="built-in-browser-setting"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-medium text-foreground">
+                <Trans>Built-in browser</Trans>
+              </h3>
+              <p className="mt-1 text-[12.5px] text-muted-foreground/80">
+                <Trans>
+                  Bots work in this app's Browser pane with your own logins (TikTok, Facebook, …)
+                  and cannot use their own computer's browser.
+                </Trans>
+              </p>
+            </div>
+            <Switch
+              checked={clientBrowserPreferred}
+              disabled={browserPending}
+              onCheckedChange={(value) => void chooseClientBrowser(value)}
+              aria-label={t`Built-in browser`}
+            />
+          </div>
+          {browserError ? (
+            <p role="alert" className="mt-3 text-[12.5px] text-destructive">
+              {browserError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {messagingEnabled && onOpenMessaging ? (
         <section className="rounded-xl border border-border px-4 py-4">

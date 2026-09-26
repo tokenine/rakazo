@@ -533,10 +533,14 @@ export function createRouter(deps: RouterDeps) {
     me: authed.me.handler(async ({ context }): Promise<Me> => meDto(deps, context.actor)),
     preferences: {
       update: authed.preferences.update.handler(async ({ context, input }): Promise<Me> => {
-        await deps.prisma.user.update({
-          where: { id: context.actor.userId },
-          data: { avatarStyle: input.avatarStyle },
-        });
+        const data: { avatarStyle?: string; clientBrowserPreferred?: boolean } = {};
+        if (input.avatarStyle !== undefined) data.avatarStyle = input.avatarStyle;
+        if (input.clientBrowserPreferred !== undefined) {
+          data.clientBrowserPreferred = input.clientBrowserPreferred;
+        }
+        if (Object.keys(data).length > 0) {
+          await deps.prisma.user.update({ where: { id: context.actor.userId }, data });
+        }
         return meDto(deps, context.actor);
       }),
     },
@@ -5150,6 +5154,7 @@ async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
     canChooseHostComputer: actor.isDeploymentOwner && deps.env.sandboxProvider === "docker",
     sandboxProvider: deps.env.sandboxProvider,
     avatarStyle: user.avatarStyle === "organic" ? "organic" : "robot",
+    clientBrowserPreferred: user.clientBrowserPreferred,
   };
 }
 

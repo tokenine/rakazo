@@ -26,7 +26,6 @@ const updater = compose.services.updater as ComposeService;
 describe("the production computer provider", () => {
   it.each(["api", "worker"])("lets .env select the %s provider with an E2B default", (name) => {
     expect(compose.services[name]?.env_file).toEqual(["../../.env"]);
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(compose.services[name]?.environment?.SANDBOX_PROVIDER).toBe("${SANDBOX_PROVIDER:-e2b}");
   });
 });
@@ -71,7 +70,6 @@ describe("the updater compose service", () => {
 
   it("is bind-mounted at the same path it has on the host", () => {
     const mount = (updater.volumes ?? []).find((volume) => volume.includes("RAKAZO_DEPLOY_DIR"));
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     const deployDir = "${RAKAZO_DEPLOY_DIR:-/srv/rakazo}";
     const separatorIndex = mount?.indexOf("}:${") ?? -1;
     const source = separatorIndex < 0 ? undefined : mount?.slice(0, separatorIndex + 1);
@@ -123,13 +121,11 @@ describe("the updater compose service", () => {
   });
 
   it("injects the actual Compose project name into the updater container", () => {
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(updater.environment?.COMPOSE_PROJECT_NAME).toBe("${COMPOSE_PROJECT_NAME:-rakazo-prod}");
   });
 
   it("does not load the application env_file into the root-equivalent process", () => {
     expect(updater.env_file).toBeUndefined();
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(updater.environment?.RAKAZO_UPDATER_TOKEN).toBe("${RAKAZO_UPDATER_TOKEN:-}");
   });
 
@@ -139,13 +135,9 @@ describe("the updater compose service", () => {
   });
 
   it("passes logging configuration without using env_file", () => {
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(updater.environment?.LOG_LEVEL).toBe("${LOG_LEVEL:-info}");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(updater.environment?.AXIOM_TOKEN).toBe("${AXIOM_TOKEN:-}");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(updater.environment?.AXIOM_DATASET).toBe("${AXIOM_DATASET:-}");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the literal Compose expression
     expect(updater.environment?.AXIOM_EDGE_URL).toBe("${AXIOM_EDGE_URL:-}");
   });
 });
