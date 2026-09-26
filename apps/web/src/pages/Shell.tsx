@@ -3526,7 +3526,7 @@ export function ShellPage() {
           </>
         ) : null}
 
-        {panel && (active || activeGroup || panel === "create") ? (
+        {panel && panel !== "browser" && (active || activeGroup || panel === "create") ? (
           <div className="rk-scroll h-full w-full overflow-y-auto px-5 py-[17px] md:w-[384px]">
             {panel !== "routine" &&
             panel !== "create" &&
