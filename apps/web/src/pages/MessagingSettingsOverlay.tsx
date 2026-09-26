@@ -12,6 +12,7 @@ import {
   DialogClose,
   DialogContent,
   DialogTitle,
+  Input,
   NativeSelect,
   NativeSelectOption,
 } from "@rakazo/ui-web";
@@ -106,6 +107,8 @@ export function MessagingSettingsOverlay({ onClose }: { onClose: () => void }) {
         </div>
 
         {error ? <p className="mt-4 text-[13px] text-destructive">{error}</p> : null}
+
+        <MyTelegramBotCard />
 
         <section className="mt-8 rounded-xl border border-border px-4 py-4">
           <h3 className="text-[15px] font-medium text-foreground">
@@ -390,6 +393,137 @@ export function MessagingSettingsOverlay({ onClose }: { onClose: () => void }) {
 }
 
 type TelegramStatus = Awaited<ReturnType<typeof rpc.messaging.telegram.webhookStatus>>;
+
+type MyTelegramStatus = Awaited<ReturnType<typeof rpc.messaging.telegram.userStatus>>;
+
+/**
+ * Per-user Telegram bot: the account owner creates a bot with @BotFather and
+ * pastes its token here. The deployment hosts a dedicated webhook + adapter
+ * for it, so the user's Ai7 assistant lives on their own Telegram line.
+ */
+function MyTelegramBotCard() {
+  const { t } = useLingui();
+  const [status, setStatus] = useState<MyTelegramStatus | null>(null);
+  const [token, setToken] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [webhookHint, setWebhookHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    rpc.messaging.telegram
+      .userStatus()
+      .then(setStatus)
+      .catch(() => setStatus({ connected: false, username: null }));
+  }, []);
+
+  async function connect() {
+    if (busy || !token.trim()) return;
+    setBusy(true);
+    setError(null);
+    setWebhookHint(null);
+    try {
+      const result = await rpc.messaging.telegram.userConnect({ token: token.trim() });
+      setStatus({ connected: true, username: result.username });
+      setToken("");
+      if (result.webhookError) setWebhookHint(result.webhookError);
+    } catch (error) {
+      setError(
+        error instanceof Error && error.message
+          ? error.message
+          : t`Couldn't connect that token. Check it and try again.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disconnect() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await rpc.messaging.telegram.userDisconnect();
+      setStatus({ connected: false, username: null });
+    } catch {
+      setError(t`Couldn't disconnect the bot.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      className="mt-8 rounded-xl border border-border px-4 py-4"
+      data-testid="my-telegram-bot"
+    >
+      <h3 className="text-[15px] font-medium text-foreground">
+        <Trans>Your Telegram bot</Trans>
+      </h3>
+      {status?.connected ? (
+        <>
+          <p className="mt-3 text-[14px] text-foreground/75">
+            <Trans>
+              Connected as{" "}
+              <span className="font-mono text-foreground">@{status.username ?? "bot"}</span>
+            </Trans>
+          </p>
+          <p className="mt-1 text-[12.5px] text-muted-foreground/70">
+            <Trans>
+              Message your bot on Telegram and your Ai7 assistant replies on this account.
+            </Trans>
+          </p>
+          <div className="mt-3">
+            <Button
+              variant="secondary"
+              className="rounded-full"
+              disabled={busy}
+              onClick={() => void disconnect()}
+            >
+              <Trans>Disconnect</Trans>
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-[13px] text-muted-foreground/70">
+            <Trans>
+              Create a bot with @BotFather (send /newbot), paste its token here, and chat with your
+              Ai7 assistant from your own Telegram line.
+            </Trans>
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Input
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void connect();
+              }}
+              placeholder="123456789:AAE…"
+              aria-label={t`Bot token`}
+              type="password"
+              className="h-9 min-w-0 flex-1 rounded-full font-mono text-[13px]"
+            />
+            <Button
+              className="rounded-full"
+              disabled={busy || !token.trim()}
+              onClick={() => void connect()}
+            >
+              <Trans>Connect</Trans>
+            </Button>
+          </div>
+        </>
+      )}
+      {webhookHint ? (
+        <p className="mt-2 text-[12.5px] text-muted-foreground/70">{webhookHint}</p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-[13px] text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </section>
+  );
+}
 
 /**
  * Deployment-owner Telegram channel card: shows the registered webhook state

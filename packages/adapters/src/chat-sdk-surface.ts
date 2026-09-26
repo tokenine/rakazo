@@ -124,6 +124,34 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
     this.sink = sink;
   }
 
+  /**
+   * Late-register a platform (per-user Telegram bots). The provider key must
+   * be unique — thread ids carry it as their prefix, so outbound routing and
+   * identity isolation come for free. Safe before or after first use: the
+   * Chat SDK resolves adapters through its live map and auto-initializes a
+   * newly visible adapter on its first webhook or send.
+   */
+  registerUserPlatform(platform: MessagingPlatform): void {
+    this.byProvider.set(platform.provider, platform);
+    const chat = this.chat as unknown as {
+      adapters: Map<string, Adapter>;
+      webhooks: Record<string, (request: Request, options?: unknown) => Promise<Response>>;
+      handleWebhook: (name: string, request: Request, options?: unknown) => Promise<Response>;
+    };
+    chat.adapters.set(platform.provider, platform.adapter);
+    chat.webhooks[platform.provider] = (request, options) =>
+      chat.handleWebhook(platform.provider, request, options);
+  }
+
+  unregisterUserPlatform(provider: string): void {
+    this.byProvider.delete(provider);
+    (this.chat as unknown as { adapters: Map<string, Adapter> }).adapters.delete(provider);
+    const webhooks = this.chat as unknown as {
+      webhooks: Record<string, unknown>;
+    };
+    delete webhooks.webhooks[provider];
+  }
+
   handleWebhook(provider: string, request: Request): Promise<Response> | null {
     const platform = this.byProvider.get(provider);
     if (!platform) return null;

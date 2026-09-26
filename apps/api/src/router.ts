@@ -40,6 +40,7 @@ import {
   clearInactiveUserComputerControl,
   computerSupportsUpdate,
   computerUpdateView,
+  createUserTelegramPlatform,
   createVoiceProvider,
   defaultCatalogModelId,
   deletePushToken,
@@ -161,7 +162,7 @@ import {
   serializeSpaceMemoryConfig,
   updateMemoryProviderDefaultScope,
 } from "./memory-provider-config.js";
-import { telegramSetWebhook, telegramWebhookStatus } from "./messaging-telegram.js";
+import { telegramGetMe, telegramSetWebhook, telegramWebhookStatus } from "./messaging-telegram.js";
 import {
   chooseFocus,
   dismissFocus,
@@ -435,6 +436,12 @@ export interface RouterDeps {
   memoryProviders: MemoryProviderResolver;
   home: AgentHomeStore;
   secrets: EncryptedSecretStore;
+  /** Late-registered per-user messaging platforms (Telegram bots). Optional:
+   * absent when the messaging surface itself is disabled. */
+  telegramUserPlatforms?: {
+    register: (platform: import("@rakazo/adapters").MessagingPlatform) => void;
+    unregister: (provider: string) => void;
+  };
   oauthLogins: PiOAuthLogins;
   integrationSettings?: IntegrationProviderSettings;
   composio?: ComposioProvider;
@@ -4283,6 +4290,90 @@ export function createRouter(deps: RouterDeps) {
           const webhookUrl = `${origin}/api/v1/messaging/webhook/telegram`;
           await telegramSetWebhook(token, webhookUrl, secret);
           return { ok: true as const, webhookUrl };
+        }),
+        userConnect: authed.messaging.telegram.userConnect.handler(async ({ context, input }) => {
+          const token = input.token.trim();
+          let username: string | null = null;
+          try {
+            username = (await telegramGetMe(token)).username;
+          } catch (error) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: error instanceof Error ? error.message : "Telegram rejected the token",
+            });
+          }
+          const recordId = `tgbot-${context.actor.userId}`;
+          const { ciphertext } = await deps.secrets.put(
+            token,
+            {
+              operationId: `telegram-user:${context.actor.userId}`,
+              traceId: `telegram-user:${context.actor.userId}`,
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              signal: context.signal ?? new AbortController().signal,
+            },
+            recordId,
+          );
+          const webhookSecret = randomBytes(24).toString("hex");
+          const row = await deps.prisma.messagingTelegramBot.upsert({
+            where: { userId: context.actor.userId },
+            create: {
+              userId: context.actor.userId,
+              username: username ?? "telegram-bot",
+              tokenCiphertext: ciphertext,
+              webhookSecret,
+            },
+            update: {
+              username: username ?? "telegram-bot",
+              tokenCiphertext: ciphertext,
+              webhookSecret,
+            },
+          });
+          const tokenDecrypted = deps.secrets.load(ciphertext, recordId);
+          const provider = `telegram-u${row.id}`;
+          deps.telegramUserPlatforms?.unregister(provider);
+          deps.telegramUserPlatforms?.register(
+            createUserTelegramPlatform({
+              key: provider,
+              botToken: tokenDecrypted,
+              webhookSecret,
+            }),
+          );
+          let webhookUrl: string | null = null;
+          let webhookError: string | null = null;
+          if (deps.env.messagingPublicOrigin) {
+            try {
+              webhookUrl = `${deps.env.messagingPublicOrigin}/api/v1/messaging/webhook/telegram-user/${row.id}`;
+              await telegramSetWebhook(token, webhookUrl, webhookSecret);
+            } catch (error) {
+              webhookError = error instanceof Error ? error.message : "setWebhook failed";
+            }
+          }
+          return { ok: true as const, username, webhookUrl, webhookError };
+        }),
+        userDisconnect: authed.messaging.telegram.userDisconnect.handler(async ({ context }) => {
+          const row = await deps.prisma.messagingTelegramBot.findUnique({
+            where: { userId: context.actor.userId },
+          });
+          if (row) {
+            try {
+              const token = await deps.secrets.load(
+                row.tokenCiphertext,
+                `tgbot-${context.actor.userId}`,
+              );
+              await telegramSetWebhook(token, "", "").catch(() => undefined);
+            } catch {
+              // Best-effort teardown; removing the row is what matters.
+            }
+            await deps.prisma.messagingTelegramBot.delete({ where: { id: row.id } });
+            deps.telegramUserPlatforms?.unregister(`telegram-u${row.id}`);
+          }
+          return { ok: true as const };
+        }),
+        userStatus: authed.messaging.telegram.userStatus.handler(async ({ context }) => {
+          const row = await deps.prisma.messagingTelegramBot.findUnique({
+            where: { userId: context.actor.userId },
+          });
+          return { connected: Boolean(row), username: row?.username ?? null };
         }),
       },
       link: {

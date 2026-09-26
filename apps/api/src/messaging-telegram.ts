@@ -64,3 +64,11 @@ export async function telegramSetWebhook(
     throw new Error(response.description ?? "setWebhook failed");
   }
 }
+
+export async function telegramGetMe(token: string): Promise<{ username: string | null }> {
+  const response = await telegramCall<{ username?: string; id: number }>(token, "getMe");
+  if (!response.ok || !response.result) {
+    throw new Error(response.description ?? "getMe failed — the token is invalid");
+  }
+  return { username: response.result.username ?? null };
+}

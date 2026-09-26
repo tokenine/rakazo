@@ -485,7 +485,7 @@ export function ShellPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
   const [messagingSettingsOpen, setMessagingSettingsOpen] = useState(false);
-  const [messagingSurfaceEnabled, setMessagingSurfaceEnabled] = useState(false);
+
   const [messagingProviders, setMessagingProviders] = useState<string[]>([]);
   const [memoryProviderConfig, setMemoryProviderConfig] = useState<
     SpaceMemoryConfig | null | undefined
@@ -627,7 +627,6 @@ export function ShellPage() {
       .status()
       .then((status) => {
         if (!cancelled) {
-          setMessagingSurfaceEnabled(status.enabled);
           setMessagingProviders(status.providers);
         }
       })
@@ -4261,7 +4260,9 @@ export function ShellPage() {
             avatarStyle={bootstrapMe?.avatarStyle ?? "robot"}
             isDeploymentOwner={bootstrapMe?.isDeploymentOwner === true}
             sandboxProvider={bootstrapMe?.sandboxProvider}
-            messagingEnabled={messagingSurfaceEnabled}
+            // Per-user Telegram bots make messaging settings available to every
+            // account, not just deployments with messaging env configured.
+            messagingEnabled={true}
             onOpenMessaging={() => {
               setSettingsOpen(false);
               setMessagingSettingsOpen(true);

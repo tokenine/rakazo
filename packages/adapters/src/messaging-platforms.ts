@@ -197,6 +197,28 @@ export function messagingPlatformsFromEnv(
   return platforms;
 }
 
+/**
+ * A per-user Telegram bot platform: the user registers their own BotFather
+ * token and the deployment hosts a dedicated adapter under a unique provider
+ * key, so its thread ids ("telegram-u<id>:…") never mix with the
+ * deployment-wide bot.
+ */
+export function createUserTelegramPlatform(options: {
+  key: string;
+  botToken: string;
+  webhookSecret: string;
+}): MessagingPlatform {
+  return {
+    provider: options.key,
+    capabilities: { direct: true, groups: false, typing: false },
+    adapter: createTelegramAdapter({
+      botToken: options.botToken,
+      secretToken: options.webhookSecret,
+      mode: "webhook",
+    }),
+  };
+}
+
 /** Never live under the test runner; tests build surfaces explicitly. */
 export function isMessagingEnabled(platforms: MessagingPlatform[]): boolean {
   return platforms.length > 0 && !isVitestRuntime();

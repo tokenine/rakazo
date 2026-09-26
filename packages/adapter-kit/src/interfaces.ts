@@ -366,6 +366,17 @@ export interface MessagingSurface {
    * replacement process can claim them. No-op when the surface never started.
    */
   shutdown?(): Promise<void>;
+  /**
+   * Late-register / remove a platform at runtime (per-user Telegram bots).
+   * The provider key doubles as the thread-id prefix, giving each registered
+   * platform its own routing and identity namespace.
+   */
+  registerUserPlatform?(platform: {
+    provider: string;
+    capabilities: { direct: boolean; groups: boolean; typing: boolean };
+    adapter: unknown;
+  }): void;
+  unregisterUserPlatform?(provider: string): void;
 }
 
 /**

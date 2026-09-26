@@ -46,6 +46,7 @@ model User {
   createdSpaces               Space[]                      @relation("SpaceCreator")
   botSecrets BotSecret[]
   agentSecrets               AgentSecret[]
+  messagingTelegramBot       MessagingTelegramBot?
 
   @@unique([email])
   @@map("user")
@@ -775,6 +776,19 @@ model TaughtSkill {
 /// Claude Agent Skills: SKILL.md recipes shared across assistants (not per-bot).
 /// The Pi runtime already understands this format; we persist and inject them.
 /// Distinct from TaughtSkill (demo/record playbooks).
+model MessagingTelegramBot {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username      String
+  tokenCiphertext String
+  webhookSecret String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("messaging_telegram_bots")
+}
+
 model AgentSkill {
   id          String   @id @default(cuid())
   spaceId     String

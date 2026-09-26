@@ -15,6 +15,7 @@ import type {
   ComposioProvider,
   ConnectorRegistry,
   DestinationEmulator,
+  MessagingPlatform,
   RemoteConnectorDependencies,
 } from "@rakazo/adapters";
 import {
@@ -96,6 +97,10 @@ import {
   teamChatSenderCanWakeMessageRoutines,
   wakeMessageRoutines,
 } from "./messaging-inbound.js";
+import {
+  mountUserTelegramWebhookRoute,
+  registerTelegramUserBot,
+} from "./messaging-telegram-user.js";
 import { mountMessagingWebhookRoutes } from "./messaging-webhook.js";
 import { mountApiRequestBodyLimits } from "./request-body-limit.js";
 import { createRouter } from "./router.js";
@@ -435,7 +440,19 @@ export async function createApp(
     : undefined;
   reconciler?.start();
 
+  // Late-registered per-user messaging platforms (Telegram bots). The surface
+  // exists by the time any RPC runs, so the calls simply forward; the guard
+  // covers a disabled messaging surface.
+  const telegramUserPlatforms = {
+    register: (platform: MessagingPlatform) => {
+      messaging?.registerUserPlatform?.(platform);
+    },
+    unregister: (provider: string) => {
+      messaging?.unregisterUserPlatform?.(provider);
+    },
+  };
   const router = createRouter({
+    telegramUserPlatforms,
     cloudAgent,
     prisma,
     events,
@@ -775,6 +792,29 @@ export async function createApp(
       await inbound(event);
     });
     mountMessagingWebhookRoutes(app, { messaging });
+    // Per-user Telegram bots: each row is a BotFather token the account owner
+    // registered. Register every stored bot into the surface under its own
+    // provider key, and give each one its own webhook endpoint — Telegram
+    // secrets are per bot, so verification stays inside the adapter.
+    mountUserTelegramWebhookRoute(app, {
+      prisma,
+      secrets,
+      messaging,
+    });
+    void (async () => {
+      try {
+        const rows = await prisma.messagingTelegramBot.findMany();
+        for (const row of rows) {
+          try {
+            registerTelegramUserBot({ prisma, secrets, messaging }, row);
+          } catch (error) {
+            getLogger().error(`telegram user bot ${row.id} failed to register`, error);
+          }
+        }
+      } catch (error) {
+        getLogger().error("telegram user bot bootstrap failed", error);
+      }
+    })();
     // Start polling-mode adapters (e.g. Telegram with no public webhook URL
     // registered) immediately rather than waiting for the first webhook
     // POST or outbound send to lazily trigger it. This is the process that
