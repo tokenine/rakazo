@@ -157,6 +157,51 @@ export class ComputerBrowserProvider implements BrowserProvider {
     return computer.kind === "fake";
   }
 
+  async evalJs(
+    computer: ComputerRef,
+    request: { code: string; timeoutMs?: number },
+    context: AdapterContext,
+  ): Promise<{
+    ok: boolean;
+    url: string;
+    title: string;
+    text?: string;
+    imageBase64?: string;
+    imageMimeType?: string;
+    error?: string;
+    fallback?: "computer_act";
+  }> {
+    if (this.canUseInProcess(computer) || !this.sandbox?.pageBrowser) {
+      return { ok: false, url: "", title: "", error: DETACHED_MESSAGE, fallback: "computer_act" };
+    }
+    const live = await this.runLive(
+      computer,
+      { command: "eval", code: request.code, timeoutMs: request.timeoutMs },
+      context,
+    );
+    if (live?.ok !== true) {
+      return {
+        ok: false,
+        url: typeof live?.url === "string" ? live.url : "",
+        title: typeof live?.title === "string" ? live.title : "",
+        text: typeof live?.text === "string" ? live.text : undefined,
+        error: live?.error || DETACHED_MESSAGE,
+        fallback: "computer_act",
+      };
+    }
+    return {
+      ok: true,
+      url: typeof live.url === "string" ? live.url : "",
+      title: typeof live.title === "string" ? live.title : "",
+      text: typeof live.text === "string" ? live.text : undefined,
+      imageBase64: typeof live.imageBase64 === "string" ? live.imageBase64 : undefined,
+      imageMimeType:
+        live.imageMimeType === "image/jpeg" || live.imageMimeType === "image/png"
+          ? live.imageMimeType
+          : undefined,
+    };
+  }
+
   private async runLive(
     computer: ComputerRef,
     request: PageBrowserCommand,

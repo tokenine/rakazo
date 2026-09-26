@@ -22,6 +22,69 @@ from urllib.parse import urlsplit
 from typing import Any
 
 
+def run_eval_kernel(args: dict[str, Any]) -> dict[str, Any]:
+    """Run the Node browser kernel with the model's code; bridge its JSON out."""
+    import subprocess
+    import tempfile
+
+    code = args.get("code")
+    if not isinstance(code, str) or not code.strip():
+        return {"ok": False, "error": "eval requires code", "fallback": "computer_act"}
+    timeout_ms = args.get("timeoutMs")
+    timeout_s = (
+        min(max(int(timeout_ms), 1_000), 120_000) / 1000.0
+        if isinstance(timeout_ms, (int, float))
+        else 60.0
+    )
+    fd, path = tempfile.mkstemp(prefix="rakazo-js-", suffix=".js")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(code)
+        proc = subprocess.run(  # noqa: S603 - fixed argv, container-local helper
+            [
+                "node",
+                "/usr/local/lib/rakazo/rakazo-browser-kernel.mjs",
+                path,
+                str(int(timeout_s * 1000)),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout_s + 10,
+            env={**os.environ, "RAKAZO_CDP_PORT": str(cdp_port())},
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "error": f"js timed out after {int(timeout_s)}s",
+            "fallback": "computer_act",
+        }
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    if proc.returncode != 0 and not proc.stdout.strip():
+        return {
+            "ok": False,
+            "error": (proc.stderr.strip() or f"kernel exited {proc.returncode}")[:4_000],
+            "fallback": "computer_act",
+        }
+    try:
+        parsed = json.loads(proc.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        return {
+            "ok": False,
+            "error": (proc.stderr.strip() or "kernel produced no output")[:4_000],
+            "fallback": "computer_act",
+        }
+    if isinstance(parsed, dict):
+        parsed.setdefault("ok", proc.returncode == 0)
+        if proc.returncode != 0:
+            parsed["ok"] = False
+        return parsed
+    return {"ok": proc.returncode == 0, "text": str(parsed)}
+
+
 def display_num() -> int:
     raw = os.environ.get("DISPLAY", ":1")
     try:
@@ -610,6 +673,12 @@ def run(argv: list[str]) -> int:
     args: dict[str, Any] = {}
     if len(argv) >= 3 and argv[2].strip():
         args = json.loads(argv[2])
+    if command == "eval":
+        # Hand off to the Node browser kernel (playwright-core over CDP) so the
+        # model gets real locators; this Python helper stays stdlib-only.
+        result = run_eval_kernel(args)
+        print(json.dumps(result))
+        return 0
     port = cdp_port()
     try:
         wait_for_cdp(port)

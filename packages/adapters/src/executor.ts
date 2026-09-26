@@ -161,6 +161,7 @@ import {
 import { createBrowserProvider } from "./browser-provider-factory.js";
 import {
   browserActFromTool,
+  browserEvalFromTool,
   browserNavigateFromTool,
   browserSnapshotFromTool,
 } from "./browser-tools.js";
@@ -2648,7 +2649,9 @@ export function createRunExecutor(deps: ExecutorDeps) {
                 ? browserNavigateFromTool
                 : name === "browser_snapshot"
                   ? browserSnapshotFromTool
-                  : browserActFromTool;
+                  : name === "js"
+                    ? browserEvalFromTool
+                    : browserActFromTool;
             return computerScreenToolResult(() => tool(browser, computer, context, args), finish);
           }
 
@@ -4527,6 +4530,7 @@ export const PAGE_BROWSER_TOOL_NAMES = new Set([
   "browser_navigate",
   "browser_snapshot",
   "browser_act",
+  "js",
 ]);
 
 export function filterPageBrowserTools<T extends { name: string }>(

@@ -140,3 +140,49 @@ it("closes helper stdin when the request is cancelled", async () => {
   expect(await (await response).json()).toMatchObject({ ok: false, uncertain: true });
   expect(stream.destroyed).toBe(true);
 });
+
+it("routes eval with the requested per-call timeout and forwards the code", async () => {
+  const response = await supervisorApp.request("/computers/computer-eval/browser", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${resolveSupervisorToken(process.env)}`,
+      "content-type": "application/json",
+      "x-rakazo-bot-id": "home",
+      "x-rakazo-space-id": "space",
+      "x-rakazo-screen-id": "first",
+      "x-rakazo-screen-lease-id": "run:1",
+    },
+    body: JSON.stringify({
+      command: "eval",
+      code: "return await agent.browsers.tab().title();",
+      timeoutMs: 90_000,
+    }),
+  });
+  expect(await response.json()).toMatchObject({ ok: true });
+  const payloadArg = mock.exec.mock.calls
+    .map((entry) => entry[0])
+    .find((options) => options.Cmd.includes("eval"))
+    ?.Cmd.find((arg: string) => arg.startsWith("{"));
+  expect(payloadArg).toBeTruthy();
+  const payload = JSON.parse(payloadArg);
+  expect(payload.command).toBe("eval");
+  expect(payload.timeoutMs).toBe(90_000);
+  expect(payload.code).toContain("agent.browsers");
+});
+
+it("rejects oversized eval code before executing anything", async () => {
+  const response = await supervisorApp.request("/computers/computer-eval/browser", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${resolveSupervisorToken(process.env)}`,
+      "content-type": "application/json",
+      "x-rakazo-bot-id": "home",
+      "x-rakazo-space-id": "space",
+      "x-rakazo-screen-id": "first",
+      "x-rakazo-screen-lease-id": "run:1",
+    },
+    body: JSON.stringify({ command: "eval", code: "x".repeat(100_001) }),
+  });
+  expect(response.status).toBeGreaterThanOrEqual(400);
+  expect(mock.exec).not.toHaveBeenCalled();
+});

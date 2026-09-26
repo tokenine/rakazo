@@ -416,6 +416,21 @@ export interface BrowserProvider {
     request: BrowserActRequest,
     context: AdapterContext,
   ): Promise<BrowserActResult>;
+  /** Optional playwright-style JS kernel over the page browser (ZCode-style `js` tool). */
+  evalJs?(
+    computer: ComputerRef,
+    request: { code: string; timeoutMs?: number },
+    context: AdapterContext,
+  ): Promise<{
+    ok: boolean;
+    url: string;
+    title: string;
+    text?: string;
+    imageBase64?: string;
+    imageMimeType?: string;
+    error?: string;
+    fallback?: "computer_act";
+  }>;
 }
 
 /**

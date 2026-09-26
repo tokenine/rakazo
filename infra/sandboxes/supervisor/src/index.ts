@@ -376,6 +376,11 @@ app.post("/computers/:id/browser", async (c) => {
           .min(1)
           .max(24),
       }),
+      z.object({
+        command: z.literal("eval"),
+        code: z.string().min(1).max(100_000),
+        timeoutMs: z.number().int().min(1_000).max(120_000).optional(),
+      }),
     ])
     .parse(await c.req.json());
   try {
@@ -396,7 +401,10 @@ app.post("/computers/:id/browser", async (c) => {
           "HOME=/home/rakazo",
           "RAKAZO_BROWSER_WATCH_STDIN=1",
         ],
-        timeoutMs: 25_000,
+        // Eval runs model-authored automation that may legitimately take a
+        // while (waits, navigations); still hard-capped well below the
+        // sandbox command ceiling.
+        timeoutMs: body.command === "eval" ? (body.timeoutMs ?? 60_000) : 25_000,
         signal,
       },
     );

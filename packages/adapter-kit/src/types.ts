@@ -757,9 +757,18 @@ export interface BrowserActResult {
 export type PageBrowserCommand =
   | { command: "navigate"; url: string }
   | { command: "snapshot" }
-  | { command: "act"; actions: BrowserActStep[] };
+  | { command: "act"; actions: BrowserActStep[] }
+  /** Run JS in the container's browser kernel (playwright over CDP). */
+  | { command: "eval"; code: string; timeoutMs?: number };
 
-export type PageBrowserResult = Partial<BrowserSnapshotResult & BrowserActResult> & { ok: boolean };
+export type PageBrowserResult = Partial<BrowserSnapshotResult & BrowserActResult> & {
+  ok: boolean;
+  /** eval: rendered output (agent.write / returned text). */
+  text?: string;
+  /** eval: screenshot attachment. */
+  imageBase64?: string;
+  imageMimeType?: string;
+};
 
 /** Vendor-neutral status for a remote cloud coding agent. */
 export type CloudAgentStatus = "running" | "finished" | "failed" | "cancelled";

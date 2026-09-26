@@ -58,6 +58,9 @@ COPY --chmod=644 fluxbox.menu /etc/rakazo/fluxbox/menu
 COPY --chmod=644 embed.html /usr/share/novnc/embed.html
 COPY --chmod=644 clipboard-bridge.js /usr/share/novnc/clipboard-bridge.js
 COPY --chmod=644 mobile-keyboard.js /usr/share/novnc/mobile-keyboard.js
+# Browser JS kernel for the `js` tool: playwright-core over CDP (no bundled
+# browsers — it attaches to the Chromium already on the display).
+COPY --chmod=755 rakazo-browser-kernel.mjs /usr/local/lib/rakazo/rakazo-browser-kernel.mjs
 # Strip CR so shebangs work even if the build context came from a CRLF checkout.
 RUN ldconfig \
   && sed -i 's/\r$//' /usr/local/bin/rakazo-computer /usr/local/bin/rakazo-computer-control /usr/local/bin/rakazo-browser /usr/local/bin/rakazo-page-browser \
@@ -68,7 +71,7 @@ RUN ldconfig \
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
   && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
-  && npm install -g thaifi-wallet-cli@0.3.6 \
+  && npm install -g thaifi-wallet-cli@0.3.6 playwright-core@1.59.1 \
   && npm cache clean --force \
   && rm -rf /var/lib/apt/lists/*
 EXPOSE 7070 6080 6081 6082 6083 6084 6085 6086 6087 6088 6089 6090 6091 6092 6093 6094 6095

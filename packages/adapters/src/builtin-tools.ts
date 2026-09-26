@@ -103,6 +103,25 @@ export const builtinAgentTools: ConnectorTool[] = [
     },
   },
   {
+    name: "js",
+    description:
+      "Run JavaScript against the page browser on this bot's computer using Playwright locators. The code runs with `agent` in scope: `const tab = await agent.browsers.tab()` gives `tab.page` (a Playwright Page: getByRole, getByText, locator, click, fill, goto, evaluate, waitFor…), plus `await tab.domSnapshot()` (accessibility tree), `await tab.screenshot()` (returns an image), and `agent.write(text)` for output. Returns the written text and a screenshot when the code returns one. Prefer this for multi-step web work; browser_snapshot/browser_act stay available as the simple path. The code runs inside this bot's computer.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description: "JavaScript to run. Use return or agent.write for output.",
+        },
+        timeout_ms: {
+          type: "number",
+          description: "Optional per-call cap, 1000-120000 ms (default 60000).",
+        },
+      },
+      required: ["code"],
+    },
+  },
+  {
     name: "list_files",
     description:
       "List files and directories in this bot's home. On a Team Computer, relative paths use the bot folder; use shared/... for shared work or bots/... to inspect the Team root.",
