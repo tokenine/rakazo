@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><clipPath id="c"><circle cx="256" cy="256" r="256"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="512" height="512" fill="#6A6BF5"/>
+    <circle cx="256" cy="290" r="210" fill="#5757E0"/>
+    <!-- hoodie body -->
+    <path d="M104 512c10-92 70-138 152-138s142 46 152 138z" fill="#312E81"/>
+    <path d="M196 392c14 26 106 26 120 0 6 40-10 74-60 74s-66-34-60-74z" fill="#4338CA"/>
+    <!-- head -->
+    <circle cx="256" cy="250" r="116" fill="#FFD9B8"/>
+    <!-- bob hair -->
+    <path d="M136 262c-8-100 50-152 120-152s128 52 120 152c-6-24-22-38-40-36 4-40-18-70-80-70s-84 30-80 70c-18-2-34 12-40 36z" fill="#4B4B57"/>
+    <path d="M148 262c-6 44 4 74 18 86-24-6-38-34-38-64z" fill="#4B4B57"/>
+    <path d="M364 262c6 44-4 74-18 86 24-6 38-34 38-64z" fill="#4B4B57"/>
+    <!-- glasses -->
+    <rect x="178" y="238" width="66" height="48" rx="14" fill="none" stroke="#26232B" stroke-width="9"/>
+    <rect x="268" y="238" width="66" height="48" rx="14" fill="none" stroke="#26232B" stroke-width="9"/>
+    <path d="M244 258h24" stroke="#26232B" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="211" cy="262" r="8" fill="#26232B"/>
+    <circle cx="301" cy="262" r="8" fill="#26232B"/>
+    <!-- focused smile -->
+    <path d="M232 316q24 16 48 0" stroke="#B4573B" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- code brackets on chest -->
+    <path d="M226 468l-18-24 18-24" stroke="#A5B4FC" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M286 420l18 24-18 24" stroke="#A5B4FC" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

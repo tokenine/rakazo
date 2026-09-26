@@ -227,6 +227,7 @@ import {
   PickerInfoDialog,
   RenameBotSectionDialog,
 } from "./shell/dialogs";
+import { ExpertCreatePanel } from "./shell/expert-create";
 import {
   AppConnectCard,
   ArtifactImage,
@@ -263,6 +264,7 @@ type Panel =
   | "settings"
   | "routine"
   | "create"
+  | "create-blank"
   | "create-group"
   | "group-settings"
   | null;
@@ -2245,18 +2247,8 @@ export function ShellPage() {
     setSettingsOpen(true);
   }
 
-  async function createBot(input: {
-    name: string;
-    title: string;
-    description: string;
-    computerMode: ComputerMode;
-  }) {
+  async function finishBotCreation(bot: Bot) {
     const isFirstBot = botsRef.current.length === 0;
-    const bot = await rpc.bots.create({
-      ...normalizeCreateBotProfile(input),
-      notifyOnFinish: true,
-      computerMode: input.computerMode,
-    });
     setBots((current) =>
       current.some((item) => item.id === bot.id) ? current : [bot, ...current],
     );
@@ -2294,6 +2286,29 @@ export function ShellPage() {
       }
     });
     await refreshBots().catch(() => undefined);
+  }
+
+  async function createBot(input: {
+    name: string;
+    title: string;
+    description: string;
+    computerMode: ComputerMode;
+  }) {
+    const bot = await rpc.bots.create({
+      ...normalizeCreateBotProfile(input),
+      notifyOnFinish: true,
+      computerMode: input.computerMode,
+    });
+    await finishBotCreation(bot);
+  }
+
+  async function createBotFromExpert(input: {
+    expertKey: string;
+    name?: string;
+    avatarKey?: string;
+  }) {
+    const bot = await rpc.bots.createFromExpert(input);
+    await finishBotCreation(bot);
   }
 
   async function bootComputer({
@@ -3578,6 +3593,13 @@ export function ShellPage() {
               />
             ) : null}
             {panel === "create" ? (
+              <ExpertCreatePanel
+                onCancel={() => setPanel(null)}
+                onBlank={() => setPanel("create-blank")}
+                onCreated={createBotFromExpert}
+              />
+            ) : null}
+            {panel === "create-blank" ? (
               <CreateBotForm
                 onCancel={() => setPanel(null)}
                 onCreate={(input) => createBot(input)}

@@ -21,7 +21,8 @@
       "!**/verify-report",
       "!**/data",
       "!**/*.astro",
-      "!**/apps/www"
+      "!**/apps/www",
+      "!**/packages/contracts/src/expert-avatars.ts"
     ]
   },
   "formatter": {

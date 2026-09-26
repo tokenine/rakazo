@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><clipPath id="c"><circle cx="256" cy="256" r="256"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="512" height="512" fill="#2FA98F"/>
+    <circle cx="256" cy="290" r="210" fill="#27907A"/>
+    <!-- armor -->
+    <path d="M110 512c8-88 66-132 146-132s138 44 146 132z" fill="#134E4A"/>
+    <path d="M256 392l-28 42 28 78 28-78z" fill="#5EEAD4"/>
+    <circle cx="256" cy="250" r="116" fill="#FFD9B8"/>
+    <!-- knight helm open face -->
+    <path d="M140 252c-4-92 52-140 116-140s120 48 116 140h-34c0-60-34-96-82-96s-82 36-82 96z" fill="#334155"/>
+    <path d="M196 176q60-30 120 0" stroke="#94A3B8" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M240 36v44h32V36z" fill="#F5A03C"/>
+    <circle cx="212" cy="260" r="11" fill="#26232B"/>
+    <circle cx="300" cy="260" r="11" fill="#26232B"/>
+    <path d="M226 302q30 22 60 0" stroke="#B4573B" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <!-- shield pin -->
+    <g transform="translate(256 456)">
+      <path d="M0-30c14 8 26 10 30 10 0 34-12 52-30 60-18-8-30-26-30-60 4 0 16-2 30-10z" fill="#5EEAD4"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><clipPath id="c"><circle cx="256" cy="256" r="256"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="512" height="512" fill="#F2622A"/>
+    <circle cx="256" cy="290" r="210" fill="#DD5520"/>
+    <path d="M110 512c8-88 66-132 146-132s138 44 146 132z" fill="#7C2D12"/>
+    <path d="M240 386h32v126h-32z" fill="#FFEDD5"/>
+    <circle cx="256" cy="250" r="116" fill="#F2C094"/>
+    <!-- beret -->
+    <path d="M150 206c6-64 50-102 106-102 60 0 104 42 106 106-40-18-72-24-106-24-32 0-70 6-106 20z" fill="#26232B"/>
+    <circle cx="296" cy="106" r="12" fill="#F2622A"/>
+    <!-- closed happy eyes -->
+    <path d="M196 260q16-16 32 0" stroke="#26232B" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M284 260q16-16 32 0" stroke="#26232B" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M228 302q28 20 56 0" stroke="#B4573B" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <!-- paintbrush pin -->
+    <g transform="translate(256 458) rotate(-40)">
+      <rect x="-6" y="-8" width="12" height="36" rx="4" fill="#FFEDD5"/>
+      <path d="M-6-8q6-16 6-22 0 6 6 22z" fill="#26232B"/>
+    </g>
+    <!-- palette dots -->
+    <circle cx="150" cy="160" r="10" fill="#FFF7ED" opacity="0.85"/>
+    <circle cx="366" cy="150" r="10" fill="#FFF7ED" opacity="0.85"/>
+    <circle cx="392" cy="196" r="7" fill="#FFF7ED" opacity="0.7"/>
+  </g>
+</svg>

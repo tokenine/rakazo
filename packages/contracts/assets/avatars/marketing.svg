@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><clipPath id="c"><circle cx="256" cy="256" r="256"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="512" height="512" fill="#D9508A"/>
+    <circle cx="256" cy="290" r="210" fill="#C24379"/>
+    <!-- blazer -->
+    <path d="M104 512c10-92 70-138 152-138s142 46 152 138z" fill="#831843"/>
+    <path d="M256 396l-30 46 30 70 30-70z" fill="#FFF1F2"/>
+    <path d="M256 402l-16 20 16 22 16-22z" fill="#F5A03C"/>
+    <!-- head -->
+    <circle cx="256" cy="250" r="116" fill="#FFD9B8"/>
+    <!-- wavy long hair -->
+    <path d="M134 268c-10-108 52-160 122-160s132 52 122 160c-2 40-14 66-30 80 8-34 6-60-4-84-40 14-136 14-176 0-10 24-12 50-4 84-16-14-28-40-30-80z" fill="#8A3B2E"/>
+    <path d="M138 268c-8 52 0 92 22 112l14-10c-16-30-18-66-12-96z" fill="#8A3B2E"/>
+    <path d="M374 268c8 52 0 92-22 112l-14-10c16-30 18-66 12-96z" fill="#8A3B2E"/>
+    <!-- eyes with lashes -->
+    <circle cx="212" cy="260" r="11" fill="#26232B"/>
+    <circle cx="300" cy="260" r="11" fill="#26232B"/>
+    <circle cx="216" cy="256" r="4" fill="#FFFFFF"/>
+    <circle cx="304" cy="256" r="4" fill="#FFFFFF"/>
+    <path d="M196 240q18-12 36-4" stroke="#26232B" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M280 236q18-8 36 4" stroke="#26232B" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- bright smile -->
+    <path d="M222 298q34 30 68 0" stroke="#B4573B" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <circle cx="256" cy="316" r="4" fill="#B4573B"/>
+    <!-- megaphone pin -->
+    <g transform="translate(256 462)">
+      <path d="M-26-14l34-14v40l-34-12z" fill="#F5A03C"/>
+      <rect x="-34" y="-12" width="12" height="22" rx="6" fill="#FFF1F2"/>
+    </g>
+  </g>
+</svg>

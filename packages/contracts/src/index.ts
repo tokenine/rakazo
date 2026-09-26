@@ -6,6 +6,7 @@ export * from "./brand.js";
 export * from "./desktop.js";
 export * from "./domain.js";
 export * from "./events.js";
+export * from "./expert-avatars.js";
 export * from "./experts.js";
 export * from "./ids.js";
 export * from "./integration-settings.js";

@@ -85,6 +85,7 @@ import type { Auth } from "@rakazo/auth";
 import type { Actor, ComputerStatus, McpServer, Me, SpaceNavigation } from "@rakazo/contracts";
 import {
   appContract,
+  EXPERT_AVATARS,
   EXPERT_CATALOG,
   EXPERT_MCP_PRESETS,
   EXPERT_SKILLS,
@@ -993,6 +994,11 @@ export function createRouter(deps: RouterDeps) {
       createFromExpert: authed.bots.createFromExpert.handler(async ({ context, input }) => {
         const expert = findExpert(input.expertKey);
         if (!expert) throw new ORPCError("NOT_FOUND", { message: "Unknown expert" });
+        const avatarKey = input.avatarKey?.trim() || expert.avatarKey;
+        // A bundled cartoon avatar becomes the bot's `color` data URL so every
+        // existing avatar render site shows it; unmapped keys fall back to the
+        // palette mascot shape.
+        const bundledAvatar = avatarKey ? EXPERT_AVATARS[avatarKey] : undefined;
         const bot = await repos
           .createBot(context.actor, {
             name: input.name?.trim() || expert.name,
@@ -1000,13 +1006,13 @@ export function createRouter(deps: RouterDeps) {
             description: expert.description,
             instructions: expert.instructions,
             notifyOnFinish: true,
-            color: expert.color,
+            color: bundledAvatar ?? `${expert.color}::shape_0`,
             computerMode: "team",
             modelProvider: expert.modelProvider,
             modelId: expert.modelId,
             thinkingLevel: expert.thinkingLevel,
             expertKey: expert.key,
-            avatarKey: input.avatarKey?.trim() || expert.avatarKey,
+            avatarKey,
           })
           .catch((error: unknown) => {
             throw mapSpaceLifecycleError(error);
