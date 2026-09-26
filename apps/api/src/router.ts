@@ -810,6 +810,14 @@ export function createRouter(deps: RouterDeps) {
           }),
         })),
       ),
+      connectors: authed.experts.connectors.handler(async () =>
+        Object.values(EXPERT_MCP_PRESETS).map((preset) => ({
+          slug: preset.slug,
+          name: preset.name,
+          description: preset.description,
+          endpoint: preset.endpoint,
+        })),
+      ),
     },
     models: {
       list: authed.models.list.handler(async () => [...listPiCatalog(), scriptedCatalogEntry]),

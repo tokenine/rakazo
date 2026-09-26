@@ -3,8 +3,10 @@ import type {
   CapabilityInstall,
   Connection,
   ConnectionCatalogItem,
+  ExpertConnectorSummary,
   IntegrationCatalogResult,
   IntegrationCatalogSurface,
+  McpServer,
 } from "@rakazo/contracts";
 import {
   abortableDelay,
@@ -111,6 +113,12 @@ export function PluginsOverlay({
   const connectionAttempt = useRef<AbortController | null>(null);
 
   async function refresh() {
+    const [bundledList, mcpList] = await Promise.all([
+      rpc.experts.connectors(),
+      rpc.mcp.servers.list(),
+    ]);
+    setBundled(bundledList);
+    setBundledServers(mcpList);
     const [items, installs, rows, catalogFeed] = await Promise.all([
       rpc.connections.catalog({}),
       rpc.capabilities.list(),
@@ -179,6 +187,9 @@ export function PluginsOverlay({
     };
   }, [detailKey, toolsTick]);
 
+  const [bundled, setBundled] = useState<ExpertConnectorSummary[]>([]);
+  const [bundledServers, setBundledServers] = useState<McpServer[]>([]);
+  const [addingSlug, setAddingSlug] = useState<string | null>(null);
   const featuredTiles = useMemo(() => buildFeaturedConnectorTiles(catalog), [catalog]);
   const showFeatured = !query.trim();
 
@@ -723,7 +734,89 @@ export function PluginsOverlay({
               />
             </div>
           ) : null}
-          {catalogError ? <p className="mb-4 text-sm text-destructive">{catalogError}</p> : null}
+          <div className="mb-6" data-testid="bundled-connectors">
+            <h3 className="mb-2 text-[15px] font-medium text-foreground">
+              <Trans>Bundled connectors</Trans>
+            </h3>
+            <p className="mb-3 text-[13px] text-muted-foreground/80">
+              <Trans>
+                Official remote MCP connectors ready to add — authorize once and your agents can use
+                them.
+              </Trans>
+            </p>
+            <div className="grid gap-2">
+              {bundled.map((connector) => {
+                const server = bundledServers.find((entry) => entry.slug === connector.slug);
+                const connected = server?.oauthStatus === "connected";
+                return (
+                  <div
+                    key={connector.slug}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14.5px] font-medium text-foreground">
+                          {connector.name}
+                        </span>
+                        {connected ? (
+                          <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11.5px] text-success">
+                            <Trans>Connected</Trans>
+                          </span>
+                        ) : server ? (
+                          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11.5px] text-warning">
+                            <Trans>Needs authorization</Trans>
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="truncate text-[12.5px] text-muted-foreground/80">
+                        {connector.description}
+                      </p>
+                    </div>
+                    {!server ? (
+                      <Button
+                        className="shrink-0 rounded-full"
+                        disabled={addingSlug === connector.slug}
+                        data-testid={`add-connector-${connector.slug}`}
+                        onClick={async () => {
+                          setAddingSlug(connector.slug);
+                          try {
+                            await rpc.mcp.servers.create({
+                              slug: connector.slug,
+                              name: connector.name,
+                              description: connector.description,
+                              enabled: true,
+                              transport: "streamable_http",
+                              endpoint: connector.endpoint,
+                              headers: {},
+                            });
+                            const mcpList = await rpc.mcp.servers.list();
+                            setBundledServers(mcpList);
+                          } catch {
+                            /* surfaced by the next refresh */
+                          } finally {
+                            setAddingSlug(null);
+                          }
+                        }}
+                      >
+                        <Trans>Add</Trans>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        className="shrink-0 rounded-full"
+                        onClick={onOpenMcp}
+                      >
+                        {connected ? <Trans>Manage</Trans> : <Trans>Authorize</Trans>}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {catalogError && !catalogError.includes("Failed to fetch") ? (
+            <p className="mb-4 text-sm text-destructive">{catalogError}</p>
+          ) : null}
 
           {detailItem ? (
             renderDetail(detailItem)

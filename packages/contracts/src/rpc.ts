@@ -30,6 +30,7 @@ import {
   CreateRoutineInput,
   CreateScratchpadItemInput,
   DeploymentSettingsSchema,
+  ExpertConnectorSummarySchema,
   ExpertSummarySchema,
   ExportManifestSchema,
   ExternalConversationPolicySchema,
@@ -237,6 +238,8 @@ export const appContract = {
   },
   experts: {
     list: oc.output(z.array(ExpertSummarySchema)),
+    /** Bundled connector presets (remote MCP) shown as cards in Integrations. */
+    connectors: oc.output(z.array(ExpertConnectorSummarySchema)),
   },
   bots: {
     list: oc.output(z.array(BotSchema)),
