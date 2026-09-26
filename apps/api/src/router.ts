@@ -160,6 +160,7 @@ import {
   serializeSpaceMemoryConfig,
   updateMemoryProviderDefaultScope,
 } from "./memory-provider-config.js";
+import { telegramSetWebhook, telegramWebhookStatus } from "./messaging-telegram.js";
 import {
   chooseFocus,
   dismissFocus,
@@ -459,6 +460,9 @@ export interface RouterDeps {
     updaterToken?: string;
     imageTag?: string;
     integrationsCatalogUrl?: string;
+    telegramBotToken?: string;
+    telegramWebhookSecret?: string;
+    messagingPublicOrigin?: string;
   };
 }
 
@@ -4208,6 +4212,48 @@ export function createRouter(deps: RouterDeps) {
           ),
         };
       }),
+      telegram: {
+        webhookStatus: authed.messaging.telegram.webhookStatus.handler(async ({ context }) => {
+          if (!context.actor.isDeploymentOwner) throw new ORPCError("FORBIDDEN");
+          const token = deps.env.telegramBotToken;
+          if (!token)
+            return {
+              configured: false,
+              webhookUrl: null,
+              lastErrorMessage: null,
+              pendingUpdateCount: 0,
+            };
+          try {
+            return await telegramWebhookStatus(token);
+          } catch (error) {
+            return {
+              configured: true,
+              webhookUrl: null,
+              lastErrorMessage: error instanceof Error ? error.message : "Telegram API error",
+              pendingUpdateCount: 0,
+            };
+          }
+        }),
+        setWebhook: authed.messaging.telegram.setWebhook.handler(async ({ context, input }) => {
+          if (!context.actor.isDeploymentOwner) throw new ORPCError("FORBIDDEN");
+          const token = deps.env.telegramBotToken;
+          const secret = deps.env.telegramWebhookSecret;
+          if (!token || !secret) {
+            throw new ORPCError("FAILED_PRECONDITION", {
+              message:
+                "TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET_TOKEN must be set in the server environment first.",
+            });
+          }
+          const origin = (
+            input.baseUrl?.trim() ||
+            deps.env.messagingPublicOrigin ||
+            deps.env.webOrigin
+          ).replace(/\/+$/, "");
+          const webhookUrl = `${origin}/api/v1/messaging/webhook/telegram`;
+          await telegramSetWebhook(token, webhookUrl, secret);
+          return { ok: true as const, webhookUrl };
+        }),
+      },
       link: {
         start: authed.messaging.link.start.handler(async ({ context, input }) => {
           const bot = await deps.prisma.bot.findFirst({

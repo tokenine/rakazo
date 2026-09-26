@@ -668,6 +668,20 @@ export const appContract = {
   /** External messaging surface: link state, group channels, agent connections. */
   messaging: {
     status: oc.output(MessagingStatusSchema),
+    telegram: {
+      webhookStatus: oc.output(
+        z.object({
+          /** False when the deployment has no Telegram token configured. */
+          configured: z.boolean(),
+          webhookUrl: z.string().nullable(),
+          lastErrorMessage: z.string().nullable(),
+          pendingUpdateCount: z.number().int().nonnegative(),
+        }),
+      ),
+      setWebhook: oc
+        .input(z.object({ baseUrl: z.string().url().optional() }))
+        .output(z.object({ ok: z.literal(true), webhookUrl: z.string() })),
+    },
     link: {
       /** Issue a short-lived code the user sends to the line from a chat app. */
       start: oc

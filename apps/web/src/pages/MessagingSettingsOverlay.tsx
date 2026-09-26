@@ -185,6 +185,8 @@ export function MessagingSettingsOverlay({ onClose }: { onClose: () => void }) {
           ) : null}
         </section>
 
+        {status?.providers.includes("telegram") ? <TelegramChannelCard /> : null}
+
         <section className="mt-5 rounded-xl border border-border px-4 py-4">
           <h3 className="text-[15px] font-medium text-foreground">
             <Trans>Channels</Trans>
@@ -384,5 +386,72 @@ export function MessagingSettingsOverlay({ onClose }: { onClose: () => void }) {
         </section>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type TelegramStatus = Awaited<ReturnType<typeof rpc.messaging.telegram.webhookStatus>>;
+
+/**
+ * Deployment-owner Telegram channel card: shows the registered webhook state
+ * and registers it against the deployment's public origin in one click.
+ * Hidden for non-owners (webhookStatus is owner-gated server-side).
+ */
+function TelegramChannelCard() {
+  const { t } = useLingui();
+  const [status, setStatus] = useState<TelegramStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    rpc.messaging.telegram
+      .webhookStatus()
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
+
+  async function setupWebhook() {
+    setBusy(true);
+    setError(null);
+    try {
+      await rpc.messaging.telegram.setWebhook({});
+      setStatus(await rpc.messaging.telegram.webhookStatus());
+    } catch {
+      setError(t`Couldn't register the webhook. Check the server logs.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!status) return null;
+  return (
+    <section className="mt-5 rounded-xl border border-border px-4 py-4">
+      <h3 className="text-[15px] font-medium text-foreground">Telegram</h3>
+      <p className="mt-2 text-[13px] text-muted-foreground/70">
+        {status.webhookUrl ? (
+          <Trans>
+            Webhook: <span className="font-mono text-foreground">{status.webhookUrl}</span>
+          </Trans>
+        ) : (
+          <Trans>
+            No webhook registered — the bot receives messages by long-polling instead. Registering a
+            webhook on a public HTTPS origin is more reliable.
+          </Trans>
+        )}
+      </p>
+      {status.lastErrorMessage ? (
+        <p className="mt-2 text-[13px] text-destructive">{status.lastErrorMessage}</p>
+      ) : null}
+      {error ? <p className="mt-2 text-[13px] text-destructive">{error}</p> : null}
+      <div className="mt-3">
+        <Button
+          variant="secondary"
+          className="rounded-full"
+          disabled={busy}
+          onClick={() => void setupWebhook()}
+        >
+          {status.webhookUrl ? <Trans>Re-register webhook</Trans> : <Trans>Register webhook</Trans>}
+        </Button>
+      </div>
+    </section>
   );
 }

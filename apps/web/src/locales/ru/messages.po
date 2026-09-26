@@ -331,7 +331,7 @@ msgstr "Расширенные..."
 msgid "Agent computer"
 msgstr "Компьютер агента"
 
-#: src/pages/MessagingSettingsOverlay.tsx:261
+#: src/pages/MessagingSettingsOverlay.tsx:265
 msgid "Agent connections"
 msgstr "Подключения агента"
 
@@ -438,8 +438,8 @@ msgstr "Внешний вид"
 msgid "Approval boundaries"
 msgstr "Границы одобрения"
 
-#: src/pages/MessagingSettingsOverlay.tsx:223
-#: src/pages/MessagingSettingsOverlay.tsx:296
+#: src/pages/MessagingSettingsOverlay.tsx:227
+#: src/pages/MessagingSettingsOverlay.tsx:300
 #: src/pages/shell/message-cards.tsx:398
 msgid "Approve"
 msgstr "Утвердить"
@@ -678,7 +678,7 @@ msgstr "отменен"
 msgid "Cancelled"
 msgstr "Отменено"
 
-#: src/pages/MessagingSettingsOverlay.tsx:190
+#: src/pages/MessagingSettingsOverlay.tsx:194
 msgid "Channels"
 msgstr "Каналы"
 
@@ -769,7 +769,7 @@ msgid "Client secret"
 msgstr "Секрет клиента"
 
 #: src/pages/KnowledgeSection.tsx:438
-#: src/pages/MessagingSettingsOverlay.tsx:361
+#: src/pages/MessagingSettingsOverlay.tsx:365
 #: src/pages/PeerMessagesOverlay.tsx:91
 #: src/pages/PeerMessagesOverlay.tsx:92
 #: src/pages/RoutineEditor.tsx:272
@@ -1357,6 +1357,10 @@ msgstr ""
 msgid "Couldn't load messaging settings"
 msgstr "Не удалось загрузить настройки обмена сообщениями."
 
+#: src/pages/MessagingSettingsOverlay.tsx:421
+msgid "Couldn't register the webhook. Check the server logs."
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx:71
 msgid "Couldn't update avatars"
 msgstr "Не удалось обновить аватары"
@@ -1463,8 +1467,8 @@ msgstr ""
 msgid "days"
 msgstr "дни"
 
-#: src/pages/MessagingSettingsOverlay.tsx:237
-#: src/pages/MessagingSettingsOverlay.tsx:310
+#: src/pages/MessagingSettingsOverlay.tsx:241
+#: src/pages/MessagingSettingsOverlay.tsx:314
 msgid "Decline"
 msgstr "Отклонить"
 
@@ -1750,7 +1754,7 @@ msgid "Export this week's list from the CRM and drop it in the shared folder"
 msgstr "Экспортируйте список этой недели из CRM и поместите его в общую папку."
 
 #: src/pages/ExternalConversationSettings.tsx:84
-#: src/pages/MessagingSettingsOverlay.tsx:351
+#: src/pages/MessagingSettingsOverlay.tsx:355
 msgid "External conversation"
 msgstr "Внешний диалог"
 
@@ -1852,7 +1856,7 @@ msgstr "Подготовка"
 msgid "Git event"
 msgstr "Git-событие"
 
-#: src/pages/MessagingSettingsOverlay.tsx:204
+#: src/pages/MessagingSettingsOverlay.tsx:208
 #: src/pages/Shell.tsx:3270
 #: src/pages/Shell.tsx:3427
 msgid "Group"
@@ -2044,7 +2048,7 @@ msgstr "Язык"
 msgid "Later"
 msgstr "Позже"
 
-#: src/pages/MessagingSettingsOverlay.tsx:249
+#: src/pages/MessagingSettingsOverlay.tsx:253
 msgid "Leave"
 msgstr "Выйти"
 
@@ -2421,7 +2425,7 @@ msgstr "Новый навык"
 msgid "New space"
 msgstr "Новое пространство"
 
-#: src/pages/MessagingSettingsOverlay.tsx:265
+#: src/pages/MessagingSettingsOverlay.tsx:269
 msgid "No agent connections yet."
 msgstr "Агентских подключений пока нет."
 
@@ -2453,7 +2457,7 @@ msgstr "Приложения для чата пока не связаны."
 msgid "No exceptions. Actions run automatically."
 msgstr "Никаких исключений. Действия выполняются автоматически."
 
-#: src/pages/MessagingSettingsOverlay.tsx:194
+#: src/pages/MessagingSettingsOverlay.tsx:198
 msgid "No group chats yet."
 msgstr "Групповых чатов пока нет."
 
@@ -2506,7 +2510,7 @@ msgstr "Запусков пока нет"
 msgid "No skills yet"
 msgstr "Навыков пока нет"
 
-#: src/pages/MessagingSettingsOverlay.tsx:340
+#: src/pages/MessagingSettingsOverlay.tsx:344
 msgid "No team conversations yet."
 msgstr "Командных диалогов пока нет."
 
@@ -2517,6 +2521,10 @@ msgstr "Нет доступных инструментов."
 #: src/pages/RoutineEditor.tsx:108
 msgid "No trigger"
 msgstr "Нет триггера"
+
+#: src/pages/MessagingSettingsOverlay.tsx:437
+msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
+msgstr ""
 
 #: src/pages/ScratchpadSection.tsx:110
 msgid "None yet"
@@ -2745,6 +2753,10 @@ msgstr "В очереди"
 msgid "Quote"
 msgstr ""
 
+#: src/pages/MessagingSettingsOverlay.tsx:449
+msgid "Re-register webhook"
+msgstr ""
+
 #: src/pages/Shell.tsx:5618
 msgid "React"
 msgstr ""
@@ -2844,6 +2856,10 @@ msgstr "Обновить экран"
 #: src/components/teach/TeachComputerOverlay.tsx:271
 msgid "Refreshing…"
 msgstr "Обновление…"
+
+#: src/pages/MessagingSettingsOverlay.tsx:449
+msgid "Register webhook"
+msgstr ""
 
 #: src/pages/Shell.tsx:5721
 msgid "Release"
@@ -3000,7 +3016,7 @@ msgstr "Вернуться в Aidex"
 msgid "rev {0}"
 msgstr "версия {0}"
 
-#: src/pages/MessagingSettingsOverlay.tsx:324
+#: src/pages/MessagingSettingsOverlay.tsx:328
 msgid "Revoke"
 msgstr "Отозвать"
 
@@ -3208,7 +3224,7 @@ msgstr "Имя сервера"
 msgid "Server URL"
 msgstr "URL-адрес сервера"
 
-#: src/pages/MessagingSettingsOverlay.tsx:361
+#: src/pages/MessagingSettingsOverlay.tsx:365
 #: src/pages/SettingsOverlay.tsx:94
 #: src/pages/SettingsOverlay.tsx:149
 #: src/pages/Shell.tsx:3133
@@ -3455,7 +3471,7 @@ msgstr "Команда"
 msgid "Team Computer"
 msgstr "Командный компьютер"
 
-#: src/pages/MessagingSettingsOverlay.tsx:336
+#: src/pages/MessagingSettingsOverlay.tsx:340
 msgid "Team conversations"
 msgstr "Командные диалоги"
 
@@ -3726,6 +3742,11 @@ msgstr "Ожидание…"
 #: src/pages/RoutineEditor.tsx:475
 msgid "Webhook"
 msgstr "Вебхук"
+
+#. placeholder {0}: status.webhookUrl
+#: src/pages/MessagingSettingsOverlay.tsx:433
+msgid "Webhook: <0>{0}</0>"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx:635
 #: src/pages/RoutineSchedule.tsx:36

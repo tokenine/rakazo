@@ -475,6 +475,9 @@ export async function createApp(
       updaterToken: env.updaterToken,
       imageTag: env.imageTag,
       integrationsCatalogUrl: env.integrationsCatalogUrl,
+      telegramBotToken: env.telegramBotToken,
+      telegramWebhookSecret: env.telegramWebhookSecret,
+      messagingPublicOrigin: env.messagingPublicOrigin,
     },
   });
   const rpc = new RPCHandler(router, {
