@@ -1321,3 +1321,28 @@ model IntegrationProviderConfig {
 
   @@map("integration_provider_configs")
 }
+
+/// Pending/completed client-browser commands (server → desktop app).
+model ClientBrowserCommand {
+  id          String    @id @default(cuid())
+  userId      String
+  threadId    String?
+  runId       String?
+  payload     Json
+  status      String    @default("pending")
+  result      Json?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([userId, status])
+  @@map("client_browser_commands")
+}
+
+/// Desktop app availability heartbeat for the client browser channel.
+model ClientBrowserSession {
+  userId      String   @id
+  lastSeenAt  DateTime @default(now())
+  appVersion  String?
+
+  @@map("client_browser_sessions")
+}

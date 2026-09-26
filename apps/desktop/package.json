@@ -17,7 +17,10 @@
   },
   "dependencies": {
     "@rakazo/contracts": "workspace:*",
-    "electron-updater": "6.8.9"
+    "electron-updater": "6.8.9",
+    "zod": "^4.4.3",
+    "ws": "^8.18.0",
+    "playwright-core": "1.59.1"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
@@ -25,7 +28,8 @@
     "electron": "44.3.0",
     "electron-builder": "26.15.3",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "@types/ws": "^8.5.13"
   },
   "build": {
     "appId": "dev.rakazo.desktop",

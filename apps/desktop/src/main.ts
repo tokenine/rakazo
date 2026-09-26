@@ -21,6 +21,11 @@ import {
   LAUNCH_CHECK_DELAY_MS,
 } from "./auto-update.js";
 import { openBrowserAuth } from "./browser-auth.js";
+import {
+  registerClientBrowserIpc,
+  setClientBrowserAppOrigin,
+  setupClientBrowserCdp,
+} from "./client-browser/index.js";
 import { DOCKER_INSTALL_LINKS, isDesktopSetupLink, runDocker } from "./docker-cli.js";
 import { requestLocalSettings } from "./local-settings.js";
 import {
@@ -257,12 +262,14 @@ function createWindow(url: string, partition: string | null) {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      webviewTag: true,
       ...(partition === null ? {} : { partition }),
     },
   });
   mainWindow = win;
   appWindowTargets.set(win, url);
   const targetOrigin = safeOrigin(url);
+  if (targetOrigin) setClientBrowserAppOrigin(targetOrigin);
   // Intentional OAuth flows open the provider's authorize page via a named
   // window; give those and same-origin popups a normal frame. Everything else
   // opens in the system browser so a connected server cannot navigate us away.
@@ -548,7 +555,7 @@ async function installBundledRenderer(
         "content-type": contentType(file),
         "x-content-type-options": "nosniff",
       });
-      return new Response(body, { headers });
+      return new Response(body as BodyInit, { headers });
     }
     return forward();
   });
@@ -1000,7 +1007,9 @@ function safeOrigin(targetUrl: string) {
   }
 }
 
+setupClientBrowserCdp();
 app.whenReady().then(async () => {
+  registerClientBrowserIpc(() => mainWindow);
   installSessionPermissions(session.defaultSession, permissionTarget);
   const userDataDir = app.getPath("userData");
   localStack = new LocalStackController({

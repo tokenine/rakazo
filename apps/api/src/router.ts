@@ -4538,6 +4538,60 @@ export function createRouter(deps: RouterDeps) {
         deleteAgentSecret({ prisma: deps.prisma, secrets: deps.secrets }, context.actor, input.id),
       ),
     },
+    clientBrowser: {
+      heartbeat: authed.clientBrowser.heartbeat.handler(async ({ context, input }) => {
+        await deps.prisma.clientBrowserSession.upsert({
+          where: { userId: context.actor.userId },
+          create: { userId: context.actor.userId, appVersion: input.appVersion ?? null },
+          update: { lastSeenAt: new Date(), appVersion: input.appVersion ?? null },
+        });
+        return { ok: true as const };
+      }),
+      pending: authed.clientBrowser.pending.handler(async ({ context }) => {
+        const rows = await deps.prisma.clientBrowserCommand.findMany({
+          where: { userId: context.actor.userId, status: "pending" },
+          orderBy: { createdAt: "asc" },
+          take: 5,
+        });
+        return rows.flatMap((row) => {
+          const payload = row.payload as { code?: string; timeoutMs?: number };
+          return typeof payload.code === "string"
+            ? [{ id: row.id, code: payload.code, timeoutMs: payload.timeoutMs }]
+            : [];
+        });
+      }),
+      respond: authed.clientBrowser.respond.handler(async ({ context, input }) => {
+        const row = await deps.prisma.clientBrowserCommand.findFirst({
+          where: { id: input.id, userId: context.actor.userId },
+        });
+        if (!row) throw new IsolationError();
+        await deps.prisma.clientBrowserCommand.update({
+          where: { id: input.id },
+          data: {
+            status: input.ok ? "done" : "error",
+            result: {
+              ok: input.ok,
+              url: input.url,
+              title: input.title,
+              text: input.text,
+              imageBase64: input.imageBase64,
+              imageMimeType: input.imageMimeType,
+              error: input.error,
+            },
+            completedAt: new Date(),
+          },
+        });
+        return { ok: true as const };
+      }),
+      availability: authed.clientBrowser.availability.handler(async ({ context }) => {
+        const session = await deps.prisma.clientBrowserSession.findUnique({
+          where: { userId: context.actor.userId },
+        });
+        const lastSeenAt = session?.lastSeenAt ?? null;
+        const available = Boolean(lastSeenAt && Date.now() - lastSeenAt.getTime() < 90_000);
+        return { available, lastSeenAt: lastSeenAt?.toISOString() ?? null };
+      }),
+    },
     approvalRules: {
       list: authed.approvalRules.list.handler(async ({ context }) => {
         const rows = await deps.prisma.actionApprovalRule.findMany({

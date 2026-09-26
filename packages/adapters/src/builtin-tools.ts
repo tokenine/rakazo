@@ -122,6 +122,25 @@ export const builtinAgentTools: ConnectorTool[] = [
     },
   },
   {
+    name: "client_js",
+    description:
+      "Run JavaScript with Playwright locators in the USER's desktop app browser — the browser pane with the user's own imported logins (TikTok, Facebook, etc). Only available when the user's desktop app is online (recent heartbeat). The code gets `agent.browsers.tab()` with `tab.page` (Playwright Page: getByRole, getByText, locator, goto, click, fill, evaluate, waitFor), `await tab.domSnapshot()`, `await tab.screenshot()`, and `agent.write(text)`. Prefer this over the bot browser when the task needs the user's logged-in sessions. Returns written text and an optional screenshot.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description: "JavaScript to run. Use return or agent.write for output.",
+        },
+        timeout_ms: {
+          type: "number",
+          description: "Optional cap, 1000-120000 ms (default 60000).",
+        },
+      },
+      required: ["code"],
+    },
+  },
+  {
     name: "list_files",
     description:
       "List files and directories in this bot's home. On a Team Computer, relative paths use the bot folder; use shared/... for shared work or bots/... to inspect the Team root.",

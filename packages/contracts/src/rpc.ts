@@ -711,6 +711,40 @@ export const appContract = {
       revoke: oc.input(z.object({ connectionId: Id })).output(z.object({ ok: z.literal(true) })),
     },
   },
+  clientBrowser: {
+    /** Desktop heartbeat — marks the client browser as available. */
+    heartbeat: oc
+      .input(z.object({ appVersion: z.string().max(80).optional() }))
+      .output(z.object({ ok: z.literal(true) })),
+    /** Desktop renderer polls this for commands addressed to its user. */
+    pending: oc.output(
+      z.array(
+        z.object({
+          id: Id,
+          code: z.string(),
+          timeoutMs: z.number().int().optional(),
+        }),
+      ),
+    ),
+    respond: oc
+      .input(
+        z.object({
+          id: Id,
+          ok: z.boolean(),
+          url: z.string().default(""),
+          title: z.string().default(""),
+          text: z.string().optional(),
+          imageBase64: z.string().optional(),
+          imageMimeType: z.string().optional(),
+          error: z.string().optional(),
+        }),
+      )
+      .output(z.object({ ok: z.literal(true) })),
+    /** Agent-side availability probe (recent desktop heartbeat). */
+    availability: oc.output(
+      z.object({ available: z.boolean(), lastSeenAt: z.string().nullable() }),
+    ),
+  },
   approvalRules: {
     list: oc.output(z.array(ActionApprovalRuleSchema)),
     set: oc

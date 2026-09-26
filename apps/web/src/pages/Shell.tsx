@@ -87,6 +87,7 @@ import {
   Clock,
   Copy,
   Gauge,
+  Globe,
   LayoutGrid,
   Lock,
   LogOut,
@@ -217,6 +218,7 @@ import type { SettingsSection } from "./SettingsOverlay";
 import { SpaceSearchResults } from "./SpaceSearch";
 import { BotSettings, CreateBotForm } from "./shell/bot-panel";
 import { BotCreatePicker } from "./shell/bot-picker";
+import { ClientBrowserPanel } from "./shell/client-browser-panel";
 import { CommandPalette, isCommandPaletteHotkey } from "./shell/command-palette";
 import {
   ClearConversationDialog,
@@ -264,6 +266,7 @@ type Panel =
   | "settings"
   | "routine"
   | "create"
+  | "browser"
   | "create-blank"
   | "create-group"
   | "group-settings"
@@ -323,6 +326,40 @@ function readCollapsedSidebarSections(userId: string | null | undefined): Set<st
   }
 }
 
+// Client-browser command loop: heartbeat the desktop app and execute commands
+// the agent addresses to this user's browser pane. Desktop only.
+function useClientBrowserChannel() {
+  const bridge = desktopBridge();
+  useEffect(() => {
+    if (!bridge?.clientBrowser) return;
+    let stopped = false;
+    const tick = async () => {
+      while (!stopped) {
+        let processed = 0;
+        try {
+          await rpc.clientBrowser.heartbeat({ appVersion: "desktop" });
+          const pending = await rpc.clientBrowser.pending();
+          for (const command of pending) {
+            const result = await bridge.clientBrowser!.runJs({
+              code: command.code,
+              timeoutMs: command.timeoutMs,
+            });
+            await rpc.clientBrowser.respond({ id: command.id, ...result }).catch(() => undefined);
+            processed += 1;
+          }
+        } catch {
+          /* server unreachable — retry on the next tick */
+        }
+        await new Promise((resolve) => setTimeout(resolve, processed > 0 ? 50 : 900));
+      }
+    };
+    void tick();
+    return () => {
+      stopped = true;
+    };
+  }, [bridge]);
+}
+
 export function ShellPage() {
   const { t } = useLingui();
   const { botId, groupId } = useParams();
@@ -368,6 +405,7 @@ export function ShellPage() {
   const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [panel, setPanel] = useState<Panel>(null);
+  useClientBrowserChannel();
   const [peerConversation, setPeerConversation] = useState<{
     peerBotId: string;
     peerBotName: string;
@@ -3307,6 +3345,21 @@ export function ShellPage() {
                 <Monitor size={18} strokeWidth={1.6} className="text-foreground/75" />
               </button>
             ) : null}
+            {active && desktopBridge() ? (
+              <button
+                type="button"
+                aria-label={t`Browser`}
+                data-testid="open-client-browser"
+                onClick={() => {
+                  const next = panel === "browser" ? null : "browser";
+                  setPanel(next);
+                }}
+                data-active={panel === "browser" ? "" : undefined}
+                className="app-no-drag grid h-[30px] w-[34px] place-items-center rounded-[9px] hover:bg-accent data-active:bg-accent"
+              >
+                <Globe size={18} strokeWidth={1.6} className="text-foreground/75" />
+              </button>
+            ) : null}
           </div>
         </div>
         {!active && !activeGroup && initialBotsLoaded ? (
@@ -3592,6 +3645,7 @@ export function ShellPage() {
                 }}
               />
             ) : null}
+            {panel === "browser" && desktopBridge() ? <ClientBrowserPanel /> : null}
             {panel === "create" ? (
               <ExpertCreatePanel
                 onCancel={() => setPanel(null)}

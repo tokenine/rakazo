@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld("rakazoDesktop", {
     download: () => ipcRenderer.invoke("desktop.update.download"),
     install: () => ipcRenderer.invoke("desktop.update.install"),
   },
+  clientBrowser: {
+    importChrome: () => ipcRenderer.invoke("desktop.clientBrowser.importChrome"),
+    clearData: (mode) => ipcRenderer.invoke("desktop.clientBrowser.clearData", { mode }),
+    runJs: (payload) => ipcRenderer.invoke("desktop.clientBrowser.runJs", payload),
+  },
   oauth: {
     open: (url) => ipcRenderer.invoke("desktop.oauth.open", url),
     cancel: (url) => ipcRenderer.invoke("desktop.oauth.cancel", url),

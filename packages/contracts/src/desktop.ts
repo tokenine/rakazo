@@ -49,6 +49,27 @@ export interface RakazoDesktop {
     state: () => Promise<{ minimized: boolean; maximized: boolean; fullScreen: boolean }>;
   };
   update: RakazoDesktopUpdate;
+  clientBrowser?: {
+    importChrome: () => Promise<{
+      success: boolean;
+      cookies: { imported: number; skipped: number; failed: number };
+      localStorage: { originsImported: number; entriesImported: number; error?: string };
+      issues?: string[];
+      error?: string;
+    }>;
+    clearData: (options: {
+      mode: "cache" | "all";
+    }) => Promise<{ success: boolean; error?: string }>;
+    runJs: (payload: { code: string; timeoutMs?: number; targetUrl?: string }) => Promise<{
+      ok: boolean;
+      url: string;
+      title: string;
+      text?: string;
+      imageBase64?: string;
+      imageMimeType?: string;
+      error?: string;
+    }>;
+  };
   oauth: {
     /**
      * Open system-browser auth. A redirect_uri must be HTTP loopback with state;
