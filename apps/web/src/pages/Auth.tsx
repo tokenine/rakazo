@@ -237,10 +237,11 @@ function AuthFrame({
   return (
     <div className="flex min-h-full items-center justify-center bg-background px-6 py-16 text-foreground">
       <form onSubmit={onSubmit} className="flex w-[460px] flex-col items-center">
-        <div className="flex h-[74px] w-[74px] items-center justify-center gap-[11px] rounded-full bg-muted">
-          <span className="h-5 w-[9px] rounded-full bg-primary" />
-          <span className="h-5 w-[9px] rounded-full bg-primary" />
-        </div>
+        <img
+          src="/favicon-ai7.svg"
+          alt="Ai7"
+          className="h-[78px] w-[78px] drop-shadow-[0_10px_24px_rgba(249,115,22,0.3)]"
+        />
         <h1 aria-live="polite" className="mb-9 mt-7 text-4xl font-medium tracking-tight">
           {title}
         </h1>

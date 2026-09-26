@@ -405,6 +405,11 @@ export function ShellPage() {
   const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [panel, setPanel] = useState<Panel>(null);
+  const [browserPaneWidth, setBrowserPaneWidth] = useState(() => {
+    const stored = Number(localStorage.getItem("ai7.browserPaneWidth"));
+    return Number.isFinite(stored) && stored >= 420 ? stored : Math.round(window.innerWidth * 0.55);
+  });
+  const browserPaneResizing = useRef(false);
   useClientBrowserChannel();
   const [peerConversation, setPeerConversation] = useState<{
     peerBotId: string;
@@ -3474,11 +3479,53 @@ export function ShellPage() {
         data-testid="side-panel"
         data-panel={panel ?? "closed"}
         className={`absolute inset-y-0 end-0 z-20 flex min-h-0 shrink-0 flex-col overflow-hidden bg-background transition-[width] duration-150 ease-out md:relative ${
-          panel && (active || activeGroup || panel === "create")
-            ? "w-full max-w-[384px] border-s border-sidebar-border md:w-[384px] md:max-w-none"
-            : "pointer-events-none w-0"
+          panel === "browser" && desktopBridge()
+            ? "w-full border-s border-sidebar-border md:w-[var(--browser-pane-width)] md:max-w-none"
+            : panel && (active || activeGroup || panel === "create")
+              ? "w-full max-w-[384px] border-s border-sidebar-border md:w-[384px] md:max-w-none"
+              : "pointer-events-none w-0"
         }`}
+        style={
+          panel === "browser" && desktopBridge()
+            ? ({ "--browser-pane-width": `${browserPaneWidth}px` } as React.CSSProperties)
+            : undefined
+        }
       >
+        {panel === "browser" && desktopBridge() ? (
+          <>
+            {/* biome-ignore lint/a11y/useSemanticElements: pointer drag handle, not an <hr> */}
+            <div
+              data-testid="browser-pane-resizer"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t`Resize browser pane`}
+              className="absolute inset-y-0 start-0 z-30 w-[6px] cursor-col-resize hover:bg-foreground/10"
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId);
+                browserPaneResizing.current = true;
+              }}
+              onPointerMove={(event) => {
+                if (!browserPaneResizing.current) return;
+                const next = Math.round(
+                  Math.min(
+                    window.innerWidth - 320,
+                    Math.max(420, window.innerWidth - event.clientX),
+                  ),
+                );
+                setBrowserPaneWidth(next);
+              }}
+              onPointerUp={(event) => {
+                browserPaneResizing.current = false;
+                event.currentTarget.releasePointerCapture(event.pointerId);
+                localStorage.setItem("ai7.browserPaneWidth", String(browserPaneWidth));
+              }}
+            />
+            <div className="flex h-full min-h-0 w-full flex-col">
+              <ClientBrowserPanel />
+            </div>
+          </>
+        ) : null}
+
         {panel && (active || activeGroup || panel === "create") ? (
           <div className="rk-scroll h-full w-full overflow-y-auto px-5 py-[17px] md:w-[384px]">
             {panel !== "routine" &&
@@ -3645,7 +3692,6 @@ export function ShellPage() {
                 }}
               />
             ) : null}
-            {panel === "browser" && desktopBridge() ? <ClientBrowserPanel /> : null}
             {panel === "create" ? (
               <ExpertCreatePanel
                 onCancel={() => setPanel(null)}

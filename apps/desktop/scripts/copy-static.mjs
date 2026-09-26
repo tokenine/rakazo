@@ -16,17 +16,12 @@ const dist = path.join(root, "dist");
 
 await mkdir(dist, { recursive: true });
 const clientBrowserDir = path.join(root, "src", "client-browser");
-const clientBrowserMjs = (await readdir(clientBrowserDir)).filter((file) =>
-  file.endsWith(".mjs"),
-);
+const clientBrowserMjs = (await readdir(clientBrowserDir)).filter((file) => file.endsWith(".mjs"));
 await Promise.all([
   ...STATIC_FILES.map((file) => copyFile(path.join(root, "src", file), path.join(dist, file))),
   copyFile(TOKENS_FILE, path.join(dist, "tokens.css")),
   mkdir(path.join(dist, "client-browser"), { recursive: true }),
   ...clientBrowserMjs.map((file) =>
-    copyFile(
-      path.join(clientBrowserDir, file),
-      path.join(dist, "client-browser", file),
-    ),
+    copyFile(path.join(clientBrowserDir, file), path.join(dist, "client-browser", file)),
   ),
 ]);
