@@ -129,34 +129,38 @@ export async function runClientBrowserJs(payload: {
     }
 
     const output: string[] = [];
+    const tab = {
+      page,
+      url: () => page.url(),
+      title: () => page.title(),
+      domSnapshot: async () =>
+        (await page
+          .locator("body")
+          .ariaSnapshot()
+          .catch(() => null)) ??
+        (await page.evaluate(() => document.body?.innerText?.slice(0, 20_000) ?? "")),
+      screenshot: async (options: { fullPage?: boolean } = {}) => {
+        const buffer = await page.screenshot({ type: "png", ...options });
+        return { imageBase64: buffer.toString("base64"), imageMimeType: "image/png" };
+      },
+    };
     const agent = {
       write: (value: unknown) => {
         output.push(typeof value === "string" ? value : JSON.stringify(value, null, 2));
       },
       browsers: {
-        tab: async () => ({
-          page,
-          url: () => page.url(),
-          title: () => page.title(),
-          domSnapshot: async () =>
-            (await page
-              .locator("body")
-              .ariaSnapshot()
-              .catch(() => null)) ??
-            (await page.evaluate(() => document.body?.innerText?.slice(0, 20_000) ?? "")),
-          screenshot: async (options: { fullPage?: boolean } = {}) => {
-            const buffer = await page.screenshot({ type: "png", ...options });
-            return { imageBase64: buffer.toString("base64"), imageMimeType: "image/png" };
-          },
-        }),
+        tab: async () => tab,
       },
     };
 
+    // `tab` is pre-bound in the code's scope — models routinely write
+    // `await tab.page.goto(...)` without calling agent.browsers.tab() first.
     const run = new Function(
       "agent",
+      "tab",
       `"use strict";\nreturn (async () => {\n${payload.code}\n})();`,
     );
-    const returned = await run(agent);
+    const returned = await run(agent, tab);
     let text = output.join("\n");
     if (returned !== undefined && returned !== null) {
       const rendered = typeof returned === "string" ? returned : JSON.stringify(returned, null, 2);
