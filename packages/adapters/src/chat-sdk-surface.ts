@@ -140,6 +140,13 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
     chat.adapters.set(platform.provider, platform.adapter);
     chat.webhooks[platform.provider] = (request, options) =>
       chat.handleWebhook(platform.provider, request, options);
+    // A late adapter misses boot initialize() (ensureInitialized short-circuits
+    // once done) — the Telegram adapter drops every webhook until initialized,
+    // so run it now against the live chat instance. Double-initialization is
+    // harmless: doInitialize snapshots the adapter map before we insert.
+    void (platform.adapter as { initialize?: (chat: unknown) => Promise<unknown> })
+      .initialize?.(this.chat)
+      .catch(() => undefined);
   }
 
   unregisterUserPlatform(provider: string): void {
