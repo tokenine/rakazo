@@ -54,7 +54,14 @@ export async function restoreComputerWorkspace(
   computer: ComputerRef,
   context: AdapterContext,
 ): Promise<void> {
-  if (computer.kind === "docker" && home instanceof LocalAgentHomeStore) return;
+  // Docker bind-mounts the home store directly; cloudflare keeps the workspace
+  // on the R2 mount inside the container. Neither copies through the home store.
+  if (
+    (computer.kind === "docker" && home instanceof LocalAgentHomeStore) ||
+    computer.kind === "cloudflare"
+  ) {
+    return;
+  }
   await sandbox.importWorkspace(computer, home.exportHome(homeKey, context), context);
 }
 
@@ -88,7 +95,11 @@ export async function checkpointComputerWorkspace(
   computer: ComputerRef,
   context: AdapterContext,
 ): Promise<string> {
-  if (computer.kind === "docker" && home instanceof LocalAgentHomeStore) {
+  if (
+    (computer.kind === "docker" || computer.kind === "cloudflare") &&
+    home instanceof LocalAgentHomeStore
+  ) {
+    // Externally durable workspace: only bump the revision stamp.
     return home.revise(homeKey);
   }
   const staging = await mkdtemp(path.join(tmpdir(), "rakazo-workspace-"));
@@ -109,7 +120,11 @@ export async function checkpointRunComputerWorkspace(
   computer: ComputerRef,
   context: AdapterContext,
 ): Promise<string | undefined> {
-  if (computerRecord.scope !== "team" || computer.kind === "docker") {
+  if (
+    computerRecord.scope !== "team" ||
+    computer.kind === "docker" ||
+    computer.kind === "cloudflare"
+  ) {
     return checkpointAndRecordComputerWorkspace(deps, computerRecord, computer, context);
   }
   const now = new Date();

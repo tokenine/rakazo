@@ -1,6 +1,8 @@
 import type { SandboxProvider } from "@rakazo/adapter-kit";
 import { BoxSandboxEmulator } from "./box-emulator.js";
 import { BoxSandboxProvider } from "./box-sandbox.js";
+import { CloudflareSandboxEmulator } from "./cloudflare-emulator.js";
+import { CloudflareSandboxProvider } from "./cloudflare-sandbox.js";
 import { CreateOSSandboxProvider } from "./createos-sandbox.js";
 import { DaytonaSandboxEmulator } from "./daytona-emulator.js";
 import { DaytonaSandboxProvider } from "./daytona-sandbox.js";
@@ -24,11 +26,13 @@ export interface SandboxProviderOptions {
   createosRootfs?: string;
   boxApiKey?: string;
   boxApiUrl?: string;
+  cfBridgeUrl?: string;
+  cfBridgeToken?: string;
   dataDir?: string;
 }
 
 function missingRemoteKey(
-  provider: "e2b" | "daytona" | "createos" | "box",
+  provider: "e2b" | "daytona" | "createos" | "box" | "cloudflare",
   envName: string,
 ): SandboxProvider {
   return new NoneSandboxProvider(
@@ -63,6 +67,16 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
     case "box":
       if (!opts.boxApiKey?.trim()) return missingRemoteKey("box", "BOX_API_KEY");
       return new BoxSandboxProvider({ apiKey: opts.boxApiKey, apiUrl: opts.boxApiUrl });
+    case "cloudflare":
+      if (!opts.cfBridgeUrl?.trim() || !opts.cfBridgeToken?.trim()) {
+        return missingRemoteKey("cloudflare", "CF_BRIDGE_URL and CF_BRIDGE_TOKEN");
+      }
+      return new CloudflareSandboxProvider({
+        bridgeUrl: opts.cfBridgeUrl.replace(/\/$/, ""),
+        bridgeToken: opts.cfBridgeToken,
+      });
+    case "cloudflare-emulator":
+      return new CloudflareSandboxEmulator();
     case "docker":
       return new DockerSandboxProvider(
         opts.supervisorUrl ?? "http://127.0.0.1:7091",
@@ -82,7 +96,7 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
       return new FakeSandboxProvider();
     default:
       throw new Error(
-        `Unknown SANDBOX_PROVIDER "${kind}". Use none | docker | e2b | daytona | createos | box | e2b-emulator | daytona-emulator | box-emulator | desktop | fake.`,
+        `Unknown SANDBOX_PROVIDER "${kind}". Use none | docker | e2b | daytona | createos | box | cloudflare | e2b-emulator | daytona-emulator | box-emulator | cloudflare-emulator | desktop | fake.`,
       );
   }
 }

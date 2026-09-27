@@ -10,6 +10,12 @@ export function resolveSandboxProvider(source: NodeJS.ProcessEnv = process.env):
   if (requested === "daytona" && !optional(source.DAYTONA_API_KEY)) return "none";
   if (requested === "createos" && !optional(source.CREATEOS_SANDBOX_API_KEY)) return "none";
   if (requested === "box" && !optional(source.BOX_API_KEY)) return "none";
+  if (
+    requested === "cloudflare" &&
+    (!optional(source.CF_BRIDGE_URL) || !optional(source.CF_BRIDGE_TOKEN))
+  ) {
+    return "none";
+  }
   // Production without a supervisor token cannot run Docker computers; boot as none instead of exiting.
   if (
     requested === "docker" &&
@@ -36,6 +42,8 @@ export function sandboxProviderOptionsFromEnv(
   | "createosRootfs"
   | "boxApiKey"
   | "boxApiUrl"
+  | "cfBridgeUrl"
+  | "cfBridgeToken"
 > {
   return {
     e2bApiKey: source.E2B_API_KEY,
@@ -48,6 +56,8 @@ export function sandboxProviderOptionsFromEnv(
     createosRootfs: source.CREATEOS_SANDBOX_ROOTFS,
     boxApiKey: source.BOX_API_KEY,
     boxApiUrl: source.BOX_API_URL ?? source.BOX_BASE_URL,
+    cfBridgeUrl: source.CF_BRIDGE_URL,
+    cfBridgeToken: source.CF_BRIDGE_TOKEN,
   };
 }
 
