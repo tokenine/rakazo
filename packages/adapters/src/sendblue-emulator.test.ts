@@ -48,6 +48,7 @@ describe("emulated sendblue platform inbound", () => {
       channelName: null,
       participants: [],
       content: "hi there",
+      media: [],
       mediaUrl: null,
     });
     // The DM thread id matches what outbound resolution would open.
