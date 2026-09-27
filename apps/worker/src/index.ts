@@ -37,7 +37,7 @@ import {
   pipedreamConfigFromEnv,
   reconcileCloudAgents,
   reconcileComputerUpdates,
-  registerTelegramUserBots,
+  reconcileTelegramUserBots,
   resolveDeploymentModel,
   resolvePiSessionRoot,
   resolveSandboxProvider,
@@ -126,11 +126,17 @@ async function main() {
   // per-user Telegram bots runs in this process, even when the deployment
   // itself hosts no messaging platforms.
   const messaging = new ChatSdkMessagingSurface(messagingPlatforms);
-  await registerTelegramUserBots({
+  await reconcileTelegramUserBots({
     prisma,
     secrets,
     messaging,
   });
+  // userConnect runs in the API process and only touches the API's surface;
+  // re-scan here so bots connected (or removed) after this boot can still
+  // deliver outbound without a worker restart.
+  setInterval(() => {
+    void reconcileTelegramUserBots({ prisma, secrets, messaging }).catch(() => undefined);
+  }, 15_000);
   const integrationSettings = new IntegrationProviderSettings(
     prisma,
     secrets,

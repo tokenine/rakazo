@@ -230,24 +230,32 @@ export function createUserTelegramPlatform(options: {
 export const TELEGRAM_SLOT_PROVIDER = "telegram";
 
 /**
- * Register every stored user telegram bot into a messaging surface (API: for
- * inbound webhooks; worker: for outbound delivery) under its own
- * `telegram-u<rowId>` key. Returns how many bots were registered. The
- * deployment env telegram adapter (provider "telegram") coexists untouched.
+ * Bring the surface's per-user telegram adapters in line with the stored
+ * rows: register adapters for rows that appeared (at boot or connected
+ * later), drop adapters whose rows were deleted, leave live ones alone.
+ * Idempotent — the worker calls this at startup and then on an interval,
+ * because a userConnect runs in the API process and only touches the API's
+ * surface; without reconciliation the worker could not deliver outbound for
+ * bots connected after its boot.
  */
-export async function registerTelegramUserBots(deps: {
+export async function reconcileTelegramUserBots(deps: {
   prisma: PrismaClient;
   secrets: EncryptedSecretStore;
   messaging: MessagingSurface;
-}): Promise<number> {
+}): Promise<{ registered: number; removed: number }> {
   const rows = await deps.prisma.messagingTelegramBot.findMany();
+  const live = new Set(deps.messaging.platforms().map((platform) => platform.provider));
+  const wanted = new Set<string>();
   let registered = 0;
   for (const row of rows) {
+    const key = telegramUserProvider(row.id);
+    wanted.add(key);
+    if (live.has(key)) continue;
     try {
       const token = deps.secrets.load(row.tokenCiphertext, `tgbot-${row.userId}`);
       deps.messaging.registerUserPlatform?.(
         createUserTelegramPlatform({
-          key: telegramUserProvider(row.id),
+          key,
           botToken: token,
           webhookSecret: row.webhookSecret,
         }),
@@ -257,7 +265,13 @@ export async function registerTelegramUserBots(deps: {
       // Best-effort: a broken token must not stop the remaining bots.
     }
   }
-  return registered;
+  let removed = 0;
+  for (const provider of live) {
+    if (!provider.startsWith("telegram-u") || wanted.has(provider)) continue;
+    deps.messaging.unregisterUserPlatform?.(provider);
+    removed += 1;
+  }
+  return { registered, removed };
 }
 
 /** Never live under the test runner; tests build surfaces explicitly. */
