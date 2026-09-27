@@ -1,4 +1,12 @@
 schema_version: 1
 authority: files-and-commands
 generated_from: .super-speckit/state/features/*.json
-features: []
+features:
+  - id: "001-multi-session-agents"
+    state: "planned"
+    candidate_sha: null
+    maker: "claude-maker"
+    checker: "claude-checker"
+    matrix: "specs/001-multi-session-agents/spec.md"
+    runs: []
+    bugs: []
