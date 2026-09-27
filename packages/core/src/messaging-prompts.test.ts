@@ -17,6 +17,16 @@ describe("messagingLiveStatusNote", () => {
     expect(note).toMatch(/never claim Telegram is disconnected/i);
   });
 
+  it("treats a per-row telegram provider key as telegram too", () => {
+    const note = messagingLiveStatusNote({
+      linked: true,
+      provider: "telegram-urow-9",
+      telegramUsername: "domedemo_bot",
+    });
+    expect(note).toMatch(/@domedemo_bot/);
+    expect(note).not.toContain("telegram-urow-9");
+  });
+
   it("drops handles that fail telegram's username shape", () => {
     const note = messagingLiveStatusNote({
       linked: true,

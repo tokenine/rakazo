@@ -78,6 +78,7 @@ import {
   scriptedCatalogEntry,
   serializeModelSecret,
   takeoverLeaseMs,
+  telegramUserProvider,
   toComputerRef,
   touchRunningComputer,
   verifyMcpInstall,
@@ -163,7 +164,6 @@ import {
   updateMemoryProviderDefaultScope,
 } from "./memory-provider-config.js";
 import { telegramGetMe, telegramSetWebhook, telegramWebhookStatus } from "./messaging-telegram.js";
-import { TELEGRAM_SLOT_PROVIDER } from "./messaging-telegram-user.js";
 import {
   chooseFocus,
   dismissFocus,
@@ -4294,9 +4294,9 @@ export function createRouter(deps: RouterDeps) {
         }),
         userConnect: authed.messaging.telegram.userConnect.handler(async ({ context, input }) => {
           const token = input.token.trim();
-          let username: string | null = null;
+          let bot: { id: string; username: string | null };
           try {
-            username = (await telegramGetMe(token)).username;
+            bot = await telegramGetMe(token);
           } catch (error) {
             throw new ORPCError("BAD_REQUEST", {
               message: error instanceof Error ? error.message : "Telegram rejected the token",
@@ -4315,25 +4315,42 @@ export function createRouter(deps: RouterDeps) {
             recordId,
           );
           const webhookSecret = randomBytes(24).toString("hex");
-          const row = await deps.prisma.messagingTelegramBot.upsert({
-            where: { userId: context.actor.userId },
-            create: {
+          const username = bot.username ?? "telegram-bot";
+          // A user may connect many bots: re-connecting the same Telegram bot
+          // (matched by its stable numeric id; username for rows that predate
+          // the column) updates its row instead of adding a duplicate.
+          const existing = await deps.prisma.messagingTelegramBot.findFirst({
+            where: {
               userId: context.actor.userId,
-              username: username ?? "telegram-bot",
-              tokenCiphertext: ciphertext,
-              webhookSecret,
+              OR: [{ telegramBotId: bot.id }, { telegramBotId: null, username }],
             },
-            update: {
-              username: username ?? "telegram-bot",
-              tokenCiphertext: ciphertext,
-              webhookSecret,
-            },
+            orderBy: { createdAt: "asc" },
           });
+          const row = existing
+            ? await deps.prisma.messagingTelegramBot.update({
+                where: { id: existing.id },
+                data: {
+                  username,
+                  telegramBotId: bot.id,
+                  tokenCiphertext: ciphertext,
+                  webhookSecret,
+                },
+              })
+            : await deps.prisma.messagingTelegramBot.create({
+                data: {
+                  userId: context.actor.userId,
+                  username,
+                  telegramBotId: bot.id,
+                  tokenCiphertext: ciphertext,
+                  webhookSecret,
+                },
+              });
           const tokenDecrypted = deps.secrets.load(ciphertext, recordId);
-          deps.telegramUserPlatforms?.unregister(TELEGRAM_SLOT_PROVIDER);
+          const provider = telegramUserProvider(row.id);
+          deps.telegramUserPlatforms?.unregister(provider);
           deps.telegramUserPlatforms?.register(
             createUserTelegramPlatform({
-              key: TELEGRAM_SLOT_PROVIDER,
+              key: provider,
               botToken: tokenDecrypted,
               webhookSecret,
             }),
@@ -4348,32 +4365,38 @@ export function createRouter(deps: RouterDeps) {
               webhookError = error instanceof Error ? error.message : "setWebhook failed";
             }
           }
-          return { ok: true as const, username, webhookUrl, webhookError };
+          return { ok: true as const, botId: row.id, username, webhookUrl, webhookError };
         }),
-        userDisconnect: authed.messaging.telegram.userDisconnect.handler(async ({ context }) => {
-          const row = await deps.prisma.messagingTelegramBot.findUnique({
-            where: { userId: context.actor.userId },
-          });
-          if (row) {
-            try {
-              const token = await deps.secrets.load(
-                row.tokenCiphertext,
-                `tgbot-${context.actor.userId}`,
-              );
-              await telegramSetWebhook(token, "", "").catch(() => undefined);
-            } catch {
-              // Best-effort teardown; removing the row is what matters.
+        userDisconnect: authed.messaging.telegram.userDisconnect.handler(
+          async ({ context, input }) => {
+            // Ownership predicate: another account's bot id must not be
+            // disconnectable (nor discoverable — missing rows return ok).
+            const row = await deps.prisma.messagingTelegramBot.findFirst({
+              where: { id: input.botId, userId: context.actor.userId },
+            });
+            if (row) {
+              try {
+                const token = await deps.secrets.load(
+                  row.tokenCiphertext,
+                  `tgbot-${context.actor.userId}`,
+                );
+                await telegramSetWebhook(token, "", "").catch(() => undefined);
+              } catch {
+                // Best-effort teardown; removing the row is what matters.
+              }
+              await deps.prisma.messagingTelegramBot.delete({ where: { id: row.id } });
+              deps.telegramUserPlatforms?.unregister(telegramUserProvider(row.id));
             }
-            await deps.prisma.messagingTelegramBot.delete({ where: { id: row.id } });
-            deps.telegramUserPlatforms?.unregister(TELEGRAM_SLOT_PROVIDER);
-          }
-          return { ok: true as const };
-        }),
+            return { ok: true as const };
+          },
+        ),
         userStatus: authed.messaging.telegram.userStatus.handler(async ({ context }) => {
-          const row = await deps.prisma.messagingTelegramBot.findUnique({
+          const rows = await deps.prisma.messagingTelegramBot.findMany({
             where: { userId: context.actor.userId },
+            orderBy: { createdAt: "asc" },
+            select: { id: true, username: true },
           });
-          return { connected: Boolean(row), username: row?.username ?? null };
+          return { bots: rows };
         }),
       },
       link: {

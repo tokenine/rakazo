@@ -397,9 +397,9 @@ type TelegramStatus = Awaited<ReturnType<typeof rpc.messaging.telegram.webhookSt
 type MyTelegramStatus = Awaited<ReturnType<typeof rpc.messaging.telegram.userStatus>>;
 
 /**
- * Per-user Telegram bot: the account owner creates a bot with @BotFather and
- * pastes its token here. The deployment hosts a dedicated webhook + adapter
- * for it, so the user's Ai7 assistant lives on their own Telegram line.
+ * Per-user Telegram bots: the account owner creates bots with @BotFather and
+ * pastes their tokens here — several per account, each getting its own
+ * webhook + adapter, so they coexist with every other connected bot.
  */
 function MyTelegramBotCard() {
   const { t } = useLingui();
@@ -409,11 +409,15 @@ function MyTelegramBotCard() {
   const [error, setError] = useState<string | null>(null);
   const [webhookHint, setWebhookHint] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refresh() {
     rpc.messaging.telegram
       .userStatus()
       .then(setStatus)
-      .catch(() => setStatus({ connected: false, username: null }));
+      .catch(() => setStatus({ bots: [] }));
+  }
+
+  useEffect(() => {
+    refresh();
   }, []);
 
   async function connect() {
@@ -423,9 +427,9 @@ function MyTelegramBotCard() {
     setWebhookHint(null);
     try {
       const result = await rpc.messaging.telegram.userConnect({ token: token.trim() });
-      setStatus({ connected: true, username: result.username });
       setToken("");
       if (result.webhookError) setWebhookHint(result.webhookError);
+      refresh();
     } catch (error) {
       setError(
         error instanceof Error && error.message
@@ -437,13 +441,13 @@ function MyTelegramBotCard() {
     }
   }
 
-  async function disconnect() {
+  async function disconnect(botId: string) {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      await rpc.messaging.telegram.userDisconnect();
-      setStatus({ connected: false, username: null });
+      await rpc.messaging.telegram.userDisconnect({ botId });
+      refresh();
     } catch {
       setError(t`Couldn't disconnect the bot.`);
     } finally {
@@ -451,68 +455,71 @@ function MyTelegramBotCard() {
     }
   }
 
+  const bots = status?.bots ?? [];
   return (
     <section
       className="mt-8 rounded-xl border border-border px-4 py-4"
       data-testid="my-telegram-bot"
     >
       <h3 className="text-[15px] font-medium text-foreground">
-        <Trans>Your Telegram bot</Trans>
+        <Trans>Your Telegram bots</Trans>
       </h3>
-      {status?.connected ? (
-        <>
-          <p className="mt-3 text-[14px] text-foreground/75">
-            <Trans>
-              Connected as{" "}
-              <span className="font-mono text-foreground">@{status.username ?? "bot"}</span>
-            </Trans>
-          </p>
-          <p className="mt-1 text-[12.5px] text-muted-foreground/70">
-            <Trans>
-              Message your bot on Telegram and your Ai7 assistant replies on this account.
-            </Trans>
-          </p>
-          <div className="mt-3">
-            <Button
-              variant="secondary"
-              className="rounded-full"
-              disabled={busy}
-              onClick={() => void disconnect()}
-            >
-              <Trans>Disconnect</Trans>
-            </Button>
-          </div>
-        </>
+      {bots.length > 0 ? (
+        <ul className="mt-3 flex flex-col gap-1.5">
+          {bots.map((bot) => (
+            <li key={bot.id} className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate text-[14px] text-foreground/75">
+                <Trans>
+                  Connected as <span className="font-mono text-foreground">@{bot.username}</span>
+                </Trans>
+              </span>
+              <Button
+                variant="secondary"
+                className="rounded-full"
+                disabled={busy}
+                onClick={() => void disconnect(bot.id)}
+              >
+                <Trans>Disconnect</Trans>
+              </Button>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <>
-          <p className="mt-3 text-[13px] text-muted-foreground/70">
-            <Trans>
-              Create a bot with @BotFather (send /newbot), paste its token here, and chat with your
-              Ai7 assistant from your own Telegram line.
-            </Trans>
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Input
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void connect();
-              }}
-              placeholder="123456789:AAE…"
-              aria-label={t`Bot token`}
-              type="password"
-              className="h-9 min-w-0 flex-1 rounded-full font-mono text-[13px]"
-            />
-            <Button
-              className="rounded-full"
-              disabled={busy || !token.trim()}
-              onClick={() => void connect()}
-            >
-              <Trans>Connect</Trans>
-            </Button>
-          </div>
-        </>
+        <p className="mt-3 text-[13px] text-muted-foreground/70">
+          <Trans>
+            Create a bot with @BotFather (send /newbot), paste its token here, and chat with your
+            Ai7 assistant from your own Telegram line.
+          </Trans>
+        </p>
       )}
+      {bots.length > 0 ? (
+        <p className="mt-2 text-[12.5px] text-muted-foreground/70">
+          <Trans>
+            Message a bot on Telegram and your Ai7 assistant replies on this account. Paste another
+            token to connect a second line.
+          </Trans>
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Input
+          value={token}
+          onChange={(event) => setToken(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void connect();
+          }}
+          placeholder="123456789:AAE…"
+          aria-label={t`Bot token`}
+          type="password"
+          className="h-9 min-w-0 flex-1 rounded-full font-mono text-[13px]"
+        />
+        <Button
+          className="rounded-full"
+          disabled={busy || !token.trim()}
+          onClick={() => void connect()}
+        >
+          <Trans>Connect</Trans>
+        </Button>
+      </div>
       {webhookHint ? (
         <p className="mt-2 text-[12.5px] text-muted-foreground/70">{webhookHint}</p>
       ) : null}

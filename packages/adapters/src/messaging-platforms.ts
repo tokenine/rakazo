@@ -12,6 +12,7 @@ import { createLarkAdapter, Domain } from "chat-adapter-lark";
 import { createSendblueAdapter } from "chat-adapter-sendblue";
 import type { MessagingPlatform } from "./chat-sdk-surface.js";
 import type { EncryptedSecretStore } from "./secrets.js";
+import { createKeyedTelegramAdapter, telegramUserProvider } from "./telegram-keyed-adapter.js";
 import { isVitestRuntime } from "./test-runtime.js";
 
 /**
@@ -206,8 +207,8 @@ export function messagingPlatformsFromEnv(
 /**
  * A per-user Telegram bot platform: the user registers their own BotFather
  * token and the deployment hosts a dedicated adapter under a unique provider
- * key, so its thread ids ("telegram-u<id>:…") never mix with the
- * deployment-wide bot.
+ * key ("telegram-u<rowId>"), so its thread ids never mix with any other bot
+ * — connections coexist instead of the last one taking over a shared slot.
  */
 export function createUserTelegramPlatform(options: {
   key: string;
@@ -217,7 +218,7 @@ export function createUserTelegramPlatform(options: {
   return {
     provider: options.key,
     capabilities: { direct: true, groups: false, typing: false },
-    adapter: createTelegramAdapter({
+    adapter: createKeyedTelegramAdapter(options.key, {
       botToken: options.botToken,
       secretToken: options.webhookSecret,
       mode: "webhook",
@@ -225,30 +226,28 @@ export function createUserTelegramPlatform(options: {
   };
 }
 
+/** The deployment-level env telegram adapter's provider. */
 export const TELEGRAM_SLOT_PROVIDER = "telegram";
 
 /**
  * Register every stored user telegram bot into a messaging surface (API: for
- * inbound webhooks; worker: for outbound delivery). Returns how many bots
- * were registered. Skips silently when the deployment's own env telegram
- * adapter already owns the "telegram" slot.
+ * inbound webhooks; worker: for outbound delivery) under its own
+ * `telegram-u<rowId>` key. Returns how many bots were registered. The
+ * deployment env telegram adapter (provider "telegram") coexists untouched.
  */
 export async function registerTelegramUserBots(deps: {
   prisma: PrismaClient;
   secrets: EncryptedSecretStore;
   messaging: MessagingSurface;
-  deploymentOwnsTelegramSlot?: boolean;
 }): Promise<number> {
-  if (deps.deploymentOwnsTelegramSlot) return 0;
   const rows = await deps.prisma.messagingTelegramBot.findMany();
   let registered = 0;
   for (const row of rows) {
     try {
       const token = deps.secrets.load(row.tokenCiphertext, `tgbot-${row.userId}`);
-      deps.messaging.unregisterUserPlatform?.(TELEGRAM_SLOT_PROVIDER);
       deps.messaging.registerUserPlatform?.(
         createUserTelegramPlatform({
-          key: TELEGRAM_SLOT_PROVIDER,
+          key: telegramUserProvider(row.id),
           botToken: token,
           webhookSecret: row.webhookSecret,
         }),

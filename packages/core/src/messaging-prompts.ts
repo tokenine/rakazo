@@ -24,7 +24,7 @@ export function messagingLiveStatusNote(status: {
     status.telegramUsername && /^[A-Za-z0-9_]{3,32}$/.test(status.telegramUsername)
       ? ` (@${status.telegramUsername})`
       : "";
-  if (status.linked && status.provider === "telegram") {
+  if (status.linked && status.provider?.startsWith("telegram")) {
     return [
       `Live connection status (as of this run): the owner's Telegram line is connected${handle}.`,
       "Messages they send there reach you in this thread and your replies are delivered back — never claim Telegram is disconnected.",

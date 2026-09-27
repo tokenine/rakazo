@@ -130,9 +130,6 @@ async function main() {
     prisma,
     secrets,
     messaging,
-    deploymentOwnsTelegramSlot: messagingPlatforms.some(
-      (platform) => platform.provider === "telegram",
-    ),
   });
   const integrationSettings = new IntegrationProviderSettings(
     prisma,

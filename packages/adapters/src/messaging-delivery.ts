@@ -13,6 +13,7 @@ import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { appendEventInTransaction, createThreadMessageInTransaction } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import type { EncryptedSecretStore } from "./secrets.js";
+import { rowIdOfTelegramUserProvider } from "./telegram-keyed-adapter.js";
 
 /**
  * Margin under vendor consecutive-outbound caps (sendblue enforces one hard):
@@ -70,7 +71,7 @@ export async function deliverMessagingOutbound(
 async function sendTelegramArtifact(
   deps: { prisma: PrismaClient; secrets: EncryptedSecretStore; dataDir: string },
   input: {
-    identity: { userId: string; dmThreadId: string | null };
+    identity: { userId: string; provider: string; dmThreadId: string | null };
     row: { artifactId: string | null; body: string };
   },
 ): Promise<boolean> {
@@ -79,8 +80,16 @@ async function sendTelegramArtifact(
     where: { id: input.row.artifactId },
   });
   if (!artifact) return false;
-  const bot = await deps.prisma.messagingTelegramBot.findUnique({
-    where: { userId: input.identity.userId },
+  // The identity's provider carries the owning row (`telegram-u<rowId>`), so
+  // a user with several bots uploads through the exact bot they wrote to.
+  // Legacy `telegram` identities fall back to their (single) row.
+  const rowId = rowIdOfTelegramUserProvider(input.identity.provider);
+  const bot = await deps.prisma.messagingTelegramBot.findFirst({
+    where: {
+      userId: input.identity.userId,
+      ...(rowId ? { id: rowId } : {}),
+    },
+    orderBy: { createdAt: "asc" },
   });
   if (!bot) return false;
   let token: string;

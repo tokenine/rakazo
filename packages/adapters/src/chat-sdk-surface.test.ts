@@ -408,3 +408,75 @@ describe("ChatSdkMessagingSurface shape", () => {
     expect(stopPolling).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("ChatSdkMessagingSurface multi-bot coexistence", () => {
+  it("routes each bot's webhook into its own provider namespace", async () => {
+    const botA = createPlatform({ provider: "telegram-urow-a" });
+    const botB = createPlatform({ provider: "telegram-urow-b" });
+    const surface = new ChatSdkMessagingSurface([botA.platform, botB.platform]);
+    const events: MessagingInboundEvent[] = [];
+    surface.onInbound(async (event) => {
+      events.push(event);
+    });
+
+    const a = await surface.handleWebhook(
+      "telegram-urow-a",
+      webhookRequest({ threadId: "telegram-urow-a:D555", id: "m-a", text: "hi a" }),
+    );
+    const b = await surface.handleWebhook(
+      "telegram-urow-b",
+      webhookRequest({ threadId: "telegram-urow-b:D555", id: "m-b", text: "hi b" }),
+    );
+    const foreign = surface.handleWebhook(
+      "telegram-urow-c",
+      webhookRequest({ threadId: "telegram-urow-c:D555", id: "m-c", text: "hi c" }),
+    );
+
+    expect(a?.status).toBe(200);
+    expect(b?.status).toBe(200);
+    expect(foreign).toBeNull();
+    expect(events.map((event) => event.provider)).toEqual(["telegram-urow-a", "telegram-urow-b"]);
+    expect(events.map((event) => ("handle" in event ? event.handle : ""))).toEqual(["m-a", "m-b"]);
+  });
+
+  it("routes outbound posts by thread-id prefix so bots never swap channels", async () => {
+    const botA = createPlatform({ provider: "telegram-urow-a" });
+    const botB = createPlatform({ provider: "telegram-urow-b" });
+    const surface = new ChatSdkMessagingSurface([botA.platform, botB.platform]);
+
+    await surface.sendToThread({ threadId: "telegram-urow-a:D555", body: "from a" }, context);
+    await surface.sendToThread({ threadId: "telegram-urow-b:D555", body: "from b" }, context);
+
+    expect((botA.adapter.postMessage as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe(
+      "telegram-urow-a:D555",
+    );
+    expect((botB.adapter.postMessage as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe(
+      "telegram-urow-b:D555",
+    );
+  });
+
+  it("accepts a late-registered bot without disturbing the others", async () => {
+    const botA = createPlatform({ provider: "telegram-urow-a" });
+    const surface = new ChatSdkMessagingSurface([botA.platform]);
+    const events: MessagingInboundEvent[] = [];
+    surface.onInbound(async (event) => {
+      events.push(event);
+    });
+    const botB = createPlatform({ provider: "telegram-urow-b" });
+    surface.registerUserPlatform?.(botB.platform);
+
+    await surface.handleWebhook(
+      "telegram-urow-b",
+      webhookRequest({ threadId: "telegram-urow-b:D555", id: "m-b2", text: "hi" }),
+    );
+    expect(events.map((event) => event.provider)).toEqual(["telegram-urow-b"]);
+
+    surface.unregisterUserPlatform?.("telegram-urow-b");
+    expect(
+      surface.handleWebhook(
+        "telegram-urow-b",
+        webhookRequest({ threadId: "telegram-urow-b:D555", id: "m-b3", text: "hi" }),
+      ),
+    ).toBeNull();
+  });
+});

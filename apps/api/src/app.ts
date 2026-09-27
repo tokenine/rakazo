@@ -436,21 +436,16 @@ export async function createApp(
 
   // Late-registered per-user messaging platforms (Telegram bots). The surface
   // exists by the time any RPC runs, so the calls simply forward; the guard
-  // covers a disabled messaging surface.
-  // The deployment's own telegram adapter (env) keeps the "telegram" slot;
-  // a user-registered bot may only take it when the deployment hosts none.
-  const deploymentTelegramOwned = Boolean(
-    messaging?.platforms().some((p) => p.provider === "telegram"),
-  );
+  // covers a disabled messaging surface. Each user bot registers under its own
+  // `telegram-u<rowId>` key and coexists with the deployment's env telegram
+  // adapter (provider "telegram") if one is configured.
   const telegramUserPlatforms = {
     register: (platform: MessagingPlatform) => {
       if (!messaging) return;
-      if (deploymentTelegramOwned && platform.provider === "telegram") return;
       messaging.registerUserPlatform?.(platform);
     },
     unregister: (provider: string) => {
-      if (deploymentTelegramOwned && provider === "telegram") return;
-      messaging.unregisterUserPlatform?.(provider);
+      messaging?.unregisterUserPlatform?.(provider);
     },
   };
   const router = createRouter({

@@ -46,7 +46,7 @@ model User {
   createdSpaces               Space[]                      @relation("SpaceCreator")
   botSecrets BotSecret[]
   agentSecrets               AgentSecret[]
-  messagingTelegramBot       MessagingTelegramBot?
+  messagingTelegramBots      MessagingTelegramBot[]
 
   @@unique([email])
   @@map("user")
@@ -778,14 +778,17 @@ model TaughtSkill {
 /// Distinct from TaughtSkill (demo/record playbooks).
 model MessagingTelegramBot {
   id            String   @id @default(cuid())
-  userId        String   @unique
+  userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   username      String
+  /// Telegram-side numeric bot user id (from getMe); distinguishes a user's rows.
+  telegramBotId String?
   tokenCiphertext String
   webhookSecret String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@index([userId])
   @@map("messaging_telegram_bots")
 }
 

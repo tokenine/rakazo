@@ -9,6 +9,8 @@ export interface MessagingSurfaceStatus {
   telegramUsername: string | null;
 }
 
+import { rowIdOfTelegramUserProvider } from "./telegram-keyed-adapter.js";
+
 /**
  * Executor dep answering live messaging-surface questions. One indexed query
  * when the bot is unlinked, two when it is linked — the same order the
@@ -22,8 +24,12 @@ export function createMessagingContextLoader(prisma: PrismaClient) {
         select: { provider: true },
       });
       if (!identity) return { linked: false, provider: null, telegramUsername: null };
-      const telegramBot = await prisma.messagingTelegramBot.findUnique({
-        where: { userId },
+      // A user may connect several telegram bots; the identity's provider key
+      // (`telegram-u<rowId>`) names the one this bot is linked through.
+      const rowId = rowIdOfTelegramUserProvider(identity.provider);
+      const telegramBot = await prisma.messagingTelegramBot.findFirst({
+        where: { userId, ...(rowId ? { id: rowId } : {}) },
+        orderBy: { createdAt: "asc" },
         select: { username: true },
       });
       return {

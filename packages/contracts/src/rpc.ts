@@ -691,17 +691,20 @@ export const appContract = {
       setWebhook: oc
         .input(z.object({ baseUrl: z.string().url().optional() }))
         .output(z.object({ ok: z.literal(true), webhookUrl: z.string() })),
-      /** Per-user bots: each account registers its own BotFather token. */
+      /** Per-user bots: each account registers its own BotFather tokens (many per account). */
       userConnect: oc.input(z.object({ token: z.string().trim().min(20).max(200) })).output(
         z.object({
           ok: z.literal(true),
+          botId: Id,
           username: z.string().nullable(),
           webhookUrl: z.string().nullable(),
           webhookError: z.string().nullable(),
         }),
       ),
-      userDisconnect: oc.output(z.object({ ok: z.literal(true) })),
-      userStatus: oc.output(z.object({ connected: z.boolean(), username: z.string().nullable() })),
+      userDisconnect: oc.input(z.object({ botId: Id })).output(z.object({ ok: z.literal(true) })),
+      userStatus: oc.output(
+        z.object({ bots: z.array(z.object({ id: Id, username: z.string() })) }),
+      ),
     },
     link: {
       /** Issue a short-lived code the user sends to the line from a chat app. */
