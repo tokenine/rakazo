@@ -1,0 +1,23 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "cf-bridge",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-20",
+  "observability": { "enabled": true },
+  "containers": [
+    {
+      "class_name": "RakazoComputerContainer",
+      "image": "./container/Dockerfile",
+      "instance_type": "standard",
+      "max_instances": 10
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "COMPUTERS", "class_name": "RakazoComputerContainer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RakazoComputerContainer"] }],
+  "vars": {
+    "R2_ACCOUNT_ID": "b39d91b4579b45c988fc9e31ef98fad1",
+    "R2_BUCKET": "ai7-computers"
+  }
+}
