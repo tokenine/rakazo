@@ -1,11 +1,17 @@
 import { createSlackAdapter } from "@chat-adapter/slack";
 import { createTelegramAdapter } from "@chat-adapter/telegram";
 import { createWhatsAppAdapter } from "@chat-adapter/whatsapp";
-import type { MessagingInboundMessage, MessagingOutboundStatus } from "@rakazo/adapter-kit";
+import type {
+  MessagingInboundMessage,
+  MessagingOutboundStatus,
+  MessagingSurface,
+} from "@rakazo/adapter-kit";
+import type { PrismaClient } from "@rakazo/db";
 import type { Adapter } from "chat";
 import { createLarkAdapter, Domain } from "chat-adapter-lark";
 import { createSendblueAdapter } from "chat-adapter-sendblue";
 import type { MessagingPlatform } from "./chat-sdk-surface.js";
+import type { EncryptedSecretStore } from "./secrets.js";
 import { isVitestRuntime } from "./test-runtime.js";
 
 /**
@@ -217,6 +223,42 @@ export function createUserTelegramPlatform(options: {
       mode: "webhook",
     }),
   };
+}
+
+export const TELEGRAM_SLOT_PROVIDER = "telegram";
+
+/**
+ * Register every stored user telegram bot into a messaging surface (API: for
+ * inbound webhooks; worker: for outbound delivery). Returns how many bots
+ * were registered. Skips silently when the deployment's own env telegram
+ * adapter already owns the "telegram" slot.
+ */
+export async function registerTelegramUserBots(deps: {
+  prisma: PrismaClient;
+  secrets: EncryptedSecretStore;
+  messaging: MessagingSurface;
+  deploymentOwnsTelegramSlot?: boolean;
+}): Promise<number> {
+  if (deps.deploymentOwnsTelegramSlot) return 0;
+  const rows = await deps.prisma.messagingTelegramBot.findMany();
+  let registered = 0;
+  for (const row of rows) {
+    try {
+      const token = deps.secrets.load(row.tokenCiphertext, `tgbot-${row.userId}`);
+      deps.messaging.unregisterUserPlatform?.(TELEGRAM_SLOT_PROVIDER);
+      deps.messaging.registerUserPlatform?.(
+        createUserTelegramPlatform({
+          key: TELEGRAM_SLOT_PROVIDER,
+          botToken: token,
+          webhookSecret: row.webhookSecret,
+        }),
+      );
+      registered += 1;
+    } catch {
+      // Best-effort: a broken token must not stop the remaining bots.
+    }
+  }
+  return registered;
 }
 
 /** Never live under the test runner; tests build surfaces explicitly. */

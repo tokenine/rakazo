@@ -24,7 +24,6 @@ import {
   InMemoryJobQueue,
   InstalledConnectorProvider,
   isComposioEnabled,
-  isMessagingSurfaceEnabled,
   isPipedreamEnabled,
   LocalAgentHomeStore,
   LocalArtifactStore,
@@ -38,6 +37,7 @@ import {
   pipedreamConfigFromEnv,
   reconcileCloudAgents,
   reconcileComputerUpdates,
+  registerTelegramUserBots,
   resolveDeploymentModel,
   resolvePiSessionRoot,
   resolveSandboxProvider,
@@ -122,12 +122,18 @@ async function main() {
   // Telegram — that would steal the single getUpdates slot away from the
   // API process, which is the one with the inbound sink actually wired up.
   const messagingPlatforms = messagingPlatformsFromEnv(messagingEnvFromProcess(process.env));
-  const messaging = isMessagingSurfaceEnabled(messagingPlatforms, {
-    deploymentModelKey,
-    openSignup: process.env.MESSAGING_OPEN_SIGNUP === "true",
-  })
-    ? new ChatSdkMessagingSurface(messagingPlatforms)
-    : undefined;
+  // Always constructed: outbound messaging delivery (bot reply mirroring) for
+  // per-user Telegram bots runs in this process, even when the deployment
+  // itself hosts no messaging platforms.
+  const messaging = new ChatSdkMessagingSurface(messagingPlatforms);
+  await registerTelegramUserBots({
+    prisma,
+    secrets,
+    messaging,
+    deploymentOwnsTelegramSlot: messagingPlatforms.some(
+      (platform) => platform.provider === "telegram",
+    ),
+  });
   const integrationSettings = new IntegrationProviderSettings(
     prisma,
     secrets,

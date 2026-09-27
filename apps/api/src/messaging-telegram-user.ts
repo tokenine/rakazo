@@ -7,11 +7,11 @@
  */
 import type { MessagingSurface } from "@rakazo/adapter-kit";
 import type { EncryptedSecretStore } from "@rakazo/adapters";
-import { createUserTelegramPlatform } from "@rakazo/adapters";
+import { createUserTelegramPlatform, TELEGRAM_SLOT_PROVIDER } from "@rakazo/adapters";
 import type { PrismaClient } from "@rakazo/db";
 import type { Hono } from "hono";
 
-export const TELEGRAM_SLOT_PROVIDER = "telegram";
+export { TELEGRAM_SLOT_PROVIDER };
 
 export type TelegramUserBotRow = {
   id: string;
