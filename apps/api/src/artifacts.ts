@@ -35,9 +35,15 @@ export async function createOwnedArtifact(
     mimeType: string;
     contentBase64: string;
   },
+  options?: {
+    /** Web uploads stick to the strict mime allow-list; messaging inbound accepts whatever the sender's phone produced. */
+    allowAnyMimeType?: boolean;
+    /** Byte cap override — the web-upload default stays ATTACHMENT_MAX_BYTES. */
+    maxBytes?: number;
+  },
 ) {
-  validateAttachmentMimeType(input.mimeType);
-  const bytes = decodeAttachmentBase64(input.contentBase64);
+  if (!options?.allowAnyMimeType) validateAttachmentMimeType(input.mimeType);
+  const bytes = decodeAttachmentBase64(input.contentBase64, options?.maxBytes);
   const context = adapterContext(actor, input.botId, `artifact-create:${input.botId}`);
   const stored = await deps.artifacts.put(
     { name: input.name, mimeType: input.mimeType, bytes },

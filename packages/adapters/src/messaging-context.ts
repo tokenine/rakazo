@@ -1,14 +1,36 @@
 import type { PrismaClient } from "@rakazo/db";
 
+export interface MessagingSurfaceStatus {
+  /** The bot owns a messaging identity — its owner's DM line is linked. */
+  linked: boolean;
+  /** Provider of the linked line (telegram, sendblue, slack, …); null when unlinked. */
+  provider: string | null;
+  /** Handle of the owner's personal Telegram bot row, when one exists. */
+  telegramUsername: string | null;
+}
+
 /**
- * Executor dep answering "does this bot belong to a messaging identity?" —
- * one indexed query per run, and none when the messaging surface is absent.
+ * Executor dep answering live messaging-surface questions. One indexed query
+ * when the bot is unlinked, two when it is linked — the same order the
+ * boolean it replaced cost — and none when the messaging surface is absent.
  */
 export function createMessagingContextLoader(prisma: PrismaClient) {
   return {
-    hasIdentity: async (botId: string): Promise<boolean> =>
-      Boolean(
-        await prisma.messagingIdentity.findUnique({ where: { botId }, select: { id: true } }),
-      ),
+    dmStatus: async (botId: string, userId: string): Promise<MessagingSurfaceStatus> => {
+      const identity = await prisma.messagingIdentity.findUnique({
+        where: { botId },
+        select: { provider: true },
+      });
+      if (!identity) return { linked: false, provider: null, telegramUsername: null };
+      const telegramBot = await prisma.messagingTelegramBot.findUnique({
+        where: { userId },
+        select: { username: true },
+      });
+      return {
+        linked: true,
+        provider: identity.provider,
+        telegramUsername: telegramBot?.username ?? null,
+      };
+    },
   };
 }

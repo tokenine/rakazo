@@ -1,7 +1,13 @@
 import type { ArtifactStore, JobPublisher, MessagingInboundMessage } from "@rakazo/adapter-kit";
 import { messagingDeliverJob, runContinueJob } from "@rakazo/adapter-kit";
 import type { MessageBlock } from "@rakazo/contracts";
-import { parseMessagingCommand, sanitizeMessagingLabel } from "@rakazo/core";
+import { ATTACHMENT_MAX_COUNT } from "@rakazo/contracts";
+import {
+  messageBlockForArtifact,
+  parseMessagingCommand,
+  promptTextForAttachments,
+  sanitizeMessagingLabel,
+} from "@rakazo/core";
 import type {
   MessagingIdentityRequest,
   Prisma,
@@ -83,8 +89,7 @@ async function handleDirectEvent(
   deps: MessagingInboundDeps,
   event: MessagingInboundMessage,
 ): Promise<void> {
-  // Inbound media arrives as a CDN URL (often expiring); no artifact
-  // ingestion in v1, so it rides along as text.
+  // mediaUrl rides along as text for providers that don't surface binary media.
   const text = [event.content, event.mediaUrl].filter(Boolean).join("\n");
 
   const where = { provider_address: { provider: event.provider, address: event.from } } as const;
@@ -139,49 +144,15 @@ async function handleDirectEvent(
     );
   }
 
-  // Inbound media (telegram photos/documents): download and ingest as an
-  // artifact so the model actually sees the image instead of a dying URL.
-  const attachmentBlocks: MessageBlock[] = [];
-  if (deps.artifacts && text.length < 2_000) {
-    const media = event.media?.[0];
-    try {
-      if (media) {
-        const bytes = Buffer.from(await media.fetch());
-        if (bytes.byteLength > 25_000_000) {
-          throw new Error(`attachment too large (${bytes.byteLength} bytes)`);
-        }
-        const mimeType = media.mimeType ?? "application/octet-stream";
-        const actor = {
-          userId: ids.userId,
-          spaceId: ids.spaceId,
-        } as Parameters<typeof createOwnedArtifact>[1];
-        const stored = await createOwnedArtifact(
-          { prisma: deps.prisma, artifacts: deps.artifacts },
-          actor,
-          {
-            botId: ids.botId,
-            name: media.name || `attachment-${Date.now()}`,
-            mimeType,
-            contentBase64: bytes.toString("base64"),
-          },
-        );
-        if (mimeType.startsWith("image/")) {
-          attachmentBlocks.push({
-            kind: "image",
-            artifactId: stored.id,
-            name: stored.name,
-            mimeType,
-          });
-        } else {
-          getLogger().info("messaging attachment stored", { artifactId: stored.id, mimeType });
-        }
-      }
-    } catch (error) {
-      getLogger().warn("messaging attachment ingestion failed", {
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+  // Inbound media (telegram photos/documents): download and ingest as
+  // artifacts. Photos become image blocks the model sees as vision input;
+  // any other document becomes a file block so it surfaces in the thread UI.
+  const { blocks: attachmentBlocks, artifacts: storedArtifacts } = await ingestDirectAttachments(
+    deps,
+    ids,
+    event,
+    text,
+  );
 
   // Message-trigger routines own the delivery when configured. Do not also
   // start a normal messaging continue for the same inbound handle.
@@ -191,6 +162,10 @@ async function handleDirectEvent(
   if (attachmentBlocks.length > 0) {
     blocks.push(...attachmentBlocks);
   }
+  // Mirror the web send path: documents reach the model through this prompt
+  // note (and later turns' history text); image bytes load separately.
+  const prompt =
+    storedArtifacts.length > 0 ? promptTextForAttachments(text, storedArtifacts) : text;
 
   const sent = await deps.events.sendUserMessage({
     spaceId: ids.spaceId,
@@ -198,7 +173,7 @@ async function handleDirectEvent(
     botId: ids.botId,
     userId: ids.userId,
     blocks,
-    prompt: text,
+    prompt,
     trigger: "messaging",
     clientNonce: `messaging:${event.provider}:${event.handle}`,
   });
@@ -215,6 +190,64 @@ async function handleDirectEvent(
       getLogger().error("messaging inbound run enqueue error", error);
     });
   }
+}
+
+/** Messaging attachments run larger than the web-upload cap; phone-originated
+ * PDFs are routine and the outbound telegram sender already allows 50 MB. */
+const MESSAGING_ATTACHMENT_MAX_BYTES = 25_000_000;
+
+/**
+ * Downloads every inbound attachment and stores it as a bot-owned artifact.
+ * Chat senders attach whatever their phone produced (.docx, .zip, voice
+ * notes), so unlike the web upload path any mime is accepted, under a raised
+ * byte cap. A failing attachment never blocks the message: it logs and the
+ * text alone continues.
+ */
+async function ingestDirectAttachments(
+  deps: MessagingInboundDeps,
+  ids: ProvisionedMessagingIdentity,
+  event: MessagingInboundMessage,
+  text: string,
+): Promise<{
+  blocks: MessageBlock[];
+  artifacts: Array<{ name: string; mimeType: string; size: number }>;
+}> {
+  const blocks: MessageBlock[] = [];
+  const artifacts: Array<{ name: string; mimeType: string; size: number }> = [];
+  // Very large bodies are command payloads, not document captions — the
+  // long-standing anti-abuse gate skips media ingestion for them.
+  if (!deps.artifacts || text.length >= 2_000) return { blocks, artifacts };
+  const media = (event.media ?? []).slice(0, ATTACHMENT_MAX_COUNT);
+  for (const [index, item] of media.entries()) {
+    try {
+      const bytes = Buffer.from(await item.fetch());
+      if (bytes.byteLength > MESSAGING_ATTACHMENT_MAX_BYTES) {
+        throw new Error(`attachment too large (${bytes.byteLength} bytes)`);
+      }
+      const actor = {
+        userId: ids.userId,
+        spaceId: ids.spaceId,
+      } as Parameters<typeof createOwnedArtifact>[1];
+      const stored = await createOwnedArtifact(
+        { prisma: deps.prisma, artifacts: deps.artifacts },
+        actor,
+        {
+          botId: ids.botId,
+          name: item.name || `attachment-${Date.now()}-${index}`,
+          mimeType: item.mimeType ?? "application/octet-stream",
+          contentBase64: bytes.toString("base64"),
+        },
+        { allowAnyMimeType: true, maxBytes: MESSAGING_ATTACHMENT_MAX_BYTES },
+      );
+      blocks.push(messageBlockForArtifact(stored));
+      artifacts.push({ name: stored.name, mimeType: stored.mimeType, size: stored.size });
+    } catch (error) {
+      getLogger().warn("messaging attachment ingestion failed", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return { blocks, artifacts };
 }
 
 /** Wake provider-neutral message routines through the same approval boundary as webhooks. */

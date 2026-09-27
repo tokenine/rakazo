@@ -65,11 +65,11 @@ Diagnostics: webhook info via decrypted token inside the api container; inbound 
 
 ## 5. Known gaps / next steps (priority order)
 
-1. **Inbound attachment UX**: photos ingest as artifacts ✅ but non-image documents only "store + log" — surface them in the thread UI as attachment blocks.
-2. **Multi-bot telegram**: single slot today (see §2.4). Real fix = per-bot Chat instances or a multi-tenant surface.
-3. **Streaming/stale-knowledge**: bots sometimes claim "Telegram not connected" from stale memory — consider injecting live messaging status into the system prompt.
+1. **Inbound attachment UX** — **DONE 2026-09-27**: every inbound telegram/media attachment ingests as an artifact and surfaces in the thread UI. Photos → `image` blocks (vision input, unchanged); any other document → `file` block (`ArtifactFileCard` in the web UI, no changes needed there). Messaging ingest accepts ANY mime (`createOwnedArtifact(..., { allowAnyMimeType: true })`), 25 MB cap (`decodeAttachmentBase64` takes `maxBytes`), up to `ATTACHMENT_MAX_COUNT` (4) attachments per message (was `[0]` only), and documents get a `User attached file …` prompt note (web-parity via `promptTextForAttachments`). Still true but separate: the model cannot READ document contents on the messaging path (`loadCurrentTurnImages` is image-only) — it sees `[file: …]` in history + the prompt note.
+2. **Multi-bot telegram**: single slot today (see §2.4). Real fix = per-bot Chat instances or a multi-tenant surface. (still open — needs a design decision)
+3. **Streaming/stale-knowledge** — **DONE 2026-09-27**: the executor injects `messagingLiveStatusNote(...)` into EVERY run's instructions, built from DB truth at run start (`messaging.dmStatus` = identity provider + owner's telegram bot handle, `createMessagingContextLoader`). Bots can no longer claim "Telegram not connected" from stale memory. Prompt text: `packages/core/src/messaging-prompts.ts`; tests: `messaging-prompts.test.ts`, `messaging-context.test.ts`.
 4. **Windows Chrome import** (App-Bound stub), **WebM screen recording**, **Gmail/Calendar connectors** — deferred by user choice earlier.
-5. **model vision gate**: image blocks only help vision models; `modelAcceptsImageInput` gating exists — verify per-model before blaming the pipeline.
+5. **model vision gate** — **VERIFIED 2026-09-27, no pipeline bug**: `glm-5.3-flash` (opencode-go) is vision-capable per the Pi catalog (`input: ["text","image"]`) — telegram photos DO reach Chief's GLM model. `qwen3.7-plus` (openai-compatible) is gated OFF by configuration: both `user_model_credentials` rows have `supportsImages=false` and openai-compatible requires an explicit per-model vision list in the secret. If vision is wanted on qwen: enable "supports images" for that connection in Settings.
 
 ## 6. Session gotchas (all painfully earned)
 

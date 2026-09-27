@@ -36,6 +36,12 @@ describe("attachment helpers", () => {
     expect(() => decodeAttachmentBase64(oversized)).toThrow(AttachmentValidationError);
   });
 
+  it("honors a custom byte cap for messaging attachments", () => {
+    const payload = Buffer.alloc(2048, 7).toString("base64");
+    expect(() => decodeAttachmentBase64(payload, 1024)).toThrow(/1 MB limit/);
+    expect(() => decodeAttachmentBase64(payload, 4096)).not.toThrow();
+  });
+
   it("builds prompt text and history summaries", () => {
     expect(
       promptTextForAttachments("caption", [

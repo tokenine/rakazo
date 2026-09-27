@@ -60,6 +60,7 @@ import {
   messagingChannelId,
   messagingChannelPrivacyBlock,
   messagingDmSurfaceNote,
+  messagingLiveStatusNote,
   nextCronDateAcross,
   nextFence,
   planActionGate,
@@ -564,7 +565,16 @@ export interface ExecutorDeps {
   notifications?: NotificationProvider;
   jobs: JobPublisher;
   /** Messaging surface; absent means zero identity queries and no chat prompts. */
-  messaging?: { hasIdentity(botId: string): Promise<boolean> };
+  messaging?: {
+    dmStatus(
+      botId: string,
+      userId: string,
+    ): Promise<{
+      linked: boolean;
+      provider: string | null;
+      telegramUsername: string | null;
+    }>;
+  };
   listConnectedPluginSlugs?: (userId: string) => Promise<string[]>;
   /** Builtin web_search / web_fetch. Defaults to keyless HTTP when omitted. */
   web?: WebProvider;
@@ -1522,14 +1532,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
         const groupContext = thread.groupId
           ? await loadGroupContext(deps.prisma, thread.groupId, { id: bot.id, name: bot.name })
           : undefined;
-        const hasMessagingIdentity = deps.messaging
-          ? await deps.messaging.hasIdentity(bot.id)
-          : false;
-        const messagingContext = hasMessagingIdentity
+        const messagingStatus = deps.messaging
+          ? await deps.messaging.dmStatus(bot.id, run.userId)
+          : { linked: false, provider: null, telegramUsername: null };
+        const messagingContext = messagingStatus.linked
           ? [messagingDmSurfaceNote(), messagingChannelRun ? messagingChannelPrivacyBlock() : null]
               .filter(Boolean)
               .join("\n\n")
           : undefined;
+        // Grounds "is my messaging connected?" answers in the database, not
+        // the model's stale beliefs — injected on every trigger.
+        const messagingStatusContext = messagingLiveStatusNote(messagingStatus);
         if (heldForTakeover) {
           const held = await deps.prisma.run.findUnique({
             where: { id: runId },
@@ -1580,7 +1593,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
             messagingChannelRun,
           }),
           // Cross-owner agent connections only exist for chat-linked bots.
-          ...(hasMessagingIdentity ? agentConnectionTools : []),
+          ...(messagingStatus.linked ? agentConnectionTools : []),
         ];
         const exposedConnectorTools = discovered.filter(
           (tool) => !builtinAgentTools.some((builtin) => builtin.name === tool.name),
@@ -3672,6 +3685,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
                 formatCurrentTimeInstruction(),
                 groupContext,
                 messagingContext,
+                messagingStatusContext,
                 memoryContext ? redactSecrets(memoryContext, runSecrets) : undefined,
                 scratchpadContext ? redactSecrets(scratchpadContext, runSecrets) : undefined,
                 historicalContext.length > 0

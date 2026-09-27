@@ -9,6 +9,39 @@ export function messagingDmSurfaceNote(): string {
   ].join(" ");
 }
 
+/**
+ * Live messaging connectivity, injected every run so the model states the
+ * database's truth instead of guessing from stale memory ("Telegram is not
+ * connected" hallucinations). Handles are validated — they are interpolated
+ * into prompts.
+ */
+export function messagingLiveStatusNote(status: {
+  linked: boolean;
+  provider: string | null;
+  telegramUsername: string | null;
+}): string {
+  const handle =
+    status.telegramUsername && /^[A-Za-z0-9_]{3,32}$/.test(status.telegramUsername)
+      ? ` (@${status.telegramUsername})`
+      : "";
+  if (status.linked && status.provider === "telegram") {
+    return [
+      `Live connection status (as of this run): the owner's Telegram line is connected${handle}.`,
+      "Messages they send there reach you in this thread and your replies are delivered back — never claim Telegram is disconnected.",
+    ].join(" ");
+  }
+  if (status.linked && status.provider) {
+    return [
+      `Live connection status (as of this run): the owner's messaging line is connected via ${status.provider}.`,
+      "Messages they send there reach you in this thread and your replies are delivered back — never claim it is disconnected.",
+    ].join(" ");
+  }
+  if (handle) {
+    return `Live connection status (as of this run): the owner has a personal Telegram bot ${handle} connected to the deployment, but this bot's own messaging line is not linked yet.`;
+  }
+  return "Live connection status (as of this run): no messaging line is linked for this bot — never claim that Telegram or another messaging app is connected.";
+}
+
 /** Hard privacy rules for bots posting into shared group channels. */
 export function messagingChannelPrivacyBlock(): string {
   return [

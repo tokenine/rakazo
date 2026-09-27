@@ -60,6 +60,15 @@ function createDeps(
     introPostedAt: null,
   };
   const outboundRows: Array<Record<string, unknown>> = [];
+  const artifactCreate = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+    id: `art-${artifactCreate.mock.calls.length}`,
+    runId: null,
+    groupId: null,
+    createdAt: new Date(),
+    ...data,
+  }));
+  const artifactPut = vi.fn(async ({ name }: { name: string }) => ({ id: `stor:${name}` }));
+  const artifactStore = { put: artifactPut, remove: vi.fn(async () => undefined) };
   const txMock = {
     thread: { update: vi.fn(async () => ({ nextMessageSeq: 2 })) },
     message: {
@@ -118,6 +127,7 @@ function createDeps(
     },
     messagingLinkCode,
     bot: { findUnique: vi.fn(async () => ({ name: "Chief" })) },
+    artifact: { create: artifactCreate },
     routine: { findMany: vi.fn(async () => overrides.routines ?? []) },
     thread: { findFirst: vi.fn(async () => ({ id: "thread-1" })) },
     messagingChannel: {
@@ -247,6 +257,7 @@ function createDeps(
     openSignup: true,
     signupPolicy,
     typing,
+    artifacts: artifactStore,
     sendUserMessage,
     notify,
     enqueue,
@@ -254,6 +265,8 @@ function createDeps(
     members,
     txMock,
     createdIdentities,
+    artifactCreate,
+    artifactPut,
   } as unknown as MessagingInboundDeps & {
     sendUserMessage: ReturnType<typeof vi.fn>;
     notify: ReturnType<typeof vi.fn>;
@@ -264,6 +277,8 @@ function createDeps(
     members: Array<Record<string, unknown>>;
     createdIdentities: Array<Record<string, unknown>>;
     txMock: typeof txMock;
+    artifactCreate: ReturnType<typeof vi.fn>;
+    artifactPut: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -573,6 +588,84 @@ describe("createMessagingInboundHandler DM routing", () => {
     await handle(dmEvent);
 
     expect(deps.enqueue).not.toHaveBeenCalled();
+  });
+});
+
+describe("createMessagingInboundHandler attachment ingestion", () => {
+  const docxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  const fileMedia = {
+    type: "file",
+    mimeType: docxMime,
+    name: "brief.docx",
+    fetch: async () => new Uint8Array([4, 5, 6]),
+  };
+  const photoMedia = {
+    type: "image",
+    mimeType: "image/jpeg",
+    name: "photo.jpg",
+    fetch: async () => new Uint8Array([9]),
+  };
+
+  it("surfaces a non-image document as a file block plus a prompt note", async () => {
+    const deps = createDeps();
+    const handle = createMessagingInboundHandler(deps);
+    await handle({ ...dmEvent, content: "see attached", media: [fileMedia] });
+
+    expect(deps.artifactCreate).toHaveBeenCalledTimes(1);
+    expect(deps.sendUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blocks: [
+          { kind: "text", text: "see attached" },
+          { kind: "file", artifactId: "art-1", mimeType: docxMime, name: "brief.docx", size: 3 },
+        ],
+        prompt: expect.stringContaining('User attached file "brief.docx"'),
+      }),
+    );
+  });
+
+  it("keeps photos as image blocks and leaves the file note out of the prompt", async () => {
+    const deps = createDeps();
+    const handle = createMessagingInboundHandler(deps);
+    await handle({ ...dmEvent, content: "nice shot", media: [photoMedia] });
+
+    const input = deps.sendUserMessage.mock.calls[0]?.[0] as {
+      blocks: Array<{ kind: string }>;
+      prompt: string;
+    };
+    expect(input.blocks[1]).toMatchObject({
+      kind: "image",
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+    });
+    expect(input.prompt).not.toContain("User attached file");
+  });
+
+  it("delivers the text alone when an attachment fails to ingest", async () => {
+    const deps = createDeps();
+    const handle = createMessagingInboundHandler(deps);
+    await handle({
+      ...dmEvent,
+      content: "big one",
+      media: [{ ...fileMedia, fetch: async () => new Uint8Array(26_000_000) }],
+    });
+
+    expect(deps.artifactCreate).not.toHaveBeenCalled();
+    expect(deps.sendUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blocks: [{ kind: "text", text: "big one" }],
+        prompt: "big one",
+      }),
+    );
+  });
+
+  it("caps ingestion at four attachments per message", async () => {
+    const deps = createDeps();
+    const handle = createMessagingInboundHandler(deps);
+    await handle({ ...dmEvent, media: Array.from({ length: 6 }, () => ({ ...fileMedia })) });
+
+    expect(deps.artifactCreate).toHaveBeenCalledTimes(4);
+    const input = deps.sendUserMessage.mock.calls[0]?.[0] as { blocks: unknown[] };
+    expect(input.blocks).toHaveLength(5);
   });
 });
 

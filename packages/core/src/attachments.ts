@@ -1,5 +1,4 @@
 import {
-  ATTACHMENT_MAX_BASE64_LENGTH,
   ATTACHMENT_MAX_BYTES,
   type AttachmentMimeType,
   isAllowedAttachmentMimeType,
@@ -33,11 +32,20 @@ function isWellFormedBase64(value: string): boolean {
   return /^[A-Za-z0-9+/]*$/.test(body);
 }
 
-export function decodeAttachmentBase64(contentBase64: string): Uint8Array {
+/**
+ * Decodes a base64 attachment payload. `maxBytes` defaults to the web-upload
+ * cap; messaging inbound passes a higher limit because phone-originated
+ * documents routinely exceed 10 MiB.
+ */
+export function decodeAttachmentBase64(
+  contentBase64: string,
+  maxBytes = ATTACHMENT_MAX_BYTES,
+): Uint8Array {
+  const limitLabel = `${Math.max(1, Math.round(maxBytes / 1_000_000))} MB`;
   const normalized = contentBase64.trim();
   if (!normalized) throw new AttachmentValidationError("Attachment content is empty");
-  if (normalized.length > ATTACHMENT_MAX_BASE64_LENGTH) {
-    throw new AttachmentValidationError("Attachment exceeds the 10 MiB limit");
+  if (normalized.length > Math.ceil(maxBytes / 3) * 4) {
+    throw new AttachmentValidationError(`Attachment exceeds the ${limitLabel} limit`);
   }
   if (normalized.length % 4 !== 0 || !isWellFormedBase64(normalized)) {
     throw new AttachmentValidationError("Attachment content is not valid base64");
@@ -49,8 +57,8 @@ export function decodeAttachmentBase64(contentBase64: string): Uint8Array {
     throw new AttachmentValidationError("Attachment content is not valid base64");
   }
   if (bytes.byteLength === 0) throw new AttachmentValidationError("Attachment content is empty");
-  if (bytes.byteLength > ATTACHMENT_MAX_BYTES) {
-    throw new AttachmentValidationError("Attachment exceeds the 10 MiB limit");
+  if (bytes.byteLength > maxBytes) {
+    throw new AttachmentValidationError(`Attachment exceeds the ${limitLabel} limit`);
   }
   return new Uint8Array(bytes);
 }
