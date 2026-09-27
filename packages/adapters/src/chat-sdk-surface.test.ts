@@ -369,8 +369,15 @@ describe("ChatSdkMessagingSurface typing", () => {
 });
 
 describe("ChatSdkMessagingSurface shape", () => {
-  it("requires at least one platform and reports the mounted ones", () => {
-    expect(() => new ChatSdkMessagingSurface([])).toThrow(/>=1 platform/);
+  it("allows zero platforms (per-user bots register later) and reports the mounted ones", () => {
+    const empty = new ChatSdkMessagingSurface([]);
+    expect(empty.platforms()).toEqual([]);
+    empty.registerUserPlatform({
+      provider: "telegram",
+      capabilities: { direct: true, groups: false, typing: false },
+      adapter: { name: "telegram" } as never,
+    });
+    expect(empty.platforms().map((platform) => platform.provider)).toEqual(["telegram"]);
     const { surface } = createSurface();
     expect(surface.platforms()).toEqual([
       { provider: "mock", capabilities: { direct: true, groups: true, typing: true } },
