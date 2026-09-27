@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "installed_at": "2026-09-18",
+  "sources": [
+    {
+      "name": "frontend-design",
+      "repository": "https://github.com/anthropics/claude-code",
+      "commit": "68ac8bbf0245b615b41517bf8f2b2f35af1ae31d",
+      "path": "plugins/frontend-design/skills/frontend-design",
+      "installed_to": "skills/upstream/frontend-design",
+      "role": "maker visual craft",
+      "license_note": "Consult upstream LICENSE.txt before redistribution."
+    },
+    {
+      "name": "vibe-design-skills",
+      "repository": "https://github.com/nick3/vibe-design-skills",
+      "commit": "79000e161fdfeb3a35674045a7bcb8d33bf555e1",
+      "paths": ["skills/vibe-design-bootstrap", "skills/vibe-design-execute", "skills/feature-design-spec", "skills/design-artifact-evaluator", "skills/design-system-foundation", "skills/design-system-review", "skills/design-craft-foundation", "skills/design-evaluation-foundation", "skills/product-design-context", "skills/component-pattern-foundation", "skills/design-template-and-variants", "skills/agentic-interface-foundation"],
+      "installed_to": "skills/upstream",
+      "role": "design foundation, execution, and independent evaluation",
+      "license_note": "MIT; retain upstream notices."
+    },
+    {
+      "name": "frontend-design",
+      "repository": "https://github.com/PaulRBerg/agent-skills",
+      "commit": "720475ad0068ee1a0a7168a8f3a3cdf4de81c47d",
+      "path": "skills/frontend-design",
+      "installed_to": "skills/upstream/paulrberg/frontend-design",
+      "role": "independent rendered-UI checker",
+      "license_note": "Verify upstream repository MIT license before redistribution."
+    },
+    {
+      "name": "mattpocock engineering skills",
+      "repository": "https://github.com/mattpocock/skills",
+      "commit": "74ca5fe077456a0b3b2f5310cf9430999fd0b5fd",
+      "paths": ["skills/engineering/setup-matt-pocock-skills", "skills/engineering/grill-with-docs", "skills/engineering/domain-modeling", "skills/engineering/research", "skills/engineering/tdd", "skills/engineering/diagnosing-bugs", "skills/engineering/code-review", "skills/engineering/wayfinder", "skills/productivity/handoff"],
+      "installed_to": "skills/upstream/mattpocock",
+      "role": "repo grounding, research, TDD, diagnosis, review, navigation, and durable handoffs",
+      "license_note": "Consult upstream license and notices before redistribution."
+    },
+    {
+      "name": "UI/UX Pro Max",
+      "repository": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "commit": "dcc40ff5133ef78276117db0cc34e7b83cc8aeba",
+      "paths": [".claude/skills/ui-ux-pro-max", ".claude/skills/ui-styling", ".claude/skills/design-system", ".claude/skills/brand"],
+      "installed_to": "skills/upstream/nextlevelbuilder",
+      "role": "premium design intelligence, style/token decisions, implementation styling, and brand constraints",
+      "license_note": "MIT; retain upstream notices and treat catalog output as recommendations."
+    },
+    {
+      "name": "Frontend Agent Skills",
+      "repository": "https://github.com/hueyexe/frontend-agent-skills",
+      "commit": "2841c079dd8a9c634882227194dc42e25227710d",
+      "paths": ["ui-visual-composition", "interaction-patterns-components", "information-architecture-navigation", "forms-inputs-checkout", "ux-usability-foundations", "ux-writing-content-design", "accessibility-inclusive-design", "design-systems-frontend-architecture", "ux-research-discovery-testing"],
+      "installed_to": "skills/upstream/hueyexe",
+      "role": "specialist UX, inclusive design, composition, interaction, forms, information architecture, content, systems, and research",
+      "license_note": "MIT; retain upstream notices."
+    }
+  ]
+}
