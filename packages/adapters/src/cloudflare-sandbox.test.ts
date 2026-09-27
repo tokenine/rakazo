@@ -109,30 +109,21 @@ describe("CloudflareSandboxProvider", () => {
   });
 
   it("fails prepare when the workspace is not mounted", async () => {
-    let execCount = 0;
-    const { provider } = makeProvider((request) => {
-      if (request.path.endsWith("/agent/exec")) {
-        execCount += 1;
-        // First exec = PREPARE_LINUX_DESKTOP (passes), second = mount check (fails).
-        return execCount === 1
-          ? { json: { code: 0, stdout: "", stderr: "" } }
-          : { json: { code: 1, stdout: "", stderr: "grep: no match" } };
-      }
-      return {};
-    });
+    const { provider } = makeProvider((request) =>
+      request.path.endsWith("/agent/exec")
+        ? { json: { code: 1, stdout: "", stderr: "grep: no match" } }
+        : {},
+    );
     const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
     await expect(provider.prepare(ref, ctx)).rejects.toThrow("workspace is not mounted");
   });
 
   it("keeps the workspace import/export as no-ops", async () => {
     const { provider } = makeProvider(() => ({}));
-    const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
     const exported = [];
-    for await (const file of provider.exportWorkspace(ref, ctx)) exported.push(file);
+    for await (const file of provider.exportWorkspace()) exported.push(file);
     expect(exported).toEqual([]);
-    await expect(provider.importWorkspace(ref, (async function* () {})(), ctx)).resolves.toBe(
-      undefined,
-    );
+    await expect(provider.importWorkspace()).resolves.toBe(undefined);
   });
 
   it("surfaces gone containers from keepAlive", async () => {
@@ -153,7 +144,7 @@ describe("CloudflareSandboxProvider", () => {
     const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
     const screen = await provider.connectScreen(
       ref,
-      { interactive: false },
+      { view: "stream", interactive: false },
       { ...ctx, screenLeaseId: "lease" },
     );
     expect(screen.url).toContain(

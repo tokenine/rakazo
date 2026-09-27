@@ -16,7 +16,7 @@ import type {
 } from "@rakazo/adapter-kit";
 import { boundedSandboxCommandTimeoutMs } from "@rakazo/core";
 import { shellQuote } from "./computer-support.js";
-import { LinuxDesktop, PREPARE_LINUX_DESKTOP } from "./linux-desktop.js";
+import { LinuxDesktop } from "./linux-desktop.js";
 
 /** The control agent baked into the cloudflare computer image listens here. */
 export const CLOUDFLARE_AGENT_PORT = 8090;
@@ -131,15 +131,9 @@ export class CloudflareSandboxProvider implements SandboxProvider {
   }
 
   async prepare(computer: ComputerRef, context: AdapterContext): Promise<void> {
-    const result = await this.exec(
-      computer,
-      `bash -c ${shellQuote(PREPARE_LINUX_DESKTOP)}`,
-      boundedSandboxCommandTimeoutMs(undefined),
-      context.signal,
-    );
-    if (result.code !== 0) {
-      throw new Error(result.stderr || "could not prepare computer desktop tools");
-    }
+    // No PREPARE_LINUX_DESKTOP here (unlike e2b): the container image bakes the
+    // whole desktop stack in, and there is no sudo to install anything anyway.
+    // Only verify the R2 home actually mounted before any run touches disk.
     const mounted = await this.exec(
       computer,
       `bash -c ${shellQuote(`grep -qs " ${CLOUDFLARE_HOME} fuse" /proc/mounts`)}`,
