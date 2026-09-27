@@ -142,7 +142,7 @@ function attachNovncProxy(
             return;
           }
           const responseHeaders = safeScreenProxyResponseHeaders(incoming.headers);
-          if (shouldInjectNovncStorageShim(responseHeaders, target.hostname)) {
+          if (shouldInjectNovncStorageShim(responseHeaders, target.hostname, bridge ? [bridge.host] : [])) {
             const declaredLength = Number(incoming.headers["content-length"] ?? 0);
             if (Number.isFinite(declaredLength) && declaredLength > MAX_NOVNC_HTML_BYTES) {
               finishUnavailable();
@@ -277,8 +277,13 @@ function isCreateOSNovncHost(hostname: string) {
   return NOVNC_STORAGE_SHIM_HOSTS.some((suffix) => hostname.endsWith(suffix));
 }
 
-function shouldInjectNovncStorageShim(headers: http.IncomingHttpHeaders, hostname: string) {
-  if (!isCreateOSNovncHost(hostname)) return false;
+function shouldInjectNovncStorageShim(
+  headers: http.IncomingHttpHeaders,
+  hostname: string,
+  extraHostSuffixes: string[] = [],
+) {
+  if (!isCreateOSNovncHost(hostname) && !extraHostSuffixes.some((s) => hostname.endsWith(s)))
+    return false;
   if (headers["content-encoding"]) return false;
   const contentType = String(headers["content-type"] ?? "").toLowerCase();
   return contentType.includes("text/html") || contentType.includes("application/xhtml+xml");
