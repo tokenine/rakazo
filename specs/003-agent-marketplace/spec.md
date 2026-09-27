@@ -22,15 +22,18 @@ at larger scale.
 ## Product assumptions made autonomously (reversible)
 
 - A1: Bundle format = versioned JSON (+ assets as files) defined in `packages/contracts` — provider-neutral, human-inspectable, no proprietary packaging.
-- A2: Marketplace v1 = a versioned catalog (bundled default + refreshable from a configurable operator URL); "publish to a public store" is out of scope until a hosted service decision exists. This keeps provider neutrality and avoids inventing a new external service autonomously.
+- A2: (updated 2026-09-28 after Q1) Marketplace is a **catalog seam**: v1 ships a built-in default catalog; operator-configured catalog URLs and a future hosted public registry plug into the same interface. No hosted service must exist for v1 to work.
 - A3: No payments/ratings/accounts in v1; install counts or similar telemetry excluded.
 - A4: Export format covers what is portable; model credentials, user data, memory, and secrets are deployment-local and never leave with the bundle.
 
-## Open questions (block planning)
+## Resolved questions (maintainer, 2026-09-28)
 
-- Q1: Hosting/curations: is a central public marketplace (hosted by us) desired eventually, or on-prem operator-curated catalogs only? (affects contracts only if we design for remote now — A2 assumes remote-catalog-capable but unhosted)
+- Q1 resolved — hybrid marketplace: the product may end up either enterprise/closed or open to anyone, so the marketplace must support **both**: a hosted public registry we can run later, and operator-configured catalogs for closed deployments, with a **built-in default catalog that ships with the product** when nobody configures anything. Catalog/registry source is a provider-neutral seam (like every other external service): same client, swappable backends (bundled → operator URL → hosted registry).
+- Q3 resolved — MCP items include **both** remote server references (URL + auth guidance) **and** curated bundled local servers, selectively added by us for quality. Additionally, if a valid third-party MCP registry/marketplace exists, the catalog should be able to pull/index from it so nearly every MCP is browsable — again behind the same neutral catalog seam, with third-party items clearly labeled by provenance and reviewed before they can be "bundled" (pulled items stay reference-only until a maintainer curates them).
+
+## Open questions (still open)
+
 - Q2: Skill format: do existing `AgentSkill`/`TaughtSkill` records serialize cleanly, or is a canonical skill definition format needed first? (research task)
-- Q3: MCP marketplace items: reference remote MCP servers (URL + auth guidance) only, or bundled local servers too?
 
 ## Verification sketch
 

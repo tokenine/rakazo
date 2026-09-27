@@ -28,10 +28,10 @@ similar" actions) and adapt it to Ai7's monochrome, bots-carry-identity-color de
 - A2: Recent-events banners are a deployment-operator content slot (configurable), not hardcoded marketing.
 - A3: Gallery content ships as a versioned bundled catalog (like experts/avatars assets) with optional remote refresh later — no new hosted service in v1 (provider neutrality).
 
-## Open questions
+## Resolved questions (maintainer, 2026-09-28)
 
-- Q1: Does a "credits/points" concept exist anywhere in the product we should surface (usage records exist — `UsageRecord` model), or is v1 purely activity + inspiration?
-- Q2: Who curates inspiration cases for an on-prem deployment (operator-uploadable catalog?)
+- Q1 resolved: no points/credits system — the hub is activity + inspiration only (assumption A1 confirmed).
+- Q2 resolved: inspiration cases are a preset curated by us and shipped with the product (assumption A2's "operator content slot" demoted to optional; the bundled preset is the source).
 
 ## Verification sketch
 
