@@ -303,6 +303,25 @@ Object.defineProperty(window, "localStorage", {
     clear() {},
   },
 });
+// Browser extensions (MetaMask, wallets, …) inject content scripts into this
+// frame too; on a sandboxed opaque-origin document they always fail to reach
+// their extension context and the thrown error would surface as a scary red
+// noVNC error box. Swallow only extension-origin errors — real noVNC errors
+// come from our own origin and still show.
+window.addEventListener("error", (e) => {
+  const source = e.filename || "";
+  if (source.startsWith("chrome-extension:") || source.startsWith("moz-extension:")) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+}, true);
+window.addEventListener("unhandledrejection", (e) => {
+  const reason = e.reason;
+  const text = String((reason && (reason.stack || reason.message)) || reason || "");
+  if (text.includes("chrome-extension:") || text.includes("moz-extension:")) {
+    e.preventDefault();
+  }
+});
 </script>`;
   return html.includes("<head>")
     ? html.replace("<head>", `<head>${shim}`)
