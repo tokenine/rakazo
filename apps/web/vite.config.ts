@@ -61,7 +61,12 @@ function attachDesktopStackProbe(
   });
 }
 
-function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string, api: string) {
+function attachNovncProxy(
+  server: ViteDevServer | PreviewServer,
+  secret: string,
+  api: string,
+  bridge?: { host: string; token: string },
+) {
   server.middlewares.use(async (req, res, next) => {
     if (!req.url?.startsWith("/novnc/")) {
       next();
@@ -78,6 +83,11 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
       ...safeProxyHeaders(req.headers),
       ...(isCreateOSNovncHost(target.hostname) ? { "accept-encoding": "identity" } : {}),
       host: `${target.hostname}:${target.port}`,
+      // The CF bridge authenticates every route with a bearer token; other
+      // screen targets (e2b, createos, supervisor) are tokenless.
+      ...(bridge && target.hostname.toLowerCase() === bridge.host
+        ? { authorization: `Bearer ${bridge.token}` }
+        : {}),
     };
     const transport = target.protocol === "https:" ? https : http;
     let upstream: ClientRequest | undefined;
@@ -304,6 +314,12 @@ export default defineConfig(({ mode }) => {
   const desktopStackToken =
     process.env.RAKAZO_DESKTOP_STACK_TOKEN ?? rootEnv.RAKAZO_DESKTOP_STACK_TOKEN ?? "";
   const imageTag = process.env.RAKAZO_IMAGE_TAG ?? rootEnv.RAKAZO_IMAGE_TAG ?? "edge";
+  const cfBridgeUrl = process.env.CF_BRIDGE_URL ?? rootEnv.CF_BRIDGE_URL ?? "";
+  const cfBridgeToken = process.env.CF_BRIDGE_TOKEN ?? rootEnv.CF_BRIDGE_TOKEN ?? "";
+  const cfBridge =
+    cfBridgeUrl.trim() && cfBridgeToken.trim()
+      ? { host: new URL(cfBridgeUrl).hostname.toLowerCase(), token: cfBridgeToken.trim() }
+      : undefined;
   return {
     plugins: [
       react(),
@@ -332,8 +348,9 @@ export default defineConfig(({ mode }) => {
       },
       {
         name: "rakazo-novnc-proxy",
-        configureServer: (server) => attachNovncProxy(server, screenProxySecret(), api),
-        configurePreviewServer: (server) => attachNovncProxy(server, screenProxySecret(), api),
+        configureServer: (server) => attachNovncProxy(server, screenProxySecret(), api, cfBridge),
+        configurePreviewServer: (server) =>
+          attachNovncProxy(server, screenProxySecret(), api, cfBridge),
       },
     ],
     server: {
