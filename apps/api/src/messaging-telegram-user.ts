@@ -1,8 +1,9 @@
 /**
  * Per-user Telegram bots: each account can register its own BotFather token.
- * The API process hosts one webhook adapter per registered bot under a unique
- * provider key ("telegram-u<rowId>") — thread ids carry that prefix, so
- * outbound routing and identity namespaces never mix between bots.
+ * The telegram adapter hardcodes its thread-id prefix ("telegram:<chatId>"),
+ * so the surface hosts a single "telegram" slot; the registered user bot owns
+ * it (a deployment-env bot keeps priority). Connecting replaces the previous
+ * occupant — documented single-slot behaviour for now.
  */
 import type { MessagingSurface } from "@rakazo/adapter-kit";
 import type { EncryptedSecretStore } from "@rakazo/adapters";
@@ -10,7 +11,9 @@ import { createUserTelegramPlatform } from "@rakazo/adapters";
 import type { PrismaClient } from "@rakazo/db";
 import type { Hono } from "hono";
 
-type TelegramUserBotRow = {
+export const TELEGRAM_SLOT_PROVIDER = "telegram";
+
+export type TelegramUserBotRow = {
   id: string;
   userId: string;
   username: string;
@@ -24,23 +27,18 @@ type TelegramUserDeps = {
   messaging: MessagingSurface;
 };
 
-export function userTelegramProviderKey(row: Pick<TelegramUserBotRow, "id">): string {
-  return `telegram-u${row.id}`;
-}
-
 /** Decrypt the stored token and register (or re-register) the bot's adapter. */
 export async function registerTelegramUserBot(
   deps: TelegramUserDeps,
   row: TelegramUserBotRow,
 ): Promise<void> {
   const token = deps.secrets.load(row.tokenCiphertext, `tgbot-${row.userId}`);
-  const provider = userTelegramProviderKey(row);
   const platform = createUserTelegramPlatform({
-    key: provider,
+    key: TELEGRAM_SLOT_PROVIDER,
     botToken: token,
     webhookSecret: row.webhookSecret,
   });
-  deps.messaging.unregisterUserPlatform?.(provider);
+  deps.messaging.unregisterUserPlatform?.(TELEGRAM_SLOT_PROVIDER);
   deps.messaging.registerUserPlatform?.(platform);
 }
 
@@ -55,7 +53,7 @@ export function mountUserTelegramWebhookRoute(app: Hono, deps: TelegramUserDeps)
       where: { id: c.req.param("botId") },
     });
     if (!row) return c.json({ error: "Unknown bot" }, 404);
-    const response = deps.messaging.handleWebhook(userTelegramProviderKey(row), c.req.raw);
+    const response = deps.messaging.handleWebhook(TELEGRAM_SLOT_PROVIDER, c.req.raw);
     if (!response) return c.json({ error: "Bot not ready" }, 503);
     return response;
   });

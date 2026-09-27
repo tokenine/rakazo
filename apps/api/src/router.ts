@@ -163,6 +163,7 @@ import {
   updateMemoryProviderDefaultScope,
 } from "./memory-provider-config.js";
 import { telegramGetMe, telegramSetWebhook, telegramWebhookStatus } from "./messaging-telegram.js";
+import { TELEGRAM_SLOT_PROVIDER } from "./messaging-telegram-user.js";
 import {
   chooseFocus,
   dismissFocus,
@@ -4329,11 +4330,10 @@ export function createRouter(deps: RouterDeps) {
             },
           });
           const tokenDecrypted = deps.secrets.load(ciphertext, recordId);
-          const provider = `telegram-u${row.id}`;
-          deps.telegramUserPlatforms?.unregister(provider);
+          deps.telegramUserPlatforms?.unregister(TELEGRAM_SLOT_PROVIDER);
           deps.telegramUserPlatforms?.register(
             createUserTelegramPlatform({
-              key: provider,
+              key: TELEGRAM_SLOT_PROVIDER,
               botToken: tokenDecrypted,
               webhookSecret,
             }),
@@ -4365,7 +4365,7 @@ export function createRouter(deps: RouterDeps) {
               // Best-effort teardown; removing the row is what matters.
             }
             await deps.prisma.messagingTelegramBot.delete({ where: { id: row.id } });
-            deps.telegramUserPlatforms?.unregister(`telegram-u${row.id}`);
+            deps.telegramUserPlatforms?.unregister(TELEGRAM_SLOT_PROVIDER);
           }
           return { ok: true as const };
         }),
