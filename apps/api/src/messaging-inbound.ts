@@ -1,4 +1,4 @@
-import type { JobPublisher, MessagingInboundMessage } from "@rakazo/adapter-kit";
+import type { ArtifactStore, JobPublisher, MessagingInboundMessage } from "@rakazo/adapter-kit";
 import { messagingDeliverJob, runContinueJob } from "@rakazo/adapter-kit";
 import type { MessageBlock } from "@rakazo/contracts";
 import { parseMessagingCommand, sanitizeMessagingLabel } from "@rakazo/core";
@@ -16,6 +16,7 @@ import {
   redeemMessagingLinkCode,
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { createOwnedArtifact } from "./artifacts.js";
 import {
   MESSAGE_ROUTING_REARMED_REASON,
   MESSAGE_ROUTING_REASON,
@@ -46,6 +47,9 @@ export interface MessagingInboundDeps {
    * Best-effort "…" bubbles shown to a 1:1 sender while their run executes.
    * Cosmetic only — callers must catch failures; groups never get it.
    */
+  /** Artifact store — inbound telegram/media attachments ingest as artifacts. */
+  artifacts?: ArtifactStore;
+  dataDir?: string;
   typing?: (threadId: string) => Promise<void>;
 }
 
@@ -135,16 +139,60 @@ async function handleDirectEvent(
     );
   }
 
+  // Inbound media (telegram photos/documents): download and ingest as an
+  // artifact so the model actually sees the image instead of a dying URL.
+  const attachmentBlocks: MessageBlock[] = [];
+  if (event.mediaUrl && deps.artifacts && text.length < 2_000) {
+    try {
+      const response = await fetch(event.mediaUrl, { signal: AbortSignal.timeout(45_000) });
+      if (response.ok) {
+        const bytes = Buffer.from(await response.arrayBuffer());
+        if (bytes.byteLength <= 25_000_000) {
+          const mimeType = response.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
+          const actor = {
+            userId: ids.userId,
+            spaceId: ids.spaceId,
+          } as Parameters<typeof createOwnedArtifact>[1];
+          const stored = await createOwnedArtifact(
+            { prisma: deps.prisma, artifacts: deps.artifacts },
+            actor,
+            {
+              botId: ids.botId,
+              name: event.mediaUrl.split("/").pop()?.split("?")[0] || `attachment-${Date.now()}`,
+              mimeType,
+              contentBase64: bytes.toString("base64"),
+            },
+          );
+          attachmentBlocks.push({
+            kind: "image",
+            artifactId: stored.id,
+            name: stored.name,
+            mimeType,
+          });
+        }
+      }
+    } catch (error) {
+      getLogger().warn("messaging attachment ingestion failed", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   // Message-trigger routines own the delivery when configured. Do not also
   // start a normal messaging continue for the same inbound handle.
   if (await wakeMessageRoutines(deps, ids, event)) return;
+
+  const blocks: MessageBlock[] = [{ kind: "text", text }];
+  if (attachmentBlocks.length > 0) {
+    blocks.push(...attachmentBlocks);
+  }
 
   const sent = await deps.events.sendUserMessage({
     spaceId: ids.spaceId,
     threadId: ids.threadId,
     botId: ids.botId,
     userId: ids.userId,
-    blocks: [{ kind: "text", text }],
+    blocks,
     prompt: text,
     trigger: "messaging",
     clientNonce: `messaging:${event.provider}:${event.handle}`,
