@@ -33,7 +33,7 @@ need parallel, separately-contexted conversations with the same agent, each resu
 
 ## Open questions (need answers before plan)
 
-- Q1: Does run serialization stay per-thread (preferred) or per-bot? Executor claims runs per run-row today; verify lease behavior with two active threads sharing one computer.
+- ~~Q1 resolved by research (2026-09-28):~~ the busy guard in `sendUserMessage` filters on `(threadId, botId)` (packages/db/src/events.ts ~378-388), run leases key on run id only (executor.ts:1103-1124), and per-bot locking exists only for the shared computer via the `(computerId, botId)`-unique `ComputerExecutionLease` (computer-lifecycle.ts:439-505; a second concurrent run gets `ComputerBusyError` and requeues with backoff) plus a momentary per-secret credential lock. Verdict: run/context wiring is already thread-scoped — relaxing `Thread.botId @unique` is the core change; the computer lease is the only genuine serialization and can stay per-bot (R2's exception).
 - Q2: Mobile: reuse the thread list pattern or add a session switcher inside the bot view? (native-first rule applies)
 
 ## Verification sketch (matrix rows to expand)
