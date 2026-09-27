@@ -231,6 +231,9 @@ function attachNovncProxy(
       for (const [key, value] of Object.entries(safeProxyHeaders(req.headers))) {
         headerLines.push(`${key}: ${Array.isArray(value) ? value.join(",") : value}`);
       }
+      if (bridge && target.hostname.toLowerCase() === bridge.host && bridge.token) {
+        headerLines.push(`authorization: Bearer ${bridge.token}`);
+      }
       upstream.write(`${headerLines.join("\r\n")}\r\n\r\n`);
       if (head.length) upstream.write(head);
       socket.pipe(upstream);
