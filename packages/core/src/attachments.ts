@@ -196,7 +196,9 @@ export function userTurnBlocksForRun(
   }>,
   sourceMessageId?: string | null,
 ): MessageBlock[] | undefined {
-  if (trigger !== "user") return undefined;
+  // "messaging" runs (telegram/whatsapp/…) carry their source image blocks
+  // too — the linked chat is exactly where users attach photos.
+  if (trigger !== "user" && trigger !== "messaging") return undefined;
   return messages.find(
     (message) =>
       message.role === "user" &&
