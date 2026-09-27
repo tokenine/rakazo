@@ -7,14 +7,20 @@ Read top-to-bottom. Ops runbook for the live deployment lives separately in `doc
 
 ## 1. What exists (state of the work)
 
-Two branches carry everything; both are currently **local only — not pushed**:
+Two branches carry everything; both are **pushed to origin**:
 
 | Branch | Has | Commits |
 | --- | --- | --- |
-| `speckit-setup` | Super-SpecKit kit install (`.super-speckit/`, `super-speckit.yml`, skill symlinks in `.agents/skills/`), project atlas (`project-atlas/`), constitution (`.specify/memory/constitution.md`), all three feature specs (`specs/00…3/`) | `7826e422` (specs) on top of atlas commits, based on origin/main `d7a4e523` |
-| `ss/feature/001-multi-session-agents` | Feature 001 planning artifacts: `plan.md` (4 slices), `verification-matrix.md` (V1–V8), `change-story.md` (reviewed by maintainer — approved to implement) | `a7523281` → `a124bedf`, branched from `speckit-setup` |
+| `speckit-setup` | Super-SpecKit kit install (`.super-speckit/`, `super-speckit.yml`, skill symlinks in `.agents/skills/`), project atlas (`project-atlas/`), constitution (`.specify/memory/constitution.md`), all three feature specs (`specs/00…3/`) | `71202998` (planning artifacts relocated into `specs/001-…/`), based on origin/main `d7a4e523` |
+| `ss/feature/001-multi-session-agents` | Everything on `speckit-setup` **plus** the WIP schema/migration commit below | `a020b565`, same tree as `speckit-setup` + WIP |
 
-Feature state (from the kit, not memory): `001-multi-session-agents` is **planned**; no candidate SHA yet; slice 1 (backend) has NOT been implemented — two implementation attempts were cancelled before any code was written, so the working tree is clean.
+Feature state (from the kit, not memory): `001-multi-session-agents` is **planned**. An
+interrupted maker run left ONE unverified commit on the feature branch: `a020b565` contains
+the slice-1 Prisma schema change (`Thread.botId` unique dropped, `name`/`isPrimary` added,
+partial unique one-primary-per-bot) and its migration folder. It has **no TDD log, no
+generated Prisma client, and no tests run** — treat it as a starting point: review it, run
+`pnpm --filter @rakazo/db generate`, then continue with failing tests first. All other slice-1
+work (repos, thread-target, RPCs, legacy pinning, tests) is NOT started.
 
 Also decided (recorded in specs): feature 002 inspiration hub = no points system, preset catalog from us; feature 003 marketplace = hybrid catalog seam (bundled default + operator URLs + future hosted registry), MCP items both remote references and curated bundled locals, third-party registry pull is reference-only until curated. Feature 002 has one open research task (do `AgentSkill`/`TaughtSkill` serialize into a portable format?).
 
@@ -44,8 +50,9 @@ worktree via `python3 .super-speckit/scripts/super_speckit.py worktree --repo . 
 
 ## 3. Prerequisite before leaving this machine
 
-Push both branches: `git push -u origin speckit-setup ss/feature/001-multi-session-agents`.
-(Not done yet at time of writing — do this first or the server has nothing to clone.)
+Done: both branches are pushed
+(`git push -u origin speckit-setup ss/feature/001-multi-session-agents`). Clone fresh and check
+out `ss/feature/001-multi-session-agents` to continue slice 1.
 
 ## 4. The job: continue feature 001, slice 1 (backend)
 
