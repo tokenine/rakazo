@@ -79,15 +79,18 @@ function attachNovncProxy(
       res.end("Invalid or expired screen capability");
       return;
     }
+    // The storage shim must string-edit the HTML, so compressed responses
+    // (bridge/workers.dev compress) need identity encoding — same as CreateOS.
+    const isBridgeTarget = Boolean(bridge && target.hostname.toLowerCase() === bridge.host);
     const headers = {
       ...safeProxyHeaders(req.headers),
-      ...(isCreateOSNovncHost(target.hostname) ? { "accept-encoding": "identity" } : {}),
+      ...(isCreateOSNovncHost(target.hostname) || isBridgeTarget
+        ? { "accept-encoding": "identity" }
+        : {}),
       host: `${target.hostname}:${target.port}`,
       // The CF bridge authenticates every route with a bearer token; other
       // screen targets (e2b, createos, supervisor) are tokenless.
-      ...(bridge && target.hostname.toLowerCase() === bridge.host
-        ? { authorization: `Bearer ${bridge.token}` }
-        : {}),
+      ...(isBridgeTarget && bridge ? { authorization: `Bearer ${bridge.token}` } : {}),
     };
     const transport = target.protocol === "https:" ? https : http;
     let upstream: ClientRequest | undefined;
@@ -142,7 +145,7 @@ function attachNovncProxy(
             return;
           }
           const responseHeaders = safeScreenProxyResponseHeaders(incoming.headers);
-          if (shouldInjectNovncStorageShim(responseHeaders, target.hostname, bridge ? [bridge.host] : [])) {
+          if (shouldInjectNovncStorageShim(responseHeaders, target.hostname, isBridgeTarget ? [bridge.host] : [])) {
             const declaredLength = Number(incoming.headers["content-length"] ?? 0);
             if (Number.isFinite(declaredLength) && declaredLength > MAX_NOVNC_HTML_BYTES) {
               finishUnavailable();
