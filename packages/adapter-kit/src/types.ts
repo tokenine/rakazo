@@ -591,6 +591,16 @@ export interface MessagingInboundMessage {
   participants: string[];
   content: string;
   mediaUrl: string | null;
+  /**
+   * Binary attachments (photos/documents) the sink can pull. fetch() yields
+   * the raw bytes — tokens stay behind the adapter's own download path.
+   */
+  media?: Array<{
+    type: string;
+    mimeType?: string;
+    name?: string;
+    fetch: () => Promise<Uint8Array>;
+  }>;
   /** Team-room workspace/team id when the platform reports one (Slack team_id, …). */
   workspaceId?: string;
   /** Stable conversation key within the workspace (channel id, DM key, …). */

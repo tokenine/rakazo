@@ -142,33 +142,38 @@ async function handleDirectEvent(
   // Inbound media (telegram photos/documents): download and ingest as an
   // artifact so the model actually sees the image instead of a dying URL.
   const attachmentBlocks: MessageBlock[] = [];
-  if (event.mediaUrl && deps.artifacts && text.length < 2_000) {
+  if (deps.artifacts && text.length < 2_000) {
+    const media = event.media?.[0];
     try {
-      const response = await fetch(event.mediaUrl, { signal: AbortSignal.timeout(45_000) });
-      if (response.ok) {
-        const bytes = Buffer.from(await response.arrayBuffer());
-        if (bytes.byteLength <= 25_000_000) {
-          const mimeType = response.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
-          const actor = {
-            userId: ids.userId,
-            spaceId: ids.spaceId,
-          } as Parameters<typeof createOwnedArtifact>[1];
-          const stored = await createOwnedArtifact(
-            { prisma: deps.prisma, artifacts: deps.artifacts },
-            actor,
-            {
-              botId: ids.botId,
-              name: event.mediaUrl.split("/").pop()?.split("?")[0] || `attachment-${Date.now()}`,
-              mimeType,
-              contentBase64: bytes.toString("base64"),
-            },
-          );
+      if (media) {
+        const bytes = Buffer.from(await media.fetch());
+        if (bytes.byteLength > 25_000_000) {
+          throw new Error(`attachment too large (${bytes.byteLength} bytes)`);
+        }
+        const mimeType = media.mimeType ?? "application/octet-stream";
+        const actor = {
+          userId: ids.userId,
+          spaceId: ids.spaceId,
+        } as Parameters<typeof createOwnedArtifact>[1];
+        const stored = await createOwnedArtifact(
+          { prisma: deps.prisma, artifacts: deps.artifacts },
+          actor,
+          {
+            botId: ids.botId,
+            name: media.name || `attachment-${Date.now()}`,
+            mimeType,
+            contentBase64: bytes.toString("base64"),
+          },
+        );
+        if (mimeType.startsWith("image/")) {
           attachmentBlocks.push({
             kind: "image",
             artifactId: stored.id,
             name: stored.name,
             mimeType,
           });
+        } else {
+          getLogger().info("messaging attachment stored", { artifactId: stored.id, mimeType });
         }
       }
     } catch (error) {

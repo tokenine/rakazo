@@ -313,6 +313,19 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
       participants: isDirect ? [] : (platform.participants?.(message.raw) ?? []),
       content: message.text ?? "",
       mediaUrl: message.attachments.find((attachment) => attachment.url)?.url ?? null,
+      media: message.attachments
+        .filter((attachment) => attachment.fetchData || attachment.url)
+        .map((attachment) => ({
+          type: attachment.type,
+          mimeType: attachment.mimeType,
+          name: attachment.name,
+          fetch: async () => {
+            if (attachment.fetchData) return new Uint8Array(await attachment.fetchData());
+            const response = await fetch(attachment.url!);
+            if (!response.ok) throw new Error(`attachment download failed: ${response.status}`);
+            return new Uint8Array(await response.arrayBuffer());
+          },
+        })),
     };
     const enrichment = platform.enrichTeamRoom?.(message.raw, base) ?? {};
     return { ...base, ...enrichment };
