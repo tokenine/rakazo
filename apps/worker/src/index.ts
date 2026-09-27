@@ -212,6 +212,7 @@ async function main() {
     events,
     workerId: process.pid.toString(),
     runtime,
+    dataDir,
     secretStore: secrets,
     memoryProviders,
     deploymentModelKey,

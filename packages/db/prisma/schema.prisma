@@ -1211,6 +1211,8 @@ model MessagingOutbound {
   nextAttemptAt   DateTime?
   providerHandle  String?
   sourceMessageId String?
+  /// Image/document rows: the artifact to upload at drain time.
+  artifactId      String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

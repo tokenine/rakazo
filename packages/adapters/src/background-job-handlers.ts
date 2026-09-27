@@ -33,13 +33,21 @@ export function createBackgroundJobHandlers(deps: {
   secretStore: EncryptedSecretStore;
   memoryProviders: MemoryProviderResolver;
   deploymentModelKey?: string;
+  dataDir?: string;
   messaging?: MessagingSurface;
   cloudAgent?: CloudAgentConnection | null;
 }): BackgroundJobHandlers {
   const deliverMessaging = async (runId?: string) => {
     if (!deps.messaging) return;
     await deliverMessagingOutbound(
-      { prisma: deps.prisma, messaging: deps.messaging, events: deps.events, jobs: deps.jobs },
+      {
+        prisma: deps.prisma,
+        messaging: deps.messaging,
+        events: deps.events,
+        jobs: deps.jobs,
+        dataDir: deps.dataDir,
+        secrets: deps.secretStore,
+      },
       { runId },
       {
         operationId: `messaging.deliver:${runId ?? "drain"}`,
@@ -58,7 +66,14 @@ export function createBackgroundJobHandlers(deps: {
       // copy them into the outbox. Never let mirror failures fail the run.
       if (deps.messaging) {
         await mirrorMessagingOutbound(
-          { prisma: deps.prisma, messaging: deps.messaging, events: deps.events, jobs: deps.jobs },
+          {
+            prisma: deps.prisma,
+            messaging: deps.messaging,
+            events: deps.events,
+            jobs: deps.jobs,
+            dataDir: deps.dataDir,
+            secrets: deps.secretStore,
+          },
           payload.runId,
         );
         await deps.jobs.enqueue(messagingDeliverJob()).catch(async (error) => {

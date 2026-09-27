@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type {
   AdapterContext,
   JobPublisher,
@@ -10,6 +12,7 @@ import { botMessageHopExhausted, nextBotMessageHop } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { appendEventInTransaction, createThreadMessageInTransaction } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import type { EncryptedSecretStore } from "./secrets.js";
 
 /**
  * Margin under vendor consecutive-outbound caps (sendblue enforces one hard):
@@ -26,6 +29,9 @@ export interface MessagingDeliveryDeps {
   messaging: MessagingSurface;
   events: Pick<ThreadEvents, "sendUserMessage" | "notify">;
   jobs: Pick<JobPublisher, "enqueue">;
+  /** Artifact storage root — image/document outbox rows upload from here. */
+  dataDir?: string;
+  secrets?: EncryptedSecretStore;
 }
 
 type IdentityRow = {
@@ -54,6 +60,58 @@ export async function deliverMessagingOutbound(
     await mirrorMessagingOutbound(deps, input.runId);
   }
   await drain(deps, context);
+}
+
+/**
+ * Upload an artifact (bot-generated image/document) straight into the
+ * sender's telegram chat. Only wired for telegram: other providers route
+ * through surface.sendToThread text until their adapters grow media support.
+ */
+async function sendTelegramArtifact(
+  deps: { prisma: PrismaClient; secrets: EncryptedSecretStore; dataDir: string },
+  input: {
+    identity: { userId: string; dmThreadId: string | null };
+    row: { artifactId: string | null; body: string };
+  },
+): Promise<boolean> {
+  if (!input.row.artifactId || !input.identity.dmThreadId) return false;
+  const artifact = await deps.prisma.artifact.findUnique({
+    where: { id: input.row.artifactId },
+  });
+  if (!artifact) return false;
+  const bot = await deps.prisma.messagingTelegramBot.findUnique({
+    where: { userId: input.identity.userId },
+  });
+  if (!bot) return false;
+  let token: string;
+  try {
+    token = deps.secrets.load(bot.tokenCiphertext, `tgbot-${bot.userId}`);
+  } catch {
+    return false;
+  }
+  const chatId = input.identity.dmThreadId.split(":").pop();
+  if (!chatId) return false;
+  let bytes: Buffer;
+  try {
+    bytes = await readFile(join(deps.dataDir, "artifacts", artifact.spaceId, artifact.storageKey));
+  } catch {
+    return false;
+  }
+  const isImage = artifact.mimeType.startsWith("image/");
+  const form = new FormData();
+  form.append("chat_id", chatId);
+  form.append("caption", input.row.body.slice(0, 1000));
+  form.append(
+    isImage ? "photo" : "document",
+    new Blob([new Uint8Array(bytes)], { type: artifact.mimeType }),
+    artifact.name,
+  );
+  const response = await fetch(
+    `https://api.telegram.org/bot${token}/${isImage ? "sendPhoto" : "sendDocument"}`,
+    { method: "POST", body: form, signal: AbortSignal.timeout(120_000) },
+  );
+  const body = (await response.json().catch(() => null)) as { ok?: boolean } | null;
+  return Boolean(body?.ok);
 }
 
 export async function mirrorMessagingOutbound(
@@ -102,7 +160,14 @@ async function mirrorRun(deps: MessagingDeliveryDeps, runId: string): Promise<vo
     where: { runId: run.id, role: "bot" },
     orderBy: { seq: "asc" },
   });
-  const rows = messages
+  const rows: Array<{
+    idempotencyKey: string;
+    kind: string;
+    identityId: string;
+    body: string;
+    sourceMessageId: string;
+    artifactId?: string;
+  }> = messages
     .map((message) => ({
       idempotencyKey: `msg:${message.id}`,
       kind: "dm",
@@ -111,10 +176,29 @@ async function mirrorRun(deps: MessagingDeliveryDeps, runId: string): Promise<vo
       sourceMessageId: message.id,
     }))
     .filter((row) => row.body);
+  // Bot-generated images/documents ride their own outbox rows so the drain
+  // uploads them to the chat app (telegram sendPhoto/sendDocument).
+  for (const message of messages) {
+    const blocks = (message.blocks ?? []) as MessageBlock[];
+    for (const block of blocks) {
+      if (block.kind !== "image" || !("artifactId" in block) || !block.artifactId) continue;
+      rows.push({
+        idempotencyKey: `img:${message.id}:${block.artifactId}`,
+        kind: "image",
+        identityId: identity.id,
+        body: ("name" in block && typeof block.name === "string" && block.name) || "image",
+        sourceMessageId: message.id,
+        artifactId: block.artifactId,
+      });
+    }
+  }
   if (rows.length === 0) return;
   // Atomic dedupe: a concurrent messaging.deliver for the same run loses on
   // the idempotencyKey unique key instead of throwing P2002.
-  await deps.prisma.messagingOutbound.createMany({ data: rows, skipDuplicates: true });
+  await deps.prisma.messagingOutbound.createMany({
+    data: rows,
+    skipDuplicates: true,
+  });
 }
 
 /**
@@ -402,6 +486,19 @@ async function drain(deps: MessagingDeliveryDeps, context: AdapterContext): Prom
           });
         }
         continue;
+      }
+      if (row.artifactId && deps.dataDir && deps.secrets) {
+        const delivered = await sendTelegramArtifact(
+          { prisma: deps.prisma, secrets: deps.secrets, dataDir: deps.dataDir },
+          { identity, row },
+        );
+        if (delivered) {
+          await deps.prisma.messagingIdentity.update({
+            where: { id: identity.id },
+            data: { outboundSinceInbound: { increment: 1 } },
+          });
+          continue;
+        }
       }
       const sent = await deps.messaging.sendToThread({ threadId, body: row.body }, context);
       await deps.prisma.messagingOutbound.updateMany({
