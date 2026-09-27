@@ -164,8 +164,14 @@ async function route(
     if (!Number.isInteger(port) || port < 1024 || port > 65535) {
       throw new HttpError(400, "bad screen port");
     }
-    const sub = `/${rest.slice(2).join("/")}${url.search}`;
     await container.ensureStarted();
+    if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
+      // WebSocket upgrades must be forwarded UNTOUCHED: rebuilding a Request
+      // drops the runtime's upgrade binding and the proxy fails (observed 500).
+      // websockify accepts any path — the token rides in the query string.
+      return container.fetch(switchPort(request, port));
+    }
+    const sub = `/${rest.slice(2).join("/")}${url.search}`;
     return container.fetch(switchPort(new Request(`https://container${sub}`, request), port));
   }
 

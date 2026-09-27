@@ -8,7 +8,7 @@
     {
       "class_name": "RakazoComputerContainer",
       "image": "./container/Dockerfile",
-      "instance_type": "standard",
+      "instance_type": "standard-1",
       "max_instances": 10
     }
   ],
