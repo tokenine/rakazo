@@ -121,6 +121,12 @@ export function openScreenCapability(
       return null;
     const interactive = match[1] === "control";
     const requestedPath = `${match[4] || target.pathname || "/"}${match[5] || ""}`;
+    const finalPath = screenPolicyPath(remoteTargetPath(target, requestedPath), interactive);
+    if (typeof console !== "undefined") {
+      console.error(
+        `screen-target debug: payload has path param=${target.searchParams.has("path")} final=${finalPath.slice(0, 120)}`,
+      );
+    }
     return {
       scope,
       expiresAt,
@@ -128,7 +134,7 @@ export function openScreenCapability(
         protocol: target.protocol,
         hostname: target.hostname,
         port,
-        path: screenPolicyPath(remoteTargetPath(target, requestedPath), interactive),
+        path: finalPath,
         interactive,
       },
     };
