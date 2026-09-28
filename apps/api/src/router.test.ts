@@ -1090,3 +1090,217 @@ describe("model credential persistence", () => {
     );
   });
 });
+
+describe("threads session lifecycle rpc (V12/V13/V14)", () => {
+  interface SessionRow {
+    id: string;
+    botId: string | null;
+    spaceId: string;
+    userId: string;
+    name: string | null;
+    isPrimary: boolean;
+    unread: boolean;
+    createdAt: Date;
+    lastMessageAt: Date | null;
+  }
+
+  function row(overrides: Partial<SessionRow> = {}): SessionRow {
+    return {
+      id: "session-1",
+      botId: "bot-1",
+      spaceId: "workspace-1",
+      userId: "user-1",
+      name: null,
+      isPrimary: false,
+      unread: false,
+      createdAt: new Date("2026-09-20T00:00:00.000Z"),
+      lastMessageAt: null,
+      ...overrides,
+    };
+  }
+
+  /** Stateful fake prisma for the session CRUD + lifecycle event seams. */
+  function sessionsHarness(rows: SessionRow[]) {
+    const state = new Map(rows.map((session) => [session.id, { ...session }]));
+    const nextEventSeq = new Map(rows.map((session) => [session.id, 0]));
+    const eventCreate = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: `event-${String(eventSeqCounter++)}`,
+      createdAt: new Date("2026-09-28T00:00:00.000Z"),
+      ...data,
+    }));
+    let eventSeqCounter = 0;
+    const runFindFirst = vi.fn().mockResolvedValue(null);
+    const tx = {
+      thread: {
+        findFirst: vi.fn(
+          async ({ where }: { where: { id: string } }) => state.get(where.id) ?? null,
+        ),
+        findMany: vi.fn(async ({ where }: { where: { botId?: string } }) =>
+          [...state.values()].filter((session) => !where?.botId || session.botId === where.botId),
+        ),
+        create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+          const created = {
+            ...row(),
+            id: "session-new",
+            createdAt: new Date("2026-09-28T00:00:00.000Z"),
+            ...data,
+          } as SessionRow;
+          state.set(created.id, created);
+          nextEventSeq.set(created.id, 0);
+          return { ...created };
+        }),
+        update: vi.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { id: string };
+            data: Record<string, unknown>;
+          }) => {
+            if ("nextEventSeq" in data) {
+              const seq = nextEventSeq.get(where.id) ?? 0;
+              nextEventSeq.set(where.id, seq + 1);
+              return { nextEventSeq: seq + 1 };
+            }
+            const target = state.get(where.id);
+            if (!target) throw new Error(`unknown thread ${where.id}`);
+            Object.assign(target, data);
+            return { ...target };
+          },
+        ),
+        delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+          const removed = state.get(where.id);
+          state.delete(where.id);
+          return removed ?? {};
+        }),
+      },
+      run: { findFirst: runFindFirst },
+      event: { create: eventCreate },
+    };
+    const prisma = {
+      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+      $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
+    } as unknown as PrismaClient;
+    const notify = vi.fn().mockResolvedValue(undefined);
+    const deps = {
+      prisma,
+      events: { notify },
+      env: {
+        defaultProvider: "fake",
+        defaultModel: "fake-model",
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "fake",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const actor = {
+      spaceId: "workspace-1",
+      userId: "user-1",
+      email: "user@rakazo.test",
+      isDeploymentOwner: true,
+    } satisfies Actor;
+    const handler = new RPCHandler(createRouter(deps));
+    const call = (procedure: string, json: unknown) =>
+      handler
+        .handle(
+          new Request(`http://127.0.0.1/rpc/threads/${procedure}`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ json }),
+          }),
+          { prefix: "/rpc", context: { actor } },
+        )
+        .then(({ response }) => response);
+    return { call, notify, state, runFindFirst, eventCreate, prisma };
+  }
+
+  it("creates a session and notifies every feed of session.created (V12)", async () => {
+    const harness = sessionsHarness([row({ id: "session-primary", isPrimary: true })]);
+
+    const response = await harness.call("createSession", { botId: "bot-1", name: "Deep dive" });
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { json: { id: string; name: string | null } };
+    expect(payload.json).toMatchObject({ id: "session-new", name: "Deep dive" });
+    expect(harness.notify.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "session-primary",
+      "session-new",
+    ]);
+  });
+
+  it("refuses deleting the last remaining session with a typed conflict (V13)", async () => {
+    const harness = sessionsHarness([row({ id: "session-only", isPrimary: true })]);
+
+    const response = await harness.call("deleteSession", { sessionId: "session-only" });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      json: expect.objectContaining({
+        code: "CONFLICT",
+        message: expect.stringMatching(/last remaining session/i),
+      }),
+    });
+    expect(harness.state.has("session-only")).toBe(true);
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it("refuses deleting a session that has an active run (V13)", async () => {
+    const harness = sessionsHarness([
+      row({ id: "session-primary", isPrimary: true }),
+      row({ id: "session-side" }),
+    ]);
+    harness.runFindFirst.mockResolvedValue({ id: "run-active" });
+
+    const response = await harness.call("deleteSession", { sessionId: "session-side" });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      json: expect.objectContaining({
+        code: "CONFLICT",
+        message: expect.stringMatching(/active run/i),
+      }),
+    });
+    expect(harness.state.has("session-side")).toBe(true);
+    expect(harness.eventCreate).not.toHaveBeenCalled();
+  });
+
+  it("deletes the primary, promotes the earliest sibling, and notifies the remaining feeds (V13)", async () => {
+    const harness = sessionsHarness([
+      row({
+        id: "session-primary",
+        isPrimary: true,
+        createdAt: new Date("2026-09-25T00:00:00.000Z"),
+      }),
+      row({ id: "session-older", createdAt: new Date("2026-09-21T00:00:00.000Z") }),
+      row({ id: "session-newer", createdAt: new Date("2026-09-26T00:00:00.000Z") }),
+    ]);
+
+    const response = await harness.call("deleteSession", { sessionId: "session-primary" });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ json: { ok: true } });
+    expect(harness.state.has("session-primary")).toBe(false);
+    expect(harness.state.get("session-older")?.isPrimary).toBe(true);
+    expect(harness.state.get("session-newer")?.isPrimary).toBe(false);
+    expect(harness.notify.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "session-older",
+      "session-newer",
+    ]);
+  });
+
+  it("denies session CRUD on bots outside the actor scope (V14)", async () => {
+    const harness = sessionsHarness([row({ id: "session-primary", isPrimary: true })]);
+    (harness.prisma.bot.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    const list = await harness.call("listSessions", { botId: "bot-1" });
+    const create = await harness.call("createSession", { botId: "bot-1", name: "X" });
+    const rename = await harness.call("renameSession", { sessionId: "session-1", name: "X" });
+    const remove = await harness.call("deleteSession", { sessionId: "session-1" });
+
+    for (const response of [list, create, rename, remove]) {
+      expect(response.status).toBeGreaterThanOrEqual(400);
+    }
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+});

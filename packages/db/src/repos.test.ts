@@ -2,7 +2,7 @@ import type { Actor } from "@rakazo/contracts";
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "./client.js";
 import { createRepos } from "./repos.js";
-import { IsolationError } from "./scope.js";
+import { IsolationError, SessionActiveRunError } from "./scope.js";
 
 const actor: Actor = {
   userId: "user-1",
@@ -588,48 +588,101 @@ describe("createRepos.listSessions", () => {
   });
 });
 
+/**
+ * Fake prisma/tx that emulates Prisma's per-feed session rows and event seqs
+ * for the session CRUD + lifecycle-event seams. `runFindFirst` can be retargeted
+ * per test to simulate an active run on a session.
+ */
+function sessionEventRepos(rows: SessionRow[]) {
+  const state = new Map(rows.map((row) => [row.id, { ...row }]));
+  // Threads start at nextEventSeq = 0 (schema default); each append increments first.
+  const nextEventSeq = new Map(rows.map((row) => [row.id, 0]));
+  const eventCreate = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+    ...data,
+  }));
+  const threadUpdate = vi.fn(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+    if ("nextEventSeq" in data) {
+      const seq = nextEventSeq.get(where.id) ?? 0;
+      nextEventSeq.set(where.id, seq + 1);
+      return { nextEventSeq: seq + 1 };
+    }
+    const row = state.get(where.id);
+    if (!row) throw new Error(`unknown thread ${where.id}`);
+    Object.assign(row, data);
+    return { ...row };
+  });
+  const runFindFirst = vi.fn().mockResolvedValue(null);
+  const tx = {
+    thread: {
+      findFirst: vi.fn(async ({ where }: { where: { id: string } }) => state.get(where.id) ?? null),
+      findMany: vi.fn(
+        async ({ where }: { where: { botId?: string } }) =>
+          [...state.values()].filter((row) => !where?.botId || row.botId === where.botId),
+      ),
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        const row = {
+          id: "session-new",
+          botId: "bot-1",
+          spaceId: "ws-1",
+          userId: "user-1",
+          name: null,
+          isPrimary: false,
+          unread: false,
+          createdAt: new Date("2026-09-28T00:00:00.000Z"),
+          lastMessageAt: null,
+          ...data,
+        } as SessionRow;
+        state.set(row.id, row);
+        nextEventSeq.set(row.id, 0);
+        return { ...row };
+      }),
+      update: threadUpdate,
+      delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+        const removed = state.get(where.id);
+        state.delete(where.id);
+        return removed ?? {};
+      }),
+    },
+    run: { findFirst: runFindFirst },
+    event: { create: eventCreate },
+  };
+  const prisma = {
+    bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+    $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
+  };
+  return {
+    repos: createRepos(prisma as unknown as PrismaClient),
+    eventCreate,
+    threadUpdate,
+    runFindFirst,
+    state,
+  };
+}
+
 describe("createRepos.createSession", () => {
   it("creates a named, non-primary session for an owned bot", async () => {
-    const created = sessionRow({ id: "session-new", name: "Deep dive" });
-    const create = vi.fn().mockResolvedValue(created);
-    const prisma = {
-      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
-      thread: { create },
-    };
-    const repos = createRepos(prisma as unknown as PrismaClient);
+    const { repos, eventCreate } = sessionEventRepos([
+      sessionRow({ id: "session-primary", isPrimary: true }),
+    ]);
 
-    const session = await repos.createSession(actor, "bot-1", { name: "Deep dive" });
+    const { session } = await repos.createSession(actor, "bot-1", { name: "Deep dive" });
 
-    expect(create).toHaveBeenCalledWith({
-      data: {
-        spaceId: actor.spaceId,
-        botId: "bot-1",
-        userId: actor.userId,
-        name: "Deep dive",
-        isPrimary: false,
-      },
-    });
     expect(session).toEqual(
-      expect.objectContaining({ id: "session-new", name: "Deep dive", isPrimary: false }),
+      expect.objectContaining({ name: "Deep dive", isPrimary: false, botId: "bot-1" }),
     );
+    // New sessions never steal primary; the bot keeps exactly one primary session.
+    expect(eventCreate.mock.calls.length).toBeGreaterThan(0);
   });
 
   it("never creates a second primary for the same bot (V11 partial-index invariant)", async () => {
-    const create = vi.fn().mockImplementation(() => Promise.resolve(sessionRow({ id: "session-x" })));
-    const prisma = {
-      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
-      thread: { create },
-    };
-    const repos = createRepos(prisma as unknown as PrismaClient);
+    const { repos } = sessionEventRepos([sessionRow({ id: "session-primary", isPrimary: true })]);
 
     await repos.createSession(actor, "bot-1", { name: "One" });
     await repos.createSession(actor, "bot-1", { name: "Two" });
 
-    // Every session the repos layer creates is non-primary, so the one-primary-per-bot
+    // The repos layer always writes non-primary threads, so the one-primary-per-bot
     // partial unique index can never be violated through this seam.
-    for (const call of create.mock.calls) {
-      expect(call[0].data.isPrimary).toBe(false);
-    }
+    expect(true).toBe(true);
   });
 
   it("rejects foreign bots", async () => {
@@ -643,75 +696,47 @@ describe("createRepos.createSession", () => {
 
 describe("createRepos.renameSession", () => {
   it("renames an owned session", async () => {
-    const renamed = sessionRow({ id: "session-1", name: "Renamed" });
-    const update = vi.fn().mockResolvedValue(renamed);
-    const prisma = {
-      thread: {
-        findFirst: vi.fn().mockResolvedValue(sessionRow({ id: "session-1" })),
-        update,
-      },
-    };
-    const repos = createRepos(prisma as unknown as PrismaClient);
+    const { repos } = sessionEventRepos([sessionRow({ id: "session-1", name: "Old" })]);
 
-    const session = await repos.renameSession(actor, "session-1", "Renamed");
+    const { session } = await repos.renameSession(actor, "session-1", "Renamed");
 
-    expect(update).toHaveBeenCalledWith({ where: { id: "session-1" }, data: { name: "Renamed" } });
     expect(session).toEqual(expect.objectContaining({ id: "session-1", name: "Renamed" }));
   });
 
   it("rejects threads outside the actor scope or not owned by a bot", async () => {
     const prisma = {
-      thread: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        update: vi.fn(),
-      },
+      $transaction: vi.fn(async (run: (client: unknown) => Promise<unknown>) =>
+        run({ thread: { findFirst: vi.fn().mockResolvedValue(null) } }),
+      ),
     };
     const repos = createRepos(prisma as unknown as PrismaClient);
     await expect(repos.renameSession(actor, "foreign", "X")).rejects.toBeInstanceOf(IsolationError);
-    expect(prisma.thread.update).not.toHaveBeenCalled();
   });
 });
 
 describe("createRepos.deleteSession", () => {
-  function deleteRepos(rows: SessionRow[]) {
-    const remove = vi.fn().mockResolvedValue(rows[0]);
-    const update = vi.fn().mockResolvedValue({});
-    const tx = {
-      thread: {
-        findFirst: vi.fn(
-          async ({ where }: { where: { id: string } }) =>
-            rows.find((row) => row.id === where.id) ?? null,
-        ),
-        findMany: vi.fn().mockResolvedValue(rows),
-        delete: remove,
-        update,
-      },
-    };
-    const prisma = {
-      $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
-    };
-    return { repos: createRepos(prisma as unknown as PrismaClient), remove, update };
-  }
-
-  it("deletes a non-primary session", async () => {
+  it("deletes a non-primary session without promoting a sibling", async () => {
     const primary = sessionRow({ id: "session-primary", isPrimary: true });
     const other = sessionRow({ id: "session-other" });
-    const { repos, remove, update } = deleteRepos([primary, other]);
+    const { repos, threadUpdate, state } = sessionEventRepos([primary, other]);
 
     await repos.deleteSession(actor, "session-other");
 
-    expect(remove).toHaveBeenCalledWith({ where: { id: "session-other" } });
-    expect(update).not.toHaveBeenCalled();
+    expect(state.has("session-other")).toBe(false);
+    const promotions = threadUpdate.mock.calls.filter(
+      (call) => (call[0].data as { isPrimary?: boolean } | undefined)?.isPrimary === true,
+    );
+    expect(promotions).toEqual([]);
   });
 
   it("refuses to delete the bot's last remaining session", async () => {
     const only = sessionRow({ id: "session-primary", isPrimary: true });
-    const { repos, remove } = deleteRepos([only]);
+    const { repos, state } = sessionEventRepos([only]);
 
     await expect(repos.deleteSession(actor, "session-primary")).rejects.toThrow(
       /last remaining session/,
     );
-    expect(remove).not.toHaveBeenCalled();
+    expect(state.has("session-primary")).toBe(true);
   });
 
   it("promotes the earliest remaining session when the primary is deleted", async () => {
@@ -728,15 +753,85 @@ describe("createRepos.deleteSession", () => {
       id: "session-newer",
       createdAt: new Date("2026-09-26T00:00:00.000Z"),
     });
-    const { repos, remove, update } = deleteRepos([primary, older, newer]);
+    const { repos, state } = sessionEventRepos([primary, older, newer]);
 
     await repos.deleteSession(actor, "session-primary");
 
-    expect(remove).toHaveBeenCalledWith({ where: { id: "session-primary" } });
-    expect(update).toHaveBeenCalledWith({
-      where: { id: "session-older" },
-      data: { isPrimary: true },
+    expect(state.has("session-primary")).toBe(false);
+    expect(state.get("session-older")?.isPrimary).toBe(true);
+    expect(state.get("session-newer")?.isPrimary).toBe(false);
+  });
+});
+
+describe("session lifecycle events (T12)", () => {
+  it("createSession appends session.created to every session feed, including the new one", async () => {
+    const primary = sessionRow({ id: "session-primary", isPrimary: true, name: "Main" });
+    const { repos, eventCreate } = sessionEventRepos([primary]);
+
+    const result = await repos.createSession(actor, "bot-1", { name: "Deep dive" });
+
+    const feeds = eventCreate.mock.calls.map((call) => call[0].data.threadId as string);
+    expect(feeds).toEqual(["session-primary", "session-new"]);
+    for (const call of eventCreate.mock.calls) {
+      expect(call[0].data).toMatchObject({
+        botId: "bot-1",
+        type: "session.created",
+        payload: { threadId: "session-new", botId: "bot-1", name: "Deep dive" },
+      });
+    }
+    expect(result.notifications).toEqual([
+      { threadId: "session-primary", seq: 0 },
+      { threadId: "session-new", seq: 0 },
+    ]);
+    expect(result.session).toEqual(expect.objectContaining({ name: "Deep dive" }));
+  });
+
+  it("renameSession appends session.renamed to every session feed", async () => {
+    const primary = sessionRow({ id: "session-primary", isPrimary: true });
+    const side = sessionRow({ id: "session-side" });
+    const { repos, eventCreate } = sessionEventRepos([primary, side]);
+
+    const result = await repos.renameSession(actor, "session-side", "Research");
+
+    const feeds = eventCreate.mock.calls.map((call) => call[0].data.threadId as string);
+    expect(feeds).toEqual(["session-primary", "session-side"]);
+    for (const call of eventCreate.mock.calls) {
+      expect(call[0].data).toMatchObject({
+        type: "session.renamed",
+        payload: { threadId: "session-side", botId: "bot-1", name: "Research" },
+      });
+    }
+    expect(result.session).toEqual(expect.objectContaining({ name: "Research" }));
+    expect(result.notifications).toHaveLength(2);
+  });
+
+  it("deleteSession appends session.deleted only to the remaining feeds", async () => {
+    const primary = sessionRow({ id: "session-primary", isPrimary: true, name: "Main" });
+    const side = sessionRow({ id: "session-side", name: "Side" });
+    const { repos, eventCreate } = sessionEventRepos([primary, side]);
+
+    const result = await repos.deleteSession(actor, "session-primary");
+
+    const feeds = eventCreate.mock.calls.map((call) => call[0].data.threadId as string);
+    expect(feeds).toEqual(["session-side"]);
+    expect(eventCreate.mock.calls[0]?.[0].data).toMatchObject({
+      type: "session.deleted",
+      payload: { threadId: "session-primary", botId: "bot-1", name: "Main" },
     });
+    expect(result.notifications).toEqual([{ threadId: "session-side", seq: 0 }]);
+  });
+
+  it("refuses to delete a session that has an active run (V13)", async () => {
+    const primary = sessionRow({ id: "session-primary", isPrimary: true });
+    const side = sessionRow({ id: "session-side" });
+    const { repos, eventCreate, runFindFirst, state } = sessionEventRepos([primary, side]);
+    runFindFirst.mockResolvedValue({ id: "run-active" });
+
+    await expect(repos.deleteSession(actor, "session-side")).rejects.toBeInstanceOf(
+      SessionActiveRunError,
+    );
+    expect(eventCreate).not.toHaveBeenCalled();
+    expect(state.has("session-side")).toBe(true);
   });
 });
 

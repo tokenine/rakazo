@@ -24,6 +24,15 @@ export class LastSessionError extends Error {
   }
 }
 
+
+/** A session cannot be deleted while one of its runs is still active. */
+export class SessionActiveRunError extends Error {
+  constructor(message = "Cannot delete a session with an active run") {
+    super(message);
+    this.name = "SessionActiveRunError";
+  }
+}
+
 export async function requireMembership(
   prisma: PrismaClient,
   userId: string,

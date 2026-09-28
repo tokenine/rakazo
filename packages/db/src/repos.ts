@@ -10,11 +10,21 @@ import {
 import { userVisibleMessages } from "@rakazo/core";
 import type { Prisma, PrismaClient } from "./client.js";
 import { type ComputerMode, ensureComputerRecord, parseComputerMode } from "./computers.js";
+import {
+  appendSessionEventInTransaction,
+  type SessionEventNotice,
+} from "./events.js";
 import { createThreadMessageInTransaction } from "./messages.js";
-import { BotSectionNameConflictError, IsolationError, LastSessionError } from "./scope.js";
+import {
+  BotSectionNameConflictError,
+  IsolationError,
+  LastSessionError,
+  SessionActiveRunError,
+} from "./scope.js";
 import { lockSpaceForContentCreation } from "./spaces.js";
 import {
   activeRunSelection,
+  activeRunStatuses,
   PRIMARY_SESSION_ORDER,
   SESSION_LIST_ORDER,
   previewFromBlocks,
@@ -661,44 +671,41 @@ export function createRepos(prisma: PrismaClient) {
       actor: Actor,
       botId: string,
       input: { name?: string } = {},
-    ): Promise<BotSession> {
+    ): Promise<{ session: BotSession; notifications: SessionEventNotice[] }> {
       const bot = await prisma.bot.findFirst({
         where: { id: botId, spaceId: actor.spaceId, userId: actor.userId, archivedAt: null },
         select: { id: true },
       });
       if (!bot) throw new IsolationError();
-      // New sessions never steal primary; the bot keeps exactly one primary session.
-      const created = await prisma.thread.create({
-        data: {
+      const committed = await prisma.$transaction(async (tx) => {
+        // New sessions never steal primary; the bot keeps exactly one primary session.
+        const created = await tx.thread.create({
+          data: {
+            spaceId: actor.spaceId,
+            botId,
+            userId: actor.userId,
+            name: input.name ?? null,
+            isPrimary: false,
+          },
+        });
+        const notifications = await appendSessionEventInTransaction(tx, {
           spaceId: actor.spaceId,
           botId,
-          userId: actor.userId,
-          name: input.name ?? null,
-          isPrimary: false,
-        },
+          sessionId: created.id,
+          name: created.name,
+          type: "session.created",
+        });
+        return { created, notifications };
       });
-      return mapSession(created);
+      return { session: mapSession(committed.created), notifications: committed.notifications };
     },
 
-    async renameSession(actor: Actor, threadId: string, name: string): Promise<BotSession> {
-      const session = await prisma.thread.findFirst({
-        where: {
-          id: threadId,
-          spaceId: actor.spaceId,
-          userId: actor.userId,
-          botId: { not: null },
-        },
-      });
-      if (!session || session.botId == null) throw new IsolationError();
-      const renamed = await prisma.thread.update({
-        where: { id: session.id },
-        data: { name },
-      });
-      return mapSession(renamed);
-    },
-
-    async deleteSession(actor: Actor, threadId: string): Promise<void> {
-      await prisma.$transaction(async (tx) => {
+    async renameSession(
+      actor: Actor,
+      threadId: string,
+      name: string,
+    ): Promise<{ session: BotSession; notifications: SessionEventNotice[] }> {
+      const committed = await prisma.$transaction(async (tx) => {
         const session = await tx.thread.findFirst({
           where: {
             id: threadId,
@@ -708,6 +715,47 @@ export function createRepos(prisma: PrismaClient) {
           },
         });
         if (!session || session.botId == null) throw new IsolationError();
+        const renamed = await tx.thread.update({
+          where: { id: session.id },
+          data: { name },
+        });
+        const notifications = await appendSessionEventInTransaction(tx, {
+          spaceId: actor.spaceId,
+          botId: session.botId,
+          sessionId: session.id,
+          name,
+          type: "session.renamed",
+        });
+        return { renamed, notifications };
+      });
+      return { session: mapSession(committed.renamed), notifications: committed.notifications };
+    },
+
+    async deleteSession(
+      actor: Actor,
+      threadId: string,
+    ): Promise<{ notifications: SessionEventNotice[] }> {
+      return prisma.$transaction(async (tx) => {
+        const session = await tx.thread.findFirst({
+          where: {
+            id: threadId,
+            spaceId: actor.spaceId,
+            userId: actor.userId,
+            botId: { not: null },
+          },
+        });
+        if (!session || session.botId == null) throw new IsolationError();
+        // Deleting mid-run would strand the run's history writes (grill #5);
+        // stop or let the run finish first.
+        const activeRun = await tx.run.findFirst({
+          where: {
+            spaceId: actor.spaceId,
+            threadId: session.id,
+            status: { in: activeRunStatuses },
+          },
+          select: { id: true },
+        });
+        if (activeRun) throw new SessionActiveRunError();
         const remaining = await tx.thread.findMany({
           where: { botId: session.botId },
           orderBy: [{ createdAt: "asc" }],
@@ -722,6 +770,16 @@ export function createRepos(prisma: PrismaClient) {
             await tx.thread.update({ where: { id: promoted.id }, data: { isPrimary: true } });
           }
         }
+        // The deleted session's feed cascades away with its row; the remaining
+        // feeds carry the session.deleted notice.
+        const notifications = await appendSessionEventInTransaction(tx, {
+          spaceId: actor.spaceId,
+          botId: session.botId,
+          sessionId: session.id,
+          name: session.name,
+          type: "session.deleted",
+        });
+        return { notifications };
       });
     },
   };

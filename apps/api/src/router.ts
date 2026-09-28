@@ -136,6 +136,8 @@ import {
   parseComputerMode,
   releaseSpaceDeletionClaim,
   renewSpaceDeletionClaim,
+  type SessionEventNotice,
+  SessionActiveRunError,
   SPACE_DELETION_CLAIM_TIMEOUT_MS,
   SpaceDeletionInProgressError,
   SpaceLimitError,
@@ -492,6 +494,18 @@ function mapSpaceLifecycleError(error: unknown): unknown {
     return new ORPCError("CONFLICT", { message: error.message });
   }
   return error;
+}
+
+/** Fan a committed session lifecycle event out to every subscribed feed (V12). */
+async function notifySessionEvents(
+  events: ThreadEvents,
+  notifications: SessionEventNotice[],
+): Promise<void> {
+  await Promise.all(
+    notifications.map((notice) => events.notify(notice.threadId, notice.seq)),
+  ).catch((error) => {
+    getLogger().error("session lifecycle realtime notification", error);
+  });
 }
 
 export function createRouter(deps: RouterDeps) {
@@ -1795,21 +1809,30 @@ export function createRouter(deps: RouterDeps) {
       listSessions: authed.threads.listSessions.handler(async ({ context, input }) =>
         repos.listSessions(context.actor, input.botId),
       ),
-      createSession: authed.threads.createSession.handler(async ({ context, input }) =>
-        repos.createSession(context.actor, input.botId, { name: input.name }),
-      ),
-      renameSession: authed.threads.renameSession.handler(async ({ context, input }) =>
-        repos.renameSession(context.actor, input.sessionId, input.name),
-      ),
+      createSession: authed.threads.createSession.handler(async ({ context, input }) => {
+        const created = await repos.createSession(context.actor, input.botId, {
+          name: input.name,
+        });
+        await notifySessionEvents(deps.events, created.notifications);
+        return created.session;
+      }),
+      renameSession: authed.threads.renameSession.handler(async ({ context, input }) => {
+        const renamed = await repos.renameSession(context.actor, input.sessionId, input.name);
+        await notifySessionEvents(deps.events, renamed.notifications);
+        return renamed.session;
+      }),
       deleteSession: authed.threads.deleteSession.handler(async ({ context, input }) => {
+        let notifications: SessionEventNotice[];
         try {
-          await repos.deleteSession(context.actor, input.sessionId);
+          notifications = (await repos.deleteSession(context.actor, input.sessionId))
+            .notifications;
         } catch (error) {
-          if (error instanceof LastSessionError) {
+          if (error instanceof LastSessionError || error instanceof SessionActiveRunError) {
             throw new ORPCError("CONFLICT", { message: error.message });
           }
           throw error;
         }
+        await notifySessionEvents(deps.events, notifications);
         return { ok: true as const };
       }),
     },
