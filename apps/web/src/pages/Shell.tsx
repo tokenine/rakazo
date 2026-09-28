@@ -2611,7 +2611,9 @@ export function ShellPage() {
       </div>
     ) : null;
 
-  const userName = session.data?.user.name ?? t`You`;
+  // Empty-string names (OTP signups skip the name field) must fall back too —
+  // ?? keeps "" and renders a blank user-menu row.
+  const userName = session.data?.user.name?.trim() || t`You`;
   const initials = userName
     .split(" ")
     .map((p) => p[0])
