@@ -93,6 +93,7 @@ async function main() {
         "packages/testkit/src/eval-customer-support.postgres.test.ts",
         "packages/testkit/src/journeys.test.ts",
         "packages/testkit/src/authorization.test.ts",
+        "packages/testkit/src/sessions.postgres.test.ts",
         "packages/testkit/src/attachments.test.ts",
         "packages/testkit/src/voice.test.ts",
         "packages/testkit/src/search.test.ts",
