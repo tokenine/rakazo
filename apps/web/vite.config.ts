@@ -247,6 +247,7 @@ function attachNovncProxy(
         responseChunks.push(chunk);
         responseSize += chunk.length;
         if (responseSize > 64 * 1024) {
+          console.error(`[novnc-ws] handshake oversized for ${target.hostname}`);
           socket.destroy();
           upstream.destroy();
           return;
@@ -257,6 +258,7 @@ function attachNovncProxy(
           return;
         }
         const responseHead = Buffer.concat(responseChunks, responseSize);
+        console.error(`[novnc-ws] upstream handshake: ${responseHead.toString("latin1").split("\r\n")[0]}`);
         const safe = stripSensitiveHandshakeHeaders(responseHead);
         if (!safe) {
           socket.destroy();
@@ -268,6 +270,7 @@ function attachNovncProxy(
         upstream.pipe(socket);
       };
       upstream.on("data", forwardHandshake);
+      upstream.on("error", (err) => console.error(`[novnc-ws] upstream error: ${err.message}`));
     });
     upstream.on("error", () => socket.destroy());
     socket.on("error", () => upstream.destroy());
