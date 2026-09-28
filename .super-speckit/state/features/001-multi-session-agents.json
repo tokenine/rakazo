@@ -1,7 +1,7 @@
 {
   "id": "001-multi-session-agents",
-  "state": "planned",
-  "candidate_sha": null,
+  "state": "qa_running",
+  "candidate_sha": "f68d7bfb",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/001-multi-session-agents/spec.md",
@@ -26,5 +26,15 @@
   "route": {
     "kind": "milestone",
     "rationale": "Multi-surface vertical change (db schema+migration, contracts, api RPC group, web switcher, mobile session screen, realtime events) with 2 blocker-class findings (addressing scheme, Prisma relation flip), 7 nondeterministic legacy routing sites, data migration with Telegram-regression risk, and per-slice reassessment needed (lease/Telegram/authz invariants). Exceeds normal depth; not micro."
+  },
+  "handoff": {
+    "path": ".super-speckit/handoffs/001-slice-ready.md",
+    "transfer": "same-environment",
+    "stage": "slice-ready",
+    "attempt_id": "001-s1-baseline"
+  },
+  "reassessment": {
+    "path": ".super-speckit/qa/001-s1-run1/slice-reassessment.md",
+    "decision": "keep"
   }
 }

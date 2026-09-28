@@ -3,8 +3,8 @@ authority: files-and-commands
 generated_from: .super-speckit/state/features/*.json
 features:
   - id: "001-multi-session-agents"
-    state: "planned"
-    candidate_sha: null
+    state: "qa_running"
+    candidate_sha: "f68d7bfb"
     maker: "claude-maker"
     checker: "claude-checker"
     matrix: "specs/001-multi-session-agents/spec.md"
@@ -15,6 +15,6 @@ features:
     route: "milestone"
     atlas: ".super-speckit/atlas/README.md"
     change_story: ".super-speckit/atlas/changes/001-multi-session-agents/change-story.md"
-    latest_handoff: null
+    latest_handoff: ".super-speckit/handoffs/001-slice-ready.md"
     runs: []
     bugs: []
