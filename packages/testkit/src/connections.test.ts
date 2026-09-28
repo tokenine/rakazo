@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import {
   ComposioEmulator,
+  EmailEmulator,
   EncryptedSecretStore,
   InstalledConnectorProvider,
   PipedreamConnector,
@@ -10,7 +11,7 @@ import {
 } from "@rakazo/adapters";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 type AppHandles = Awaited<ReturnType<typeof createApp>>;
@@ -22,6 +23,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeWithDatabase = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 const TEST_ENCRYPTION_KEY = "offline-connector-test-encryption-key";
 
 describeWithDatabase("Composio catalog reconciliation", () => {
@@ -60,6 +63,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
       },
       encryptionKey: TEST_ENCRYPTION_KEY,
       signupsEnabled: "true",
+      email: emails,
     });
     app = handles.app;
   });
@@ -638,16 +642,7 @@ async function connectRemote(composio: ComposioEmulator, actor: Actor, provider:
 }
 
 async function signup(app: App, email: string, name: string) {
-  const response = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "http://127.0.0.1:5173",
-    },
-    body: JSON.stringify({ email, password: "password12", name }),
-  });
-  if (!response.ok) throw new Error(`signup failed ${response.status}: ${await response.text()}`);
-  return sessionCookieHeader(response);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function rpc<T>(app: App, cookie: string, procedure: string, body: unknown = {}): Promise<T> {

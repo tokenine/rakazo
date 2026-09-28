@@ -1,10 +1,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { EmailEmulator } from "@rakazo/adapters";
 import { approvalEffectKey } from "@rakazo/core/node/approval-effect-key";
 import { createThreadEvents, createThreadMessage, loadRunHistoryMessages } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
+import { otpSignUp } from "./index.js";
 
 process.env.WAKEUP_DRIVER = "memory";
 process.env.SANDBOX_PROVIDER = "fake";
@@ -12,6 +14,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeIntegration = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 
 describeIntegration("run executor lifecycle", () => {
   let handles: Awaited<ReturnType<typeof createApp>>;
@@ -28,6 +32,7 @@ describeIntegration("run executor lifecycle", () => {
       wakeupDriver: "memory",
       defaultProvider: "scripted",
       defaultModel: "scripted",
+      email: emails,
     });
   });
 
@@ -896,16 +901,7 @@ describeIntegration("run executor lifecycle", () => {
   }
 
   async function signup(email: string, name: string) {
-    const response = await handles.app.request("/api/auth/sign-up/email", {
-      method: "POST",
-      headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
-      body: JSON.stringify({ email, password: "password12", name }),
-    });
-    expect(response.status).toBeLessThan(400);
-    const raw = response.headers.get("set-cookie") ?? "";
-    const match = raw.match(/better-auth\.session_token=([^;]+)/);
-    expect(match?.[1]).toBeTruthy();
-    return `better-auth.session_token=${match![1]}`;
+    return otpSignUp(handles.app, emails, email, name);
   }
 
   async function rpc<T>(cookie: string, procedure: string, body: unknown = {}): Promise<T> {

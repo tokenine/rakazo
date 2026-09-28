@@ -5,6 +5,7 @@ import {
   ComposioEmulator,
   createScheduleFromTool,
   DesktopSandboxProvider,
+  EmailEmulator,
   FakeSandboxProvider,
   handoffToGroupBot,
   ManagedSandboxEmulator,
@@ -19,7 +20,7 @@ import {
 } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 process.env.WAKEUP_DRIVER = "memory";
@@ -28,6 +29,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeJourneys = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 
 describeJourneys("required product journeys", () => {
   let app: App;
@@ -116,6 +119,7 @@ describeJourneys("required product journeys", () => {
       sandboxProvider: "fake",
       agentRuntime: "scripted",
       composio: new ComposioEmulator(),
+      email: emails,
     });
     app = handles.app;
     stop = handles.stop;
@@ -2765,18 +2769,7 @@ type Snap = {
 };
 
 async function signup(app: App, email: string, name: string) {
-  const res = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "http://127.0.0.1:5173",
-    },
-    body: JSON.stringify({ email, password: "password12", name }),
-  });
-  if (res.status >= 400) {
-    throw new Error(`signup failed ${res.status}: ${await res.text()}`);
-  }
-  return sessionCookieHeader(res);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function raw(app: App, cookie: string, proc: string, body: unknown = {}) {

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ComposioEmulator } from "@rakazo/adapters";
+import { ComposioEmulator, EmailEmulator } from "@rakazo/adapters";
 import type { appContract, Space, SpaceNavigation } from "@rakazo/contracts";
 import {
   claimEmptySpaceDeletionForMember,
@@ -11,7 +11,7 @@ import {
 } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
-import { sessionCookieHeader } from "./index.js";
+import { otpCode, otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Response | Promise<Response> };
 type AppHandles = Awaited<ReturnType<typeof createApp>>;
@@ -31,6 +31,8 @@ process.env.AGENT_RUNTIME = "scripted";
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeWithDatabase = hasDb ? describe : describe.skip;
 
+const emails = new EmailEmulator();
+
 describeWithDatabase("API authorization and resource isolation", () => {
   let handles: AppHandles;
   let app: App;
@@ -47,6 +49,7 @@ describeWithDatabase("API authorization and resource isolation", () => {
       wakeupDriver: "memory",
       signupsEnabled: "true",
       composio: new ComposioEmulator(),
+      email: emails,
     });
     app = handles.app;
   });
@@ -1362,14 +1365,10 @@ describeWithDatabase("API authorization and resource isolation", () => {
 
     try {
       await rpc(app, owner, "deployment/update", { signupsEnabled: false });
-      const closedSignup = await app.request("/api/auth/sign-up/email", {
+      const closedSignup = await app.request("/api/auth/email-otp/send-verification-otp", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          email: `closed-${stamp}@rakazo.test`,
-          password: "password123",
-          name: "Closed Signup",
-        }),
+        headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
+        body: JSON.stringify({ email: `closed-${stamp}@rakazo.test`, type: "sign-in" }),
       });
       expect(closedSignup.status).toBe(400);
       expect(await closedSignup.text()).toContain("Registration is closed");
@@ -1379,28 +1378,33 @@ describeWithDatabase("API authorization and resource isolation", () => {
         signupsEnabled: true,
         signupAllowlist: [approvedEmail],
       });
-      const disallowedSignup = await app.request("/api/auth/sign-up/email", {
+      const disallowedSignup = await app.request("/api/auth/email-otp/send-verification-otp", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          email: `not-approved-${stamp}@rakazo.test`,
-          password: "password123",
-          name: "Disallowed Signup",
-        }),
+        headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
+        body: JSON.stringify({ email: `not-approved-${stamp}@rakazo.test`, type: "sign-in" }),
       });
       expect(disallowedSignup.status).toBe(400);
       expect(await disallowedSignup.text()).toContain("Email is not allowed to register");
-      const unverifiedSignup = await app.request("/api/auth/sign-up/email", {
+      // The allowlisted address may request a code, but only the emailed code
+      // registers it — a forged one must not create a session.
+      const approvedSend = await app.request("/api/auth/email-otp/send-verification-otp", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          email: approvedEmail,
-          password: "password123",
-          name: "Approved Signup",
-        }),
+        headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
+        body: JSON.stringify({ email: approvedEmail, type: "sign-in" }),
       });
-      expect(unverifiedSignup.status).toBe(400);
-      expect(await unverifiedSignup.text()).toContain("Registration requires email delivery");
+      expect(approvedSend.status).toBe(200);
+      await otpCode(emails, approvedEmail);
+      const forgedSignup = await app.request("/api/auth/sign-in/email-otp", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
+        body: JSON.stringify({ email: approvedEmail, otp: "000000", name: "Approved Signup" }),
+      });
+      expect(forgedSignup.status).toBeGreaterThanOrEqual(400);
+      const approved = await signup(app, approvedEmail, "Approved Signup");
+      const approvedActor = await rpc<Actor>(app, approved, "me");
+      expect(
+        await handles.prisma.user.findUniqueOrThrow({ where: { id: approvedActor.userId } }),
+      ).toMatchObject({ email: approvedEmail, emailVerified: true });
     } finally {
       await rpc(app, owner, "deployment/update", {
         signupsEnabled: true,
@@ -1453,15 +1457,7 @@ function connectionInput(displayName: string) {
 }
 
 async function signup(app: App, email: string, name: string) {
-  const response = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
-    body: JSON.stringify({ email, password: "password12", name }),
-  });
-  if (response.status >= 400) {
-    throw new Error(`signup failed ${response.status}: ${await response.text()}`);
-  }
-  return sessionCookieHeader(response);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function raw(

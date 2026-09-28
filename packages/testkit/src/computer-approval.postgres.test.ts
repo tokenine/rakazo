@@ -2,13 +2,15 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ComposioEmulator, FakeSandboxProvider } from "@rakazo/adapters";
+import { ComposioEmulator, EmailEmulator, FakeSandboxProvider } from "@rakazo/adapters";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 import { type ModelEmulatorStep, startModelEmulator } from "./model-emulator.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 const databaseAvailable = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
+
+const emails = new EmailEmulator();
 const fixtureOrigin = "http://127.0.0.1:5173";
 
 describe.skipIf(!databaseAvailable)("offline Pi computer approval", () => {
@@ -105,6 +107,7 @@ describe.skipIf(!databaseAvailable)("offline Pi computer approval", () => {
           signupsEnabled: "true",
           composio: new ComposioEmulator(),
           encryptionKey: "offline-computer-fixture-encryption-key",
+          email: emails,
         });
         stop = handles.stop;
         expect(handles.sandbox).toBeInstanceOf(FakeSandboxProvider);
@@ -112,17 +115,12 @@ describe.skipIf(!databaseAvailable)("offline Pi computer approval", () => {
         // Keep the real fake-provider implementation; observe calls and its state
         // independently of the model's claims and the persisted effect record.
         const act = vi.spyOn(sandbox, "act");
-        const signup = await handles.app.request("/api/auth/sign-up/email", {
-          method: "POST",
-          headers: { "content-type": "application/json", origin: fixtureOrigin },
-          body: JSON.stringify({
-            email: `computer-approval-${randomUUID()}@rakazo.test`,
-            password: "password12",
-            name: "Computer approval fixture",
-          }),
-        });
-        expect(signup.status).toBeLessThan(400);
-        const cookie = sessionCookieHeader(signup);
+        const cookie = await otpSignUp(
+          handles.app,
+          emails,
+          `computer-approval-${randomUUID()}@rakazo.test`,
+          "Computer approval fixture",
+        );
         await rpc(handles.app, cookie, "models/connect", {
           provider: model.model.provider,
           modelId: model.model.id,
