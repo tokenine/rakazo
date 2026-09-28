@@ -76,6 +76,20 @@ export const BotSchema = z.object({
 });
 export type Bot = z.infer<typeof BotSchema>;
 
+/** One named session (thread) of a bot; lists are ordered primary-first, oldest-first. */
+export const BotSessionSchema = z.object({
+  id: Id,
+  botId: Id,
+  name: z.string().nullable(),
+  isPrimary: z.boolean(),
+  unread: z.boolean(),
+  preview: z.string(),
+  createdAt: z.string(),
+  /** Null for sessions that never received a message; lists order this newest-first after primary. */
+  lastMessageAt: z.string().nullable(),
+});
+export type BotSession = z.infer<typeof BotSessionSchema>;
+
 export const ReorderBotsInput = z.object({
   botIds: z
     .array(Id)

@@ -1,10 +1,10 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ComposioEmulator } from "@rakazo/adapters";
+import { ComposioEmulator, EmailEmulator } from "@rakazo/adapters";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 type AppHandles = Awaited<ReturnType<typeof createApp>>;
@@ -15,6 +15,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeWithDatabase = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 
 describeWithDatabase("structured @ mention targets", () => {
   let handles: AppHandles;
@@ -32,6 +34,7 @@ describeWithDatabase("structured @ mention targets", () => {
       agentRuntime: "scripted",
       composio: new ComposioEmulator(),
       signupsEnabled: "true",
+      email: emails,
     });
     app = handles.app;
     prisma = handles.prisma;
@@ -309,18 +312,7 @@ describeWithDatabase("structured @ mention targets", () => {
 });
 
 async function signup(app: App, email: string, name: string) {
-  const res = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "http://127.0.0.1:5173",
-    },
-    body: JSON.stringify({ email, password: "password12", name }),
-  });
-  if (res.status >= 400) {
-    throw new Error(`signup failed ${res.status}: ${await res.text()}`);
-  }
-  return sessionCookieHeader(res);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function raw(app: App, cookie: string, proc: string, body: unknown = {}) {

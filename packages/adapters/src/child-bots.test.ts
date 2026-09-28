@@ -41,7 +41,7 @@ describe("spawned bot creation", () => {
       id: "child-1",
       name: "Scout",
       title: "Venue researcher",
-      thread: { id: "thread-1" },
+      threads: [{ id: "thread-1" }],
     });
     const enqueue = vi.fn().mockResolvedValue(undefined);
     const prisma = {
@@ -82,7 +82,7 @@ describe("spawned bot creation", () => {
           spawnKey: "tool-call-1",
         },
       },
-      include: { thread: true },
+      include: { threads: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }], take: 1 } },
     });
     expect(result).toEqual({
       ok: true,

@@ -1,9 +1,10 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { EmailEmulator } from "@rakazo/adapters";
 import type { ThreadSnapshot } from "@rakazo/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 
@@ -13,6 +14,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeAttachments = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 
 describeAttachments("chat attachments", () => {
   let app: App;
@@ -31,6 +34,7 @@ describeAttachments("chat attachments", () => {
       dataDir,
       sandboxProvider: "fake",
       agentRuntime: "scripted",
+      email: emails,
     });
     app = handles.app;
     stop = handles.stop;
@@ -139,13 +143,7 @@ describeAttachments("chat attachments", () => {
 });
 
 async function signup(app: App, email: string, name: string) {
-  const response = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
-    body: JSON.stringify({ email, password: "test-password-123", name }),
-  });
-  expect(response.status).toBeLessThan(400);
-  return sessionCookieHeader(response);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function rpc<T>(app: App, cookie: string, proc: string, body: unknown = {}): Promise<T> {

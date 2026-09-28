@@ -2,10 +2,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { AgentRuntimeEvent } from "@rakazo/adapter-kit";
-import { ScriptedAgentRuntime } from "@rakazo/adapters";
+import { EmailEmulator, ScriptedAgentRuntime } from "@rakazo/adapters";
 import { answerRunInput } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
+import { otpSignUp } from "./index.js";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeIntegration = hasDb ? describe : describe.skip;
@@ -15,6 +16,8 @@ const destination = {
   auth: { type: "bearer" },
 };
 const key = "fake-reusable-api-key";
+
+const emails = new EmailEmulator();
 
 describeIntegration("reusable credential lifecycle", () => {
   let handles: Awaited<ReturnType<typeof createApp>>;
@@ -38,6 +41,7 @@ describeIntegration("reusable credential lifecycle", () => {
       wakeupDriver: "memory",
       defaultProvider: "scripted",
       defaultModel: "scripted",
+      email: emails,
       remoteConnectors: {
         fetch,
         resolveHostname: async () => [{ address: "203.0.113.10", family: 4 }],
@@ -335,7 +339,7 @@ describeIntegration("reusable credential lifecycle", () => {
       instructions: "",
       notifyOnFinish: false,
     });
-    const thread = await handles.prisma.thread.findUniqueOrThrow({ where: { botId: bot.id } });
+    const thread = await handles.prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
     const task = await handles.prisma.task.create({
       data: {
         spaceId: me.spaceId,
@@ -366,16 +370,7 @@ describeIntegration("reusable credential lifecycle", () => {
   }
 
   async function signup(email: string, name: string) {
-    const response = await handles.app.request("/api/auth/sign-up/email", {
-      method: "POST",
-      headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
-      body: JSON.stringify({ email, password: "password12", name }),
-    });
-    expect(response.status).toBeLessThan(400);
-    const raw = response.headers.get("set-cookie") ?? "";
-    const match = raw.match(/better-auth\.session_token=([^;]+)/);
-    expect(match?.[1]).toBeTruthy();
-    return `better-auth.session_token=${match![1]}`;
+    return otpSignUp(handles.app, emails, email, name);
   }
 
   async function rpc<T>(cookie: string, procedure: string, body: unknown = {}): Promise<T> {

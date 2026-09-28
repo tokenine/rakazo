@@ -33,4 +33,15 @@ describe("createThreadMessageInTransaction", () => {
       expect.objectContaining({ data: expect.objectContaining({ unread: true }) }),
     );
   });
+
+  it("bumps lastMessageAt so session lists order by recent activity", async () => {
+    const tx = transaction();
+    await createThreadMessageInTransaction(tx as unknown as Prisma.TransactionClient, {
+      threadId: "thread-1",
+      role: "user",
+      blocks: [{ kind: "text", text: "hello" }],
+    });
+    const data = tx.thread.update.mock.calls[0]![0].data;
+    expect(data.lastMessageAt).toBeInstanceOf(Date);
+  });
 });

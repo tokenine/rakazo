@@ -8,6 +8,7 @@ import {
 } from "@rakazo/adapter-kit";
 import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+import { PRIMARY_SESSION_ORDER } from "@rakazo/db";
 import { expireComputerControl, hasActiveComputerControl } from "./computer-control.js";
 import { toComputerRef } from "./computer-lifecycle.js";
 import { checkpointComputerWorkspace } from "./computer-workspace.js";
@@ -333,13 +334,14 @@ export async function sleepComputerIfIdle(
   });
   const bots = await deps.prisma.bot.findMany({
     where: { computerId },
-    select: { id: true, thread: { select: { id: true } } },
+    select: { id: true, threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } } },
   });
   for (const bot of bots) {
-    if (!bot.thread) continue;
+    const primaryThread = bot.threads[0];
+    if (!primaryThread) continue;
     await deps.events.append({
       spaceId: computer.spaceId,
-      threadId: bot.thread.id,
+      threadId: primaryThread.id,
       botId: bot.id,
       type: "computer.status",
       payload: { status: "suspended" },

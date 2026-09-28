@@ -17,6 +17,7 @@ import { getLogger } from "@rakazo/logging";
 import { cancelRunsInTransaction } from "./cancel-runs.js";
 import type { Prisma, PrismaClient } from "./client.js";
 import { expireComputerExecutionLeases } from "./computers.js";
+import { PRIMARY_SESSION_ORDER } from "./thread-listing.js";
 import {
   assertRunCanWriteHistory,
   createThreadMessageInTransaction,
@@ -962,12 +963,13 @@ export async function finalizeComputerControlRelease(
 
     const bot = await tx.bot.findFirst({
       where: { id: input.botId, spaceId: input.spaceId },
-      select: { thread: { select: { id: true } } },
+      select: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } } },
     });
-    if (!bot?.thread) return { threadId: null, seq: null, runId };
+    const primaryThreadId = bot?.threads[0]?.id ?? null;
+    if (!primaryThreadId) return { threadId: null, seq: null, runId };
     const event = await appendEventInTransaction(tx, {
       spaceId: input.spaceId,
-      threadId: bot.thread.id,
+      threadId: primaryThreadId,
       botId: input.botId,
       runId: runId ?? undefined,
       type: "computer.takeover.released",
@@ -1233,6 +1235,51 @@ async function notifyRealtime(
   cursor: number,
 ): Promise<void> {
   await realtime?.publish(threadTopic(threadId), JSON.stringify({ cursor })).catch(() => undefined);
+}
+
+export type SessionLifecycleEventType = "session.created" | "session.renamed" | "session.deleted";
+
+/** One appended session lifecycle event, for post-commit realtime notify. */
+export interface SessionEventNotice {
+  threadId: string;
+  seq: number;
+}
+
+/**
+ * Append a session lifecycle event to every one of the bot's session feeds so
+ * any client subscribed to any session of the bot can refresh its session list
+ * (V12). A deleted session's own feed is gone — its events cascade with the
+ * thread row — so deletes fan out to the remaining sessions only; the payload
+ * still names the session that was deleted.
+ */
+export async function appendSessionEventInTransaction(
+  tx: Prisma.TransactionClient,
+  input: {
+    spaceId: string;
+    botId: string;
+    /** The session the mutation touched (the deleted one for session.deleted). */
+    sessionId: string;
+    name: string | null;
+    type: SessionLifecycleEventType;
+  },
+): Promise<SessionEventNotice[]> {
+  const feeds = await tx.thread.findMany({
+    where: { botId: input.botId },
+    select: { id: true },
+    orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+  });
+  const notices: SessionEventNotice[] = [];
+  for (const feed of feeds) {
+    const event = await appendEventInTransaction(tx, {
+      spaceId: input.spaceId,
+      threadId: feed.id,
+      botId: input.botId,
+      type: input.type,
+      payload: { threadId: input.sessionId, botId: input.botId, name: input.name },
+    });
+    notices.push({ threadId: feed.id, seq: event.seq });
+  }
+  return notices;
 }
 
 export async function eventsAfter(

@@ -5,6 +5,7 @@ import {
   ComposioEmulator,
   createScheduleFromTool,
   DesktopSandboxProvider,
+  EmailEmulator,
   FakeSandboxProvider,
   handoffToGroupBot,
   ManagedSandboxEmulator,
@@ -19,7 +20,7 @@ import {
 } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 process.env.WAKEUP_DRIVER = "memory";
@@ -28,6 +29,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeJourneys = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 
 describeJourneys("required product journeys", () => {
   let app: App;
@@ -116,6 +119,7 @@ describeJourneys("required product journeys", () => {
       sandboxProvider: "fake",
       agentRuntime: "scripted",
       composio: new ComposioEmulator(),
+      email: emails,
     });
     app = handles.app;
     stop = handles.stop;
@@ -426,7 +430,7 @@ describeJourneys("required product journeys", () => {
       notify: false,
       active: false,
     });
-    const thread = await prisma.thread.findUniqueOrThrow({ where: { botId: bot.id } });
+    const thread = await prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
     const task = await prisma.task.create({
       data: {
         spaceId: thread.spaceId,
@@ -1128,7 +1132,7 @@ describeJourneys("required product journeys", () => {
       instructions: "",
       notifyOnFinish: false,
     });
-    const dmThread = await prisma.thread.findUniqueOrThrow({ where: { botId: bot.id } });
+    const dmThread = await prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
     const group = await rpc<{ id: string; threadId: string }>(app, cookie, "groups/create", {
       name: "Schedule room",
       botIds: [bot.id, peer.id],
@@ -1243,7 +1247,7 @@ describeJourneys("required product journeys", () => {
       instructions: "",
       notifyOnFinish: false,
     });
-    const thread = await prisma.thread.findUniqueOrThrow({ where: { botId: bot.id } });
+    const thread = await prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
 
     await Promise.all(
       Array.from({ length: 40 }, (_, index) =>
@@ -1521,7 +1525,9 @@ describeJourneys("required product journeys", () => {
         cookie,
         origin: "http://127.0.0.1:5173",
       },
-      body: JSON.stringify({ password: "password12" }),
+      // Passwordless accounts delete on a fresh session alone: no password
+      // (OTP users have no credential account) and no emailed token.
+      body: JSON.stringify({}),
     });
 
     expect(deleted.status).toBe(200);
@@ -2765,18 +2771,7 @@ type Snap = {
 };
 
 async function signup(app: App, email: string, name: string) {
-  const res = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "http://127.0.0.1:5173",
-    },
-    body: JSON.stringify({ email, password: "password12", name }),
-  });
-  if (res.status >= 400) {
-    throw new Error(`signup failed ${res.status}: ${await res.text()}`);
-  }
-  return sessionCookieHeader(res);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function raw(app: App, cookie: string, proc: string, body: unknown = {}) {

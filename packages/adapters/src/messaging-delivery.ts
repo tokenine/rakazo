@@ -10,7 +10,7 @@ import { messagingDeliverJob, runContinueJob } from "@rakazo/adapter-kit";
 import type { MessageBlock } from "@rakazo/contracts";
 import { botMessageHopExhausted, nextBotMessageHop } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { appendEventInTransaction, createThreadMessageInTransaction } from "@rakazo/db";
+import { appendEventInTransaction, createThreadMessageInTransaction, PRIMARY_SESSION_ORDER } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import type { EncryptedSecretStore } from "./secrets.js";
 import { rowIdOfTelegramUserProvider } from "./telegram-keyed-adapter.js";
@@ -283,6 +283,7 @@ async function mirrorChannelRun(
       if (!peerIdentity) continue;
       const peerThread = await deps.prisma.thread.findFirst({
         where: { botId: peerIdentity.botId },
+        orderBy: PRIMARY_SESSION_ORDER,
       });
       if (!peerThread) continue;
       const peerBot = await deps.prisma.bot.findUnique({

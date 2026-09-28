@@ -5,6 +5,7 @@ import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   IsolationError,
+  PRIMARY_SESSION_ORDER,
   type Prisma,
   type PrismaClient,
   type ThreadEvents,
@@ -73,10 +74,11 @@ const APP_DESCRIPTIONS: Record<string, string> = {
 async function requireBotThread(deps: OnboardingDeps, actor: Actor, botId: string) {
   const bot = await deps.prisma.bot.findFirst({
     where: { id: botId, spaceId: actor.spaceId, userId: actor.userId },
-    include: { thread: true },
+    include: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1 } },
   });
-  if (!bot?.thread) throw new IsolationError();
-  return { bot, thread: bot.thread };
+  const thread = bot?.threads[0] ?? null;
+  if (!bot || !thread) throw new IsolationError();
+  return { bot, thread };
 }
 
 async function post(

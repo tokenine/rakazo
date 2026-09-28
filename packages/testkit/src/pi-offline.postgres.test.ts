@@ -2,13 +2,15 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ComposioEmulator } from "@rakazo/adapters";
+import { ComposioEmulator, EmailEmulator } from "@rakazo/adapters";
 import { describe, expect, it } from "vitest";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 import { startModelEmulator } from "./model-emulator.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 const databaseAvailable = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
+
+const emails = new EmailEmulator();
 const fixtureOrigin = "http://127.0.0.1:5173";
 
 describe.skipIf(!databaseAvailable)("offline Pi product journey", () => {
@@ -62,19 +64,15 @@ describe.skipIf(!databaseAvailable)("offline Pi product journey", () => {
         signupsEnabled: "true",
         composio: new ComposioEmulator(),
         encryptionKey: "offline-model-fixture-encryption-key",
+        email: emails,
       });
       stop = handles.stop;
-      const signup = await handles.app.request("/api/auth/sign-up/email", {
-        method: "POST",
-        headers: { "content-type": "application/json", origin: fixtureOrigin },
-        body: JSON.stringify({
-          email: `offline-pi-${randomUUID()}@rakazo.test`,
-          password: "password12",
-          name: "Offline fixture",
-        }),
-      });
-      expect(signup.status).toBeLessThan(400);
-      const cookie = sessionCookieHeader(signup);
+      const cookie = await otpSignUp(
+        handles.app,
+        emails,
+        `offline-pi-${randomUUID()}@rakazo.test`,
+        "Offline fixture",
+      );
       await rpc(handles.app, cookie, "models/connect", {
         provider: model.model.provider,
         modelId: model.model.id,

@@ -107,6 +107,10 @@ function SessionApp() {
             path="/app/:botId"
             element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />}
           />
+          <Route
+            path="/app/:botId/:threadId"
+            element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />}
+          />
         </Routes>
       </Suspense>
     </div>
