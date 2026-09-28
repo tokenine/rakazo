@@ -98,6 +98,7 @@ import {
   type PrismaClient,
   parseComputerMode,
   SpaceLimitError,
+  PRIMARY_SESSION_ORDER,
   type ThreadEvents,
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
@@ -972,9 +973,12 @@ export function createRunExecutor(deps: ExecutorDeps) {
       if (await deferFutureRoutine(deps.jobs, routineId, scheduledAt)) return;
       const bot = await deps.prisma.bot.findUnique({
         where: { id: routine.botId },
-        include: { thread: true },
+        include: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1 } },
       });
-      if (!bot?.thread) return;
+      // Legacy threadless routines pin to the bot's primary session.
+      if (!bot) return;
+      const primaryThread = bot.threads[0] ?? null;
+      if (!primaryThread) return;
       const targetThread = routine.threadId
         ? await deps.prisma.thread.findFirst({
             where: {
@@ -993,7 +997,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
             select: { id: true },
           })
         : null;
-      const thread = targetThread ?? bot.thread;
+      const thread = targetThread ?? primaryThread;
       // A schedule with no valid parseable cron among its crons (e.g. a
       // legacy row accepted before cron validation was added) fires the
       // already-due run once, then nextRunAt stays null and the routine

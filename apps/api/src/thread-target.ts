@@ -268,17 +268,32 @@ async function lockAndLoadGroupMembers(
 export async function resolveThreadTarget(
   prisma: PrismaClient,
   actor: Actor,
-  input: { botId?: string; groupId?: string },
+  input: { botId?: string; groupId?: string; threadId?: string },
 ): Promise<ThreadTarget> {
   const repos = createRepos(prisma);
   const groupRepos = createGroupRepos(prisma);
   if (input.botId) {
     const bot = await repos.getBot(actor, input.botId);
-    if (!bot.thread) throw new IsolationError();
+    let threadId = bot.thread?.id ?? null;
+    if (input.threadId) {
+      // Explicit session targeting: the thread must be one of the actor's own
+      // sessions of this bot; anything else is treated as not found.
+      const session = await prisma.thread.findFirst({
+        where: {
+          id: input.threadId,
+          botId: input.botId,
+          spaceId: actor.spaceId,
+          userId: actor.userId,
+        },
+      });
+      if (!session) throw new IsolationError();
+      threadId = session.id;
+    }
+    if (!threadId) throw new IsolationError();
     return {
       kind: "bot",
       botId: bot.id,
-      threadId: bot.thread.id,
+      threadId,
       bot,
     };
   }

@@ -307,6 +307,16 @@ const groupEvent = {
 };
 
 describe("createMessagingInboundHandler DM routing", () => {
+  it("pins the known-sender thread lookup to the primary session, then earliest", async () => {
+    const deps = createDeps();
+    const handle = createMessagingInboundHandler(deps);
+    await handle(dmEvent);
+    expect(deps.prisma.thread.findFirst).toHaveBeenCalledWith({
+      where: { botId: "bot-1" },
+      orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+    });
+  });
+
   it("delivers a known sender's message into their bot's existing thread", async () => {
     const deps = createDeps();
     const handle = createMessagingInboundHandler(deps);

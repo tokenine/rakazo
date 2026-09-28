@@ -127,6 +127,7 @@ import {
   formatMessagingLinkCode,
   InvalidSpaceNameError,
   IsolationError,
+  LastSessionError,
   issueMessagingLinkCode,
   lockOwnedGroup,
   newestModelCredentialOrder,
@@ -1789,6 +1790,26 @@ export function createRouter(deps: RouterDeps) {
       markUnread: authed.threads.markUnread.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         await setThreadUnreadState(deps.prisma, context.actor, target, true);
+        return { ok: true as const };
+      }),
+      listSessions: authed.threads.listSessions.handler(async ({ context, input }) =>
+        repos.listSessions(context.actor, input.botId),
+      ),
+      createSession: authed.threads.createSession.handler(async ({ context, input }) =>
+        repos.createSession(context.actor, input.botId, { name: input.name }),
+      ),
+      renameSession: authed.threads.renameSession.handler(async ({ context, input }) =>
+        repos.renameSession(context.actor, input.sessionId, input.name),
+      ),
+      deleteSession: authed.threads.deleteSession.handler(async ({ context, input }) => {
+        try {
+          await repos.deleteSession(context.actor, input.sessionId);
+        } catch (error) {
+          if (error instanceof LastSessionError) {
+            throw new ORPCError("CONFLICT", { message: error.message });
+          }
+          throw error;
+        }
         return { ok: true as const };
       }),
     },

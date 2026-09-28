@@ -16,6 +16,7 @@ import {
   BotMcpServerSchema,
   BotSchema,
   BotSectionSchema,
+  BotSessionSchema,
   CapabilityInstallSchema,
   ComputerModeSchema,
   ComputerReleaseReasonSchema,
@@ -94,6 +95,8 @@ const threadTarget = z
   .object({
     botId: Id.optional(),
     groupId: Id.optional(),
+    /** Explicit session within a bot target; omitted resolves to the primary session. */
+    threadId: Id.optional(),
   })
   .superRefine((input, ctx) => {
     const hasBot = Boolean(input.botId);
@@ -350,6 +353,28 @@ export const appContract = {
       .output(z.object({ ok: z.literal(true) })),
     markRead: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
     markUnread: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
+    listSessions: oc
+      .input(z.object({ botId: Id }))
+      .output(z.array(BotSessionSchema)),
+    createSession: oc
+      .input(
+        z.object({
+          botId: Id,
+          name: z.string().trim().min(1).max(80).optional(),
+        }),
+      )
+      .output(BotSessionSchema),
+    renameSession: oc
+      .input(
+        z.object({
+          sessionId: Id,
+          name: z.string().trim().min(1).max(80),
+        }),
+      )
+      .output(BotSessionSchema),
+    deleteSession: oc
+      .input(z.object({ sessionId: Id }))
+      .output(z.object({ ok: z.literal(true) })),
   },
   computer: {
     status: oc.input(botId).output(ComputerStatusSchema),

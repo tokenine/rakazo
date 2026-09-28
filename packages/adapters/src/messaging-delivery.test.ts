@@ -821,6 +821,15 @@ describe("deliverMessagingOutbound channel runs", () => {
     expect(deps.enqueue).not.toHaveBeenCalled();
   });
 
+  it("pins peer fan-out to the peer bot's primary session, then earliest", async () => {
+    const deps = createChannelDeps();
+    await deliverMessagingOutbound(deps, { runId: "run-1" }, context);
+    expect(deps.prisma.thread.findFirst).toHaveBeenCalledWith({
+      where: { botId: "bot-2" },
+      orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+    });
+  });
+
   it("preserves source transport on peer fan-out blocks", async () => {
     const deps = createChannelDeps({ transport: "SMS" });
     await deliverMessagingOutbound(deps, { runId: "run-1" }, context);

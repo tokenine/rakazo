@@ -31,6 +31,44 @@ shape only (`thread: {...}` → primary-first `threads: [...]`) to keep emulatin
 output; their behavioral assertions are unchanged. One real fix surfaced during green:
 `listBots` initial run-batching now reads `bot.threads[0]`.
 
-## Cycle B — targeting, session RPCs, legacy pinning
+## Cycle B — legacy pinning, threadId targeting, last-activity ordering (2026-09-28)
 
-(appended as cycles complete)
+Note: part of this cycle's implementation was recovered from an interrupted maker
+session already present (uncommitted) in the worktree. Entries marked RED were
+observed in this session by temporarily reverting the implementation; entries
+marked RECOVERED had their failing state already consumed by the interrupted run —
+their green state was re-verified here.
+
+Schema/type gate (recovered): `turbo check` for @rakazo/db failed with 8 errors
+(`'thread' does not exist in type 'BotSelect/BotInclude'`, `SessionRow` missing
+`updatedAt` → replaced by `lastMessageAt`); all packages now typecheck clean.
+
+- RED `createThreadMessageInTransaction` bumps `lastMessageAt` —
+  `AssertionError: expected undefined to be an instance of Date` (bump line removed)
+- GREEN `messages.test.ts` 2/2 after `lastMessageAt: new Date()` in the thread update.
+
+- RED `createRepos.listSessions` orders primary first then by last activity —
+  `AssertionError: expected "vi.fn()" to be called with arguments: [{ where: { botId: 'bot-1' }, … }]`
+  (orderBy temporarily reverted to PRIMARY_SESSION_ORDER)
+- GREEN after `SESSION_LIST_ORDER` ([isPrimary desc, lastMessageAt desc nulls-last, createdAt desc]).
+
+- GREEN `createRepos.listSessions` keeps each session's history independent (V2):
+  per-thread newest-message preview; separate `threadId` lookups asserted.
+- GREEN `createRepos.createSession` never creates a second primary (V11 repos-seam
+  invariant): every create is `isPrimary: false`, so the partial unique index
+  `threads_botId_isPrimary_key` cannot be violated through repos.
+- RECOVERED `resolveThreadTarget` V9: botId-only pins primary; explicit threadId
+  resolves when actor-owned (scoped by id+botId+spaceId+userId); foreign threadId →
+  `IsolationError`. `apps/api/src/thread-target.test.ts` 3 new tests green.
+- RECOVERED V5/T5: the 7 legacy production lookups (messaging-inbound ×3,
+  messaging.ts ×3, messaging-delivery ×1) pinned with
+  `orderBy: PRIMARY_SESSION_ORDER` (= primary, then earliest); messaging.test.ts
+  asserts the orderBy shape.
+- V10 grep gate: `grep -rn "findFirst|findUnique" packages apps | grep thread… | grep botId`
+  minus isPrimary/PRIMARY_SESSION_ORDER scoped hits = 0.
+
+Fixture migration (RECOVERED-then-RED in this session): after switching raw bot
+reads to `threads[0]`, 53 fixture-stale tests failed across adapters/api test files
+(`TypeError: Cannot read properties of undefined (reading '0')` etc.); fixtures
+were migrated to the `threads` array shape. Final: @rakazo/db 121 passed / 6
+skipped, @rakazo/adapters 2011 passed / 25 skipped, @rakazo/api 389 passed.

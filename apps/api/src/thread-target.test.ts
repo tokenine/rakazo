@@ -1,16 +1,68 @@
 import type { SandboxProvider } from "@rakazo/adapter-kit";
 import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import { IsolationError, type PrismaClient } from "@rakazo/db";
 import { describe, expect, it, vi } from "vitest";
 import {
   cancelSupersededQueuedRuns,
   reactToThreadMessage,
+  resolveThreadTarget,
   sendThreadMessage,
   stopThreadRuns,
   type ThreadTarget,
   threadHead,
   threadSnapshot,
 } from "./thread-target.js";
+
+describe("resolveThreadTarget", () => {
+  const actor = { spaceId: "workspace-1", userId: "user-1" } as Actor;
+
+  function botPrisma(threadRow: { id: string } | null) {
+    return {
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          threads: [{ id: "thread-primary" }],
+          computer: null,
+        }),
+      },
+      thread: { findFirst: vi.fn().mockResolvedValue(threadRow) },
+    } as unknown as PrismaClient;
+  }
+
+  it("pins botId-only input to the bot's primary session", async () => {
+    const target = await resolveThreadTarget(botPrisma(null), actor, { botId: "bot-1" });
+    expect(target).toEqual(
+      expect.objectContaining({ kind: "bot", botId: "bot-1", threadId: "thread-primary" }),
+    );
+  });
+
+  it("resolves an explicit threadId the actor owns as a session of that bot", async () => {
+    const prisma = botPrisma({ id: "thread-custom" });
+    const findThread = prisma.thread.findFirst as ReturnType<typeof vi.fn>;
+    const target = await resolveThreadTarget(prisma, actor, {
+      botId: "bot-1",
+      threadId: "thread-custom",
+    });
+    expect(target).toEqual(
+      expect.objectContaining({ kind: "bot", botId: "bot-1", threadId: "thread-custom" }),
+    );
+    expect(findThread).toHaveBeenCalledWith({
+      where: {
+        id: "thread-custom",
+        botId: "bot-1",
+        spaceId: actor.spaceId,
+        userId: actor.userId,
+      },
+    });
+  });
+
+  it("rejects an explicit threadId outside the actor's sessions of that bot", async () => {
+    const prisma = botPrisma(null);
+    await expect(
+      resolveThreadTarget(prisma, actor, { botId: "bot-1", threadId: "thread-foreign" }),
+    ).rejects.toBeInstanceOf(IsolationError);
+  });
+});
 
 describe("threadHead", () => {
   it("returns the durable cursor without loading a snapshot", async () => {
