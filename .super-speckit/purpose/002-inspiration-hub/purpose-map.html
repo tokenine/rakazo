@@ -1,1 +1,151 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Purpose Map — Inspiration hub (welcome/activity home)</title><style>body{margin:0;background:#f4f7fb;color:#172033;font:16px/1.5 system-ui,sans-serif}main{max-width:960px;margin:auto;padding:32px 20px}header,section{background:#fff;border-radius:14px;padding:24px;margin:16px 0;box-shadow:0 1px 3px #17203318}.tag{font-weight:700;color:#075bcc}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}@media(max-width:650px){.grid{grid-template-columns:1fr}}</style><main><header><p class="tag">HUMAN PURPOSE GATE · DRAFT</p><h1>Inspiration hub (welcome/activity home)</h1><p>The app opens onto a welcoming home surface instead of an empty thread shell: users are greeted, see their product activity (recent threads across bots), and are routed into their first useful action — with a curated inspiration gallery of example cases that each start a preconfigured task (&#x27;Make similar&#x27;).</p></header><section class="grid"><div><h2>Who this serves</h2><p>New deployment owners and first-time users (empty state, guided first actions: create agent, connect model, connect Telegram); active users (recent activity at a glance); the maintainer curates the bundled inspiration catalog.</p></div><div><h2>How success is recognized</h2><p>New user: hub shows guided first actions and disappears into a normal workspace once setup is done. Active user: hub shows real recent threads/activity. Gallery: any case starts its preconfigured bot/thread in one action. No points/credits/leaderboard system. Monochrome + bot-identity-color constitution respected; mobile ships a native-pattern equivalent or a recorded degradation.</p></div></section><section><h2>Explicit non-goals</h2><p>No points/credits/leaderboard/monetization layer (maintainer-confirmed Q1). No hardcoded marketing banners — gallery is the bundled curated preset (Q2). No new hosted service in v1 (bundled versioned catalog, provider-neutral). No mobile-specific hub parity promise — native equivalent or recorded degradation.</p></section><section><h2>What confirmation means</h2><p>Confirm the intent, affected people, success signal, and boundaries. The agent owns technical discovery and delivery after this gate.</p></section></main>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Purpose Map — 002 Inspiration hub (visual)</title>
+<style>
+  :root{--ink:#18212f;--muted:#5a6a78;--surface:#fff;--wash:#eef3f8;--line:#c9d6e2;--accent:#18212f;--ok:#1a7f4b;--no:#b42318;--bot:#075bcc}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 system-ui,sans-serif;color:var(--ink);background:var(--wash)}
+  main{max-width:1060px;margin:auto;padding:28px 18px 60px}
+  header.page{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  h1{font-size:22px;margin:0}
+  .tag{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 12px}
+  /* flow diagram */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .node{border:2px solid var(--ink);border-radius:10px;padding:10px 12px;min-width:150px;text-align:center}
+  .node b{display:block;font-size:14px}
+  .node small{color:var(--muted)}
+  .node.start{background:var(--ink);color:#fff}
+  .node.state{border-style:solid}
+  .arrow{align-self:center;padding:0 10px;font-size:20px;color:var(--muted)}
+  .branch{display:flex;flex-direction:column;gap:10px}
+  /* hub wireframe */
+  .wire{border:2px dashed var(--line);border-radius:10px;overflow:hidden}
+  .wire .bar{background:var(--wash);padding:8px 12px;display:flex;gap:10px;align-items:center;font-size:13px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;background:#fff}
+  .chip.bot{border-color:var(--bot);color:var(--bot);font-weight:600}
+  .wire .row{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;padding:12px}
+  .box{border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:13px;min-height:74px}
+  .box h3{margin:0 0 6px;font-size:13px}
+  .box ul{margin:0;padding-left:16px;color:var(--muted)}
+  .box.action{border-color:var(--ink)}
+  .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 12px 12px}
+  .case{border:1.5px solid var(--line);border-radius:8px;overflow:hidden;font-size:12px}
+  .case .img{height:52px;background:repeating-linear-gradient(45deg,#e8eef4,#e8eef4 8px,#f4f7fa 8px,#f4f7fa 16px)}
+  .case .pad{padding:8px}
+  .case b{display:block;font-size:12.5px}
+  .case .make{margin-top:6px;display:inline-block;border:1.5px solid var(--ink);border-radius:6px;padding:2px 8px;font-weight:700;font-size:11px}
+  /* anatomy */
+  .anat{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .anat .case{width:210px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .k{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1.5px solid var(--line)}
+  .k.ink{background:var(--ink);border-color:var(--ink)}
+  .k.bot{background:#fff;border-color:var(--bot)}
+  /* states matrix */
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--wash);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  /* non goals */
+  .nope{display:flex;gap:10px;flex-wrap:wrap}
+  .nope span{position:relative;border:1.5px solid var(--no);color:var(--no);border-radius:8px;padding:6px 12px;font-size:13px;text-decoration:line-through}
+  /* gate chips */
+  .gate{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .gate div{border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
+  .gate b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+</style>
+</head>
+<body>
+<main>
+  <header class="page"><h1>Purpose Map — Inspiration hub</h1><span class="tag">FEATURE 002 · DRAFT · HUMAN GATE PENDING</span></header>
+
+  <section>
+    <h2>1 · Entry flow — who sees what</h2>
+    <div class="flow">
+      <div class="node start"><b>Sign-in</b><small>web · desktop</small></div>
+      <div class="arrow">→</div>
+      <div class="node state"><b>Empty?</b><small>first sign-in /<br>no bots</small></div>
+      <div class="arrow">→</div>
+      <div class="branch">
+        <div class="node"><b>Guided first actions</b><small>create agent → connect model → connect Telegram</small></div>
+        <div class="arrow" style="align-self:center">↓</div>
+        <div class="node"><b>Hub · active view</b><small>recent threads across bots</small></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Workspace</b><small>thread shell<br>(today's app)</small></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · Hub layout — one surface, three zones</h2>
+    <div class="wire">
+      <div class="bar">👋 <b style="font-size:14px">Good morning</b> <span class="chip">web</span><span class="chip">desktop</span><span class="chip bot">mobile: native equivalent ↓</span></div>
+      <div class="row">
+        <div class="box"><h3>Activity</h3><ul><li>recent threads</li><li>per-bot unread</li></ul></div>
+        <div class="box action"><h3>Get inspired — gallery</h3><ul><li>curated case cards</li><li>bundled preset (versioned)</li></ul></div>
+        <div class="box"><h3>First actions</h3><ul><li>create agent</li><li>connect model</li><li>connect Telegram</li></ul></div>
+      </div>
+      <div class="gallery">
+        <div class="case"><div class="img"></div><div class="pad"><b>Inbox triage</b><span class="make">Make similar</span></div></div>
+        <div class="case"><div class="img"></div><div class="pad"><b>Daily digest</b><span class="make">Make similar</span></div></div>
+        <div class="case"><div class="img"></div><div class="pad"><b>Web watcher</b><span class="make">Make similar</span></div></div>
+        <div class="case"><div class="img"></div><div class="pad"><b>Meeting notes</b><span class="make">Make similar</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3 · "Make similar" — one click to a working bot</h2>
+    <div class="anat">
+      <div class="case"><div class="img"></div><div class="pad"><b>Case card</b><span class="make">Make similar</span></div></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Preset applied</b><small>seed bot config<br>from bundled catalog</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Bot + thread created</b><small>reuses experts/<br>seed-bot mechanics</small></div>
+      <div class="arrow">→</div>
+      <div class="node start"><b>Thread opens</b><small>user continues<br>in workspace</small></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4 · Surfaces</h2>
+    <table>
+      <tr><th>Surface</th><th>Hub</th><th>Make similar</th></tr>
+      <tr><td>Web</td><td>full hub</td><td>✓</td></tr>
+      <tr><td>Desktop</td><td>full hub (hosts web)</td><td>✓</td></tr>
+      <tr><td>Mobile</td><td>native-pattern equivalent <b>or</b> recorded degradation</td><td>follows hub decision</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>5 · Constitution chips</h2>
+    <div class="legend">
+      <span><span class="k ink"></span>monochrome + bot identity color only</span>
+      <span><span class="k"></span>semantic tokens via ui-tokens</span>
+      <span><span class="k bot"></span>bots carry the only color</span>
+      <span>every visible word justified in PR</span>
+    </div>
+    <div class="nope" style="margin-top:12px">
+      <span>points / credits / leaderboard</span>
+      <span>hardcoded marketing banners</span>
+      <span>new hosted service</span>
+      <span>mobile parity promise</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>6 · The gate — four fields, one confirmation each</h2>
+    <div class="gate">
+      <div><b>Outcome</b>Open on a welcoming, activity-aware home; gallery cases become working bots in one click.</div>
+      <div><b>People</b>New deployment owners (guided start) · active users (activity glance) · maintainer curates catalog.</div>
+      <div><b>Success</b>Empty → guided actions; active → real recent threads; case → preconfigured bot/thread; constitution holds; mobile equivalent or recorded degradation.</div>
+      <div><b>Non-goals</b>Points/credits · hardcoded banners · new hosted service · mobile parity promise.</div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
