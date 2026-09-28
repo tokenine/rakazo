@@ -175,3 +175,63 @@ that another client deletes receives no event (the deleted feed cascades away);
 its next send surfaces an isolation error and S4 owns the tombstone/aggregate
 follow-up. Cross-session unread badges refresh on lifecycle events and bot
 switches, not on sibling message events (S4 aggregate work).
+
+## Cycle D — S4: sidebar aggregates, lease guard, known v1 behaviors (2026-09-28)
+
+Baseline: `730d717a` (S4 commit, this lane).
+
+### T17 (V16): sidebar aggregates
+
+Three behaviors verified:
+1. `mapBot` unread = OR over all sessions
+2. Preview from primary session
+3. `bots/duplicate` creates exactly one primary session (no clone of sibling sessions)
+
+Tests were written before the implementation was changed, so each failed first:
+
+- RED `sets bot unread to OR over all sessions` — `unread: false` (mapBot read `primary.unread` only)
+- RED `sets bot unread to false when no session is unread` — this one passed (no change needed for the false case)
+- RED `preview comes from the primary session` — passed (preview already came from primary)
+- RED `listSpaceBotsForSpaces aggregates unread as OR` — `Cannot read properties of undefined (reading '0')`
+  (mocked `threads` lacked `messages`, and `bot.runs` was missing from the mock)
+- RED `createBot with parentBotId creates exactly one primary session` — `prisma.bot.count is not a function`
+  (mock missing `bot.count`, `bot.aggregate`, `spaceMember`, `$queryRaw`; progressively added)
+
+GREEN after:
+- `mapBot`: `const unread = bot.threads.some((t) => t.unread)` replaces `primary.unread`
+- `listSpaceBotsForSpaces`: same OR aggregation; fixture corrected with `runs: []` and `messages: []` on thread mocks
+- `createBot` mock chain fully populated for the transaction inner call
+
+Final: `packages/db/src/repos.test.ts` 131 passed / 8 skipped (S1-S3 regressions preserved).
+
+### T18 (V17): lease teardown guard
+
+DB-gated integration test (`sessions-lease-guard.postgres.test.ts`) on real postgres:16-alpine.
+
+Two tests written first (failing), then green:
+
+- RED `deleting a non-primary session does not mutate any ComputerExecutionLease rows` — first run
+  failed with Prisma schema validation (missing `createdAt` on Organization/Member, missing `scopeKey`/`homeKey`
+  on Computer, missing `color` on Bot); progressively fixed fixtures.
+- RED `deleting the primary session also leaves ComputerExecutionLease rows intact` — failed because
+  deleting the primary when it's the last remaining session throws `LastSessionError`; fixed by creating
+  a third session before the primary-deletion test.
+
+GREEN: structural guarantee confirmed — `repos.deleteSession` has zero code paths touching the
+`computer_execution_leases` table; after deleting both side and primary sessions, the lease row
+remains intact.
+
+### T19 (V18): known v1 behaviors documented
+
+No implementation; documentation only.
+
+- `spec.md`: "Known v1 behaviors" section added (memory shared, bots/duplicate primary-only,
+  clearThread bot.updatedAt bump) with explicit reversal paths.
+- `verification-matrix.md`: table of known v1 behaviors added as a non-verification section
+  at the bottom, labeled as accepted/not-applicable.
+
+### Regression
+
+Full battery: @rakazo/db 131 passed / 8 skipped, @rakazo/api 394 passed,
+@rakazo/adapters 2011 passed / 25 skipped. Typechecks clean (3 TS errors in test
+fixtures fixed with non-null assertions and complete actor objects).
