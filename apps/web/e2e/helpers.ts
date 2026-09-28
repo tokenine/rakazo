@@ -24,6 +24,26 @@ export async function rpc<T>(page: Page, procedure: string, body: unknown): Prom
   return parsed.json as T;
 }
 
+/** Sign up and land on the onboarding page WITHOUT creating a bot (empty deployment). */
+export async function signupOnly(
+  page: Page,
+  email: string,
+  _password: string,
+  name: string,
+  testInfo?: TestInfo,
+) {
+  await page.goto("/sign-up");
+  await expect(page.getByRole("heading", { name: "Create your Ai7" })).toBeVisible();
+  if (testInfo) await captureScreenshot(page, testInfo, "01-sign-up");
+  await page.getByPlaceholder("Your name").fill(name);
+  await page.getByPlaceholder("Your email address").fill(email);
+  await page.getByRole("button", { name: "Continue with email" }).click();
+  await page.getByPlaceholder("6-digit code").fill(await otpFromEmulator(page, email));
+  await page.getByRole("button", { name: "Verify code" }).click();
+  // Land on onboarding — no bot created, so space.hasContent=false
+  await page.waitForURL(/\/(onboarding|app)/, { timeout: 20_000 });
+}
+
 export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
   await page.waitForURL(/\/(onboarding|app)/, { timeout: 20_000 });
   // Optional Server integrations step (needsSetup). Skip when shown, then the
