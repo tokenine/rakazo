@@ -148,7 +148,7 @@ describe("CloudflareSandboxProvider", () => {
       { ...ctx, screenLeaseId: "lease" },
     );
     expect(screen.url).toContain(
-      `https://bridge.test/v1/computers/${ref.providerRef}/screen/6100/vnc.html`,
+      `https://bridge.test/v1/computers/${ref.providerRef}/screen/6100/embed.html`,
     );
     expect(screen.url).toContain("token%3Dt0k3n");
   });

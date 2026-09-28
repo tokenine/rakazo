@@ -71,7 +71,7 @@ export class CloudflareSandboxProvider implements SandboxProvider {
       return { code: result.code, stdout: result.stdout, stderr: result.stderr };
     },
     screenUrl: async (computer, port) =>
-      `${this.config.bridgeUrl}/v1/computers/${encodeURIComponent(computer.providerRef)}/screen/${encodeURIComponent(String(port))}/vnc.html`,
+      `${this.config.bridgeUrl}/v1/computers/${encodeURIComponent(computer.providerRef)}/screen/${encodeURIComponent(String(port))}/embed.html`,
   });
 
   private readonly fetchImpl: typeof fetch;
