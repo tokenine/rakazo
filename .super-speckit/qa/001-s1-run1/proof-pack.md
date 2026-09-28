@@ -24,3 +24,16 @@ Throwaway Postgres (`pg-001-check`, port 54329) was removed after evidence captu
 - `tmp/probe-f1-retest.mts` — throwaway probe (product createDb path)
 
 Retest DB `pg-001-retest` (port 54330) removed after evidence capture.
+
+## Stacked retest (F-2 `0d893595`, F-3 `ae301f6e`)
+- `logs/stacked-authorization.log` — 15/15, exit 0
+- `logs/stacked-pi-offline.postgres.log` — 1/1, exit 0 (F-3 stall case)
+- `logs/stacked-executor-lifecycle.log` — 21/21, exit 0
+- `logs/stacked-mention-targets.log` — 7/7, exit 0
+- `logs/stacked-journeys.log` — 36/37 (F-4: account-deletion password residue)
+- `logs/stacked-journeys-repro2.log` — F-4 second reproduction (identical)
+- `logs/stacked-db-offline.log` — 121/6, exit 0
+- `logs/stacked-adapters-offline.log` — 2011/25, exit 0 (F-3 regression check)
+- `tmp/run-suites-stacked.sh` — per-suite isolated-DB runner (harness semantics)
+
+Retest DB `pg-retest3` (port 54333) removed after evidence capture.

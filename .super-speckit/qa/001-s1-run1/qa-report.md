@@ -140,3 +140,50 @@ Offline behavior of the edited file unchanged: `vitest run packages/testkit/src/
 **F-1: FIXED — verified.** Diff exact (8.1), V10 gate green under the new wording (8.2), fixed call shape proven on real migrated Postgres with the old shape still failing side-by-side (8.3). Full-suite green-through-line-276 is not observable on this branch due to F-2, which reproduces identically without the fix.
 
 **F-2 (new, pre-existing):** passwordless-only auth vs email+password signup helpers blocks every DB-gated testkit suite at signup. Deterministic; 2 reproductions (candidate + fix SHAs). Recommend a separate maker lane; does not affect any S1 matrix row verdict below.
+
+## 9. Stacked retest (F-2, F-3) — branch `ss/bug/001-f3`, tip `ae301f6e` — 2026-09-28
+
+Stack: `ae301f6e` (F-3) → `0d893595` (F-2) → `81647881` (F-1) → `f68d7bfb`. Checker did not author any fix. Worktree `~/.super-speckit-worktrees/ss/bug/001-f3`.
+
+### 9.1 Diff verification
+
+- **F-1 `81647881`**: 2 files — testkit pin + V10 matrix wording (verified in §8).
+- **F-2 `0d893595`**: exactly **13 files, all under `packages/testkit/`** (`git diff --name-only 81647881 0d893595`; 0 paths outside testkit). Adds shared `otpSignUp`/`otpCode` helpers to `testkit/src/index.ts` (drives `/email-otp/send-verification-otp` → `/sign-in/email-otp`, reads the code from `EmailEmulator`); rewires the 12 DB-gated suites. **Product auth config untouched** — confirmed by path scope.
+- **F-3 `ae301f6e`**: **1 file, 1 line** — `packages/adapters/src/executor.ts:3650` `thread: { isNot: null }` → `threads: { some: {} }` (bot-directory peer query on the flipped 1:many relation). Nothing else.
+
+### 9.2 V10 gate under current matrix wording — PASS
+
+Re-ran the full `thread.(findFirst|findUnique)(OrThrow)?(` inventory over `packages/` + `apps/` at the tip: **zero unscoped botId-only lookups**. F-1 site (now authorization.test.ts:279-280 after F-2 edits) carries `isPrimary: true`; 7 product sites pinned via `PRIMARY_SESSION_ORDER`; all other testkit/CLI botId lookups `isPrimary: true`; remaining hits id-/groupId-scoped (exempt).
+
+### 9.3 Real-Postgres end-to-end (fresh `pg-retest3` :54333, full migrate deploy, per-suite isolated template-clone DBs mirroring harness.ts semantics; runner `tmp/run-suites-stacked.sh`)
+
+| Suite | Observed | Expected | Verdict |
+| --- | --- | --- | --- |
+| authorization.test.ts | **15/15 passed**, exit 0 (`logs/stacked-authorization.log`) | 15/15 | ✅ includes the F-1 line — full suite now runs past signup **and** the primary-pinned lookup |
+| pi-offline.postgres.test.ts | **1/1 passed**, exit 0 (`logs/stacked-pi-offline.postgres.log`) | 1/1 | ✅ F-3 stall case: full journey past Run setup (bot-directory query no longer throws PrismaClientValidationError) |
+| executor-lifecycle.test.ts | **21/21 passed**, exit 0 (`logs/stacked-executor-lifecycle.log`) | 21/21 | ✅ re-observed by checker, not trusted from FixerF3 |
+| mention-targets.test.ts | **7/7 passed**, exit 0 (`logs/stacked-mention-targets.log`) | 7/7 | ✅ |
+| journeys.test.ts | **36/37 passed** (1 failed), exit 1 (`logs/stacked-journeys.log`) | bonus | ⚠ new finding F-4 below |
+
+Offline regression at the tip: db **121 passed | 6 skipped** exit 0 (`logs/stacked-db-offline.log`); adapters **2011 passed | 25 skipped** exit 0 (`logs/stacked-adapters-offline.log`; checker-added because F-3 touches adapters).
+
+### 9.4 F-3 sweep verdict — exactly one defect
+
+Swept the tip for singular `thread:` where-filters and `bot.thread` navigations across product code. Findings beyond the fixed executor.ts:3650:
+
+- `packages/db/src/external-conversations.ts:20` `thread: { isNot: null }` — **valid**: `ExternalConversation.thread Thread?` is a 1:1 back-relation (`Thread.externalConversationId @unique`), not the flipped Bot→Thread relation.
+- `executor.ts:4493` `thread: { select: { groupId: true } }` — **valid**: belongs-to `Run.thread` (runs reference threadId).
+- `thread-target.ts:277`, `router.ts:2034,2132,2164-2167` `bot.thread?.id` — **valid**: `bot` is the repos-mapped DTO whose `thread` is derived from `threads[0]` (repos.ts:95-96), covered by the V9/V2 named tests.
+
+**Verdict: exactly one defect of the F-3 class existed (executor.ts:3650), and ae301f6e fixes it.**
+
+### 9.5 New finding F-4 — journeys #11 account deletion still uses the password flow (F-2 residue, test-side)
+
+`packages/testkit/src/journeys.test.ts:1521-1531` ("11: deleting an account removes the user and personal workspace data") posts `/api/auth/delete-user` with `body: { password: "password12" }`. better-auth's delete-user route requires a credential account when a password is supplied (`update-user.mjs`: `if (ctx.body.password) { if (!account || !account.password) throw CREDENTIAL_ACCOUNT_NOT_FOUND }`); OTP users created by `otpSignUp` have no password credential → deterministic 400, `expected 400 to be 200`. **Reproduced 2×** on isolated databases (`logs/stacked-journeys.log`, `logs/stacked-journeys-repro2.log`; identical failure). Classification: deterministic test-defect, F-2 migration residue (the OTP conversion missed this password-dependent call; the product path itself supports passwordless deletion via fresh-session or token per the route schema). Not caused by F-1/F-3; does not affect any S1 matrix row (journeys account-deletion is not a matrix row). Recommend a follow-up maker lane: drop the password (fresh OTP session suffices per route: `freshAge` check) or use the token flow. Remaining password-based signup calls live only in non-integration lanes (e2e/canary/CLI scripts) — out of scope here.
+
+### 9.6 Stacked retest verdicts
+
+- **F-1 (81647881): PASS** — authorization 15/15 on real Postgres through the fixed lookup (§9.3).
+- **F-2 (0d893595): PASS with residue** — all four required suites plus journeys boot and run on the passwordless flow; one residue F-4 (§9.5) in journeys #11 only.
+- **F-3 (ae301f6e): PASS** — pi-offline 1/1 and executor-lifecycle 21/21 re-observed by checker; sweep confirms exactly one defect of this class existed (§9.4); adapters offline 2011/25.
+- **Overall S1 gate: PASS (unchanged).** All run-1 row verdicts stand; F-4 is filed for a new lane and touches no matrix row.
