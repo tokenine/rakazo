@@ -892,6 +892,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
         botsRefreshApplied.current = request;
         if (
           includeArchived &&
+          !hubEntry &&
           list.length === 0 &&
           archived?.length === 0 &&
           groupList.length === 0 &&
@@ -1133,6 +1134,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
         }
         if (!applyBotLists) return;
         if (
+          !hubEntry &&
           bootstrap.bots.length === 0 &&
           bootstrap.archivedBots.length === 0 &&
           groupList.length === 0 &&
@@ -1149,7 +1151,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
           return;
         }
         const selectedBotId = bootstrap.thread?.botId ?? bootstrap.bots[0]?.id;
-        if (selectedBotId && selectedBotId !== botId) {
+        if (selectedBotId && selectedBotId !== botId && !hubEntry) {
           navigate(`/app/${selectedBotId}`, { replace: true });
         }
       })
