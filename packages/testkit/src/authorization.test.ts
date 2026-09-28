@@ -273,8 +273,8 @@ describeWithDatabase("API authorization and resource isolation", () => {
         storageKey: "test/owner-secret.txt",
       },
     });
-    const ownerThread = await handles.prisma.thread.findUniqueOrThrow({
-      where: { botId: ownerBot.id },
+    const ownerThread = await handles.prisma.thread.findFirstOrThrow({
+      where: { botId: ownerBot.id, isPrimary: true },
     });
     const ownerTask = await handles.prisma.task.create({
       data: {
