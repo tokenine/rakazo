@@ -236,11 +236,12 @@ function Thread() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
-  const { botId, groupId, name, messageId } = useLocalSearchParams<{
+  const { botId, groupId, name, messageId, threadId } = useLocalSearchParams<{
     botId?: string;
     groupId?: string;
     name?: string;
     messageId?: string;
+    threadId?: string;
   }>();
   const inGroup = Boolean(groupId);
   const scroll = useRef<FlatList<MobileMessage>>(null);
@@ -688,14 +689,16 @@ function Thread() {
     setBotActionsOpen(true);
   }
 
-  async function refresh() {
+  async function refresh(targetThreadId?: string) {
     if (!botId && !groupId) return;
     const targetBotId = botId;
     const targetGroupId = groupId;
     const epoch = historyEpoch.current;
     const next = await rpc<MobileSnapshot>(
       "threads/get",
-      targetGroupId ? { groupId: targetGroupId } : { botId: targetBotId! },
+      targetGroupId
+        ? { groupId: targetGroupId }
+        : { botId: targetBotId!, ...(targetThreadId ? { threadId: targetThreadId } : {}) },
     );
     if (
       !shouldApplyMobileThreadRefresh({
@@ -970,6 +973,12 @@ function Thread() {
       },
     );
   }, [botId, groupId, messageId]);
+
+  // When an explicit threadId is provided (from the session list), load that session.
+  useEffect(() => {
+    if (!threadId || !botId) return;
+    void refresh(threadId).catch(() => undefined);
+  }, [botId, threadId]);
 
   useEffect(() => {
     setPendingAttachments((current) => attachmentsForThread(current, threadKey));

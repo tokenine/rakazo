@@ -633,8 +633,8 @@ export default function Home() {
                 if (spaceActionRef.current.busy || spaceActionRef.current.recoveryId) return;
                 void openMobileSpace(item.bot.spaceId, () =>
                   router.push({
-                    pathname: "/thread",
-                    params: { botId: item.bot.id, name: item.bot.name },
+                    pathname: "/bot/[botId]/sessions",
+                    params: { botId: item.bot.id },
                   }),
                 );
               }}

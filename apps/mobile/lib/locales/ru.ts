@@ -612,4 +612,25 @@ export const RU_MESSAGES: Record<string, string> = {
   "Your phone's built-in voice. Free, no account needed":
     "Встроенный голос телефона. Бесплатно, без аккаунта",
   "Could not save that preference": "Не удалось сохранить эту настройку",
+
+  // Session management screen
+  Sessions: "Сеансы",
+  Session: "Сеанс",
+  "New session": "Новый сеанс",
+  New: "Создать",
+  "Rename session": "Переименовать сеанс",
+  Rename: "Переименовать",
+  "Delete session": "Удалить сеанс",
+  "Are you sure you want to delete this session? This cannot be undone.": "Вы уверены, что хотите удалить этот сеанс? Это действие нельзя отменить.",
+  "No sessions yet": "Сеансов пока нет",
+  "Create your first session": "Создайте свой первый сеанс",
+  "Enter a name for this session": "Введите название для этого сеанса",
+  "Could not load sessions": "Не удалось загрузить сеансы",
+  "Could not create session": "Не удалось создать сеанс",
+  "Could not rename session": "Не удалось переименовать сеанс",
+  "Could not delete session": "Не удалось удалить сеанс",
+  Retry: "Повторить",
+  "Double tap to open this session": "Дважды нажмите, чтобы открыть этот сеанс",
+  Primary: "Основной",
+  "Bot not found": "Бот не найден",
 };
