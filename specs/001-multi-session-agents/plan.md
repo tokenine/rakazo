@@ -12,7 +12,7 @@ mobile, Telegram inbound, routines) work unchanged.
 
 ## Approach
 
-- **Schema**: `Thread.botId` loses `@unique` (keep nullable, cascade); add `Thread.title String?`,
+- **Schema**: `Thread.botId` loses `@unique` (keep nullable, cascade); add `Thread.name String?`,
   `Thread.isPrimary Boolean @default(false)`, `Thread.lastMessageAt DateTime?` (ordering; bumped in
   `createThreadMessageInTransaction`); add `@@index([botId])`; partial unique index
   `one primary per bot` via SQL (precedent: taught_skills partial index at schema.prisma:771).
