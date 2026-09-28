@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  CloudflareContainerGoneError,
-  CloudflareSandboxProvider,
-} from "./cloudflare-sandbox.js";
+import { CloudflareContainerGoneError, CloudflareSandboxProvider } from "./cloudflare-sandbox.js";
 import { ComputerScreenUnavailableError } from "./computer-screens.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 
@@ -22,11 +19,13 @@ interface RecordedRequest {
 
 function makeProvider(
   handler: (request: RecordedRequest) => { status?: number; json?: unknown } | undefined,
+  config?: { mountWait?: { initialMs?: number; reprovisionMs?: number; pollMs?: number } },
 ) {
   const requests: RecordedRequest[] = [];
   const provider = new CloudflareSandboxProvider({
     bridgeUrl: "https://bridge.test",
     bridgeToken: "tok",
+    ...(config?.mountWait ? { mountWait: config.mountWait } : {}),
     fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = url.replace("https://bridge.test", "");
@@ -112,14 +111,68 @@ describe("CloudflareSandboxProvider", () => {
     ]);
   });
 
-  it("fails prepare when the workspace is not mounted", async () => {
-    const { provider } = makeProvider((request) =>
-      request.path.endsWith("/agent/exec")
-        ? { json: { code: 1, stdout: "", stderr: "grep: no match" } }
-        : {},
+  it("passes prepare when the R2 home is already mounted", async () => {
+    const { provider, requests } = makeProvider((request) =>
+      request.path.endsWith("/agent/exec") ? { json: { code: 0, stdout: "", stderr: "" } } : {},
+    );
+    const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
+    await expect(provider.prepare(ref, ctx)).resolves.toBe(undefined);
+    expect(requests.slice(1)).toEqual([
+      {
+        method: "POST",
+        path: `/v1/computers/${ref.providerRef}/agent/exec`,
+        body: expect.any(String),
+      },
+    ]);
+  });
+
+  it("replaces a container that booted without its R2 mount, then fails loud", async () => {
+    const { provider, requests } = makeProvider(
+      (request) =>
+        request.path.endsWith("/agent/exec")
+          ? { json: { code: 1, stdout: "", stderr: "grep: no match" } }
+          : {},
+      { mountWait: { initialMs: 0, reprovisionMs: 0, pollMs: 0 } },
     );
     const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
     await expect(provider.prepare(ref, ctx)).rejects.toThrow("workspace is not mounted");
+    const lifecycle = requests.slice(1).map((request) => `${request.method} ${request.path}`);
+    expect(lifecycle).toEqual([
+      `POST /v1/computers/${ref.providerRef}/agent/exec`,
+      `DELETE /v1/computers/${ref.providerRef}`,
+      "POST /v1/computers",
+      `POST /v1/computers/${ref.providerRef}/agent/exec`,
+    ]);
+    expect(requests.at(-2)?.body).toBe(
+      JSON.stringify({ computerId: ref.providerRef, homeKey: "b" }),
+    );
+  });
+
+  it("self-heals an env-less boot by recreating the container and waiting for the mount", async () => {
+    let execCount = 0;
+    const { provider, requests } = makeProvider(
+      (request) => {
+        if (request.path.endsWith("/agent/exec")) {
+          execCount += 1;
+          // First check (pre-reprovision) sees no mount; after the container
+          // is recreated with its provision env, the mount comes up.
+          return execCount === 1
+            ? { json: { code: 1, stdout: "", stderr: "" } }
+            : { json: { code: 0, stdout: "", stderr: "" } };
+        }
+        return {};
+      },
+      { mountWait: { initialMs: 0, reprovisionMs: 100, pollMs: 10 } },
+    );
+    const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
+    await expect(provider.prepare(ref, ctx)).resolves.toBe(undefined);
+    const lifecycle = requests.slice(1).map((request) => `${request.method} ${request.path}`);
+    expect(lifecycle).toEqual([
+      `POST /v1/computers/${ref.providerRef}/agent/exec`,
+      `DELETE /v1/computers/${ref.providerRef}`,
+      "POST /v1/computers",
+      `POST /v1/computers/${ref.providerRef}/agent/exec`,
+    ]);
   });
 
   it("keeps the workspace import/export as no-ops", async () => {
@@ -180,9 +233,7 @@ describe("CloudflareSandboxProvider", () => {
 
   it("surfaces a friendly retry error when the screen stays unavailable", async () => {
     const { provider } = makeProvider((request) =>
-      request.path.endsWith("/agent/exec")
-        ? { json: { code: 1, stdout: "", stderr: "" } }
-        : {},
+      request.path.endsWith("/agent/exec") ? { json: { code: 1, stdout: "", stderr: "" } } : {},
     );
     const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
     await expect(

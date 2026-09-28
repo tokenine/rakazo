@@ -152,10 +152,7 @@ function remoteTargetPath(target: URL, requestedPath: string) {
   // Accept any trailing /websockify request: clients resolve the socket path
   // against their own (possibly nested/sealed) URL, so the suffix is what
   // matters — never the literal shape of the requested path.
-  if (
-    (path === "/websockify" || path.endsWith("/websockify")) &&
-    target.searchParams.has("path")
-  ) {
+  if ((path === "/websockify" || path.endsWith("/websockify")) && target.searchParams.has("path")) {
     const socket = new URL(target.searchParams.get("path")!, target);
     return `${socket.pathname}${socket.search}`;
   }

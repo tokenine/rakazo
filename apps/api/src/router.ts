@@ -2354,9 +2354,7 @@ export function createRouter(deps: RouterDeps) {
           session.url,
           !(hasActiveComputerControl(bot.computer) && bot.computer.controlBotId === bot.id),
         );
-        getLogger().info(
-          `screenUrl debug: session url query=${new URL(viewUrl).search}`,
-        );
+        getLogger().info(`screenUrl debug: session url query=${new URL(viewUrl).search}`);
         return {
           // Seal against the origin the request came from (falls back to the
           // deployment's web origin) so the embed is same-origin for every

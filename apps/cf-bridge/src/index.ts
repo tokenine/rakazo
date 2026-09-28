@@ -111,12 +111,7 @@ async function startComputer(env: Env, id: string, homeKey: unknown): Promise<Re
   return Response.json({ ok: true, id });
 }
 
-async function route(
-  request: Request,
-  env: Env,
-  url: URL,
-  segments: string[],
-): Promise<Response> {
+async function route(request: Request, env: Env, url: URL, segments: string[]): Promise<Response> {
   const id = computerId(segments);
   const container = getContainer(env.COMPUTERS, id);
   const rest = segments.slice(3);

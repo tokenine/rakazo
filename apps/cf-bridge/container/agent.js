@@ -24,11 +24,11 @@ function execScript(script, timeoutMs) {
   return new Promise((resolve) => {
     const clamped = Math.max(1000, Math.min(MAX_TIMEOUT_MS, Number(timeoutMs) || 60_000));
     const seconds = Math.ceil(clamped / 1000);
-    const child = spawn(
-      "timeout",
-      ["-k", "5", String(seconds), "bash", "-c", script],
-      { cwd: HOME, env: process.env, stdio: ["ignore", "pipe", "pipe"] },
-    );
+    const child = spawn("timeout", ["-k", "5", String(seconds), "bash", "-c", script], {
+      cwd: HOME,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     const capped = (limit) => {
       let size = 0;
       return (chunk) => {
@@ -82,9 +82,7 @@ const server = http.createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://localhost");
 
     if (url.pathname === "/ping") {
-      const mounted = fs
-        .readFileSync("/proc/mounts", "utf8")
-        .includes(` ${HOME} fuse`);
+      const mounted = fs.readFileSync("/proc/mounts", "utf8").includes(` ${HOME} fuse`);
       response.writeHead(200, { "content-type": "application/json" });
       return response.end(JSON.stringify({ ok: true, homeMounted: mounted }));
     }

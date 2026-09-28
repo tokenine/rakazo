@@ -145,7 +145,13 @@ function attachNovncProxy(
             return;
           }
           const responseHeaders = safeScreenProxyResponseHeaders(incoming.headers);
-          if (shouldInjectNovncStorageShim(responseHeaders, target.hostname, isBridgeTarget ? [bridge.host] : [])) {
+          if (
+            shouldInjectNovncStorageShim(
+              responseHeaders,
+              target.hostname,
+              isBridgeTarget ? [bridge.host] : [],
+            )
+          ) {
             const declaredLength = Number(incoming.headers["content-length"] ?? 0);
             if (Number.isFinite(declaredLength) && declaredLength > MAX_NOVNC_HTML_BYTES) {
               finishUnavailable();
@@ -239,7 +245,9 @@ function attachNovncProxy(
       if (bridge && target.hostname.toLowerCase() === bridge.host && bridge.token) {
         headerLines.push(`authorization: Bearer ${bridge.token}`);
       }
-      console.error(`[novnc-ws] upgrade target host=${target.hostname} path=${target.path.slice(0, 140)}`);
+      console.error(
+        `[novnc-ws] upgrade target host=${target.hostname} path=${target.path.slice(0, 140)}`,
+      );
       upstream.write(`${headerLines.join("\r\n")}\r\n\r\n`);
       if (head.length) upstream.write(head);
       socket.pipe(upstream);
@@ -261,7 +269,9 @@ function attachNovncProxy(
           return;
         }
         const responseHead = Buffer.concat(responseChunks, responseSize);
-        console.error(`[novnc-ws] upstream handshake: ${responseHead.toString("latin1").split("\r\n")[0]}`);
+        console.error(
+          `[novnc-ws] upstream handshake: ${responseHead.toString("latin1").split("\r\n")[0]}`,
+        );
         const safe = stripSensitiveHandshakeHeaders(responseHead);
         if (!safe) {
           socket.destroy();

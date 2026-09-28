@@ -44,6 +44,8 @@ export interface CloudflareBridgeConfig {
   /** Shared bearer token the bridge expects on every request. */
   bridgeToken: string;
   fetchImpl?: typeof fetch;
+  /** Test hook: mount wait budgets in ms. */
+  mountWait?: { initialMs?: number; reprovisionMs?: number; pollMs?: number };
 }
 
 interface AgentExecResult {
@@ -132,17 +134,47 @@ export class CloudflareSandboxProvider implements SandboxProvider {
   }
 
   async prepare(computer: ComputerRef, context: AdapterContext): Promise<void> {
-    // No PREPARE_LINUX_DESKTOP here (unlike e2b): the container image bakes the
-    // whole desktop stack in, and there is no sudo to install anything anyway.
-    // Only verify the R2 home actually mounted before any run touches disk.
-    const mounted = await this.exec(
-      computer,
-      `bash -c ${shellQuote(`grep -qs " ${CLOUDFLARE_HOME} fuse" /proc/mounts`)}`,
-      boundedSandboxCommandTimeoutMs(undefined),
-      context.signal,
+    const initialMs = this.config.mountWait?.initialMs ?? 20_000;
+    const reprovisionMs = this.config.mountWait?.reprovisionMs ?? 90_000;
+    const pollMs = this.config.mountWait?.pollMs ?? 2_000;
+    if (await this.waitForMount(computer, context, initialMs, pollMs)) return;
+    // Cloudflare sometimes restarts containers with default options — without
+    // the provision env (observed after a crash/maintenance restart). The boot
+    // then has a skeleton home and no R2 mount, and no amount of retrying
+    // heals it. Replace the container instead: data lives on R2, container
+    // disk is ephemeral by design.
+    await this.bridge("DELETE", `/v1/computers/${encodeURIComponent(computer.providerRef)}`).catch(
+      () => undefined,
     );
-    if (mounted.code !== 0) {
+    await this.bridge("POST", "/v1/computers", {
+      body: JSON.stringify({ computerId: computer.providerRef, homeKey: computer.botId }),
+      headers: { "content-type": "application/json" },
+    });
+    if (!(await this.waitForMount(computer, context, reprovisionMs, pollMs))) {
       throw new Error(`workspace is not mounted at ${CLOUDFLARE_HOME}`);
+    }
+  }
+
+  /** Poll the in-container mount check until it appears or the budget runs out. */
+  private async waitForMount(
+    computer: ComputerRef,
+    context: AdapterContext,
+    budgetMs: number,
+    pollMs: number,
+  ): Promise<boolean> {
+    const deadline = Date.now() + budgetMs;
+    for (;;) {
+      // Exec can fail while the container is still booting (agent not up yet):
+      // treat that the same as "not mounted yet" and keep polling.
+      const mounted = await this.exec(
+        computer,
+        `bash -c ${shellQuote(`grep -qs " ${CLOUDFLARE_HOME} fuse" /proc/mounts`)}`,
+        boundedSandboxCommandTimeoutMs(undefined),
+        context.signal,
+      ).catch(() => null);
+      if (mounted?.code === 0) return true;
+      if (context.signal.aborted || Date.now() >= deadline) return false;
+      await new Promise((resolve) => setTimeout(resolve, pollMs));
     }
   }
 
@@ -194,9 +226,7 @@ export class CloudflareSandboxProvider implements SandboxProvider {
       try {
         return await this.desktops.connectScreen(computer, request, context);
       } catch {
-        throw new ComputerScreenUnavailableError(
-          "เครื่องบอทกำลังเริ่มใหม่ ลองเปิดจออีกครั้งในอีกสักครู่",
-        );
+        throw new ComputerScreenUnavailableError("เครื่องบอทกำลังเริ่มใหม่ ลองเปิดจออีกครั้งในอีกสักครู่");
       }
     }
   }
