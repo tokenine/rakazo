@@ -61,7 +61,12 @@ function attachDesktopStackProbe(
   });
 }
 
-function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string, api: string) {
+function attachNovncProxy(
+  server: ViteDevServer | PreviewServer,
+  secret: string,
+  api: string,
+  bridge?: { host: string; token: string },
+) {
   server.middlewares.use(async (req, res, next) => {
     if (!req.url?.startsWith("/novnc/")) {
       next();
@@ -74,10 +79,18 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
       res.end("Invalid or expired screen capability");
       return;
     }
+    // The storage shim must string-edit the HTML, so compressed responses
+    // (bridge/workers.dev compress) need identity encoding — same as CreateOS.
+    const isBridgeTarget = Boolean(bridge && target.hostname.toLowerCase() === bridge.host);
     const headers = {
       ...safeProxyHeaders(req.headers),
-      ...(isCreateOSNovncHost(target.hostname) ? { "accept-encoding": "identity" } : {}),
+      ...(isCreateOSNovncHost(target.hostname) || isBridgeTarget
+        ? { "accept-encoding": "identity" }
+        : {}),
       host: `${target.hostname}:${target.port}`,
+      // The CF bridge authenticates every route with a bearer token; other
+      // screen targets (e2b, createos, supervisor) are tokenless.
+      ...(isBridgeTarget && bridge ? { authorization: `Bearer ${bridge.token}` } : {}),
     };
     const transport = target.protocol === "https:" ? https : http;
     let upstream: ClientRequest | undefined;
@@ -132,7 +145,13 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
             return;
           }
           const responseHeaders = safeScreenProxyResponseHeaders(incoming.headers);
-          if (shouldInjectNovncStorageShim(responseHeaders, target.hostname)) {
+          if (
+            shouldInjectNovncStorageShim(
+              responseHeaders,
+              target.hostname,
+              isBridgeTarget ? [bridge.host] : [],
+            )
+          ) {
             const declaredLength = Number(incoming.headers["content-length"] ?? 0);
             if (Number.isFinite(declaredLength) && declaredLength > MAX_NOVNC_HTML_BYTES) {
               finishUnavailable();
@@ -188,9 +207,11 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
 
   server.httpServer?.on("upgrade", async (req, socket, head) => {
     if (!req.url?.startsWith("/novnc/")) return;
+    console.error(`[novnc-ws] upgrade req.url=${req.url.slice(0, 200)}`);
     const target = await resolveNovncTarget(req.url, secret, api);
     if (socket.destroyed) return;
     if (!target) {
+      console.error(`[novnc-ws] upgrade resolve FAILED for ${req.url.slice(0, 120)}`);
       socket.destroy();
       return;
     }
@@ -221,6 +242,12 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
       for (const [key, value] of Object.entries(safeProxyHeaders(req.headers))) {
         headerLines.push(`${key}: ${Array.isArray(value) ? value.join(",") : value}`);
       }
+      if (bridge && target.hostname.toLowerCase() === bridge.host && bridge.token) {
+        headerLines.push(`authorization: Bearer ${bridge.token}`);
+      }
+      console.error(
+        `[novnc-ws] upgrade target host=${target.hostname} path=${target.path.slice(0, 140)}`,
+      );
       upstream.write(`${headerLines.join("\r\n")}\r\n\r\n`);
       if (head.length) upstream.write(head);
       socket.pipe(upstream);
@@ -231,6 +258,7 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
         responseChunks.push(chunk);
         responseSize += chunk.length;
         if (responseSize > 64 * 1024) {
+          console.error(`[novnc-ws] handshake oversized for ${target.hostname}`);
           socket.destroy();
           upstream.destroy();
           return;
@@ -241,6 +269,9 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
           return;
         }
         const responseHead = Buffer.concat(responseChunks, responseSize);
+        console.error(
+          `[novnc-ws] upstream handshake: ${responseHead.toString("latin1").split("\r\n")[0]}`,
+        );
         const safe = stripSensitiveHandshakeHeaders(responseHead);
         if (!safe) {
           socket.destroy();
@@ -252,6 +283,7 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string,
         upstream.pipe(socket);
       };
       upstream.on("data", forwardHandshake);
+      upstream.on("error", (err) => console.error(`[novnc-ws] upstream error: ${err.message}`));
     });
     upstream.on("error", () => socket.destroy());
     socket.on("error", () => upstream.destroy());
@@ -264,8 +296,13 @@ function isCreateOSNovncHost(hostname: string) {
   return NOVNC_STORAGE_SHIM_HOSTS.some((suffix) => hostname.endsWith(suffix));
 }
 
-function shouldInjectNovncStorageShim(headers: http.IncomingHttpHeaders, hostname: string) {
-  if (!isCreateOSNovncHost(hostname)) return false;
+function shouldInjectNovncStorageShim(
+  headers: http.IncomingHttpHeaders,
+  hostname: string,
+  extraHostSuffixes: string[] = [],
+) {
+  if (!isCreateOSNovncHost(hostname) && !extraHostSuffixes.some((s) => hostname.endsWith(s)))
+    return false;
   if (headers["content-encoding"]) return false;
   const contentType = String(headers["content-type"] ?? "").toLowerCase();
   return contentType.includes("text/html") || contentType.includes("application/xhtml+xml");
@@ -281,6 +318,25 @@ Object.defineProperty(window, "localStorage", {
     removeItem() {},
     clear() {},
   },
+});
+// Browser extensions (MetaMask, wallets, …) inject content scripts into this
+// frame too; on a sandboxed opaque-origin document they always fail to reach
+// their extension context and the thrown error would surface as a scary red
+// noVNC error box. Swallow only extension-origin errors — real noVNC errors
+// come from our own origin and still show.
+window.addEventListener("error", (e) => {
+  const source = e.filename || "";
+  if (source.startsWith("chrome-extension:") || source.startsWith("moz-extension:")) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+}, true);
+window.addEventListener("unhandledrejection", (e) => {
+  const reason = e.reason;
+  const text = String((reason && (reason.stack || reason.message)) || reason || "");
+  if (text.includes("chrome-extension:") || text.includes("moz-extension:")) {
+    e.preventDefault();
+  }
 });
 </script>`;
   return html.includes("<head>")
@@ -304,6 +360,12 @@ export default defineConfig(({ mode }) => {
   const desktopStackToken =
     process.env.RAKAZO_DESKTOP_STACK_TOKEN ?? rootEnv.RAKAZO_DESKTOP_STACK_TOKEN ?? "";
   const imageTag = process.env.RAKAZO_IMAGE_TAG ?? rootEnv.RAKAZO_IMAGE_TAG ?? "edge";
+  const cfBridgeUrl = process.env.CF_BRIDGE_URL ?? rootEnv.CF_BRIDGE_URL ?? "";
+  const cfBridgeToken = process.env.CF_BRIDGE_TOKEN ?? rootEnv.CF_BRIDGE_TOKEN ?? "";
+  const cfBridge =
+    cfBridgeUrl.trim() && cfBridgeToken.trim()
+      ? { host: new URL(cfBridgeUrl).hostname.toLowerCase(), token: cfBridgeToken.trim() }
+      : undefined;
   return {
     plugins: [
       react(),
@@ -332,8 +394,9 @@ export default defineConfig(({ mode }) => {
       },
       {
         name: "rakazo-novnc-proxy",
-        configureServer: (server) => attachNovncProxy(server, screenProxySecret(), api),
-        configurePreviewServer: (server) => attachNovncProxy(server, screenProxySecret(), api),
+        configureServer: (server) => attachNovncProxy(server, screenProxySecret(), api, cfBridge),
+        configurePreviewServer: (server) =>
+          attachNovncProxy(server, screenProxySecret(), api, cfBridge),
       },
     ],
     server: {

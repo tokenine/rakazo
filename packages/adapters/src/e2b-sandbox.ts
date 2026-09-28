@@ -56,6 +56,7 @@ export function isSandboxGoneError(error: unknown): boolean {
   if (SANDBOX_GONE_MESSAGE.test(message)) return true;
   for (let current: unknown = error; current instanceof Error; current = current.cause) {
     if (current.name === "SandboxNotFoundError") return true;
+    if (current.name === "CloudflareContainerGoneError") return true;
   }
   return false;
 }

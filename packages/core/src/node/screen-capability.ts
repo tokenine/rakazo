@@ -121,6 +121,7 @@ export function openScreenCapability(
       return null;
     const interactive = match[1] === "control";
     const requestedPath = `${match[4] || target.pathname || "/"}${match[5] || ""}`;
+    const finalPath = screenPolicyPath(remoteTargetPath(target, requestedPath), interactive);
     return {
       scope,
       expiresAt,
@@ -128,7 +129,7 @@ export function openScreenCapability(
         protocol: target.protocol,
         hostname: target.hostname,
         port,
-        path: screenPolicyPath(remoteTargetPath(target, requestedPath), interactive),
+        path: finalPath,
         interactive,
       },
     };
@@ -148,7 +149,10 @@ export function screenPolicyPath(requestedPath: string, interactive: boolean) {
 function remoteTargetPath(target: URL, requestedPath: string) {
   const requested = new URL(requestedPath, "https://screen.invalid");
   const path = requested.pathname || target.pathname || "/";
-  if (path === "/websockify" && target.searchParams.has("path")) {
+  // Accept any trailing /websockify request: clients resolve the socket path
+  // against their own (possibly nested/sealed) URL, so the suffix is what
+  // matters — never the literal shape of the requested path.
+  if ((path === "/websockify" || path.endsWith("/websockify")) && target.searchParams.has("path")) {
     const socket = new URL(target.searchParams.get("path")!, target);
     return `${socket.pathname}${socket.search}`;
   }

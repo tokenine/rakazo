@@ -1,3 +1,11 @@
+# Rakazo computer image for Cloudflare Containers.
+#
+# Derived from infra/sandboxes/computer/Dockerfile (the desktop stack below is
+# that Dockerfile verbatim, with COPY paths prefixed by `computer/` and the
+# final stage named). Keep the two in sync when the computer image changes:
+# this variant additionally mounts the bot's R2 home via tigrisfs, runs a small
+# control agent on :8090, and stays root so the mount can happen before
+# dropping to the `rakazo` user for the desktop.
 FROM debian:bookworm-slim AS capture-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -9,18 +17,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
-COPY xcapture.c .
+COPY computer/xcapture.c .
 RUN cc -O3 -fPIC -shared -Wall -Wextra -Werror -o librakazo-xcapture.so xcapture.c \
     -lX11 -lXext -lXdamage -lXfixes -lXtst -lpng
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim AS computer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
     x11vnc \
     fluxbox \
     xterm \
     xdotool \
-    xclip \
     x11-utils \
     x11-xserver-utils \
     imagemagick \
@@ -58,21 +65,21 @@ ENV HOME=/home/rakazo
 WORKDIR /home/rakazo
 # --chmod normalizes modes: a restrictive host umask (e.g. 077 on hardened hosts) would
 # otherwise leave these files unreadable to USER 1000 at runtime.
-COPY --chmod=755 start.sh /usr/local/bin/rakazo-computer
-COPY --chmod=755 control.py /usr/local/bin/rakazo-computer-control
+COPY --chmod=755 computer/start.sh /usr/local/bin/rakazo-computer
+COPY --chmod=755 computer/control.py /usr/local/bin/rakazo-computer-control
 COPY --from=capture-builder /build/librakazo-xcapture.so /usr/local/lib/librakazo-xcapture.so
-COPY --chmod=755 rakazo-browser /usr/local/bin/rakazo-browser
-COPY --chmod=755 rakazo-page-browser /usr/local/bin/rakazo-page-browser
-COPY --chmod=644 rakazo-browser.desktop /usr/share/applications/rakazo-browser.desktop
-COPY --chmod=644 fluxbox.init /etc/rakazo/fluxbox/init
-COPY --chmod=644 fluxbox.apps /etc/rakazo/fluxbox/apps
-COPY --chmod=644 fluxbox.menu /etc/rakazo/fluxbox/menu
-COPY --chmod=644 embed.html /usr/share/novnc/embed.html
-COPY --chmod=644 clipboard-bridge.js /usr/share/novnc/clipboard-bridge.js
-COPY --chmod=644 mobile-keyboard.js /usr/share/novnc/mobile-keyboard.js
+COPY --chmod=755 computer/rakazo-browser /usr/local/bin/rakazo-browser
+COPY --chmod=755 computer/rakazo-page-browser /usr/local/bin/rakazo-page-browser
+COPY --chmod=644 computer/rakazo-browser.desktop /usr/share/applications/rakazo-browser.desktop
+COPY --chmod=644 computer/fluxbox.init /etc/rakazo/fluxbox/init
+COPY --chmod=644 computer/fluxbox.apps /etc/rakazo/fluxbox/apps
+COPY --chmod=644 computer/fluxbox.menu /etc/rakazo/fluxbox/menu
+COPY --chmod=644 computer/embed.html /usr/share/novnc/embed.html
+COPY --chmod=644 computer/clipboard-bridge.js /usr/share/novnc/clipboard-bridge.js
+COPY --chmod=644 computer/mobile-keyboard.js /usr/share/novnc/mobile-keyboard.js
 # Browser JS kernel for the `js` tool: playwright-core over CDP (no bundled
 # browsers — it attaches to the Chromium already on the display).
-COPY --chmod=755 rakazo-browser-kernel.mjs /usr/local/lib/rakazo/rakazo-browser-kernel.mjs
+COPY --chmod=755 computer/rakazo-browser-kernel.mjs /usr/local/lib/rakazo/rakazo-browser-kernel.mjs
 # Strip CR so shebangs work even if the build context came from a CRLF checkout.
 RUN ldconfig \
   && sed -i 's/\r$//' /usr/local/bin/rakazo-computer /usr/local/bin/rakazo-computer-control /usr/local/bin/rakazo-browser /usr/local/bin/rakazo-page-browser \
@@ -102,9 +109,22 @@ RUN install -d /usr/local/share/fonts/thai-google \
       done; \
     done \
   && fc-cache -fs || true
-EXPOSE 7070 6080 6081 6082 6083 6084 6085 6086 6087 6088 6089 6090 6091 6092 6093 6094 6095
-# Containers run with CapDrop ALL + no-new-privileges (supervisor computer-spec):
-# agents can never gain root at runtime, so anything a task might need — fonts,
-# file manager, archive/JSON/SQLite tools — must be baked in above.
-USER 1000:1000
-CMD ["/usr/local/bin/rakazo-computer"]
+
+# --- cloudflare layer: R2 home mount + control agent -------------------------
+FROM computer AS cloudflare
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      fuse3 \
+      gosu \
+    && curl -fsSL -o /tmp/tigrisfs.deb \
+      https://github.com/tigrisdata/tigrisfs/releases/download/v1.2.2/tigrisfs_1.2.2_linux_amd64.deb \
+    && apt-get install -y --no-install-recommends /tmp/tigrisfs.deb \
+    && rm -f /tmp/tigrisfs.deb \
+    && rm -rf /var/lib/apt/lists/* \
+    && install -d -o 1000 -g 1000 /var/rakazo/browser-profiles /var/log/rakazo
+COPY --chmod=755 startup-cf.sh /usr/local/bin/rakazo-cf-startup
+COPY --chmod=755 agent.js /usr/local/lib/rakazo/agent.js
+ENV R2_MOUNT_POINT=/home/rakazo
+ENV AGENT_PORT=8090
+# Deliberately root: rakazo-cf-startup mounts R2, then drops to the rakazo
+# user for both the control agent and the desktop.
+CMD ["/usr/local/bin/rakazo-cf-startup"]

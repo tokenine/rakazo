@@ -26,6 +26,8 @@ export * from "./cloud-agent-service.js";
 export * from "./cloud-agent-tools.js";
 export * from "./cloud-agent-tools-select.js";
 export * from "./cloudflare-email.js";
+export * from "./cloudflare-emulator.js";
+export * from "./cloudflare-sandbox.js";
 export * from "./composio-catalog-cache.js";
 export * from "./composio-connector.js";
 export * from "./composio-emulator.js";

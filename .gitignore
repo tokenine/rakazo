@@ -49,3 +49,4 @@ playwright-report-www
 
 # graphiti pilot venv (local-only, never committed)
 .venv-graphiti/
+.wrangler/
