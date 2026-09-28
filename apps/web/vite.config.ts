@@ -201,9 +201,11 @@ function attachNovncProxy(
 
   server.httpServer?.on("upgrade", async (req, socket, head) => {
     if (!req.url?.startsWith("/novnc/")) return;
+    console.error(`[novnc-ws] upgrade req.url=${req.url.slice(0, 200)}`);
     const target = await resolveNovncTarget(req.url, secret, api);
     if (socket.destroyed) return;
     if (!target) {
+      console.error(`[novnc-ws] upgrade resolve FAILED for ${req.url.slice(0, 120)}`);
       socket.destroy();
       return;
     }
