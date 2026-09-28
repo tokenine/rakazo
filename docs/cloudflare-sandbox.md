@@ -77,7 +77,15 @@ recreate api+worker. Nothing on the Cloudflare side needs cleaning up
   boot. `standard` (0.5 vCPU/4 GiB) works; raise it if bots feel slow.
 - **Only env-carrying starts are valid**: the Worker stores provision env in
   DO storage and `ensureStarted()` re-applies it before any proxy — a bare
-  fetch would auto-start a computer with no R2 home.
+  fetch would auto-start a computer with no R2 home. **Cloudflare can still
+  restart a container with default options** (observed after a crash/
+  maintenance restart): the boot then logs `no R2 credentials`, stays up with
+  a skeleton home, and every run's setup fails with `workspace is not mounted`
+  until the retry cap. `prepare()` self-heals this (2026-09-28): it waits
+  ~20 s for the mount, then destroys + recreates the container through the
+  bridge (which re-stores env from Worker secrets) and waits up to ~90 s for
+  the mount before letting the run proceed. The same path also heals a DO
+  whose stored env was lost (`computer not provisioned`).
 - **Rollout lag**: after `wrangler deploy`, running containers keep the old
   image; new containers get the new one only once the application rollout
   finishes (`wrangler containers list` shows `provisioning` while it runs).
