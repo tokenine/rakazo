@@ -1525,7 +1525,9 @@ describeJourneys("required product journeys", () => {
         cookie,
         origin: "http://127.0.0.1:5173",
       },
-      body: JSON.stringify({ password: "password12" }),
+      // Passwordless accounts delete on a fresh session alone: no password
+      // (OTP users have no credential account) and no emailed token.
+      body: JSON.stringify({}),
     });
 
     expect(deleted.status).toBe(200);
