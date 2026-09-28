@@ -1,0 +1,362 @@
+# Derived knowledge-graph packets for the Project Atlas.
+# Authority: committed source and command output. This file is a retrieval projection only —
+# never execution authority, never proof. Graphiti ingests these hash-versioned packets.
+# content_sha256 is the first 16 hex chars of sha256(git show <observed_at_sha>:<path>).
+# observed_at_sha pins the repository state these claims were extracted from.
+schema: atlas-graph-packets/1
+observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+observed_at: "2026-09-28T02:04:42+07:00"
+nodes:
+  - id: project:rakazo
+    kind: project
+    title: Rakazo
+    source:
+      path: AGENTS.md
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 1895507682b49ea2
+    claims:
+      - relation: defines
+        target: entry:web
+        confidence: proven
+        evidence_ids: [evidence:agents-md]
+      - relation: defines
+        target: entry:desktop
+        confidence: proven
+        evidence_ids: [evidence:agents-md]
+      - relation: defines
+        target: entry:mobile
+        confidence: proven
+        evidence_ids: [evidence:agents-md]
+      - relation: defines
+        target: component:data-db
+        confidence: proven
+        evidence_ids: [evidence:agents-md]
+      - relation: defines
+        target: component:adapters
+        confidence: proven
+        evidence_ids: [evidence:agents-md]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 8405a99f
+      valid_to: null
+
+  - id: entry:web
+    kind: entry_point
+    title: Web app (apps/web)
+    source:
+      path: apps/web/package.json
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 52ab13f27c20b5e9
+    claims:
+      - relation: consumes
+        target: component:data-db
+        confidence: inferred
+        evidence_ids: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 47905e28
+      valid_to: null
+
+  - id: entry:desktop
+    kind: entry_point
+    title: Desktop shell (apps/desktop, Electron hosts web UI)
+    source:
+      path: apps/desktop/package.json
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 0bcf69ce4de6d78c
+    claims:
+      - relation: hosts
+        target: entry:web
+        confidence: proven
+        evidence_ids: [evidence:agents-md]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: d5a0c399
+      valid_to: null
+
+  - id: entry:mobile
+    kind: entry_point
+    title: Mobile app (apps/mobile, Expo Router native-first)
+    source:
+      path: apps/mobile/package.json
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: d4d657204fd1d996
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: a6a5b5e4
+      valid_to: null
+
+  - id: entry:api
+    kind: entry_point
+    title: API server (apps/api, tsx src/index.ts)
+    source:
+      path: apps/api/package.json
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 8c68e077774239e3
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 89991ece
+      valid_to: null
+
+  - id: entry:worker
+    kind: entry_point
+    title: Worker (apps/worker, background runs)
+    source:
+      path: apps/worker/package.json
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 9916d8974234a7c3
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 89991ece
+      valid_to: null
+
+  - id: entry:www
+    kind: entry_point
+    title: Marketing site (apps/www)
+    source:
+      path: apps/www/package.json
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: fbf028000a7b481e
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 47905e28
+      valid_to: null
+
+  - id: component:data-db
+    kind: component
+    title: Data and events (packages/db)
+    source:
+      path: packages/db/prisma/schema.prisma
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 2a65419f9eabbb57
+    claims:
+      - relation: defines
+        target: contract:thread-botid-unique
+        confidence: proven
+        evidence_ids: [evidence:spec-001, evidence:schema-prisma]
+      - relation: owns
+        target: contract:messaging-busy-guard
+        confidence: proven
+        evidence_ids: [evidence:spec-001, evidence:events-ts]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 15a32508
+      valid_to: null
+
+  - id: component:adapters
+    kind: component
+    title: Provider adapters (packages/adapters)
+    source:
+      path: packages/adapters/src/computer-lifecycle.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 474da6381ad567b4
+    claims:
+      - relation: owns
+        target: contract:computer-execution-lease
+        confidence: proven
+        evidence_ids: [evidence:spec-001, evidence:computer-lifecycle]
+      - relation: owns
+        target: contract:run-lease
+        confidence: proven
+        evidence_ids: [evidence:spec-001, evidence:executor-ts]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 11c0283f
+      valid_to: null
+
+  - id: contract:thread-botid-unique
+    kind: contract
+    title: "Thread.botId @unique (schema.prisma:473) — one thread per bot"
+    source:
+      path: packages/db/prisma/schema.prisma
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 2a65419f9eabbb57
+    claims:
+      - relation: superseded_by
+        target: decision:001-relax-thread-unique
+        confidence: proven
+        evidence_ids: [evidence:spec-001]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 15a32508
+      valid_to: null
+
+  - id: contract:computer-execution-lease
+    kind: contract
+    title: ComputerExecutionLease unique (computerId, botId) — per-bot run serialization
+    source:
+      path: packages/adapters/src/computer-lifecycle.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 474da6381ad567b4
+    claims:
+      - relation: protects
+        target: project:rakazo
+        confidence: proven
+        evidence_ids: [evidence:spec-001]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 11c0283f
+      valid_to: null
+
+  - id: contract:run-lease
+    kind: contract
+    title: Run leases keyed on run id only (executor.ts:1103-1124) — already thread-scoped context
+    source:
+      path: packages/adapters/src/executor.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 138fca9abf171805
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 68ca7735
+      valid_to: null
+
+  - id: contract:messaging-busy-guard
+    kind: contract
+    title: sendUserMessage busy guard filters (threadId, botId) (events.ts ~378-388)
+    source:
+      path: packages/db/src/events.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: f72646b623dab977
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 08bcbc78
+      valid_to: null
+
+  - id: feature:001-multi-session-agents
+    kind: feature
+    title: Feature 001 — multi-session agents
+    source:
+      path: specs/001-multi-session-agents/spec.md
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: b5f05fd1be8d9628
+    claims:
+      - relation: relaxes
+        target: contract:thread-botid-unique
+        confidence: proven
+        evidence_ids: [evidence:spec-001]
+      - relation: protects
+        target: contract:computer-execution-lease
+        confidence: proven
+        evidence_ids: [evidence:spec-001]
+      - relation: protects
+        target: contract:messaging-busy-guard
+        confidence: proven
+        evidence_ids: [evidence:spec-001]
+      - relation: risks
+        target: risk:telegram-routing
+        confidence: proven
+        evidence_ids: [evidence:spec-001]
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 4f344cd8
+      valid_to: null
+
+  - id: decision:001-relax-thread-unique
+    kind: decision
+    title: "A1: relax Thread.botId @unique to non-unique index + title + primary marker (additive migration)"
+    source:
+      path: specs/001-multi-session-agents/spec.md
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: b5f05fd1be8d9628
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 4f344cd8
+      valid_to: null
+
+  - id: risk:telegram-routing
+    kind: risk
+    title: Telegram inbound routing must land on the bot's primary session (R5/V4 regression)
+    source:
+      path: specs/001-multi-session-agents/spec.md
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: b5f05fd1be8d9628
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 4f344cd8
+      valid_to: null
+
+  - id: evidence:agents-md
+    kind: evidence
+    title: Repository AGENTS.md
+    source:
+      path: AGENTS.md
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 1895507682b49ea2
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 8405a99f
+      valid_to: null
+
+  - id: evidence:spec-001
+    kind: evidence
+    title: "specs/001-multi-session-agents/spec.md (incl. Q1 research, 2026-09-28)"
+    source:
+      path: specs/001-multi-session-agents/spec.md
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: b5f05fd1be8d9628
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 4f344cd8
+      valid_to: null
+
+  - id: evidence:schema-prisma
+    kind: evidence
+    title: "packages/db/prisma/schema.prisma:473 (Thread.botId @unique), :475/:477 (group/external uniques)"
+    source:
+      path: packages/db/prisma/schema.prisma
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 2a65419f9eabbb57
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 15a32508
+      valid_to: null
+
+  - id: evidence:events-ts
+    kind: evidence
+    title: "packages/db/src/events.ts ~378-388 sendUserMessage busy guard"
+    source:
+      path: packages/db/src/events.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: f72646b623dab977
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 08bcbc78
+      valid_to: null
+
+  - id: evidence:executor-ts
+    kind: evidence
+    title: "packages/adapters/src/executor.ts:1103-1124 run leases"
+    source:
+      path: packages/adapters/src/executor.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 138fca9abf171805
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 68ca7735
+      valid_to: null
+
+  - id: evidence:computer-lifecycle
+    kind: evidence
+    title: "packages/adapters/src/computer-lifecycle.ts:439-505 ComputerExecutionLease + ComputerBusyError backoff"
+    source:
+      path: packages/adapters/src/computer-lifecycle.ts
+      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      content_sha256: 474da6381ad567b4
+    claims: []
+    temporal:
+      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      valid_from: 11c0283f
+      valid_to: null

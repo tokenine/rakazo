@@ -1,0 +1,4 @@
+graphiti-core[falkordb]==0.30.2
+anthropic<1
+pyyaml
+httpx
