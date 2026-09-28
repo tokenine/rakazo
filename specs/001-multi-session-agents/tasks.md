@@ -14,7 +14,7 @@ single-session behavior is bit-for-bit preserved; a second session can exist and
 
 ### Tasks
 
-- [ ] T1 (P1) Schema: drop `Thread.botId @unique` → `@@index([botId])`; add `title String?`,
+- [ ] T1 (P1) Schema: drop `Thread.botId @unique` → `@@index([botId])`; add `name String?`,
       `isPrimary Boolean @default(false)`, `lastMessageAt DateTime?` (packages/db/prisma/schema.prisma)
 - [ ] T2 (P1) Migration: CONCURRENT drop of unique index, add columns, backfill `isPrimary=true`,
       CREATE partial unique index `(botId) WHERE is_primary` + VALIDATE; follow
