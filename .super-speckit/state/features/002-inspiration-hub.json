@@ -1,7 +1,7 @@
 {
   "id": "002-inspiration-hub",
-  "state": "planned",
-  "candidate_sha": null,
+  "state": "merged",
+  "candidate_sha": "697a638f",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/002-inspiration-hub/spec.md",
