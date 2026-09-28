@@ -30,10 +30,17 @@ Retest DB `pg-001-retest` (port 54330) removed after evidence capture.
 - `logs/stacked-pi-offline.postgres.log` — 1/1, exit 0 (F-3 stall case)
 - `logs/stacked-executor-lifecycle.log` — 21/21, exit 0
 - `logs/stacked-mention-targets.log` — 7/7, exit 0
-- `logs/stacked-journeys.log` — 36/37 (F-4: account-deletion password residue)
+- `logs/stacked-journeys.log` — superseded by the F-4 re-run (see `logs/f4-journeys.log`); original F-4 failure evidence preserved in `stacked-journeys-repro2.log` and quoted in report §9.5
 - `logs/stacked-journeys-repro2.log` — F-4 second reproduction (identical)
 - `logs/stacked-db-offline.log` — 121/6, exit 0
 - `logs/stacked-adapters-offline.log` — 2011/25, exit 0 (F-3 regression check)
 - `tmp/run-suites-stacked.sh` — per-suite isolated-DB runner (harness semantics)
 
 Retest DB `pg-retest3` (port 54333) removed after evidence capture.
+
+## Retest of F-4 (5262c142) — final
+- `logs/f4-journeys.log` — journeys 37/37, exit 0 (real Postgres, per-suite isolated DB)
+- `logs/f4-db-offline.log` — db 121/6, exit 0
+- `tmp/run-suites-f4.sh` — per-suite runner for pg-retest4 (:54334)
+
+Retest DB `pg-retest4` (port 54334) removed after evidence capture. All four bug loops (F-1..F-4) closed; S1 gate PASS — final (report §10).

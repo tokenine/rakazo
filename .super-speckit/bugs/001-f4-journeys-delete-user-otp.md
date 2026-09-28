@@ -1,6 +1,6 @@
 # BUG-001-F4 — journeys delete-user test posts password credential deletion for OTP-era users (400 CREDENTIAL_ACCOUNT_NOT_FOUND)
 
-- Status: `confirmed`
+- Status: `closed`
 - Found in: `001-multi-session-agents / stacked tip ae301f6e / stacked retest` — F-2 residue (test-side only); journeys was previously unreachable past signup due to F-3
 - Affected requirement: test infrastructure (journeys suite full-green); no S1 matrix row affected
 - Severity: `low` (single test in one DB-gated suite)
@@ -23,6 +23,6 @@ Actual: test #11 posts `/api/auth/delete-user` with a password; OTP-era users ha
 
 ## Fix and regression obligation
 
-- Bug-fix worktree/commit: `ss/bug/001-f4` stacked on `ss/bug/001-f3` — pending; align the delete-user step with the passwordless account model (whatever better-auth exposes for OTP users — e.g. delete via the credential-free path or assert the documented 400 contract if password deletion is intentionally impossible for OTP accounts; choose by reading the server route contract)
-- Regression test: journeys 37/37 on the stacked tip under VERIFY_DATABASE=1
-- Independent retest run: pending
+- Bug-fix worktree/commit: `ss/bug/001-f4` stacked on `ss/bug/001-f3` — fix `5262c142`: journeys #11 uses the product's designed passwordless deletion (empty-body delete-user on a fresh OTP session; token branch unconfigured, password branch impossible for OTP accounts — contract read from better-auth 1.7.4 update-user.mjs)
+- Regression test: journeys 37/37 under `VERIFY_DATABASE=1` on real migrated Postgres (was 36/37)
+- Independent retest run: PASS — checker re-observed journeys 37/37 (fresh container, per-suite isolation) + diff verified single-file; qa-report §10

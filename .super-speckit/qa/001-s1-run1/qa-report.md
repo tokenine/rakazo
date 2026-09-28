@@ -187,3 +187,30 @@ Swept the tip for singular `thread:` where-filters and `bot.thread` navigations 
 - **F-2 (0d893595): PASS with residue** — all four required suites plus journeys boot and run on the passwordless flow; one residue F-4 (§9.5) in journeys #11 only.
 - **F-3 (ae301f6e): PASS** — pi-offline 1/1 and executor-lifecycle 21/21 re-observed by checker; sweep confirms exactly one defect of this class existed (§9.4); adapters offline 2011/25.
 - **Overall S1 gate: PASS (unchanged).** All run-1 row verdicts stand; F-4 is filed for a new lane and touches no matrix row.
+
+## 10. Retest of F-4 (5262c142, branch `ss/bug/001-f4`) — 2026-09-28 — FINAL
+
+### 10.1 Diff verification — PASS
+
+`git show 5262c142`: **single file** `packages/testkit/src/journeys.test.ts`, **+3/−1** (2 insertions are the explanatory comment). Change: journeys #11 `/api/auth/delete-user` body `{ password: "password12" }` → `{}` — passwordless fresh-session deletion, product config untouched. Stacked correctly on `ae301f6e`.
+
+### 10.2 Real-Postgres re-observation — PASS
+
+Fresh container `pg-retest4` (:54334), full `prisma migrate deploy` (all migrations applied), per-suite isolated template-clone database (harness semantics; runner `tmp/run-suites-f4.sh`):
+
+```
+packages/testkit/src/journeys.test.ts => exit 0 | Test Files 1 passed (1) | Tests 37 passed (37)
+```
+
+Log: `logs/f4-journeys.log` (37/37; this file supersedes the §9 stacked-run journeys log — the original F-4 failure evidence is preserved in `logs/stacked-journeys-repro2.log` and quoted in §9.5). Offline spot-check: db **121 passed | 6 skipped**, exit 0 (`logs/f4-db-offline.log`).
+
+### 10.3 Final S1 verdict — all bug loops closed
+
+| Bug | Fix | Verdict |
+| --- | --- | --- |
+| F-1 unscoped botId `findUniqueOrThrow` (testkit) | `81647881` | **FIXED** — authorization 15/15 on real Postgres through the pinned lookup (§8, §9.3) |
+| F-2 passwordless auth vs email+password test signup | `0d893595` | **FIXED** — all DB-gated suites boot via OTP; 13-file testkit-only diff (§9.1, §9.3) |
+| F-3 executor bot-directory `thread:{isNot:null}` on 1:many | `ae301f6e` | **FIXED** — pi-offline 1/1, executor-lifecycle 21/21 re-observed; sweep: exactly one defect of the class (§9.3, §9.4) |
+| F-4 journeys #11 password-based delete-user | `5262c142` | **FIXED** — journeys 37/37 on real Postgres (§10.2) |
+
+**Overall S1 gate: PASS — final.** All run-1 row verdicts stand (V1/V8 S1 portions; V2, V3, V4 real-Postgres, V5, V9, V11 named tests; V10 clean at tip under current wording; V12–V17 out of scope; V18 not-applicable). No open findings. Stack reviewed tip-to-toe: `5262c142` → `ae301f6e` → `0d893595` → `81647881` → `f68d7bfb`.
