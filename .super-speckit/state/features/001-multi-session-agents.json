@@ -28,10 +28,10 @@
     "rationale": "Multi-surface vertical change (db schema+migration, contracts, api RPC group, web switcher, mobile session screen, realtime events) with 2 blocker-class findings (addressing scheme, Prisma relation flip), 7 nondeterministic legacy routing sites, data migration with Telegram-regression risk, and per-slice reassessment needed (lease/Telegram/authz invariants). Exceeds normal depth; not micro."
   },
   "handoff": {
-    "path": ".super-speckit/handoffs/001-s1-merged-s2-next.md",
+    "path": ".super-speckit/handoffs/001-s2-merged-s3-next.md",
     "transfer": "same-environment",
-    "stage": "s1-merged",
-    "attempt_id": "001-s2-lane"
+    "stage": "s2-merged",
+    "attempt_id": "001-s3-lane"
   },
   "reassessment": {
     "path": ".super-speckit/qa/001-s2-run1/slice-reassessment.md",
