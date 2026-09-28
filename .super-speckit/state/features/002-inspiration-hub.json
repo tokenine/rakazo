@@ -1,0 +1,32 @@
+{
+  "id": "002-inspiration-hub",
+  "state": "planned",
+  "candidate_sha": null,
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": "specs/002-inspiration-hub/spec.md",
+  "purpose": {
+    "status": "draft",
+    "map": ".super-speckit/purpose/002-inspiration-hub/purpose-map.md",
+    "decision": ".super-speckit/purpose/002-inspiration-hub/decision.json"
+  },
+  "grill": {
+    "status": "not_started",
+    "artifact": null
+  },
+  "route": {
+    "kind": "unclassified",
+    "rationale": null
+  },
+  "atlas": {
+    "path": null
+  },
+  "change_story": {
+    "path": null
+  },
+  "handoff": {
+    "path": null
+  },
+  "runs": [],
+  "bugs": []
+}

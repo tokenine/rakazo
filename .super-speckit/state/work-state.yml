@@ -18,3 +18,19 @@ features:
     latest_handoff: ".super-speckit/handoffs/001-s2-merged-s3-next.md"
     runs: []
     bugs: []
+  - id: "002-inspiration-hub"
+    state: "planned"
+    candidate_sha: null
+    maker: "claude-maker"
+    checker: "claude-checker"
+    matrix: "specs/002-inspiration-hub/spec.md"
+    purpose_status: "draft"
+    purpose_map: ".super-speckit/purpose/002-inspiration-hub/purpose-map.md"
+    grill_status: "not_started"
+    grill_artifact: null
+    route: "unclassified"
+    atlas: null
+    change_story: null
+    latest_handoff: null
+    runs: []
+    bugs: []
