@@ -26,9 +26,9 @@ test.describe("hub", () => {
     // Gallery: inspiration cards should be present
     await expect(page.locator("[data-testid^='inspiration-card-']").first()).toBeVisible();
 
-    // First-actions are hidden when hasContent=true (Chief bot exists from onboarding)
-    await expect(page.locator("h2", { hasText: /start/i })).not.toBeVisible();
-    await expect(page.getByRole("button", { name: /create agent/i })).not.toBeVisible();
+    // First-actions are visible when hasContent=false (signupOnly creates no bot)
+    await expect(page.locator("h2", { hasText: /start/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create agent/i })).toBeVisible();
 
     await captureScreenshot(page, testInfo, "hub-empty-v1");
   });
@@ -93,9 +93,9 @@ test.describe("hub", () => {
     });
 
     // Wait for navigation — the Make similar action creates a new bot and
-    // navigates to /app/:botId (threadId may be null from the RPC).
-    await page.waitForURL(/\/app\/[^/]+$/, { timeout: 30_000 });
-    await expect(page.url()).toMatch(/\/app\/[^/]+$/);
+    // navigates to /app/:botId/:threadId (bot.threadId is now populated).
+    await page.waitForURL(/\/app\/[^/]+\/[^/]+$/, { timeout: 30_000 });
+    await expect(page.url()).toMatch(/\/app\/[^/]+\/[^/]+$/);
 
     // Composer should be visible (we're in a thread)
     await expect(page.getByPlaceholder(/message/i)).toBeVisible();

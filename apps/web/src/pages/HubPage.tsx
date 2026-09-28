@@ -71,12 +71,12 @@ export function HubPage({ hasContent, bots = [] }: HubPageProps) {
       </div>
 
       <div className="flex flex-1 flex-col gap-8 px-6 py-6">
-        {/* Activity zone — recent runs + bot previews */}
+        {/* Activity zone — bot previews; always renders (empty-safe) */}
         <section>
           <h2 className="mb-3 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
             <Trans>{ZONE_ACTIVITY}</Trans>
           </h2>
-          {hasContent && bots.length > 0 ? (
+          {bots.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {bots.slice(0, 8).map((bot) => (
                 <button
@@ -104,7 +104,7 @@ export function HubPage({ hasContent, bots = [] }: HubPageProps) {
           )}
         </section>
 
-        {/* Gallery rail */}
+        {/* Gallery rail — always visible; inspiration cases are context, not content */}
         <section>
           <h2 className="mb-3 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
             <Trans>{ZONE_GALLERY}</Trans>
