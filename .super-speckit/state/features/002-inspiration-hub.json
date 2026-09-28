@@ -6,23 +6,24 @@
   "checker": "claude-checker",
   "matrix": "specs/002-inspiration-hub/spec.md",
   "purpose": {
-    "status": "draft",
+    "status": "confirmed",
     "map": ".super-speckit/purpose/002-inspiration-hub/purpose-map.md",
     "decision": ".super-speckit/purpose/002-inspiration-hub/decision.json"
   },
   "grill": {
-    "status": "not_started",
-    "artifact": null
+    "status": "complete",
+    "artifact": ".super-speckit/grills/002-inspiration-hub/spec-grill.md"
   },
   "route": {
-    "kind": "unclassified",
-    "rationale": null
+    "kind": "normal",
+    "rationale": "Single deployable unit (web hub + bundled catalog + one RPC + small Welcome-token cleanup); mobile is a recorded degradation, not a build target; no data migration; fresh standalone surface with low blast radius. Not micro (new route/catalog/RPC/e2e), not milestone (no cross-surface build, no schema change)."
   },
   "atlas": {
-    "path": null
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
   },
   "change_story": {
-    "path": null
+    "path": ".super-speckit/atlas/changes/002-inspiration-hub/change-story.md"
   },
   "handoff": {
     "path": null

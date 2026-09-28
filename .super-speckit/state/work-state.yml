@@ -24,13 +24,13 @@ features:
     maker: "claude-maker"
     checker: "claude-checker"
     matrix: "specs/002-inspiration-hub/spec.md"
-    purpose_status: "draft"
+    purpose_status: "confirmed"
     purpose_map: ".super-speckit/purpose/002-inspiration-hub/purpose-map.md"
-    grill_status: "not_started"
-    grill_artifact: null
-    route: "unclassified"
-    atlas: null
-    change_story: null
+    grill_status: "complete"
+    grill_artifact: ".super-speckit/grills/002-inspiration-hub/spec-grill.md"
+    route: "normal"
+    atlas: ".super-speckit/atlas/README.md"
+    change_story: ".super-speckit/atlas/changes/002-inspiration-hub/change-story.md"
     latest_handoff: null
     runs: []
     bugs: []

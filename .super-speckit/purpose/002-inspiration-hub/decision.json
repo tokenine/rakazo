@@ -1,9 +1,9 @@
 {
   "feature": "002-inspiration-hub",
-  "status": "draft",
+  "status": "confirmed",
   "map": "purpose-map.md",
   "visual": "purpose-map.html",
-  "confirmed_by": null,
-  "confirmed_at": null,
-  "confirmation": null
+  "confirmed_by": "maintainer",
+  "confirmed_at": "2026-09-28T18:58:36+0700",
+  "confirmation": "Confirmed via purpose gate on the diagram-first visual map: welcoming activity-aware home, gallery cases become working bots in one click, no points/credits, bundled catalog, constitution chips + non-goals as drafted."
 }
