@@ -34,3 +34,19 @@ features:
     latest_handoff: null
     runs: []
     bugs: []
+  - id: "003-agent-marketplace"
+    state: "planned"
+    candidate_sha: null
+    maker: "claude-maker"
+    checker: "claude-checker"
+    matrix: "specs/003-agent-marketplace/spec.md"
+    purpose_status: "not_started"
+    purpose_map: null
+    grill_status: "not_started"
+    grill_artifact: null
+    route: "unclassified"
+    atlas: null
+    change_story: null
+    latest_handoff: null
+    runs: []
+    bugs: []
