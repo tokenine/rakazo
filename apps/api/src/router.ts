@@ -1042,7 +1042,7 @@ export function createRouter(deps: RouterDeps) {
         // existing avatar render site shows it; unmapped keys fall back to the
         // palette mascot shape.
         const bundledAvatar = avatarKey ? EXPERT_AVATARS[avatarKey] : undefined;
-        const created = await repos
+        const bot = await repos
           .createBot(context.actor, {
             name: input.name?.trim() || expert.name,
             title: expert.title,
@@ -1060,10 +1060,6 @@ export function createRouter(deps: RouterDeps) {
           .catch((error: unknown) => {
             throw mapSpaceLifecycleError(error);
           });
-
-        // Re-fetch via getBot so the returned DTO has threads[0] = primary session
-        // (createBot returns mapBot(result) where result.threads is the raw DB array).
-        return await repos.getBot(context.actor, created.id);
 
         // Find-or-create the preset remote MCP servers at space level, then assign
         // them to the bot with all tools allowed. OAuth still needs the user's
