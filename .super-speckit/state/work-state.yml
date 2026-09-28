@@ -15,6 +15,6 @@ features:
     route: "milestone"
     atlas: ".super-speckit/atlas/README.md"
     change_story: ".super-speckit/atlas/changes/001-multi-session-agents/change-story.md"
-    latest_handoff: ".super-speckit/handoffs/001-slice-ready.md"
+    latest_handoff: ".super-speckit/handoffs/001-s1-verified-f2-next.md"
     runs: []
     bugs: []
