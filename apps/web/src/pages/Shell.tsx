@@ -262,6 +262,7 @@ const McpServersOverlay = lazy(() =>
   import("./McpServersOverlay").then((module) => ({ default: module.McpServersOverlay })),
 );
 const CallView = lazy(() => import("./CallView").then((module) => ({ default: module.CallView })));
+const HubPage = lazy(() => import("./HubPage").then((module) => ({ default: module.HubPage })));
 
 type Panel =
   | "computer"
@@ -362,7 +363,7 @@ function useClientBrowserChannel() {
   }, [bridge]);
 }
 
-export function ShellPage() {
+export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
   const { t } = useLingui();
   const { botId, groupId, threadId } = useParams();
   const navigate = useNavigate();
@@ -3515,13 +3516,10 @@ export function ShellPage() {
             ) : null}
           </div>
         </div>
-        {!active && !activeGroup && initialBotsLoaded ? (
-          <div className="grid flex-1 place-items-center">
-            <Button onClick={() => setPanel("create")}>
-              <Plus size={16} aria-hidden="true" />
-              <Trans>Create new Bot</Trans>
-            </Button>
-          </div>
+        {hubEntry || (!active && !activeGroup && initialBotsLoaded) ? (
+          <Suspense>
+            <HubPage hasContent={spaces.some((s) => s.hasContent)} bots={bots} />
+          </Suspense>
         ) : (
           <Transcript
             key={activeSnapshot?.threadId}

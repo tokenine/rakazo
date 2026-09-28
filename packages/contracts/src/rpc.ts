@@ -2,6 +2,7 @@ import { eventIterator, oc } from "@orpc/contract";
 import * as z from "zod";
 import { AiConsentQuerySchema, AiConsentStatusSchema } from "./ai-consent.js";
 import { ATTACHMENT_MAX_BASE64_LENGTH, ATTACHMENT_MAX_COUNT } from "./attachments.js";
+import { InspirationCaseSchema } from "./inspiration-catalog.js";
 import {
   ActionApprovalRuleSchema,
   ActionAutoReviewSettingsSchema,
@@ -250,6 +251,9 @@ export const appContract = {
     list: oc.output(z.array(ExpertSummarySchema)),
     /** Bundled connector presets (remote MCP) shown as cards in Integrations. */
     connectors: oc.output(z.array(ExpertConnectorSummarySchema)),
+  },
+  inspiration: {
+    list: oc.output(z.array(InspirationCaseSchema)),
   },
   bots: {
     list: oc.output(z.array(BotSchema)),
