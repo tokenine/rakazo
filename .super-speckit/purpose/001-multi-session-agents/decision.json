@@ -1,0 +1,9 @@
+{
+  "feature": "001-multi-session-agents",
+  "status": "confirmed",
+  "map": "purpose-map.md",
+  "visual": "purpose-map.html",
+  "confirmed_by": "maintainer",
+  "confirmed_at": "2026-09-28T11:10:24+0700",
+  "confirmation": "Confirmed via purpose gate: parallel separately-contexted sessions per bot, resumable on any surface; non-goals accepted as drafted."
+}
