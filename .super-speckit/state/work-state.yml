@@ -42,11 +42,11 @@ features:
     matrix: "specs/003-agent-marketplace/spec.md"
     purpose_status: "confirmed"
     purpose_map: ".super-speckit/purpose/003-agent-marketplace/purpose-map.md"
-    grill_status: "not_started"
-    grill_artifact: null
-    route: "unclassified"
-    atlas: null
-    change_story: null
+    grill_status: "complete"
+    grill_artifact: ".super-speckit/grills/003-agent-marketplace/spec-grill.md"
+    route: "milestone"
+    atlas: ".super-speckit/atlas/README.md"
+    change_story: ".super-speckit/atlas/changes/003-agent-marketplace/change-story.md"
     latest_handoff: null
     runs: []
     bugs: []

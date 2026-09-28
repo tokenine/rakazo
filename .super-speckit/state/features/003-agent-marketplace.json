@@ -11,18 +11,19 @@
     "decision": ".super-speckit/purpose/003-agent-marketplace/decision.json"
   },
   "grill": {
-    "status": "not_started",
-    "artifact": null
+    "status": "complete",
+    "artifact": ".super-speckit/grills/003-agent-marketplace/spec-grill.md"
   },
   "route": {
-    "kind": "unclassified",
-    "rationale": null
+    "kind": "milestone",
+    "rationale": "Highest scope risk per spec: new portable bundle format + two-phase import RPC with security hardening (15 examiner findings incl. 6 blockers), marketplace UI surface, catalog seam with three providers, security-review lane, and sliced delivery (S1 bundle+export/import, S2 marketplace UI+catalog seam, S3 security review+closure). Multi-slice with per-slice reassessment required."
   },
   "atlas": {
-    "path": null
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
   },
   "change_story": {
-    "path": null
+    "path": ".super-speckit/atlas/changes/003-agent-marketplace/change-story.md"
   },
   "handoff": {
     "path": null
