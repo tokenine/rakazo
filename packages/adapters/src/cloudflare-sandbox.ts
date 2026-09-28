@@ -15,6 +15,7 @@ import type {
   ScreenSession,
 } from "@rakazo/adapter-kit";
 import { boundedSandboxCommandTimeoutMs } from "@rakazo/core";
+import { ComputerScreenUnavailableError } from "./computer-screens.js";
 import { shellQuote } from "./computer-support.js";
 import { LinuxDesktop } from "./linux-desktop.js";
 
@@ -174,7 +175,30 @@ export class CloudflareSandboxProvider implements SandboxProvider {
     request: ScreenRequest,
     context: AdapterContext,
   ): Promise<ScreenSession> {
-    return this.desktops.connectScreen(computer, request, context);
+    try {
+      return await this.desktops.connectScreen(computer, request, context);
+    } catch (error) {
+      // A container that just woke from sleep races its own desktop startup
+      // (Xvfb/window manager land seconds after the API call) and the first
+      // desktop command can fail with an empty stderr. Retry once, then
+      // surface a friendly retry-me error instead of a 500.
+      if (
+        error instanceof CloudflareContainerGoneError ||
+        error instanceof ComputerScreenUnavailableError ||
+        context.signal.aborted
+      ) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      if (context.signal.aborted) throw error;
+      try {
+        return await this.desktops.connectScreen(computer, request, context);
+      } catch {
+        throw new ComputerScreenUnavailableError(
+          "เครื่องบอทกำลังเริ่มใหม่ ลองเปิดจออีกครั้งในอีกสักครู่",
+        );
+      }
+    }
   }
   async setScreenControl(
     computer: ComputerRef,

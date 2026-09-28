@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CloudflareContainerGoneError, CloudflareSandboxProvider } from "./cloudflare-sandbox.js";
+import {
+  CloudflareContainerGoneError,
+  CloudflareSandboxProvider,
+} from "./cloudflare-sandbox.js";
+import { ComputerScreenUnavailableError } from "./computer-screens.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 
 const ctx = {
@@ -151,6 +155,43 @@ describe("CloudflareSandboxProvider", () => {
       `https://bridge.test/v1/computers/${ref.providerRef}/screen/6100/embed.html`,
     );
     expect(screen.url).toContain("token%3Dt0k3n");
+  });
+
+  it("retries connectScreen once when the desktop races its own startup", async () => {
+    let execCount = 0;
+    const { provider } = makeProvider((request) => {
+      if (request.path.endsWith("/agent/exec")) {
+        execCount += 1;
+        // First desktop command fails (cold-wake race), the retry succeeds.
+        return execCount === 1
+          ? { json: { code: 1, stdout: "", stderr: "" } }
+          : { json: { code: 0, stdout: "RAKAZO_DESKTOP=0:t0k3n", stderr: "" } };
+      }
+      return {};
+    });
+    const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
+    const screen = await provider.connectScreen(
+      ref,
+      { view: "stream", interactive: false },
+      { ...ctx, screenLeaseId: "lease" },
+    );
+    expect(screen.url).toContain("/embed.html");
+  });
+
+  it("surfaces a friendly retry error when the screen stays unavailable", async () => {
+    const { provider } = makeProvider((request) =>
+      request.path.endsWith("/agent/exec")
+        ? { json: { code: 1, stdout: "", stderr: "" } }
+        : {},
+    );
+    const ref = await provider.provision({ botId: "b", homePath: "/x" }, ctx);
+    await expect(
+      provider.connectScreen(
+        ref,
+        { view: "stream", interactive: false },
+        { ...ctx, screenLeaseId: "lease" },
+      ),
+    ).rejects.toBeInstanceOf(ComputerScreenUnavailableError);
   });
 
   it("stops and destroys through the bridge", async () => {
