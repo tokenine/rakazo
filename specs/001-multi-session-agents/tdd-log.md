@@ -72,3 +72,106 @@ reads to `threads[0]`, 53 fixture-stale tests failed across adapters/api test fi
 (`TypeError: Cannot read properties of undefined (reading '0')` etc.); fixtures
 were migrated to the `threads` array shape. Final: @rakazo/db 121 passed / 6
 skipped, @rakazo/adapters 2011 passed / 25 skipped, @rakazo/api 389 passed.
+
+## Cycle C — S2: session lifecycle events, RPC guards, web switcher, e2e (2026-09-28)
+
+Baseline: `5262c142` (S1 merged: session CRUD repos, contracts, RPC wiring,
+threadTarget threadId addressing).
+
+Backend events + deletion guard (offline seams first):
+
+- RED `createRepos.createSession` (appends session.created to every session feed,
+  including the new one) — `TypeError: Cannot read properties of undefined
+  (reading 'create')` (no event append existed)
+- RED `createRepos.renameSession` (appends session.renamed to every feed) —
+  `TypeError: Cannot read properties of undefined (reading 'findFirst')`
+- RED `createRepos.deleteSession` (appends session.deleted only to remaining
+  feeds) — `AssertionError: expected [] to deeply equal [ 'session-side' ]`
+- RED `createRepos.deleteSession` (refuses while a run is active, V13) —
+  `AssertionError: promise resolved "undefined" instead of rejecting`
+- GREEN after: `session.created/renamed/deleted` added to ProductEventType;
+  `appendSessionEventInTransaction` (events.ts) fans out to every session feed
+  of the bot inside the mutation transaction; repos session mutations became
+  transactional and return `{ session|notifications }` (create/rename) /
+  `{ notifications }` (delete); `SessionActiveRunError` guard added before the
+  last-session check. `packages/db/src/repos.test.ts` 28/28.
+
+RPC layer (V13/V14 offline through the RPCHandler):
+
+- RED `threads/createSession` returns the session + per-feed notify — `expected
+  500 to be 200` (handler passed the repos envelope straight through)
+- RED `threads/deleteSession` active-run typed conflict — `expected 500 to be
+  409`
+- RED delete-notify fan-out — `expected [] to deeply equal [ 'session-older',
+  'session-newer' ]`
+- (last-session CONFLICT + V14 isolation denial already held; kept as pinned
+  regressions)
+- GREEN after: sessions handlers unwrap the repos envelope, notify every feed
+  via `deps.events.notify`, and map LastSessionError + SessionActiveRunError to
+  typed `ORPCError("CONFLICT")`. `apps/api/src/router.test.ts` 37/37.
+
+DB-gated integration (real Postgres, OTP fixtures —
+`packages/testkit/src/sessions.postgres.test.ts`, added to the integration
+harness): full lifecycle green on postgres:16-alpine — create/rename/delete,
+active-run refusal (queued Run row), primary deletion promotes earliest
+sibling, last-session refusal, V12 events observed by a subscribed
+`followThreadEvents` client on the primary feed (renamed then created, payload
+{threadId, botId, name}), V14 non-owner space member denied on all four
+session RPCs. Two fixture lessons encoded: subscribe from the feed head (not
+cursor -1) so pre-subscription fan-out events do not satisfy the assertion,
+and abort the follower via signal (a pending `next()` never settles without
+events, so `return()` deadlocks).
+
+Web switcher (T13, per recorded design decision):
+
+- Route `/app/:botId/:threadId` added (threadId absent resolves primary).
+- `SessionSwitcher` in the bot chat header (no new navigation area): popover
+  list primary-first/last-activity with unread dots and roster-style times,
+  new/rename (inline)/delete (two-step confirm, disabled on last session),
+  shadcn-on-Base-UI primitives + semantic tokens only.
+- Session-aware thread addressing in Shell via `threadTargetForBot` (viewed
+  session for the active bot, primary for every other caller: teaching flows,
+  sidebar menus, other bots) across get/head/subscribe/send/answer/react/
+  followUp/stop/messages-pagination/markRead/clear.
+- Live updates: `session.*` events on the subscribed feed refresh the switcher
+  without reload (V12); a remote delete of the viewed session falls back to
+  the bot route. Bootstrap prefetch no longer flashes the primary snapshot on
+  session routes. Composer state keys per session.
+
+e2e (T14): `apps/web/e2e/sessions.spec.ts` — three tests cover the switcher UI.
+
+Initial runs: tests 1 and 3 failed at the rename step (timeout finding the session
+row). Root cause: after `createSessionAndView` navigated to the new session route,
+the Shell re-mounted and triggered its own `refreshSessions` which raced with the
+original `refreshSessions` call. The original (stale, primary-only list) sometimes
+won the race, so the switcher showed no session row for the new session — and
+`sessionRow(page, "Research")` matched the create form's `<input value="Research">`
+instead. The rename trigger click then targeted the wrong element.
+
+- RED rename step in test 1: `locator.fill` timeout — `sessionRow(page, "Research")`
+  matched the create-form input, not the session option
+- RED rename step in test 3: same pattern
+- GREEN after: `createSessionAndView` now awaits `refreshSessions` before navigating,
+  eliminating the race. Explicit `expect(sessionRow(...)).toBeVisible()` waits added
+  after creation and before each rename/delete action so the DOM has settled before
+  the next interaction. Final: `apps/web/e2e/sessions.spec.ts` 3/3 passed
+  (120s chromium, 3 parallel suites).
+
+Security gate (T14 prerequisite): `apps/api/src/app.ts` originally guarded
+`/api/dev/emails` with `env.nodeEnv === "development"` only. The test harness
+(`packages/testkit/src/cli/harness.ts`) sets `NODE_ENV=development` for the
+API subprocess, so the mount was reachable in e2e. To ensure the endpoint is
+unreachable in production regardless of `NODE_ENV` being unset (the default),
+the guard was tightened to:
+```
+(env.nodeEnv === "development" || env.nodeEnv === "test") && email instanceof EmailEmulator
+```
+This keeps the endpoint accessible in both dev and test environments (harness uses
+`NODE_ENV=development`). The harness also intercepts `/__e2e/emails` directly in its
+Playwright server, so e2e OTP reads never depend on the API mount in production.
+
+Known v1 behavior (deferred to checker/QA rows): a client *viewing* a session
+that another client deletes receives no event (the deleted feed cascades away);
+its next send surfaces an isolation error and S4 owns the tombstone/aggregate
+follow-up. Cross-session unread badges refresh on lifecycle events and bot
+switches, not on sibling message events (S4 aggregate work).

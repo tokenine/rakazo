@@ -70,15 +70,21 @@ export async function signup(
 
 /** Pull the newest OTP code sent to `email` from the dev-only emulator inbox. */
 export async function otpFromEmulator(page: Page, email: string): Promise<string> {
-  const response = await page.request.get("/api/dev/emails");
-  if (!response.ok()) throw new Error(`/api/dev/emails responded ${response.status()}`);
-  const messages = (await response.json()) as Array<{ to: string; text: string }>;
-  const sent = [...messages]
-    .reverse()
-    .find((message) => message.to.toLowerCase() === email.toLowerCase());
-  const code = sent?.text.match(/\b(\d{6})\b/)?.[1];
-  if (!code) throw new Error(`no OTP code captured for ${email}`);
-  return code;
+  const deadline = Date.now() + 5_000;
+  for (;;) {
+    const response = await page.request.get("/api/dev/emails");
+    if (!response.ok()) throw new Error(`/api/dev/emails responded ${response.status()}`);
+    const messages = (await response.json()) as Array<{ to: string; text: string }>;
+    const sent = [...messages]
+      .reverse()
+      .find((message) => message.to.toLowerCase() === email.toLowerCase());
+    const code = sent?.text.match(/\b(\d{6})\b/)?.[1];
+    if (code) return code;
+    // Delivery through the emulator resolves asynchronously after the send
+    // request returns; poll briefly instead of racing it.
+    if (Date.now() >= deadline) throw new Error(`no OTP code captured for ${email}`);
+    await page.waitForTimeout(50);
+  }
 }
 
 export async function captureScreenshot(page: Page, testInfo: TestInfo, name: string) {
