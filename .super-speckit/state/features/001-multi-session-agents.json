@@ -1,7 +1,7 @@
 {
   "id": "001-multi-session-agents",
   "state": "merged",
-  "candidate_sha": "3d99186f",
+  "candidate_sha": "260f6f0a",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/001-multi-session-agents/spec.md",
@@ -34,7 +34,7 @@
     "attempt_id": "001-s3-lane"
   },
   "reassessment": {
-    "path": ".super-speckit/qa/001-s2-run1/slice-reassessment.md",
+    "path": ".super-speckit/qa/001-s3-run1/v15-manual-verification.md",
     "decision": "keep"
   }
 }
