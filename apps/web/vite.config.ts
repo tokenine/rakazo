@@ -237,6 +237,7 @@ function attachNovncProxy(
       if (bridge && target.hostname.toLowerCase() === bridge.host && bridge.token) {
         headerLines.push(`authorization: Bearer ${bridge.token}`);
       }
+      console.error(`[novnc-ws] upgrade target host=${target.hostname} path=${target.path.slice(0, 140)}`);
       upstream.write(`${headerLines.join("\r\n")}\r\n\r\n`);
       if (head.length) upstream.write(head);
       socket.pipe(upstream);
