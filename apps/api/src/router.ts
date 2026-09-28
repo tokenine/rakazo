@@ -92,6 +92,7 @@ import {
   EXPERT_MCP_PRESETS,
   EXPERT_SKILLS,
   findExpert,
+  INSPIRATION_CATALOG,
   IntegrationProviderIdSchema,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,
@@ -849,6 +850,9 @@ export function createRouter(deps: RouterDeps) {
           endpoint: preset.endpoint,
         })),
       ),
+    },
+    inspiration: {
+      list: authed.inspiration.list.handler(async () => INSPIRATION_CATALOG),
     },
     models: {
       list: authed.models.list.handler(async () => [...listPiCatalog(), scriptedCatalogEntry]),

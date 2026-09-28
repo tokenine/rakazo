@@ -26,6 +26,9 @@ const OnboardingPage = lazy(() =>
 const WelcomePage = lazy(() =>
   import("./pages/Welcome").then((module) => ({ default: module.WelcomePage })),
 );
+const HubPage = lazy(() =>
+  import("./pages/HubPage").then((module) => ({ default: module.HubPage })),
+);
 
 export function App() {
   if (window.location.pathname === LOCAL_SETTINGS_PAGE) return <LocalSettingsPage />;
@@ -99,6 +102,10 @@ function SessionApp() {
             }
           />
           <Route path="/app" element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />} />
+          <Route
+            path="/app/hub"
+            element={user ? <ShellPage hubEntry /> : <Navigate to="/sign-in" replace />}
+          />
           <Route
             path="/app/g/:groupId"
             element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />}

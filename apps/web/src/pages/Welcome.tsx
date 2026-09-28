@@ -14,14 +14,10 @@ export function WelcomePage() {
       data-rakazo-surface="welcome"
     >
       <style>{`[data-theme="dark"] .ai7-lockup-light{display:none}[data-theme="light"] .ai7-lockup-dark{display:none}`}</style>
-      {/* warm brand glow */}
+      {/* warm brand glow — uses semantic muted/accent tokens for background tint */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(52% 42% at 50% 0%, rgba(249,115,22,0.22), transparent 70%), radial-gradient(38% 30% at 82% 78%, rgba(244,63,94,0.12), transparent 70%), radial-gradient(36% 30% at 14% 72%, rgba(250,204,21,0.12), transparent 70%)",
-        }}
+        className="pointer-events-none absolute inset-0 bg-muted/30"
       />
       <div className="app-drag relative flex gap-2 px-5 py-[18px]">
         <WindowChrome />
@@ -47,10 +43,9 @@ export function WelcomePage() {
         <button
           type="button"
           onClick={() => navigate("/sign-up")}
-          className="app-no-drag rounded-full px-[36px] py-[15px] text-[19px] font-medium text-white shadow-lg shadow-orange-500/30 transition hover:scale-[1.04]"
-          style={{ background: "linear-gradient(135deg, #FB923C, #F97316 45%, #EF4444)" }}
+          className="app-no-drag rounded-full bg-primary px-[36px] py-[15px] text-[19px] font-medium text-primary-foreground shadow-lg transition hover:scale-[1.04]"
         >
-          <Trans>Sign up</Trans>&nbsp;&nbsp;→
+          <Trans>Sign up</Trans>&nbsp;&nbsp;&rarr;
         </button>
       </div>
     </div>
