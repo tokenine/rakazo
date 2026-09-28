@@ -4,7 +4,7 @@ generated_from: .super-speckit/state/features/*.json
 features:
   - id: "001-multi-session-agents"
     state: "merged"
-    candidate_sha: "5262c142"
+    candidate_sha: "3d99186f"
     maker: "claude-maker"
     checker: "claude-checker"
     matrix: "specs/001-multi-session-agents/spec.md"
