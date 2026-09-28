@@ -13,9 +13,14 @@ mobile, Telegram inbound, routines) work unchanged.
 ## Approach
 
 - **Schema**: `Thread.botId` loses `@unique` (keep nullable, cascade); add `Thread.name String?`,
-  `Thread.isPrimary Boolean @default(false)`; add `@@index([botId])`; partial unique index
+  `Thread.isPrimary Boolean @default(false)`, `Thread.lastMessageAt DateTime?` (ordering; bumped in
+  `createThreadMessageInTransaction`); add `@@index([botId])`; partial unique index
   `one primary per bot` via SQL (precedent: taught_skills partial index at schema.prisma:771).
   Backfill: every existing bot thread becomes primary (each bot has ≤1 today).
+  **Breaking (grill-confirmed)**: Prisma back-relation flips `Bot.thread Thread?` → `threads Thread[]`;
+  singular `bot.thread` navigation (~6 adapter/api sites) is replaced by a primary-thread helper;
+  ~8 test/CLI `thread.findUnique({ where: { botId } })` sites migrate. Inventory in
+  .super-speckit/grills/001-multi-session-agents/spec-grill.md.
 - **Thread resolution choke point**: `apps/api/src/thread-target.ts resolveThreadTarget` gains
   optional `threadId` input; botId-only resolution falls back to primary → earliest thread.
   `threadTarget` contract (rpc.ts:93) gains optional `threadId`.
@@ -31,10 +36,14 @@ mobile, Telegram inbound, routines) work unchanged.
 
 ## Slices
 
-1. **S1 backend** (this slice): schema + migration + repos + thread-target + new RPCs + legacy pinning + unit tests. Red-green per repo/resolve behavior; deterministic offline (testkit fakes).
-2. **S2 web UI**: session switcher in bot panel (list/switch/rename/create/delete), route param `/{botId}/{threadId?}`. Design-first required (tsx paths): static prototype decision recorded before implementation.
-3. **S3 mobile**: session list in bot view per native-first rules; degradation recorded if needed.
-4. **S4 verification**: matrix execution per below; e2e web spec for session flows; Telegram regression assertion.
+1. **S1 backend** (this slice): schema + migration + repos + thread-target + legacy pinning + red-green
+   tests (V2/V4/V5/V9/V10/V11). Deterministic offline (testkit fakes).
+2. **S2 sessions RPC + web UI**: sessions/list|create|rename|delete RPCs (V1/V6/V12/V13/V14), session
+   switcher in bot panel (route param `/{botId}/{threadId?}`), session lifecycle events. Design-first
+   required (tsx paths): static prototype decision recorded before implementation.
+3. **S3 mobile**: per-bot session list screen per native-first rules (V15); degradation recorded if needed.
+4. **S4 verification + guardrails**: sidebar aggregates (V16), lease teardown guard (V17), matrix closure
+   (V18); e2e web spec for session flows; Telegram regression assertion; milestone reassessment.
 
 ## Risks / constitution checks
 

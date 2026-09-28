@@ -1,0 +1,32 @@
+flowchart LR
+  User[User / external actor]
+  TG[Telegram inbound]
+
+  subgraph Surfaces[Entry points]
+    Web[apps/web]
+    Desktop[apps/desktop - Electron hosts web UI]
+    Mobile[apps/mobile - Expo]
+  end
+
+  API[apps/api - tsx src/index.ts]
+  Worker[apps/worker - background runs]
+  Adapters[packages/adapters - executor + computer lifecycle]
+  DB[(packages/db - Prisma + events)]
+  Lease[ComputerExecutionLease - unique computerId+botId]
+  Bot[Bot computer / providers]
+
+  User --> Web
+  User --> Desktop
+  User --> Mobile
+  Web --> API
+  Desktop --> API
+  Mobile --> API
+  API --> DB
+  API --> Adapters
+  Worker --> Adapters
+  Adapters --> DB
+  Adapters --> Lease
+  Lease --> Bot
+  TG --> DB
+  DB --> Worker
+```

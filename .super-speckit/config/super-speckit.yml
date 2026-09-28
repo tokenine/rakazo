@@ -24,6 +24,14 @@ orchestration:
   research_before_high_risk: true
   tdd_when_feasible: true
   feedback_loop_required: true
+  purpose_gate_required: true
+  spec_grill_required: true
+  project_atlas_required: true
+  change_story_required: true
+  scope_route_required: true
+  reassess_after_verified_milestone_slice: true
+  purpose_gate_human_scope: [outcome, affected_people, success_signal, non_goals]
+  purpose_gate_human_technical_decisions: false
 state_evidence:
   source_of_truth: yaml-json-files-and-commands
   work_state_manifest: .super-speckit/state/work-state.yml
@@ -31,6 +39,25 @@ state_evidence:
   require_post_stage_check: true
   status_command: "python3 scripts/super_speckit.py status --repo . --feature {{feature}} --strict"
   validation_command: "python3 scripts/super_speckit.py validate --repo ."
+  inconclusive_is_not_pass: true
+knowledge_graph:
+  provider: graphiti # optional retrieval adapter per docs/research/graphiti-atlas-evaluation.md Stage 2
+  enabled: false # pilot ships disabled; flip to true after the Stage-3 operational review
+  graph_db:
+    driver: falkordb
+    host: localhost
+    port: 6379
+    database: default_db
+  embedder:
+    base_url: http://localhost:11434/v1 # local Ollama; source files never leave the machine for embeddings
+    model: nomic-embed-text
+    dim: 768
+    tags_url: http://localhost:11434/api/tags
+  llm:
+    key_from_env: ANTHROPIC_API_KEY # env var NAMES only; values are read at runtime, never stored
+    base_url_from_env: ANTHROPIC_BASE_URL
+    model_from_env: ANTHROPIC_MODEL
+  num_results: 8
 delegation:
   enabled: false # explicit opt-in; never silently send repository context to a cloud service
   default_transport: codex-cloud

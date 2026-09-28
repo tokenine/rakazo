@@ -13,10 +13,10 @@ need parallel, separately-contexted conversations with the same agent, each resu
 
 ## Requirements
 
-1. R1 — A user can open any number of named sessions (threads) with the same bot in a space.
+1. R1 — The bot's owner can open any number of named sessions (threads) with the same bot in a space. (Sessions are owner-scoped like all bot-thread operations today; space-member sharing is out of scope for v1 — grill resolution.)
 2. R2 — Each session keeps its own message history, compaction state, run serialization, and unread flag; runs in different sessions of one bot must not block each other except where a shared resource (the bot's computer lease) genuinely serializes them.
 3. R3 — The user can list, switch between, rename, and delete a bot's sessions; last-activity ordering.
-4. R4 — A session is resumable later on any surface (web, desktop, mobile) with full history.
+4. R4 — A session is resumable later on any surface (web, desktop, mobile) with its full available history (compaction summary + post-compaction tail, matching existing compaction semantics).
 5. R5 — Messaging (Telegram) keeps working: inbound routing must land on the correct session (default: the bot's primary session) — no regression to existing single-thread behavior.
 6. R6 — Existing deployments migrate without data loss: current bot threads become the bot's primary session.
 
@@ -34,7 +34,7 @@ need parallel, separately-contexted conversations with the same agent, each resu
 ## Open questions (need answers before plan)
 
 - ~~Q1 resolved by research (2026-09-28):~~ the busy guard in `sendUserMessage` filters on `(threadId, botId)` (packages/db/src/events.ts ~378-388), run leases key on run id only (executor.ts:1103-1124), and per-bot locking exists only for the shared computer via the `(computerId, botId)`-unique `ComputerExecutionLease` (computer-lifecycle.ts:439-505; a second concurrent run gets `ComputerBusyError` and requeues with backoff) plus a momentary per-secret credential lock. Verdict: run/context wiring is already thread-scoped — relaxing `Thread.botId @unique` is the core change; the computer lease is the only genuine serialization and can stay per-bot (R2's exception).
-- Q2: Mobile: reuse the thread list pattern or add a session switcher inside the bot view? (native-first rule applies)
+- Q2 resolved by grill (2026-09-28): mobile (apps/mobile) is a bot-inbox app with no session list today; native-first decision — add a per-bot session list screen (Expo Router) between the inbox row and `app/thread.tsx`, which accepts a threadId parameter. Web gets a session switcher inside the existing bot chat view.
 
 ## Verification sketch (matrix rows to expand)
 
@@ -42,3 +42,16 @@ need parallel, separately-contexted conversations with the same agent, each resu
 - V2: Migration — pre-migrate DB with a bot thread; post-migration assert primary session exists, messages intact.
 - V3: E2E (web) — switch sessions, rename, resume history after reload.
 - V4: Telegram regression — inbound still lands on primary session.
+
+## Grill resolutions (2026-09-28)
+
+Full evidence trail: .super-speckit/grills/001-multi-session-agents/spec-grill.md.
+
+- **Primary session** = `Thread.isPrimary Boolean @default(false)` with a Postgres partial unique index `(botId) WHERE is_primary` (invariant: exactly one primary per bot, DB-enforced). Migrated threads are stamped primary. All legacy `findFirst({ botId })` routing becomes `findFirst({ botId, isPrimary: true })`.
+- **Addressing**: `threadTarget` gains an optional `threadId`; botId-only resolves to the primary session. New `sessions/list|create|rename|delete` RPC group. Sends/history reuse `threads/*`.
+- **Relation flip is breaking, not additive**: `Bot.thread Thread?` becomes `threads Thread[]`; singular navigation (`bot.thread`) is replaced by a primary-thread helper across api/adapters; ~8 test/CLI `thread.findUnique({ where: { botId } })` sites are migrated. Blast radius inventoried in the grill.
+- **Deletion rules**: refuse deleting the last remaining session; deleting the primary with siblings promotes earliest-createdAt in the same transaction; refuse deleting a session with an active run (explicit error; the per-bot computer lease must never be torn down by a session delete).
+- **Ordering**: `Thread.lastMessageAt DateTime?` bumped in `createThreadMessageInTransaction`; list order `lastMessageAt desc nulls last, createdAt desc`; cursor `(lastMessageAt, id)`.
+- **Migration**: repo conventions — DROP unique CONCURRENT, add columns, backfill primary, CREATE partial unique CONCURRENT + VALIDATE. Down-migration is a documented exception (unsupported once a bot has multiple sessions).
+- **Realtime**: new `session.created/renamed/deleted` events; sidebar aggregates defined as unread = OR over the bot's sessions, preview and run status = primary session's.
+- **Known v1 behavior (accepted)**: bot-level memory is shared across sessions (R2 does not list memory; reversal path: revisit on user signal). `bots/duplicate` clones the primary session only. `clearThread` keeps its bot-level `updatedAt` bump.

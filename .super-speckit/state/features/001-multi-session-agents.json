@@ -5,6 +5,26 @@
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/001-multi-session-agents/spec.md",
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/001-multi-session-agents/purpose-map.md",
+    "decision": ".super-speckit/purpose/001-multi-session-agents/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/001-multi-session-agents/spec-grill.md"
+  },
   "runs": [],
-  "bugs": []
+  "bugs": [],
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/001-multi-session-agents/change-story.md"
+  },
+  "route": {
+    "kind": "milestone",
+    "rationale": "Multi-surface vertical change (db schema+migration, contracts, api RPC group, web switcher, mobile session screen, realtime events) with 2 blocker-class findings (addressing scheme, Prisma relation flip), 7 nondeterministic legacy routing sites, data migration with Telegram-regression risk, and per-slice reassessment needed (lease/Telegram/authz invariants). Exceeds normal depth; not micro."
+  }
 }
