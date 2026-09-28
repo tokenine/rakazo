@@ -55,3 +55,13 @@ Full evidence trail: .super-speckit/grills/001-multi-session-agents/spec-grill.m
 - **Migration**: repo conventions — DROP unique CONCURRENT, add columns, backfill primary, CREATE partial unique CONCURRENT + VALIDATE. Down-migration is a documented exception (unsupported once a bot has multiple sessions).
 - **Realtime**: new `session.created/renamed/deleted` events; sidebar aggregates defined as unread = OR over the bot's sessions, preview and run status = primary session's.
 - **Known v1 behavior (accepted)**: bot-level memory is shared across sessions (R2 does not list memory; reversal path: revisit on user signal). `bots/duplicate` clones the primary session only. `clearThread` keeps its bot-level `updatedAt` bump.
+
+## Known v1 behaviors (accepted — not bugs)
+
+These behaviors are intentional in v1 and have documented reversal paths if user research shows they should change.
+
+| Behavior | Reversal path |
+|---|---|
+| Bot-level memory is shared across all of a bot's sessions (the `memoryScope` field is `shared` by default for bots with multiple sessions). R2 does not list memory isolation as a requirement. | Revisit on user signal: scope memory per-session (requires `memoryScope` on `Thread`, new UI affordances, and migration of existing bot memories). |
+| `bots/duplicate` clones only the primary session; secondary sessions of the source bot are not duplicated. This was a deliberate product decision during S4. | Add a `deep: boolean` option to the duplicate RPC that also clones non-primary sessions. |
+| `clearThread` bumps `bot.updatedAt` (not `thread.updatedAt`), keeping the bot-level timestamp used for staleness/changed detection in the codebase. | Move the `updatedAt` bump to the thread level if per-session staleness tracking is needed. |

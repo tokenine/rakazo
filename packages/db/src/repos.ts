@@ -107,6 +107,8 @@ function mapBot(
   if (!primary) {
     throw new IsolationError("Bot is missing its thread");
   }
+  // Grill #9: unread = OR across all of the bot's sessions (any session unread → bot unread).
+  const unread = bot.threads.some((t) => t.unread);
   return {
     id: bot.id,
     spaceId: bot.spaceId,
@@ -119,7 +121,7 @@ function mapBot(
     pinned: bot.pinned,
     sectionId: bot.sectionId,
     archivedAt: bot.archivedAt?.toISOString() ?? null,
-    unread: primary.unread,
+    unread,
     parentBotId: bot.parentBotId,
     memoryScope: bot.memoryScope as "isolated" | "shared" | null,
     threadId: primary.id,
@@ -199,6 +201,8 @@ export function createRepos(prisma: PrismaClient) {
     return bots.map((bot) => {
       const primary = bot.threads[0];
       if (!primary) throw new IsolationError("Bot is missing its thread");
+      // Grill #9: unread = OR across all sessions.
+      const unread = bot.threads.some((t) => t.unread);
       return {
         id: bot.id,
         spaceId: bot.spaceId,
@@ -208,7 +212,7 @@ export function createRepos(prisma: PrismaClient) {
         notifyOnFinish: bot.notifyOnFinish,
         pinned: bot.pinned,
         sectionId: bot.sectionId,
-        unread: primary.unread,
+        unread,
         parentBotId: bot.parentBotId,
         preview: previewFromBlocks(primary.messages[0]?.blocks),
         status: bot.runs[0]?.status ?? "idle",
