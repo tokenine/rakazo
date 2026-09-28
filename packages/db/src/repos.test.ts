@@ -29,7 +29,7 @@ const baseBot = {
   memoryScope: null as string | null,
   createdAt: new Date("2026-08-19T00:00:00.000Z"),
   updatedAt: new Date("2026-08-19T00:00:00.000Z"),
-  thread: { id: "thread-1", unread: false, messages: [] },
+  threads: [{ id: "thread-1", unread: false, isPrimary: true, messages: [] }],
   runs: [],
   computer: null,
 };
@@ -66,11 +66,15 @@ describe("createRepos.listBots", () => {
           ["one", "two"].map((id) => ({
             ...baseBot,
             id,
-            thread: {
-              ...baseBot.thread,
-              id: `thread-${id}`,
-              messages: [{ runId: `run-${id}`, blocks: [{ kind: "text", text: `Answer ${id}` }] }],
-            },
+            threads: [
+              {
+                ...baseBot.threads[0],
+                id: `thread-${id}`,
+                messages: [
+                  { runId: `run-${id}`, blocks: [{ kind: "text", text: `Answer ${id}` }] },
+                ],
+              },
+            ],
           })),
         ),
       },
@@ -92,12 +96,14 @@ describe("createRepos.listBots", () => {
         findMany: vi.fn(async () => [
           {
             ...baseBot,
-            thread: {
-              ...baseBot.thread,
-              messages: [
-                { seq: 30, runId: "peer-new", blocks: [{ kind: "text", text: "Hidden" }] },
-              ],
-            },
+            threads: [
+              {
+                ...baseBot.threads[0],
+                messages: [
+                  { seq: 30, runId: "peer-new", blocks: [{ kind: "text", text: "Hidden" }] },
+                ],
+              },
+            ],
           },
         ]),
       },
@@ -136,27 +142,29 @@ describe("createRepos.listBots", () => {
     const findMany = vi.fn(async () => [
       {
         ...baseBot,
-        thread: {
-          ...baseBot.thread,
-          messages: [
-            {
-              runId: "run-peer",
-              blocks: [{ kind: "text", text: "Echoed peer reply" }],
-            },
-            {
-              runId: "run-peer",
-              blocks: [
-                {
-                  kind: "bot_message_received",
-                  fromBotId: "bot-2",
-                  fromBotName: "Coder",
-                  text: "Peer result",
-                },
-              ],
-            },
-            { runId: "run-user", blocks: [{ kind: "text", text: "Visible answer" }] },
-          ],
-        },
+        threads: [
+          {
+            ...baseBot.threads[0],
+            messages: [
+              {
+                runId: "run-peer",
+                blocks: [{ kind: "text", text: "Echoed peer reply" }],
+              },
+              {
+                runId: "run-peer",
+                blocks: [
+                  {
+                    kind: "bot_message_received",
+                    fromBotId: "bot-2",
+                    fromBotName: "Coder",
+                    text: "Peer result",
+                  },
+                ],
+              },
+              { runId: "run-user", blocks: [{ kind: "text", text: "Visible answer" }] },
+            ],
+          },
+        ],
       },
     ]);
     const prisma = {
@@ -174,7 +182,8 @@ describe("createRepos.listBots", () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         include: expect.objectContaining({
-          thread: {
+          threads: {
+            orderBy: SESSION_ORDER,
             include: {
               messages: { orderBy: { seq: "desc" }, take: 16 },
             },
@@ -190,16 +199,18 @@ describe("createRepos.listBots", () => {
         findMany: vi.fn(async () => [
           {
             ...baseBot,
-            thread: {
-              ...baseBot.thread,
-              messages: [
-                {
-                  runId: "run-peer",
-                  blocks: [{ kind: "text", text: "Echoed peer reply" }],
-                },
-                { runId: "run-user", blocks: [{ kind: "text", text: "Visible answer" }] },
-              ],
-            },
+            threads: [
+              {
+                ...baseBot.threads[0],
+                messages: [
+                  {
+                    runId: "run-peer",
+                    blocks: [{ kind: "text", text: "Echoed peer reply" }],
+                  },
+                  { runId: "run-user", blocks: [{ kind: "text", text: "Visible answer" }] },
+                ],
+              },
+            ],
           },
         ]),
       },
@@ -225,16 +236,18 @@ describe("createRepos.listBots", () => {
         findMany: vi.fn(async () => [
           {
             ...baseBot,
-            thread: {
-              ...baseBot.thread,
-              messages: [
-                {
-                  seq: 20,
-                  runId: "run-peer",
-                  blocks: [{ kind: "text", text: "Echoed peer reply" }],
-                },
-              ],
-            },
+            threads: [
+              {
+                ...baseBot.threads[0],
+                messages: [
+                  {
+                    seq: 20,
+                    runId: "run-peer",
+                    blocks: [{ kind: "text", text: "Echoed peer reply" }],
+                  },
+                ],
+              },
+            ],
           },
         ]),
       },
@@ -274,10 +287,12 @@ describe("createRepos.listBots", () => {
         findMany: vi.fn(async () => [
           {
             ...baseBot,
-            thread: {
-              ...baseBot.thread,
-              messages: peerWindows[0],
-            },
+            threads: [
+              {
+                ...baseBot.threads[0],
+                messages: peerWindows[0],
+              },
+            ],
           },
         ]),
       },
@@ -310,10 +325,13 @@ describe("createRepos.listSpaceBotsForSpaces", () => {
         sectionId: null,
         updatedAt: new Date("2026-08-20T00:00:00.000Z"),
         parentBotId: null,
-        thread: {
-          unread: true,
-          messages: [{ blocks: [{ kind: "text", text: "Waiting for a reply" }] }],
-        },
+        threads: [
+          {
+            unread: true,
+            isPrimary: true,
+            messages: [{ blocks: [{ kind: "text", text: "Waiting for a reply" }] }],
+          },
+        ],
         runs: [{ status: "running" }],
       },
     ]);
@@ -381,5 +399,265 @@ describe("createRepos.reorderBots", () => {
       IsolationError,
     );
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+const SESSION_ORDER = [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }];
+
+interface SessionRow {
+  id: string;
+  botId: string;
+  spaceId: string;
+  userId: string;
+  name: string | null;
+  isPrimary: boolean;
+  unread: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+function sessionRow(overrides: Partial<SessionRow> = {}): SessionRow {
+  return {
+    id: "session-1",
+    botId: "bot-1",
+    spaceId: "ws-1",
+    userId: "user-1",
+    name: null,
+    isPrimary: false,
+    unread: false,
+    createdAt: new Date("2026-09-20T00:00:00.000Z"),
+    updatedAt: new Date("2026-09-20T00:00:00.000Z"),
+    ...overrides,
+  };
+}
+
+describe("createRepos.listSessions", () => {
+  it("returns the bot's sessions with preview and unread, keeping the requested ordering", async () => {
+    const primary = sessionRow({
+      id: "session-primary",
+      isPrimary: true,
+      unread: true,
+      name: "Main",
+      createdAt: new Date("2026-09-22T00:00:00.000Z"),
+      updatedAt: new Date("2026-09-22T00:00:00.000Z"),
+    });
+    const older = sessionRow({
+      id: "session-older",
+      createdAt: new Date("2026-09-21T00:00:00.000Z"),
+    });
+    const findBot = vi.fn().mockResolvedValue({ id: "bot-1" });
+    const findThreads = vi.fn().mockResolvedValue([primary, older]);
+    const findMessage = vi
+      .fn()
+      .mockResolvedValueOnce({ blocks: [{ kind: "text", text: "Newest reply" }] })
+      .mockResolvedValueOnce(null);
+    const prisma = {
+      bot: { findFirst: findBot },
+      thread: { findMany: findThreads },
+      message: { findFirst: findMessage },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    const sessions = await repos.listSessions(actor, "bot-1");
+
+    expect(findBot).toHaveBeenCalledWith({
+      where: { id: "bot-1", spaceId: actor.spaceId, userId: actor.userId, archivedAt: null },
+      select: { id: true },
+    });
+    expect(findThreads).toHaveBeenCalledWith({
+      where: { botId: "bot-1" },
+      orderBy: SESSION_ORDER,
+    });
+    expect(sessions).toEqual([
+      {
+        id: "session-primary",
+        botId: "bot-1",
+        name: "Main",
+        isPrimary: true,
+        unread: true,
+        preview: "Newest reply",
+        createdAt: "2026-09-22T00:00:00.000Z",
+        updatedAt: "2026-09-22T00:00:00.000Z",
+      },
+      {
+        id: "session-older",
+        botId: "bot-1",
+        name: null,
+        isPrimary: false,
+        unread: false,
+        preview: "",
+        createdAt: "2026-09-21T00:00:00.000Z",
+        updatedAt: "2026-09-20T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("rejects bots outside the actor scope", async () => {
+    const prisma = { bot: { findFirst: vi.fn().mockResolvedValue(null) } };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+    await expect(repos.listSessions(actor, "foreign-bot")).rejects.toBeInstanceOf(IsolationError);
+  });
+});
+
+describe("createRepos.createSession", () => {
+  it("creates a named, non-primary session for an owned bot", async () => {
+    const created = sessionRow({ id: "session-new", name: "Deep dive" });
+    const create = vi.fn().mockResolvedValue(created);
+    const prisma = {
+      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+      thread: { create },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    const session = await repos.createSession(actor, "bot-1", { name: "Deep dive" });
+
+    expect(create).toHaveBeenCalledWith({
+      data: {
+        spaceId: actor.spaceId,
+        botId: "bot-1",
+        userId: actor.userId,
+        name: "Deep dive",
+        isPrimary: false,
+      },
+    });
+    expect(session).toEqual(
+      expect.objectContaining({ id: "session-new", name: "Deep dive", isPrimary: false }),
+    );
+  });
+
+  it("rejects foreign bots", async () => {
+    const prisma = { bot: { findFirst: vi.fn().mockResolvedValue(null) } };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+    await expect(repos.createSession(actor, "foreign-bot", { name: "X" })).rejects.toBeInstanceOf(
+      IsolationError,
+    );
+  });
+});
+
+describe("createRepos.renameSession", () => {
+  it("renames an owned session", async () => {
+    const renamed = sessionRow({ id: "session-1", name: "Renamed" });
+    const update = vi.fn().mockResolvedValue(renamed);
+    const prisma = {
+      thread: {
+        findFirst: vi.fn().mockResolvedValue(sessionRow({ id: "session-1" })),
+        update,
+      },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    const session = await repos.renameSession(actor, "session-1", "Renamed");
+
+    expect(update).toHaveBeenCalledWith({ where: { id: "session-1" }, data: { name: "Renamed" } });
+    expect(session).toEqual(expect.objectContaining({ id: "session-1", name: "Renamed" }));
+  });
+
+  it("rejects threads outside the actor scope or not owned by a bot", async () => {
+    const prisma = {
+      thread: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        update: vi.fn(),
+      },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+    await expect(repos.renameSession(actor, "foreign", "X")).rejects.toBeInstanceOf(IsolationError);
+    expect(prisma.thread.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("createRepos.deleteSession", () => {
+  function deleteRepos(rows: SessionRow[]) {
+    const remove = vi.fn().mockResolvedValue(rows[0]);
+    const update = vi.fn().mockResolvedValue({});
+    const tx = {
+      thread: {
+        findFirst: vi.fn(
+          async ({ where }: { where: { id: string } }) =>
+            rows.find((row) => row.id === where.id) ?? null,
+        ),
+        findMany: vi.fn().mockResolvedValue(rows),
+        delete: remove,
+        update,
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
+    };
+    return { repos: createRepos(prisma as unknown as PrismaClient), remove, update };
+  }
+
+  it("deletes a non-primary session", async () => {
+    const primary = sessionRow({ id: "session-primary", isPrimary: true });
+    const other = sessionRow({ id: "session-other" });
+    const { repos, remove, update } = deleteRepos([primary, other]);
+
+    await repos.deleteSession(actor, "session-other");
+
+    expect(remove).toHaveBeenCalledWith({ where: { id: "session-other" } });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to delete the bot's last remaining session", async () => {
+    const only = sessionRow({ id: "session-primary", isPrimary: true });
+    const { repos, remove } = deleteRepos([only]);
+
+    await expect(repos.deleteSession(actor, "session-primary")).rejects.toThrow(
+      /last remaining session/,
+    );
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("promotes the earliest remaining session when the primary is deleted", async () => {
+    const primary = sessionRow({
+      id: "session-primary",
+      isPrimary: true,
+      createdAt: new Date("2026-09-25T00:00:00.000Z"),
+    });
+    const older = sessionRow({
+      id: "session-older",
+      createdAt: new Date("2026-09-21T00:00:00.000Z"),
+    });
+    const newer = sessionRow({
+      id: "session-newer",
+      createdAt: new Date("2026-09-26T00:00:00.000Z"),
+    });
+    const { repos, remove, update } = deleteRepos([primary, older, newer]);
+
+    await repos.deleteSession(actor, "session-primary");
+
+    expect(remove).toHaveBeenCalledWith({ where: { id: "session-primary" } });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "session-older" },
+      data: { isPrimary: true },
+    });
+  });
+});
+
+describe("bot session pinning in bot DTOs", () => {
+  it("maps threadId and unread from the primary session, not the oldest session", async () => {
+    const primary = {
+      id: "session-primary",
+      unread: true,
+      isPrimary: true,
+      messages: [{ blocks: [{ kind: "text", text: "Primary preview" }] }],
+    };
+    const older = { id: "session-older", unread: false, isPrimary: false, messages: [] };
+    const prisma = {
+      bot: {
+        findMany: vi.fn(async () => [{ ...baseBot, threads: [primary, older] }]),
+      },
+      run: { findMany: vi.fn(async () => []) },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    const bots = await repos.listBots(actor);
+
+    expect(bots[0]).toEqual(
+      expect.objectContaining({
+        threadId: "session-primary",
+        unread: true,
+        preview: "Primary preview",
+      }),
+    );
   });
 });

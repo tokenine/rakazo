@@ -16,6 +16,14 @@ export class BotSectionNameConflictError extends Error {
   }
 }
 
+/** A bot's last remaining session cannot be deleted (the equivalent of today's "clear"). */
+export class LastSessionError extends Error {
+  constructor(message = "Cannot delete the last remaining session") {
+    super(message);
+    this.name = "LastSessionError";
+  }
+}
+
 export async function requireMembership(
   prisma: PrismaClient,
   userId: string,
