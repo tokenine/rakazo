@@ -40,8 +40,8 @@ features:
     maker: "claude-maker"
     checker: "claude-checker"
     matrix: "specs/003-agent-marketplace/spec.md"
-    purpose_status: "not_started"
-    purpose_map: null
+    purpose_status: "confirmed"
+    purpose_map: ".super-speckit/purpose/003-agent-marketplace/purpose-map.md"
     grill_status: "not_started"
     grill_artifact: null
     route: "unclassified"

@@ -6,9 +6,9 @@
   "checker": "claude-checker",
   "matrix": "specs/003-agent-marketplace/spec.md",
   "purpose": {
-    "status": "not_started",
-    "map": null,
-    "decision": null
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/003-agent-marketplace/purpose-map.md",
+    "decision": ".super-speckit/purpose/003-agent-marketplace/decision.json"
   },
   "grill": {
     "status": "not_started",
