@@ -4,15 +4,15 @@
 # content_sha256 is the first 16 hex chars of sha256(git show <observed_at_sha>:<path>).
 # observed_at_sha pins the repository state these claims were extracted from.
 schema: atlas-graph-packets/1
-observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
-observed_at: "2026-09-28T02:04:42+07:00"
+observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+observed_at: "2026-09-28T11:19:30+07:00"
 nodes:
   - id: project:rakazo
     kind: project
     title: Rakazo
     source:
       path: AGENTS.md
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 1895507682b49ea2
     claims:
       - relation: defines
@@ -36,7 +36,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:agents-md]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 8405a99f
       valid_to: null
 
@@ -45,7 +45,7 @@ nodes:
     title: Web app (apps/web)
     source:
       path: apps/web/package.json
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 52ab13f27c20b5e9
     claims:
       - relation: consumes
@@ -53,7 +53,7 @@ nodes:
         confidence: inferred
         evidence_ids: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 47905e28
       valid_to: null
 
@@ -62,7 +62,7 @@ nodes:
     title: Desktop shell (apps/desktop, Electron hosts web UI)
     source:
       path: apps/desktop/package.json
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 0bcf69ce4de6d78c
     claims:
       - relation: hosts
@@ -70,7 +70,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:agents-md]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: d5a0c399
       valid_to: null
 
@@ -79,11 +79,11 @@ nodes:
     title: Mobile app (apps/mobile, Expo Router native-first)
     source:
       path: apps/mobile/package.json
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: d4d657204fd1d996
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: a6a5b5e4
       valid_to: null
 
@@ -92,11 +92,11 @@ nodes:
     title: API server (apps/api, tsx src/index.ts)
     source:
       path: apps/api/package.json
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 8c68e077774239e3
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 89991ece
       valid_to: null
 
@@ -105,11 +105,11 @@ nodes:
     title: Worker (apps/worker, background runs)
     source:
       path: apps/worker/package.json
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 9916d8974234a7c3
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 89991ece
       valid_to: null
 
@@ -118,11 +118,11 @@ nodes:
     title: Marketing site (apps/www)
     source:
       path: apps/www/package.json
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: fbf028000a7b481e
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 47905e28
       valid_to: null
 
@@ -131,7 +131,7 @@ nodes:
     title: Data and events (packages/db)
     source:
       path: packages/db/prisma/schema.prisma
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 2a65419f9eabbb57
     claims:
       - relation: defines
@@ -143,7 +143,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:spec-001, evidence:events-ts]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 15a32508
       valid_to: null
 
@@ -152,7 +152,7 @@ nodes:
     title: Provider adapters (packages/adapters)
     source:
       path: packages/adapters/src/computer-lifecycle.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 474da6381ad567b4
     claims:
       - relation: owns
@@ -164,7 +164,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:spec-001, evidence:executor-ts]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 11c0283f
       valid_to: null
 
@@ -173,7 +173,7 @@ nodes:
     title: "Thread.botId @unique (schema.prisma:473) — one thread per bot"
     source:
       path: packages/db/prisma/schema.prisma
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 2a65419f9eabbb57
     claims:
       - relation: superseded_by
@@ -181,7 +181,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:spec-001]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 15a32508
       valid_to: null
 
@@ -190,7 +190,7 @@ nodes:
     title: ComputerExecutionLease unique (computerId, botId) — per-bot run serialization
     source:
       path: packages/adapters/src/computer-lifecycle.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 474da6381ad567b4
     claims:
       - relation: protects
@@ -198,7 +198,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:spec-001]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 11c0283f
       valid_to: null
 
@@ -207,11 +207,11 @@ nodes:
     title: Run leases keyed on run id only (executor.ts:1103-1124) — already thread-scoped context
     source:
       path: packages/adapters/src/executor.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 138fca9abf171805
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 68ca7735
       valid_to: null
 
@@ -220,11 +220,11 @@ nodes:
     title: sendUserMessage busy guard filters (threadId, botId) (events.ts ~378-388)
     source:
       path: packages/db/src/events.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: f72646b623dab977
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 08bcbc78
       valid_to: null
 
@@ -233,8 +233,8 @@ nodes:
     title: Feature 001 — multi-session agents
     source:
       path: specs/001-multi-session-agents/spec.md
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
-      content_sha256: b5f05fd1be8d9628
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 1adc8dabd6852e1e
     claims:
       - relation: relaxes
         target: contract:thread-botid-unique
@@ -253,7 +253,7 @@ nodes:
         confidence: proven
         evidence_ids: [evidence:spec-001]
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 4f344cd8
       valid_to: null
 
@@ -262,11 +262,11 @@ nodes:
     title: "A1: relax Thread.botId @unique to non-unique index + title + primary marker (additive migration)"
     source:
       path: specs/001-multi-session-agents/spec.md
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
-      content_sha256: b5f05fd1be8d9628
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 1adc8dabd6852e1e
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 4f344cd8
       valid_to: null
 
@@ -275,11 +275,11 @@ nodes:
     title: Telegram inbound routing must land on the bot's primary session (R5/V4 regression)
     source:
       path: specs/001-multi-session-agents/spec.md
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
-      content_sha256: b5f05fd1be8d9628
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 1adc8dabd6852e1e
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 4f344cd8
       valid_to: null
 
@@ -288,11 +288,11 @@ nodes:
     title: Repository AGENTS.md
     source:
       path: AGENTS.md
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 1895507682b49ea2
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 8405a99f
       valid_to: null
 
@@ -301,11 +301,11 @@ nodes:
     title: "specs/001-multi-session-agents/spec.md (incl. Q1 research, 2026-09-28)"
     source:
       path: specs/001-multi-session-agents/spec.md
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
-      content_sha256: b5f05fd1be8d9628
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 1adc8dabd6852e1e
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 4f344cd8
       valid_to: null
 
@@ -314,11 +314,11 @@ nodes:
     title: "packages/db/prisma/schema.prisma:473 (Thread.botId @unique), :475/:477 (group/external uniques)"
     source:
       path: packages/db/prisma/schema.prisma
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 2a65419f9eabbb57
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 15a32508
       valid_to: null
 
@@ -327,11 +327,11 @@ nodes:
     title: "packages/db/src/events.ts ~378-388 sendUserMessage busy guard"
     source:
       path: packages/db/src/events.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: f72646b623dab977
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 08bcbc78
       valid_to: null
 
@@ -340,11 +340,11 @@ nodes:
     title: "packages/adapters/src/executor.ts:1103-1124 run leases"
     source:
       path: packages/adapters/src/executor.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 138fca9abf171805
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 68ca7735
       valid_to: null
 
@@ -353,10 +353,70 @@ nodes:
     title: "packages/adapters/src/computer-lifecycle.ts:439-505 ComputerExecutionLease + ComputerBusyError backoff"
     source:
       path: packages/adapters/src/computer-lifecycle.ts
-      git_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       content_sha256: 474da6381ad567b4
     claims: []
     temporal:
-      observed_at_sha: 8b259cd8a6ee2095ed10dbfc7af4dc62d4b7e80e
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
       valid_from: 11c0283f
+      valid_to: null
+
+  - id: component:api-thread-routing
+    kind: component
+    title: Thread resolution (apps/api thread-target)
+    source:
+      path: apps/api/src/thread-target.ts
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 75ba80096910f8d1
+    claims:
+      - relation: owns
+        target: contract:session-addressing
+        confidence: proven
+        evidence_ids: [evidence:grill-001]
+    temporal:
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      valid_from: 4945bc06
+      valid_to: null
+
+  - id: contract:session-addressing
+    kind: contract
+    title: "resolveThreadTarget maps {botId|groupId} to one thread for all 12 threads/* RPCs (thread-target.ts:268-303)"
+    source:
+      path: apps/api/src/thread-target.ts
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 75ba80096910f8d1
+    claims: []
+    temporal:
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      valid_from: 4945bc06
+      valid_to: null
+
+  - id: risk:legacy-findfirst
+    kind: risk
+    title: "7 production thread.findFirst({botId}) lookups with no orderBy become nondeterministic once Thread.botId uniqueness drops (messaging-inbound.ts:124,690,740; messaging.ts:60,132,157-158; messaging-delivery.ts:284)"
+    source:
+      path: apps/api/src/messaging-inbound.ts
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 3b6b7af6d7199c6c
+    claims:
+      - relation: mitigated_by
+        target: feature:001-multi-session-agents
+        confidence: proven
+        evidence_ids: [evidence:grill-001]
+    temporal:
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      valid_from: 68ca7735
+      valid_to: null
+
+  - id: evidence:grill-001
+    kind: evidence
+    title: ".super-speckit/grills/001-multi-session-agents/spec-grill.md (16 resolutions, 0 purpose conflicts)"
+    source:
+      path: .super-speckit/grills/001-multi-session-agents/spec-grill.md
+      git_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      content_sha256: 663ca3078e65dd7e
+    claims: []
+    temporal:
+      observed_at_sha: ef17f273c604a000a85f8dd6339c0d6d88e6542f
+      valid_from: ef17f273
       valid_to: null
