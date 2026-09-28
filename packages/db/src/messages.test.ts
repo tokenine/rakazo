@@ -41,7 +41,7 @@ describe("createThreadMessageInTransaction", () => {
       role: "user",
       blocks: [{ kind: "text", text: "hello" }],
     });
-    const data = tx.thread.update.mock.calls[0][0].data;
+    const data = tx.thread.update.mock.calls[0]![0].data;
     expect(data.lastMessageAt).toBeInstanceOf(Date);
   });
 });

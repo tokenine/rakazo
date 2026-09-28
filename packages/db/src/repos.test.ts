@@ -502,6 +502,90 @@ describe("createRepos.listSessions", () => {
     const repos = createRepos(prisma as unknown as PrismaClient);
     await expect(repos.listSessions(actor, "foreign-bot")).rejects.toBeInstanceOf(IsolationError);
   });
+
+  it("keeps each session's history independent (V2)", async () => {
+    const primary = sessionRow({ id: "session-primary", isPrimary: true });
+    const side = sessionRow({ id: "session-side", createdAt: new Date("2026-09-21T00:00:00.000Z") });
+    const prisma = {
+      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+      thread: { findMany: vi.fn().mockResolvedValue([primary, side]) },
+      message: {
+        findFirst: vi
+          .fn()
+          // Each session's preview comes only from its own newest message.
+          .mockResolvedValueOnce({ blocks: [{ kind: "text", text: "Primary thread reply" }] })
+          .mockResolvedValueOnce({ blocks: [{ kind: "text", text: "Side thread reply" }] }),
+      },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    const sessions = await repos.listSessions(actor, "bot-1");
+
+    expect(prisma.message.findFirst).toHaveBeenCalledTimes(2);
+    expect(prisma.message.findFirst).toHaveBeenNthCalledWith(1, {
+      where: { threadId: "session-primary" },
+      orderBy: { seq: "desc" },
+      select: { blocks: true },
+    });
+    expect(prisma.message.findFirst).toHaveBeenNthCalledWith(2, {
+      where: { threadId: "session-side" },
+      orderBy: { seq: "desc" },
+      select: { blocks: true },
+    });
+    expect(sessions.map((session) => session.preview)).toEqual([
+      "Primary thread reply",
+      "Side thread reply",
+    ]);
+  });
+
+  it("orders the primary first, then remaining sessions by most recent activity", async () => {
+    const primary = sessionRow({
+      id: "session-primary",
+      isPrimary: true,
+      createdAt: new Date("2026-09-22T00:00:00.000Z"),
+      lastMessageAt: new Date("2026-09-25T00:00:00.000Z"),
+    });
+    // Older createdAt but a newer message than "stale": activity wins over age.
+    const fresh = sessionRow({
+      id: "session-fresh",
+      createdAt: new Date("2026-09-21T00:00:00.000Z"),
+      lastMessageAt: new Date("2026-09-27T00:00:00.000Z"),
+    });
+    const stale = sessionRow({
+      id: "session-stale",
+      createdAt: new Date("2026-09-23T00:00:00.000Z"),
+      lastMessageAt: new Date("2026-09-24T00:00:00.000Z"),
+    });
+    const quiet = sessionRow({
+      id: "session-quiet",
+      createdAt: new Date("2026-09-19T00:00:00.000Z"),
+      lastMessageAt: null,
+    });
+    const prisma = {
+      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+      // The fake returns rows already in Prisma's SESSION_LIST_ORDER.
+      thread: { findMany: vi.fn().mockResolvedValue([primary, fresh, stale, quiet]) },
+      message: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    const sessions = await repos.listSessions(actor, "bot-1");
+
+    expect(prisma.thread.findMany).toHaveBeenCalledWith({
+      where: { botId: "bot-1" },
+      orderBy: [
+        { isPrimary: "desc" },
+        { lastMessageAt: { sort: "desc", nulls: "last" } },
+        { createdAt: "desc" },
+      ],
+    });
+    expect(sessions.map((session) => session.id)).toEqual([
+      "session-primary",
+      "session-fresh",
+      "session-stale",
+      "session-quiet",
+    ]);
+  });
 });
 
 describe("createRepos.createSession", () => {
@@ -528,6 +612,24 @@ describe("createRepos.createSession", () => {
     expect(session).toEqual(
       expect.objectContaining({ id: "session-new", name: "Deep dive", isPrimary: false }),
     );
+  });
+
+  it("never creates a second primary for the same bot (V11 partial-index invariant)", async () => {
+    const create = vi.fn().mockImplementation(() => Promise.resolve(sessionRow({ id: "session-x" })));
+    const prisma = {
+      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+      thread: { create },
+    };
+    const repos = createRepos(prisma as unknown as PrismaClient);
+
+    await repos.createSession(actor, "bot-1", { name: "One" });
+    await repos.createSession(actor, "bot-1", { name: "Two" });
+
+    // Every session the repos layer creates is non-primary, so the one-primary-per-bot
+    // partial unique index can never be violated through this seam.
+    for (const call of create.mock.calls) {
+      expect(call[0].data.isPrimary).toBe(false);
+    }
   });
 
   it("rejects foreign bots", async () => {
