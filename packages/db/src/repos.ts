@@ -13,19 +13,15 @@ import { type ComputerMode, ensureComputerRecord, parseComputerMode } from "./co
 import { createThreadMessageInTransaction } from "./messages.js";
 import { BotSectionNameConflictError, IsolationError, LastSessionError } from "./scope.js";
 import { lockSpaceForContentCreation } from "./spaces.js";
-import { activeRunSelection, previewFromBlocks } from "./thread-listing.js";
+import {
+  activeRunSelection,
+  PRIMARY_SESSION_ORDER,
+  SESSION_LIST_ORDER,
+  previewFromBlocks,
+} from "./thread-listing.js";
 
 /** Newest messages loaded for sidebar preview; enough to skip a short peer-run tail. */
 const SIDEBAR_PREVIEW_MESSAGE_WINDOW = 16;
-
-/**
- * "The bot's thread" means its primary session, falling back to the earliest:
- * every botId-keyed caller (DTOs, messaging, routines) resolves through this order.
- */
-const SESSION_ORDER: Prisma.ThreadOrderByWithRelationInput[] = [
-  { isPrimary: "desc" },
-  { createdAt: "asc" },
-];
 
 interface SessionRow {
   id: string;
@@ -34,7 +30,7 @@ interface SessionRow {
   isPrimary: boolean;
   unread: boolean;
   createdAt: Date;
-  updatedAt: Date;
+  lastMessageAt: Date | null;
 }
 
 function mapSession(session: SessionRow, preview = ""): BotSession {
@@ -46,7 +42,7 @@ function mapSession(session: SessionRow, preview = ""): BotSession {
     unread: session.unread,
     preview,
     createdAt: session.createdAt.toISOString(),
-    updatedAt: session.updatedAt.toISOString(),
+    lastMessageAt: session.lastMessageAt?.toISOString() ?? null,
   };
 }
 
@@ -96,7 +92,7 @@ function mapBot(
   preview = "",
   status = "idle",
 ): Bot {
-  // Session lists arrive primary-first (SESSION_ORDER); [0] is "primary, else earliest".
+  // Session lists arrive primary-first (PRIMARY_SESSION_ORDER); [0] is "primary, else earliest".
   const primary = bot.threads[0];
   if (!primary) {
     throw new IsolationError("Bot is missing its thread");
@@ -176,7 +172,7 @@ export function createRepos(prisma: PrismaClient) {
         updatedAt: true,
         parentBotId: true,
         threads: {
-          orderBy: SESSION_ORDER,
+          orderBy: PRIMARY_SESSION_ORDER,
           select: {
             unread: true,
             messages: {
@@ -330,7 +326,7 @@ export function createRepos(prisma: PrismaClient) {
         },
         include: {
           threads: {
-            orderBy: SESSION_ORDER,
+            orderBy: PRIMARY_SESSION_ORDER,
             include: {
               messages: { orderBy: { seq: "desc" }, take: SIDEBAR_PREVIEW_MESSAGE_WINDOW },
             },
@@ -410,7 +406,7 @@ export function createRepos(prisma: PrismaClient) {
           userId: actor.userId,
           ...(options.includeArchived ? {} : { archivedAt: null }),
         },
-        include: { threads: { orderBy: SESSION_ORDER }, computer: true },
+        include: { threads: { orderBy: PRIMARY_SESSION_ORDER }, computer: true },
       });
       if (!bot) throw new IsolationError();
       // `thread` is the bot's primary session; every botId-keyed consumer pins here.
@@ -551,7 +547,7 @@ export function createRepos(prisma: PrismaClient) {
           });
           return tx.bot.findFirstOrThrow({
             where: { id: created.id },
-            include: { threads: { orderBy: SESSION_ORDER }, computer: true },
+            include: { threads: { orderBy: PRIMARY_SESSION_ORDER }, computer: true },
           });
         });
 
@@ -564,7 +560,7 @@ export function createRepos(prisma: PrismaClient) {
               spawnKey: input.spawnKey,
             },
           },
-          include: { threads: { orderBy: SESSION_ORDER }, computer: true },
+          include: { threads: { orderBy: PRIMARY_SESSION_ORDER }, computer: true },
         });
       };
 
@@ -634,7 +630,7 @@ export function createRepos(prisma: PrismaClient) {
       const updated = await prisma.bot.update({
         where: { id: botId },
         data: { computerId: computer.id },
-        include: { threads: { orderBy: SESSION_ORDER }, computer: true },
+        include: { threads: { orderBy: PRIMARY_SESSION_ORDER }, computer: true },
       });
       return mapBot(updated);
     },
@@ -647,7 +643,7 @@ export function createRepos(prisma: PrismaClient) {
       if (!bot) throw new IsolationError();
       const sessions = await prisma.thread.findMany({
         where: { botId },
-        orderBy: SESSION_ORDER,
+        orderBy: SESSION_LIST_ORDER,
       });
       return Promise.all(
         sessions.map(async (session) => {

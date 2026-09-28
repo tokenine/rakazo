@@ -17,6 +17,7 @@ import { getLogger } from "@rakazo/logging";
 import { cancelRunsInTransaction } from "./cancel-runs.js";
 import type { Prisma, PrismaClient } from "./client.js";
 import { expireComputerExecutionLeases } from "./computers.js";
+import { PRIMARY_SESSION_ORDER } from "./thread-listing.js";
 import {
   assertRunCanWriteHistory,
   createThreadMessageInTransaction,
@@ -962,12 +963,13 @@ export async function finalizeComputerControlRelease(
 
     const bot = await tx.bot.findFirst({
       where: { id: input.botId, spaceId: input.spaceId },
-      select: { thread: { select: { id: true } } },
+      select: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } } },
     });
-    if (!bot?.thread) return { threadId: null, seq: null, runId };
+    const primaryThreadId = bot?.threads[0]?.id ?? null;
+    if (!primaryThreadId) return { threadId: null, seq: null, runId };
     const event = await appendEventInTransaction(tx, {
       spaceId: input.spaceId,
-      threadId: bot.thread.id,
+      threadId: primaryThreadId,
       botId: input.botId,
       runId: runId ?? undefined,
       type: "computer.takeover.released",

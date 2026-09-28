@@ -85,6 +85,37 @@ describe("provisionMessagingIdentity", () => {
       ),
     ).rejects.toThrow(/thread/i);
   });
+
+  it("pins the identity thread lookup to the primary session, then earliest", async () => {
+    const existing = {
+      id: "mi-1",
+      provider: "sendblue",
+      address: "+15551234567",
+      dmThreadId: null,
+      userId: "user-1",
+      spaceId: "ws-1",
+      botId: "bot-1",
+      verifiedAt: null,
+      lastInboundAt: null,
+      outboundSinceInbound: 0,
+      createdAt: new Date("2026-08-28T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-28T00:00:00.000Z"),
+    };
+    const findThread = vi.fn(async () => ({ id: "thread-1" }));
+    const prisma = {
+      messagingIdentity: { findUnique: vi.fn(async () => existing) },
+      thread: { findFirst: findThread },
+    };
+    await provisionMessagingIdentity(
+      prisma as unknown as PrismaClient,
+      { provider: "sendblue", address: "+15551234567" },
+      { signupsEnabled: undefined, signupAllowlist: undefined },
+    );
+    expect(findThread).toHaveBeenCalledWith({
+      where: { botId: "bot-1" },
+      orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+    });
+  });
 });
 
 describe("provisionMessagingIdentity create race", () => {

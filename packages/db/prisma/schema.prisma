@@ -479,6 +479,8 @@ model Thread {
   /// The bot's default session: legacy botId-keyed callers (messaging, routines)
   /// pin here, and the bot DTO's threadId points at it.
   isPrimary                   Boolean    @default(false)
+  /// Bumped on each inbound/outbound message; session lists order by recency.
+  lastMessageAt               DateTime?
   groupId                     String?    @unique
   group                       ChatGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   externalConversationId      String?    @unique

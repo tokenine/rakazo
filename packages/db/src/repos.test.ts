@@ -403,6 +403,11 @@ describe("createRepos.reorderBots", () => {
 });
 
 const SESSION_ORDER = [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }];
+const SESSION_LIST_ORDER = [
+  { isPrimary: "desc" as const },
+  { lastMessageAt: { sort: "desc" as const, nulls: "last" as const } },
+  { createdAt: "desc" as const },
+];
 
 interface SessionRow {
   id: string;
@@ -413,7 +418,7 @@ interface SessionRow {
   isPrimary: boolean;
   unread: boolean;
   createdAt: Date;
-  updatedAt: Date;
+  lastMessageAt: Date | null;
 }
 
 function sessionRow(overrides: Partial<SessionRow> = {}): SessionRow {
@@ -426,7 +431,7 @@ function sessionRow(overrides: Partial<SessionRow> = {}): SessionRow {
     isPrimary: false,
     unread: false,
     createdAt: new Date("2026-09-20T00:00:00.000Z"),
-    updatedAt: new Date("2026-09-20T00:00:00.000Z"),
+    lastMessageAt: null,
     ...overrides,
   };
 }
@@ -439,7 +444,7 @@ describe("createRepos.listSessions", () => {
       unread: true,
       name: "Main",
       createdAt: new Date("2026-09-22T00:00:00.000Z"),
-      updatedAt: new Date("2026-09-22T00:00:00.000Z"),
+      lastMessageAt: new Date("2026-09-22T00:00:00.000Z"),
     });
     const older = sessionRow({
       id: "session-older",
@@ -466,7 +471,7 @@ describe("createRepos.listSessions", () => {
     });
     expect(findThreads).toHaveBeenCalledWith({
       where: { botId: "bot-1" },
-      orderBy: SESSION_ORDER,
+      orderBy: SESSION_LIST_ORDER,
     });
     expect(sessions).toEqual([
       {
@@ -477,7 +482,7 @@ describe("createRepos.listSessions", () => {
         unread: true,
         preview: "Newest reply",
         createdAt: "2026-09-22T00:00:00.000Z",
-        updatedAt: "2026-09-22T00:00:00.000Z",
+        lastMessageAt: "2026-09-22T00:00:00.000Z",
       },
       {
         id: "session-older",
@@ -487,7 +492,7 @@ describe("createRepos.listSessions", () => {
         unread: false,
         preview: "",
         createdAt: "2026-09-21T00:00:00.000Z",
-        updatedAt: "2026-09-20T00:00:00.000Z",
+        lastMessageAt: null,
       },
     ]);
   });

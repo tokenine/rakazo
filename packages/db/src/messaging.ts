@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomInt } from "node:crypto";
 import { bootstrapUserSpace, type SignupPolicyEnv } from "./bootstrap-user.js";
 import type { PrismaClient } from "./client.js";
 import { createRepos } from "./repos.js";
+import { PRIMARY_SESSION_ORDER } from "./thread-listing.js";
 
 export interface MessagingIdentityRequest {
   /** Messaging platform hosting the conversation (sendblue, slack, …). */
@@ -57,7 +58,7 @@ export async function provisionMessagingIdentity(
   const where = { provider_address: { provider, address } } as const;
   const existing = await prisma.messagingIdentity.findUnique({ where });
   if (existing) {
-    const thread = await prisma.thread.findFirst({ where: { botId: existing.botId } });
+    const thread = await prisma.thread.findFirst({ where: { botId: existing.botId }, orderBy: PRIMARY_SESSION_ORDER });
     if (!thread) throw new Error(`messaging identity ${existing.id} has no thread`);
     return {
       provider,
@@ -129,7 +130,7 @@ export async function provisionMessagingIdentity(
     botId = bot.id;
   }
 
-  const thread = await prisma.thread.findFirst({ where: { botId } });
+  const thread = await prisma.thread.findFirst({ where: { botId }, orderBy: PRIMARY_SESSION_ORDER });
   if (!thread) throw new Error(`bot ${botId} has no thread after createBot`);
 
   try {
@@ -155,7 +156,7 @@ export async function provisionMessagingIdentity(
     const winnerThread =
       winner.botId === botId
         ? thread
-        : await prisma.thread.findFirst({ where: { botId: winner.botId } });
+        : await prisma.thread.findFirst({ where: { botId: winner.botId }, orderBy: PRIMARY_SESSION_ORDER });
     if (!winnerThread) throw new Error(`bot ${winner.botId} has no thread`);
     return {
       provider,

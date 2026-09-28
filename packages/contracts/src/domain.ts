@@ -85,7 +85,8 @@ export const BotSessionSchema = z.object({
   unread: z.boolean(),
   preview: z.string(),
   createdAt: z.string(),
-  updatedAt: z.string(),
+  /** Null for sessions that never received a message; lists order this newest-first after primary. */
+  lastMessageAt: z.string().nullable(),
 });
 export type BotSession = z.infer<typeof BotSessionSchema>;
 

@@ -6,6 +6,7 @@ CREATE INDEX "threads_botId_idx" ON "threads"("botId");
 
 ALTER TABLE "threads" ADD COLUMN "name" TEXT;
 ALTER TABLE "threads" ADD COLUMN "isPrimary" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "threads" ADD COLUMN "lastMessageAt" TIMESTAMP(3);
 
 -- Every existing bot thread is the bot's only session today, so it is primary.
 UPDATE "threads" SET "isPrimary" = true WHERE "botId" IS NOT NULL;
