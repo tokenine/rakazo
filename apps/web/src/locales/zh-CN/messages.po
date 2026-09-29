@@ -328,6 +328,10 @@ msgstr "Agent 电脑"
 msgid "Agent connections"
 msgstr "Agent 连接"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Agent wallets"
+msgstr ""
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Agents:"
 msgstr "Agent："
@@ -378,10 +382,6 @@ msgstr "已允许一次"
 #: src/pages/SettingsOverlay.tsx
 msgid "Allowlist"
 msgstr ""
-
-#: src/pages/Auth.tsx
-msgid "Already have an account?"
-msgstr "已有账户？"
 
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Always act"
@@ -502,6 +502,10 @@ msgstr "购买前询问"
 msgid "Ask before sending external email"
 msgstr "发送外部邮件前询问"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Ask the bot to run thaifi login to pair its wallet, then approve it at wallet.thaifi.com."
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
 msgstr ""
@@ -583,10 +587,6 @@ msgstr ""
 #: src/pages/Auth.tsx
 msgid "Back to home"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Back to sign in"
-#~ msgstr "返回登录"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Base URL"
@@ -686,6 +686,7 @@ msgstr "无法连接服务器。"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/ComputerUpdateProgress.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -723,12 +724,8 @@ msgid "Card view"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Change password"
-#~ msgstr "修改密码"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Changing…"
-#~ msgstr "正在修改…"
+msgid "Change"
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Channels"
@@ -783,10 +780,6 @@ msgstr "选择机器人形状和颜色，或上传图片"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Choose a bot…"
 msgstr "选择 Bot…"
-
-#: src/pages/Auth.tsx
-#~ msgid "Choose a new password"
-#~ msgstr "设置新密码"
 
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Choose file"
@@ -942,6 +935,10 @@ msgstr "电脑已休眠"
 msgid "Computer is asleep. Open it to wake."
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Computer is off"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Computer is stopped"
 msgstr "电脑已停止"
@@ -970,11 +967,6 @@ msgstr "已配置的服务器"
 #: src/pages/McpServersOverlay.tsx
 msgid "Confirm delete"
 msgstr "确认删除"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "Confirm password"
-#~ msgstr "确认密码"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
@@ -1110,10 +1102,6 @@ msgstr "无法批准此服务器"
 #: src/pages/shell/message-cards.tsx
 msgid "Could not authorize this app"
 msgstr "无法授权此应用"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Could not change password"
-#~ msgstr "无法修改密码"
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not change the default model"
@@ -1376,10 +1364,6 @@ msgstr "无法重命名分组"
 msgid "Could not render chart"
 msgstr "无法渲染图表"
 
-#: src/pages/Auth.tsx
-#~ msgid "Could not reset password"
-#~ msgstr "无法重置密码"
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not revoke connection"
 msgstr "无法撤销连接"
@@ -1441,10 +1425,6 @@ msgstr "无法保存此选择"
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not search catalog"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Could not send reset email"
-#~ msgstr "无法发送重置邮件"
 
 #: src/lib/call-session.ts
 msgid "Could not send that"
@@ -1510,8 +1490,16 @@ msgstr ""
 msgid "Couldn't load messaging settings"
 msgstr "无法加载消息设置"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't load wallet information"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Couldn't register the webhook. Check the server logs."
+msgstr ""
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't save the wallet address"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -1526,6 +1514,10 @@ msgstr "无法更新消息设置"
 msgid "Couldn't update the built-in browser setting"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't update your name"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
@@ -1536,6 +1528,10 @@ msgstr "创建"
 msgid "Create & Start"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Create a bot and start its computer to give it a wallet."
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Create a bot with @BotFather (send /newbot), paste its token here, and chat with your Ai7 assistant from your own Telegram line."
 msgstr ""
@@ -1544,10 +1540,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Create a section and move {0} into it."
 msgstr "创建分组并把 {0} 移入。"
-
-#: src/pages/Auth.tsx
-#~ msgid "Create account"
-#~ msgstr "创建账户"
 
 #: src/pages/GroupPanel.tsx
 msgid "Create group"
@@ -1574,14 +1566,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Create space"
 msgstr "创建工作区"
-
-#: src/pages/Auth.tsx
-msgid "Create your {BRAND_NAME}"
-msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Create your Ai7"
-#~ msgstr "创建你的 Ai7"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -1614,10 +1598,6 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx
 msgid "Cron expression"
 msgstr "Cron 表达式"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Current password"
-#~ msgstr "当前密码"
 
 #: src/pages/shell/dialogs.tsx
 msgid "Customer support"
@@ -1782,10 +1762,6 @@ msgstr "Docker"
 msgid "Docker limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools."
 msgstr "Docker 限制对你电脑的访问，以提高安全性。使用{hostLabel}时，Bot 可以处理你的本地文件并使用本地工具。"
 
-#: src/pages/Auth.tsx
-msgid "Don’t have an account?"
-msgstr "还没有账户？"
-
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
@@ -1835,9 +1811,17 @@ msgstr "复制"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "例如 Hivenet Agent、Presales、工时表机器人"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Each bot keeps its own ThaiFi wallet on its computer."
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Earlier message"
 msgstr "更早的消息"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Edit"
+msgstr ""
 
 #: src/components/AskCard.tsx
 msgid "Edit first"
@@ -2016,10 +2000,6 @@ msgstr "正在完成 MCP 连接…"
 msgid "Flag unexpected actions"
 msgstr "标记异常操作"
 
-#: src/pages/Auth.tsx
-#~ msgid "Forgot password?"
-#~ msgstr "忘记密码？"
-
 #: src/pages/shell/client-browser-panel.tsx
 msgid "Forward"
 msgstr ""
@@ -2043,6 +2023,10 @@ msgstr ""
 #: src/pages/shell/bot-panel.tsx
 msgid "Get notified when this Bot finishes or needs input"
 msgstr "在此机器人完成或需要输入时收到通知"
+
+#: src/pages/Welcome.tsx
+msgid "Get started"
+msgstr ""
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Getting ready"
@@ -2105,10 +2089,6 @@ msgstr "你好，这是我朗读回复时的声音。"
 #: src/pages/Shell.tsx
 msgid "Hide bots"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Hide password"
-#~ msgstr "隐藏密码"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Hide transcript"
@@ -2350,6 +2330,7 @@ msgid "Loading voice providers…"
 msgstr "正在加载语音提供方…"
 
 #: src/App.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/IntegrationSetup.tsx
 #: src/pages/Onboarding.tsx
@@ -2608,7 +2589,6 @@ msgid "Mute"
 msgstr "静音"
 
 #: src/components/teach/SkillDraftCard.tsx
-#: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -2660,11 +2640,6 @@ msgstr "新建群组"
 #: src/pages/ScratchpadSection.tsx
 msgid "New open-work item"
 msgstr "新的待办"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "New password"
-#~ msgstr "新密码"
 
 #: src/pages/BotContextMenu.tsx
 #: src/pages/shell/dialogs.tsx
@@ -2788,6 +2763,10 @@ msgstr ""
 msgid "No trigger"
 msgstr "无触发器"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "No wallet yet?"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
 msgstr ""
@@ -2807,6 +2786,10 @@ msgstr "不在插件目录中"
 #: src/pages/shell/message-cards.tsx
 msgid "Not now"
 msgstr "暂不"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Not paired"
+msgstr ""
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Nothing is still running"
@@ -2893,6 +2876,14 @@ msgstr "打开 Shell"
 msgid "Open sign-ups"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Open ThaiFi Wallet"
+msgstr ""
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Open wallet.thaifi.com"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
 msgstr "待办"
@@ -2965,20 +2956,6 @@ msgstr "搁置"
 msgid "Password"
 msgstr "密码"
 
-#: src/pages/Auth.tsx
-#~ msgid "Password recovery is not configured for this server"
-#~ msgstr "此服务器未配置密码恢复"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "Password updated"
-#~ msgstr "密码已更新"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "Passwords do not match"
-#~ msgstr "两次密码不一致"
-
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
 msgstr "粘贴替换密钥"
@@ -2998,6 +2975,10 @@ msgstr "已暂停"
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Personal credential"
 msgstr "个人凭据"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Personal wallet"
+msgstr ""
 
 #: src/pages/shell/expert-create.tsx
 msgid "Pick an Expert — each ships with its own persona, connectors and skills."
@@ -3155,6 +3136,10 @@ msgstr ""
 msgid "Recreating the computer"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Refresh"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"
 msgstr ""
@@ -3184,6 +3169,7 @@ msgid "Reload"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/ScratchpadSection.tsx
 msgid "Remove"
@@ -3288,14 +3274,6 @@ msgstr "重置电脑"
 msgid "Reset computer?"
 msgstr "重置电脑？"
 
-#: src/pages/Auth.tsx
-#~ msgid "Reset password"
-#~ msgstr "重置密码"
-
-#: src/pages/Auth.tsx
-#~ msgid "Reset your password"
-#~ msgstr "重置你的密码"
-
 #: src/components/ComputerMaintenanceActions.tsx
 msgid "Resetting…"
 msgstr "正在重置…"
@@ -3397,6 +3375,7 @@ msgstr ""
 
 #: src/components/AskCard.tsx
 #: src/components/teach/SkillDraftCard.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/KnowledgeSection.tsx
@@ -3515,10 +3494,6 @@ msgstr "发送回答"
 msgid "Send it"
 msgstr "发送"
 
-#: src/pages/Auth.tsx
-#~ msgid "Send reset link"
-#~ msgstr "发送重置链接"
-
 #: src/components/AskCard.tsx
 msgid "Sending…"
 msgstr "正在发送…"
@@ -3605,10 +3580,6 @@ msgstr ""
 msgid "Show more"
 msgstr "显示更多"
 
-#: src/pages/Auth.tsx
-#~ msgid "Show password"
-#~ msgstr "显示密码"
-
 #: src/pages/Shell.tsx
 msgid "Show settings"
 msgstr "显示设置"
@@ -3618,7 +3589,6 @@ msgid "Show transcript"
 msgstr "显示文字记录"
 
 #: src/lib/localized-provider-hint.ts
-#: src/pages/Auth.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Sign in"
@@ -3627,15 +3597,6 @@ msgstr "登录"
 #: src/pages/Auth.tsx
 msgid "Sign in to {BRAND_NAME}"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Sign in to Ai7"
-#~ msgstr "登录 Ai7"
-
-#: src/pages/Auth.tsx
-#: src/pages/Welcome.tsx
-msgid "Sign up"
-msgstr "注册"
 
 #: src/pages/Auth.tsx
 msgid "Sign-in code"
@@ -3830,6 +3791,10 @@ msgstr "测试"
 msgid "Test run"
 msgstr "测试运行"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "ThaiFi chain · Chain ID 17"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr "API 未恢复。请刷新此页面。"
@@ -3882,10 +3847,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "This permanently removes every message and stops current work. The chat remains available."
 msgstr "将永久删除全部消息并停止当前工作。聊天仍可使用。"
-
-#: src/pages/Auth.tsx
-#~ msgid "This reset link is invalid or expired"
-#~ msgstr "此重置链接无效或已过期"
 
 #: src/pages/shell/message-cards.tsx
 msgid "This server cannot be assigned without a bot."
@@ -4120,6 +4081,10 @@ msgstr "正在等待 API 恢复…"
 msgid "Waiting…"
 msgstr "等待中…"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "Wallet"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Webhook"
 msgstr "Webhook"
@@ -4190,6 +4155,7 @@ msgstr ""
 msgid "Yesterday"
 msgstr "昨天"
 
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Shell.tsx
 msgid "You"
 msgstr "你"
@@ -4210,9 +4176,13 @@ msgstr "你已接管"
 msgid "Your email address"
 msgstr "你的邮箱"
 
-#: src/pages/Auth.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 msgid "Your name"
 msgstr "你的名字"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Your own ThaiFi address — balances are read from the chain."
+msgstr ""
 
 #: src/pages/Welcome.tsx
 msgid "Your team of always-on agents<0/>that you can give real work to."

@@ -261,6 +261,7 @@ import {
   updateVoiceSpeechModel,
   voiceContext,
 } from "./voice.js";
+import { setPersonalWalletAddress, walletOverview } from "./wallet-overview.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -697,7 +698,12 @@ export function createRouter(deps: RouterDeps) {
     me: authed.me.handler(async ({ context }): Promise<Me> => meDto(deps, context.actor)),
     preferences: {
       update: authed.preferences.update.handler(async ({ context, input }): Promise<Me> => {
-        const data: { avatarStyle?: string; clientBrowserPreferred?: boolean } = {};
+        const data: {
+          name?: string;
+          avatarStyle?: string;
+          clientBrowserPreferred?: boolean;
+        } = {};
+        if (input.name !== undefined) data.name = input.name;
         if (input.avatarStyle !== undefined) data.avatarStyle = input.avatarStyle;
         if (input.clientBrowserPreferred !== undefined) {
           data.clientBrowserPreferred = input.clientBrowserPreferred;
@@ -5307,6 +5313,15 @@ export function createRouter(deps: RouterDeps) {
       remove: authed.agentSecrets.remove.handler(async ({ context, input }) =>
         deleteAgentSecret({ prisma: deps.prisma, secrets: deps.secrets }, context.actor, input.id),
       ),
+    },
+    wallet: {
+      get: authed.wallet.get.handler(async ({ context }) =>
+        walletOverview({ prisma: deps.prisma, sandbox: deps.sandbox }, context.actor),
+      ),
+      setPersonal: authed.wallet.setPersonal.handler(async ({ context, input }) => {
+        await setPersonalWalletAddress(deps, context.actor, input.address);
+        return { ok: true as const };
+      }),
     },
     clientBrowser: {
       heartbeat: authed.clientBrowser.heartbeat.handler(async ({ context, input }) => {

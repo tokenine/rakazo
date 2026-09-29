@@ -46,11 +46,11 @@ export function WelcomePage() {
         </p>
         <button
           type="button"
-          onClick={() => navigate("/sign-up")}
+          onClick={() => navigate("/sign-in")}
           className="app-no-drag rounded-full px-[36px] py-[15px] text-[19px] font-medium text-white shadow-lg shadow-orange-500/30 transition hover:scale-[1.04]"
           style={{ background: "linear-gradient(135deg, #FB923C, #F97316 45%, #EF4444)" }}
         >
-          <Trans>Sign up</Trans>&nbsp;&nbsp;→
+          <Trans>Get started</Trans>&nbsp;&nbsp;→
         </button>
       </div>
     </div>

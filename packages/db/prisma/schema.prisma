@@ -32,6 +32,7 @@ model User {
   updatedAt                   DateTime                     @updatedAt
   avatarStyle                 String                       @default("robot")
   clientBrowserPreferred      Boolean                      @default(false)
+  walletAddress               String?
   sessions                    Session[]
   accounts                    Account[]
   members                     Member[]

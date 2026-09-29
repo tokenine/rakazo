@@ -5,9 +5,8 @@ import { Button, Input, Label } from "@rakazo/ui-web";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "../lib/auth";
-import { clearSpaceSelection } from "../lib/rpc";
+import { clearSpaceSelection, rpc } from "../lib/rpc";
 
-type AuthMode = "in" | "up";
 type AuthCapabilities = { otp: boolean };
 
 const fieldClass = "mt-2 h-12 rounded-xl px-4 text-base md:text-base";
@@ -53,7 +52,7 @@ function clearStoredOtpStage(): void {
   }
 }
 
-export function AuthPage({ mode }: { mode: AuthMode }) {
+export function AuthPage() {
   const { t } = useLingui();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -62,20 +61,13 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   const restoredStage = useMemo(() => readStoredOtpStage(), []);
   const [email, setEmail] = useState(restoredStage?.email ?? "");
   const [code, setCode] = useState("");
-  const [name, setName] = useState("");
   const [stage, setStage] = useState<"email" | "code">(restoredStage ? "code" : "email");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [capabilities, setCapabilities] = useState<AuthCapabilities | null>(null);
 
   const title =
-    stage === "code" ? (
-      <Trans>Check your email</Trans>
-    ) : mode === "up" ? (
-      <Trans>Create your {BRAND_NAME}</Trans>
-    ) : (
-      <Trans>Sign in to {BRAND_NAME}</Trans>
-    );
+    stage === "code" ? <Trans>Check your email</Trans> : <Trans>Sign in to {BRAND_NAME}</Trans>;
 
   useEffect(() => {
     let active = true;
@@ -132,8 +124,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       const result = await authClient.signIn.emailOtp({
         email: email.trim(),
         otp: code.trim(),
-        // New accounts pick up the display name here; existing users are unaffected.
-        ...(mode === "up" && name.trim() ? { name: name.trim() } : {}),
       });
       if (result.error) {
         setError(result.error.message ?? t`Could not verify the code`);
@@ -141,13 +131,19 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       }
       clearStoredOtpStage();
       clearSpaceSelection();
-      navigate(
-        mode === "up"
-          ? "/onboarding"
-          : searchParams.get("next") === "/integrations/setup"
-            ? "/integrations/setup"
-            : "/app",
-      );
+      // First-run users (no model credential anywhere) are sent through
+      // onboarding; everyone else lands where they were heading.
+      let destination =
+        searchParams.get("next") === "/integrations/setup" ? "/integrations/setup" : "/app";
+      if (destination === "/app") {
+        try {
+          const bootstrap = await rpc.bootstrap({});
+          if (bootstrap.me.needsModel) destination = "/onboarding";
+        } catch {
+          // Keep the plain /app destination rather than blocking sign-in.
+        }
+      }
+      navigate(destination);
     } catch {
       setError(t`Could not reach the server`);
     } finally {
@@ -173,22 +169,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         </>
       ) : (
         <>
-          {stage === "email" && mode === "up" ? (
-            <div className="mb-4 w-full">
-              <Label htmlFor="name" className="text-muted-foreground">
-                <Trans>Name</Trans>
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t`Your name`}
-                className={fieldClass}
-              />
-            </div>
-          ) : null}
           <div className="w-full">
             <Label htmlFor="email" className="text-muted-foreground">
               <Trans>Email</Trans>
@@ -255,23 +235,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
               <Trans>Verify code</Trans>
             )}
           </Button>
-          <p className="mt-8 text-muted-foreground">
-            {mode === "in" ? (
-              <>
-                <Trans>Don’t have an account?</Trans>{" "}
-                <Link to="/sign-up" className="font-medium text-foreground">
-                  <Trans>Sign up</Trans>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Trans>Already have an account?</Trans>{" "}
-                <Link to="/sign-in" className="font-medium text-foreground">
-                  <Trans>Sign in</Trans>
-                </Link>
-              </>
-            )}
-          </p>
         </>
       )}
     </AuthFrame>

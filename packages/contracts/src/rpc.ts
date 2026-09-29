@@ -92,6 +92,7 @@ import {
 import { MessageReactionSchema } from "./reactions.js";
 import { RunsListOutputSchema } from "./runs.js";
 import { SearchQueryOutputSchema } from "./search.js";
+import { WalletOverviewSchema } from "./wallet.js";
 
 const botId = z.object({ botId: Id });
 const groupId = z.object({ groupId: Id });
@@ -172,6 +173,7 @@ export const appContract = {
     update: oc
       .input(
         z.object({
+          name: z.string().trim().min(1).max(64).optional(),
           avatarStyle: AvatarStyleSchema.optional(),
           clientBrowserPreferred: z.boolean().optional(),
         }),
@@ -937,6 +939,19 @@ export const appContract = {
     list: oc.output(z.array(AgentSecretSchema)),
     put: oc.input(AgentSecretInputSchema).output(AgentSecretSchema),
     remove: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
+  },
+  wallet: {
+    get: oc.input(z.object({})).output(WalletOverviewSchema),
+    setPersonal: oc
+      .input(
+        z.object({
+          address: z
+            .string()
+            .regex(/^0x[0-9a-fA-F]{40}$/)
+            .nullable(),
+        }),
+      )
+      .output(z.object({ ok: z.literal(true) })),
   },
 };
 

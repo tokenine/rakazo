@@ -10,6 +10,7 @@ import {
   Settings,
   UserPlus,
   Volume2,
+  Wallet,
   XIcon,
 } from "lucide-react";
 import { type ComponentType, useEffect, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import {
   GeneralSettingsPanels,
   UpdatesSettingsPanel,
   UsageSettingsPanel,
+  WalletSettingsPanel,
 } from "./AccountSettingsOverlay";
 import { MemorySettingsOverlay } from "./MemorySettingsOverlay";
 import { ModelSettingsOverlay } from "./ModelSettingsOverlay";
@@ -31,6 +33,7 @@ export type SettingsSection =
   | "models"
   | "memory"
   | "voice"
+  | "wallet"
   | "usage"
   | "computer"
   | "updates";
@@ -44,6 +47,7 @@ type NavItem = {
 export function SettingsOverlay({
   email,
   name,
+  onNameChange,
   usage,
   initialSection = "general",
   avatarStyle,
@@ -61,6 +65,7 @@ export function SettingsOverlay({
 }: {
   email?: string | null;
   name: string;
+  onNameChange: (name: string) => Promise<void>;
   usage?: { runs: number; inputTokens: number; outputTokens: number } | null;
   initialSection?: SettingsSection;
   avatarStyle: AvatarStyle;
@@ -100,6 +105,7 @@ export function SettingsOverlay({
     { id: "models", label: t`Models`, icon: Cpu },
     { id: "memory", label: t`Memory`, icon: Brain },
     { id: "voice", label: t`Voice`, icon: Volume2 },
+    { id: "wallet", label: t`Wallet`, icon: Wallet },
     { id: "usage", label: t`Usage`, icon: Gauge },
     ...(showComputer ? [{ id: "computer" as const, label: t`Computer`, icon: Monitor }] : []),
     ...(isDeploymentOwner ? [{ id: "signups" as const, label: t`Sign-ups`, icon: UserPlus }] : []),
@@ -215,6 +221,7 @@ export function SettingsOverlay({
                 <GeneralSettingsPanels
                   email={email}
                   name={name}
+                  onNameChange={onNameChange}
                   avatarStyle={avatarStyle}
                   onAvatarStyleChange={onAvatarStyleChange}
                   messagingEnabled={messagingEnabled}
@@ -229,6 +236,7 @@ export function SettingsOverlay({
               {section === "usage" ? (
                 <UsageSettingsPanel usage={usage} panelRef={usageRef} />
               ) : null}
+              {section === "wallet" ? <WalletSettingsPanel /> : null}
               {section === "computer" && showComputer ? <ComputerSettingsPanel /> : null}
               {section === "signups" && isDeploymentOwner ? <SignupsSettingsPanel /> : null}
               {section === "updates" ? (

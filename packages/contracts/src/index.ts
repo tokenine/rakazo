@@ -19,3 +19,4 @@ export * from "./rpc.js";
 export * from "./runs.js";
 export * from "./search.js";
 export * from "./terminal.js";
+export * from "./wallet.js";

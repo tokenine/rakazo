@@ -1,5 +1,5 @@
 import type { IntegrationSetupState } from "@rakazo/contracts";
-import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
@@ -31,7 +31,6 @@ import {
   usesCustomApiBase,
   verifySignInCode,
 } from "../lib/api";
-import { type AuthMode, initialAuthMode } from "../lib/auth-routing";
 import { useI18n } from "../lib/i18n";
 import { useMobileTokens } from "../lib/native";
 
@@ -39,9 +38,6 @@ export default function SignIn() {
   const { t } = useI18n();
   const tokens = useMobileTokens();
   const router = useRouter();
-  const { mode: requestedMode } = useLocalSearchParams<{ mode?: string | string[] }>();
-  const [mode, setMode] = useState<AuthMode>(() => initialAuthMode(requestedMode));
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
@@ -105,10 +101,8 @@ export default function SignIn() {
         return;
       }
       await verifySignInCode(email.trim(), code.trim());
-      const setup =
-        mode === "up"
-          ? await rpc<IntegrationSetupState>("integrationSetup/get").catch(() => null)
-          : null;
+      // New accounts may still need server integrations before the main app.
+      const setup = await rpc<IntegrationSetupState>("integrationSetup/get").catch(() => null);
       router.replace(setup?.needsSetup ? "/integration-setup" : "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Could not continue"));
@@ -146,11 +140,7 @@ export default function SignIn() {
                   textAlign: "center",
                 }}
               >
-                {stage === "code"
-                  ? t("Check your email")
-                  : mode === "in"
-                    ? t("Sign in to Ai7")
-                    : t("Sign up for Ai7")}
+                {stage === "code" ? t("Check your email") : t("Sign in to Ai7")}
               </Text>
               {otpAvailable === false ? (
                 <Text style={{ color: tokens.destructive, marginTop: 16, textAlign: "center" }}>
@@ -160,22 +150,6 @@ export default function SignIn() {
                 </Text>
               ) : (
                 <>
-                  {stage === "email" && mode === "up" ? (
-                    <TextInput
-                      autoComplete="name"
-                      placeholder={t("Name")}
-                      placeholderTextColor={tokens.mutedForeground}
-                      value={name}
-                      onChangeText={setName}
-                      style={{
-                        marginTop: 28,
-                        backgroundColor: tokens.muted,
-                        borderRadius: 13,
-                        padding: 16,
-                        color: tokens.foreground,
-                      }}
-                    />
-                  ) : null}
                   <TextInput
                     autoCapitalize="none"
                     autoComplete="email"
@@ -186,7 +160,7 @@ export default function SignIn() {
                     onChangeText={setEmail}
                     editable={stage === "email"}
                     style={{
-                      marginTop: stage === "code" ? 28 : mode === "up" ? 12 : 28,
+                      marginTop: 28,
                       backgroundColor: tokens.muted,
                       borderRadius: 13,
                       padding: 16,
@@ -254,31 +228,6 @@ export default function SignIn() {
                           : t("Verify code")}
                     </Text>
                   </Pressable>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginTop: 24,
-                    }}
-                  >
-                    <Text style={{ color: tokens.mutedForeground, fontSize: 15 }}>
-                      {mode === "in" ? t("Don’t have an account?") : t("Already have an account?")}
-                    </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() => {
-                        setMode((current) => (current === "in" ? "up" : "in"));
-                        setError(null);
-                      }}
-                      style={{ marginLeft: 5 }}
-                    >
-                      <Text style={{ color: tokens.foreground, fontSize: 15, fontWeight: "600" }}>
-                        {mode === "in" ? t("Sign up") : t("Sign in")}
-                      </Text>
-                    </Pressable>
-                  </View>
                 </>
               )}
             </ScrollView>

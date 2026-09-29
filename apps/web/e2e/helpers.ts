@@ -54,13 +54,15 @@ export async function signup(
   page: Page,
   email: string,
   _password: string,
-  name: string,
+  _name?: string,
   testInfo?: TestInfo,
 ) {
-  await page.goto("/sign-up");
-  await expect(page.getByRole("heading", { name: "Create your Ai7" })).toBeVisible();
-  if (testInfo) await captureScreenshot(page, testInfo, "01-sign-up");
-  await page.getByPlaceholder("Your name").fill(name);
+  // Passwordless single-entry sign-in: there is no separate sign-up page.
+  // New accounts are created on first verified OTP; set the display name in
+  // Settings → General afterward.
+  await page.goto("/sign-in");
+  await expect(page.getByRole("heading", { name: "Sign in to Ai7" })).toBeVisible();
+  if (testInfo) await captureScreenshot(page, testInfo, "01-sign-in");
   await page.getByPlaceholder("Your email address").fill(email);
   await page.getByRole("button", { name: "Continue with email" }).click();
   // Sign-in is passwordless: fetch the one-time code from the dev email emulator.

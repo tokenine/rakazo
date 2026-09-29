@@ -328,6 +328,10 @@ msgstr "Computador do agente"
 msgid "Agent connections"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Agent wallets"
+msgstr ""
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Agents:"
 msgstr "Agentes:"
@@ -378,10 +382,6 @@ msgstr "Permitido uma vez"
 #: src/pages/SettingsOverlay.tsx
 msgid "Allowlist"
 msgstr ""
-
-#: src/pages/Auth.tsx
-msgid "Already have an account?"
-msgstr "Você já tem cadastro?"
 
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Always act"
@@ -502,6 +502,10 @@ msgstr "Perguntar antes de comprar"
 msgid "Ask before sending external email"
 msgstr "Perguntar antes de enviar e-mail externo"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Ask the bot to run thaifi login to pair its wallet, then approve it at wallet.thaifi.com."
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
 msgstr ""
@@ -583,10 +587,6 @@ msgstr ""
 #: src/pages/Auth.tsx
 msgid "Back to home"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Back to sign in"
-#~ msgstr "Voltar para o login"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Base URL"
@@ -686,6 +686,7 @@ msgstr "Não é possível acessar o servidor."
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/ComputerUpdateProgress.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -723,12 +724,8 @@ msgid "Card view"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Change password"
-#~ msgstr "Alterar senha"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Changing…"
-#~ msgstr "Alterando…"
+msgid "Change"
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Channels"
@@ -783,10 +780,6 @@ msgstr "Escolha uma forma e cor do bot, ou envie uma imagem"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Choose a bot…"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Choose a new password"
-#~ msgstr "Escolha uma nova senha"
 
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Choose file"
@@ -942,6 +935,10 @@ msgstr "O computador está dormindo"
 msgid "Computer is asleep. Open it to wake."
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Computer is off"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Computer is stopped"
 msgstr "O computador está parado"
@@ -970,11 +967,6 @@ msgstr "Servidores configurados"
 #: src/pages/McpServersOverlay.tsx
 msgid "Confirm delete"
 msgstr "Confirmar exclusão"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "Confirm password"
-#~ msgstr "Confirmar senha"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
@@ -1110,10 +1102,6 @@ msgstr "Não foi possível aprovar este servidor"
 #: src/pages/shell/message-cards.tsx
 msgid "Could not authorize this app"
 msgstr "Não foi possível autorizar este aplicativo"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Could not change password"
-#~ msgstr "Não foi possível alterar a senha"
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not change the default model"
@@ -1376,10 +1364,6 @@ msgstr "Não foi possível renomear a seção"
 msgid "Could not render chart"
 msgstr "Não foi possível renderizar o gráfico"
 
-#: src/pages/Auth.tsx
-#~ msgid "Could not reset password"
-#~ msgstr "Não foi possível redefinir a senha"
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not revoke connection"
 msgstr "Não foi possível revogar a conexão"
@@ -1441,10 +1425,6 @@ msgstr "Não foi possível salvar esta opção"
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not search catalog"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Could not send reset email"
-#~ msgstr "Não foi possível enviar o e-mail de redefinição"
 
 #: src/lib/call-session.ts
 msgid "Could not send that"
@@ -1510,8 +1490,16 @@ msgstr ""
 msgid "Couldn't load messaging settings"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't load wallet information"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Couldn't register the webhook. Check the server logs."
+msgstr ""
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't save the wallet address"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -1526,6 +1514,10 @@ msgstr ""
 msgid "Couldn't update the built-in browser setting"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't update your name"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
@@ -1536,6 +1528,10 @@ msgstr "Criar"
 msgid "Create & Start"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Create a bot and start its computer to give it a wallet."
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Create a bot with @BotFather (send /newbot), paste its token here, and chat with your Ai7 assistant from your own Telegram line."
 msgstr ""
@@ -1544,10 +1540,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Create a section and move {0} into it."
 msgstr "Crie uma seção e mova {0} para ela."
-
-#: src/pages/Auth.tsx
-#~ msgid "Create account"
-#~ msgstr "Criar Conta"
 
 #: src/pages/GroupPanel.tsx
 msgid "Create group"
@@ -1574,14 +1566,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Create space"
 msgstr ""
-
-#: src/pages/Auth.tsx
-msgid "Create your {BRAND_NAME}"
-msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Create your Ai7"
-#~ msgstr "Crie o seu Ai7"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -1614,10 +1598,6 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx
 msgid "Cron expression"
 msgstr "Expressão cron"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#~ msgid "Current password"
-#~ msgstr "Senha atual"
 
 #: src/pages/shell/dialogs.tsx
 msgid "Customer support"
@@ -1782,10 +1762,6 @@ msgstr "Docker"
 msgid "Docker limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools."
 msgstr "O Docker limita o acesso ao seu computador para maior segurança. Usar {hostLabel} permite que os bots trabalhem com seus arquivos e ferramentas locais."
 
-#: src/pages/Auth.tsx
-msgid "Don’t have an account?"
-msgstr "Não tem uma conta?"
-
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
@@ -1835,8 +1811,16 @@ msgstr "Duplicar"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "ex.: Hivenet Agent, Presales, bot de planilhas"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Each bot keeps its own ThaiFi wallet on its computer."
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Earlier message"
+msgstr ""
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Edit"
 msgstr ""
 
 #: src/components/AskCard.tsx
@@ -2016,10 +2000,6 @@ msgstr "Finalizando conexão MCP…"
 msgid "Flag unexpected actions"
 msgstr ""
 
-#: src/pages/Auth.tsx
-#~ msgid "Forgot password?"
-#~ msgstr "Esqueceu a senha?"
-
 #: src/pages/shell/client-browser-panel.tsx
 msgid "Forward"
 msgstr ""
@@ -2043,6 +2023,10 @@ msgstr ""
 #: src/pages/shell/bot-panel.tsx
 msgid "Get notified when this Bot finishes or needs input"
 msgstr "Seja avisado quando este Bot terminar ou precisar de entrada"
+
+#: src/pages/Welcome.tsx
+msgid "Get started"
+msgstr ""
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Getting ready"
@@ -2105,10 +2089,6 @@ msgstr "Olá, é assim que vou soar quando ler as respostas em voz alta."
 #: src/pages/Shell.tsx
 msgid "Hide bots"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Hide password"
-#~ msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Hide transcript"
@@ -2350,6 +2330,7 @@ msgid "Loading voice providers…"
 msgstr "Carregando provedores de voz..."
 
 #: src/App.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/IntegrationSetup.tsx
 #: src/pages/Onboarding.tsx
@@ -2608,7 +2589,6 @@ msgid "Mute"
 msgstr "Silenciar"
 
 #: src/components/teach/SkillDraftCard.tsx
-#: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -2660,11 +2640,6 @@ msgstr "Novo grupo"
 #: src/pages/ScratchpadSection.tsx
 msgid "New open-work item"
 msgstr "Novo item de trabalho aberto"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "New password"
-#~ msgstr "Nova senha"
 
 #: src/pages/BotContextMenu.tsx
 #: src/pages/shell/dialogs.tsx
@@ -2788,6 +2763,10 @@ msgstr ""
 msgid "No trigger"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "No wallet yet?"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
 msgstr ""
@@ -2807,6 +2786,10 @@ msgstr ""
 #: src/pages/shell/message-cards.tsx
 msgid "Not now"
 msgstr "Agora não"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Not paired"
+msgstr ""
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Nothing is still running"
@@ -2893,6 +2876,14 @@ msgstr "Abrir shell"
 msgid "Open sign-ups"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Open ThaiFi Wallet"
+msgstr ""
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Open wallet.thaifi.com"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
 msgstr "Trabalho aberto"
@@ -2965,20 +2956,6 @@ msgstr "Suspender"
 msgid "Password"
 msgstr "Senha"
 
-#: src/pages/Auth.tsx
-#~ msgid "Password recovery is not configured for this server"
-#~ msgstr "A recuperação de senha não está configurada para este servidor"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "Password updated"
-#~ msgstr "Senha atualizada"
-
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
-#~ msgid "Passwords do not match"
-#~ msgstr "As senhas não coincidem"
-
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
 msgstr "Cole uma chave de substituição"
@@ -2998,6 +2975,10 @@ msgstr ""
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Personal credential"
 msgstr "Senha Pessoal"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Personal wallet"
+msgstr ""
 
 #: src/pages/shell/expert-create.tsx
 msgid "Pick an Expert — each ships with its own persona, connectors and skills."
@@ -3155,6 +3136,10 @@ msgstr ""
 msgid "Recreating the computer"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Refresh"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"
 msgstr ""
@@ -3184,6 +3169,7 @@ msgid "Reload"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/ScratchpadSection.tsx
 msgid "Remove"
@@ -3288,14 +3274,6 @@ msgstr "Redefinir computador"
 msgid "Reset computer?"
 msgstr "Redefinir o computador?"
 
-#: src/pages/Auth.tsx
-#~ msgid "Reset password"
-#~ msgstr "Redefinir senha"
-
-#: src/pages/Auth.tsx
-#~ msgid "Reset your password"
-#~ msgstr "Redefina sua senha"
-
 #: src/components/ComputerMaintenanceActions.tsx
 msgid "Resetting…"
 msgstr "Redefinindo…"
@@ -3397,6 +3375,7 @@ msgstr ""
 
 #: src/components/AskCard.tsx
 #: src/components/teach/SkillDraftCard.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/KnowledgeSection.tsx
@@ -3515,10 +3494,6 @@ msgstr "Enviar resposta"
 msgid "Send it"
 msgstr "Enviar"
 
-#: src/pages/Auth.tsx
-#~ msgid "Send reset link"
-#~ msgstr "Enviar link de redefinição"
-
 #: src/components/AskCard.tsx
 msgid "Sending…"
 msgstr "Enviando…"
@@ -3605,10 +3580,6 @@ msgstr ""
 msgid "Show more"
 msgstr "Mostrar mais"
 
-#: src/pages/Auth.tsx
-#~ msgid "Show password"
-#~ msgstr ""
-
 #: src/pages/Shell.tsx
 msgid "Show settings"
 msgstr "Mostrar configurações"
@@ -3618,7 +3589,6 @@ msgid "Show transcript"
 msgstr "Mostrar transcrição"
 
 #: src/lib/localized-provider-hint.ts
-#: src/pages/Auth.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Sign in"
@@ -3627,15 +3597,6 @@ msgstr "Entrar"
 #: src/pages/Auth.tsx
 msgid "Sign in to {BRAND_NAME}"
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "Sign in to Ai7"
-#~ msgstr "Entrar no Ai7"
-
-#: src/pages/Auth.tsx
-#: src/pages/Welcome.tsx
-msgid "Sign up"
-msgstr "Cadastre-se"
 
 #: src/pages/Auth.tsx
 msgid "Sign-in code"
@@ -3830,6 +3791,10 @@ msgstr "Teste"
 msgid "Test run"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "ThaiFi chain · Chain ID 17"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr ""
@@ -3882,10 +3847,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "This permanently removes every message and stops current work. The chat remains available."
 msgstr ""
-
-#: src/pages/Auth.tsx
-#~ msgid "This reset link is invalid or expired"
-#~ msgstr "Este link de redefinição é inválido ou expirou"
 
 #: src/pages/shell/message-cards.tsx
 msgid "This server cannot be assigned without a bot."
@@ -4120,6 +4081,10 @@ msgstr ""
 msgid "Waiting…"
 msgstr "Aguardando…"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "Wallet"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Webhook"
 msgstr ""
@@ -4190,6 +4155,7 @@ msgstr ""
 msgid "Yesterday"
 msgstr "Ontem"
 
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Shell.tsx
 msgid "You"
 msgstr "Você"
@@ -4210,9 +4176,13 @@ msgstr "Você tem o controle"
 msgid "Your email address"
 msgstr "Seu endereço de e-mail"
 
-#: src/pages/Auth.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 msgid "Your name"
 msgstr "O seu nome"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Your own ThaiFi address — balances are read from the chain."
+msgstr ""
 
 #: src/pages/Welcome.tsx
 msgid "Your team of always-on agents<0/>that you can give real work to."

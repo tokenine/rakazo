@@ -5,6 +5,8 @@ export const explicitSignInRoute = {
   params: { mode: "in" },
 } as const;
 
+// Sign-up was folded into sign-in on the web: the OTP code both signs in
+// existing accounts and creates allow-listed new ones.
 export function initialAuthMode(requestedMode?: string | string[]): AuthMode {
-  return requestedMode === "in" ? "in" : "up";
+  return requestedMode === "up" ? "up" : "in";
 }

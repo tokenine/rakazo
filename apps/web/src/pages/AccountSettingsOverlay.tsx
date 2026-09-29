@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { AvatarStyle } from "@rakazo/contracts";
-import { BotAvatar, Button, Label, Switch, Toggle } from "@rakazo/ui-web";
+import type { AvatarStyle, WalletOverview } from "@rakazo/contracts";
+import { THAIIFI_WALLET_URL } from "@rakazo/contracts";
+import { BotAvatar, Button, Input, Label, Switch, Toggle } from "@rakazo/ui-web";
 import { ChevronDown } from "lucide-react";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -20,6 +21,7 @@ import {
   getResponseStreamingPreference,
   setResponseStreamingPreference,
 } from "../lib/response-streaming";
+import { rpc } from "../lib/rpc";
 import {
   type AppearancePreference,
   getUiAppearancePreference,
@@ -30,6 +32,7 @@ import { UI_LOCALE_LABELS, UI_LOCALES, type UiLocale } from "../lib/ui-locale";
 export type SettingsGeneralProps = {
   email?: string | null;
   name: string;
+  onNameChange: (name: string) => Promise<void>;
   avatarStyle: AvatarStyle;
   onAvatarStyleChange: (style: AvatarStyle) => Promise<void>;
   messagingEnabled?: boolean;
@@ -43,6 +46,7 @@ export type SettingsGeneralProps = {
 export function GeneralSettingsPanels({
   email,
   name,
+  onNameChange,
   avatarStyle,
   onAvatarStyleChange,
   messagingEnabled = false,
@@ -65,6 +69,26 @@ export function GeneralSettingsPanels({
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [browserPending, setBrowserPending] = useState(false);
   const [browserError, setBrowserError] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState(name);
+  const [editingName, setEditingName] = useState(false);
+  const [namePending, setNamePending] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  async function saveName(event: React.FormEvent) {
+    event.preventDefault();
+    const next = nameDraft.trim();
+    if (!next || namePending) return;
+    setNamePending(true);
+    setNameError(null);
+    try {
+      await onNameChange(next);
+      setEditingName(false);
+    } catch {
+      setNameError(t`Couldn't update your name`);
+    } finally {
+      setNamePending(false);
+    }
+  }
 
   async function chooseClientBrowser(value: boolean) {
     if (browserPending || !onClientBrowserPreferredChange) return;
@@ -108,8 +132,64 @@ export function GeneralSettingsPanels({
         <h3 className="text-[15px] font-medium text-foreground">
           <Trans>Account</Trans>
         </h3>
-        <p className="mt-3 text-[14px] text-foreground/75">{name}</p>
-        {email ? <p className="mt-1 text-[13px] text-muted-foreground/70">{email}</p> : null}
+        {editingName ? (
+          <form onSubmit={saveName} className="mt-3 flex flex-wrap items-center gap-2">
+            <Input
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              placeholder={t`Your name`}
+              autoFocus
+              autoComplete="name"
+              maxLength={64}
+              data-testid="account-name-input"
+              className="h-9 max-w-[240px] flex-1 rounded-lg"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="rounded-full"
+              disabled={namePending || !nameDraft.trim()}
+            >
+              <Trans>Save</Trans>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                setEditingName(false);
+                setNameDraft(name);
+                setNameError(null);
+              }}
+            >
+              <Trans>Cancel</Trans>
+            </Button>
+          </form>
+        ) : (
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[14px] text-foreground/75">{name || t`You`}</p>
+              {email ? <p className="mt-1 text-[13px] text-muted-foreground/70">{email}</p> : null}
+            </div>
+            <Button
+              variant="secondary"
+              className="rounded-full"
+              data-testid="account-name-edit"
+              onClick={() => {
+                setNameDraft(name);
+                setEditingName(true);
+              }}
+            >
+              <Trans>Edit</Trans>
+            </Button>
+          </div>
+        )}
+        {nameError ? (
+          <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+            {nameError}
+          </p>
+        ) : null}
       </section>
 
       {onClientBrowserPreferredChange ? (
@@ -252,6 +332,291 @@ export function GeneralSettingsPanels({
           <ApprovalRulesSettings />
         </div>
       </details>
+    </div>
+  );
+}
+
+const THAIIFI_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+
+function shortAddress(address: string): string {
+  return address.length > 16 ? `${address.slice(0, 8)}…${address.slice(-6)}` : address;
+}
+
+export function WalletSettingsPanel() {
+  const { t } = useLingui();
+  const [overview, setOverview] = useState<WalletOverview | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [personalDraft, setPersonalDraft] = useState("");
+  const [personalPending, setPersonalPending] = useState(false);
+  const [personalError, setPersonalError] = useState<string | null>(null);
+  const [editingPersonal, setEditingPersonal] = useState(false);
+
+  function applyOverview(next: WalletOverview) {
+    setOverview(next);
+    setPersonalDraft(next.personalAddress ?? "");
+    setEditingPersonal(false);
+  }
+
+  async function refresh() {
+    setRefreshing(true);
+    setLoadError(null);
+    try {
+      applyOverview(await rpc.wallet.get({}));
+    } catch {
+      setLoadError(t`Couldn't load wallet information`);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function savePersonalAddress(address: string | null) {
+    setPersonalPending(true);
+    setPersonalError(null);
+    try {
+      await rpc.wallet.setPersonal({ address });
+      applyOverview(await rpc.wallet.get({}));
+    } catch {
+      setPersonalError(t`Couldn't save the wallet address`);
+    } finally {
+      setPersonalPending(false);
+    }
+  }
+
+  function submitPersonalDraft(event: React.FormEvent) {
+    event.preventDefault();
+    const address = personalDraft.trim();
+    if (!THAIIFI_ADDRESS_PATTERN.test(address) || personalPending) return;
+    void savePersonalAddress(address);
+  }
+
+  const personalAddress = overview?.personalAddress ?? null;
+  const personalValid = THAIIFI_ADDRESS_PATTERN.test(personalDraft.trim());
+
+  return (
+    <div className="space-y-5" data-testid="wallet-settings">
+      <section className="rounded-xl border border-border px-4 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-medium text-foreground">
+              <Trans>Agent wallets</Trans>
+            </h3>
+            <p className="mt-1 text-[12.5px] text-muted-foreground/80">
+              <Trans>Each bot keeps its own ThaiFi wallet on its computer.</Trans>
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0 rounded-full"
+            disabled={refreshing}
+            onClick={() => void refresh()}
+          >
+            <Trans>Refresh</Trans>
+          </Button>
+        </div>
+        {loadError ? (
+          <p role="alert" className="mt-3 text-[12.5px] text-destructive">
+            {loadError}
+          </p>
+        ) : !overview ? (
+          <p className="mt-3 text-[13px] text-muted-foreground/70">
+            <Trans>Loading…</Trans>
+          </p>
+        ) : overview.agentWallets.length === 0 ? (
+          <p className="mt-3 text-[13px] text-muted-foreground/70">
+            <Trans>Create a bot and start its computer to give it a wallet.</Trans>
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {overview.agentWallets.map((entry) => (
+              <li key={entry.botId} className="rounded-lg border border-border/60 px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate text-[14px] font-medium text-foreground">
+                    {entry.botName}
+                  </span>
+                  {entry.state === "ready" ? (
+                    <a
+                      href={`${overview.explorerUrl}/address/${entry.address}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 font-mono text-[12.5px] text-muted-foreground underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(entry.address)}
+                    </a>
+                  ) : entry.state === "unpaired" ? (
+                    <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                      <Trans>Not paired</Trans>
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                      <Trans>Computer is off</Trans>
+                    </span>
+                  )}
+                </div>
+                {entry.state === "ready" ? (
+                  <>
+                    <dl className="mt-2 grid grid-cols-3 gap-2">
+                      {entry.balances.map((balance) => (
+                        <div key={balance.symbol}>
+                          <dt className="text-[11.5px] uppercase tracking-wide text-muted-foreground">
+                            {balance.symbol}
+                          </dt>
+                          <dd className="text-[14px] text-foreground">{balance.formatted}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {entry.error ? (
+                      <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+                        {entry.error}
+                      </p>
+                    ) : null}
+                  </>
+                ) : entry.state === "unpaired" ? (
+                  <p className="mt-2 text-[12.5px] text-muted-foreground">
+                    <Trans>
+                      Ask the bot to run thaifi login to pair its wallet, then approve it at
+                      wallet.thaifi.com.
+                    </Trans>{" "}
+                    <a
+                      href={overview.walletUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-foreground underline-offset-2 hover:underline"
+                    >
+                      <Trans>Open ThaiFi Wallet</Trans>
+                    </a>
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-border px-4 py-4">
+        <h3 className="text-[15px] font-medium text-foreground">
+          <Trans>Personal wallet</Trans>
+        </h3>
+        <p className="mt-1 text-[12.5px] text-muted-foreground/80">
+          <Trans>Your own ThaiFi address — balances are read from the chain.</Trans>
+        </p>
+        {overview && !editingPersonal && personalAddress ? (
+          <div className="mt-3">
+            <a
+              href={`${overview.explorerUrl}/address/${personalAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="wallet-personal-address"
+              className="block break-all font-mono text-[13px] text-foreground underline-offset-2 hover:underline"
+            >
+              {personalAddress}
+            </a>
+            {overview.personalError ? (
+              <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+                {overview.personalError}
+              </p>
+            ) : (
+              <dl className="mt-2 grid grid-cols-3 gap-2">
+                {overview.personalBalances.map((balance) => (
+                  <div key={balance.symbol}>
+                    <dt className="text-[11.5px] uppercase tracking-wide text-muted-foreground">
+                      {balance.symbol}
+                    </dt>
+                    <dd className="text-[14px] text-foreground">{balance.formatted}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  setPersonalDraft(personalAddress);
+                  setEditingPersonal(true);
+                }}
+              >
+                <Trans>Change</Trans>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                disabled={personalPending}
+                onClick={() => void savePersonalAddress(null)}
+              >
+                <Trans>Remove</Trans>
+              </Button>
+            </div>
+          </div>
+        ) : overview ? (
+          <div className="mt-3">
+            <form onSubmit={submitPersonalDraft} className="flex flex-wrap items-center gap-2">
+              <Input
+                value={personalDraft}
+                onChange={(e) => setPersonalDraft(e.target.value)}
+                placeholder="0x…"
+                spellCheck={false}
+                data-testid="wallet-personal-input"
+                className="h-9 min-w-0 flex-1 rounded-lg font-mono text-[13px]"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="rounded-full"
+                disabled={personalPending || !personalValid}
+              >
+                <Trans>Save</Trans>
+              </Button>
+              {personalAddress ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => {
+                    setPersonalDraft(personalAddress);
+                    setEditingPersonal(false);
+                  }}
+                >
+                  <Trans>Cancel</Trans>
+                </Button>
+              ) : null}
+            </form>
+            <p className="mt-2 text-[12.5px] text-muted-foreground/80">
+              <Trans>No wallet yet?</Trans>{" "}
+              <a
+                href={overview.walletUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline-offset-2 hover:underline"
+              >
+                <Trans>Open wallet.thaifi.com</Trans>
+              </a>
+            </p>
+          </div>
+        ) : (
+          <p className="mt-3 text-[13px] text-muted-foreground/70">
+            <Trans>Loading…</Trans>
+          </p>
+        )}
+        {personalError ? (
+          <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+            {personalError}
+          </p>
+        ) : null}
+      </section>
+
+      <p className="text-[12px] text-muted-foreground/70">
+        <Trans>ThaiFi chain · Chain ID 17</Trans>
+      </p>
     </div>
   );
 }

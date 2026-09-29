@@ -4410,13 +4410,18 @@ export function ShellPage() {
       <Suspense fallback={null}>
         {settingsOpen ? (
           <SettingsOverlay
-            name={userName}
+            name={session.data?.user.name ?? ""}
             email={session.data?.user.email}
             usage={usage}
             initialSection={settingsSection}
             avatarStyle={bootstrapMe?.avatarStyle ?? "robot"}
             isDeploymentOwner={bootstrapMe?.isDeploymentOwner === true}
             sandboxProvider={bootstrapMe?.sandboxProvider}
+            onNameChange={async (nextName) => {
+              const nextMe = await rpc.preferences.update({ name: nextName });
+              setBootstrapMe(nextMe);
+              await session.refetch();
+            }}
             // Per-user Telegram bots make messaging settings available to every
             // account, not just deployments with messaging env configured.
             messagingEnabled={true}
