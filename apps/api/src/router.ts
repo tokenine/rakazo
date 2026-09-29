@@ -261,7 +261,7 @@ import {
   updateVoiceSpeechModel,
   voiceContext,
 } from "./voice.js";
-import { setPersonalWalletAddress, walletOverview } from "./wallet-overview.js";
+import { startWalletPairing, walletOverview } from "./wallet-overview.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -5318,10 +5318,13 @@ export function createRouter(deps: RouterDeps) {
       get: authed.wallet.get.handler(async ({ context }) =>
         walletOverview({ prisma: deps.prisma, sandbox: deps.sandbox }, context.actor),
       ),
-      setPersonal: authed.wallet.setPersonal.handler(async ({ context, input }) => {
-        await setPersonalWalletAddress(deps, context.actor, input.address);
-        return { ok: true as const };
-      }),
+      pair: authed.wallet.pair.handler(async ({ context, input }) =>
+        startWalletPairing(
+          { prisma: deps.prisma, sandbox: deps.sandbox },
+          context.actor,
+          input.botId,
+        ),
+      ),
     },
     clientBrowser: {
       heartbeat: authed.clientBrowser.heartbeat.handler(async ({ context, input }) => {

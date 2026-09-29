@@ -320,6 +320,10 @@ msgstr "高级"
 msgid "Advanced..."
 msgstr "高级..."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "After approving, press Refresh to see the balance."
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Agent computer"
 msgstr "Agent 电脑"
@@ -446,6 +450,10 @@ msgstr "批准"
 msgid "Approve this server to let your agent use its tools."
 msgstr "批准此服务器后，Agent 才能使用它的工具。"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Approve with passkey/PIN:"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Archive"
 msgstr "归档"
@@ -501,10 +509,6 @@ msgstr "购买前询问"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Ask before sending external email"
 msgstr "发送外部邮件前询问"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Ask the bot to run thaifi login to pair its wallet, then approve it at wallet.thaifi.com."
-msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
@@ -721,10 +725,6 @@ msgstr "已取消"
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
-msgstr ""
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Change"
 msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -1499,7 +1499,7 @@ msgid "Couldn't register the webhook. Check the server logs."
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Couldn't save the wallet address"
+msgid "Couldn't start the pairing on the bot's computer"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -2241,6 +2241,10 @@ msgstr "保留记忆"
 msgid "key"
 msgstr "密钥"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Key expired"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 msgid "Knowledge"
 msgstr "知识"
@@ -2763,10 +2767,6 @@ msgstr ""
 msgid "No trigger"
 msgstr "无触发器"
 
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "No wallet yet?"
-msgstr ""
-
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
 msgstr ""
@@ -2876,14 +2876,6 @@ msgstr "打开 Shell"
 msgid "Open sign-ups"
 msgstr ""
 
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Open ThaiFi Wallet"
-msgstr ""
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Open wallet.thaifi.com"
-msgstr ""
-
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
 msgstr "待办"
@@ -2922,6 +2914,10 @@ msgstr "多数人用不到的可选项"
 #: src/pages/McpServersOverlay.tsx
 msgid "Optional header value"
 msgstr "可选请求头值"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "or ask the bot in its chat to run thaifi login — the newest link wins."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Or connect an API key"
@@ -2975,10 +2971,6 @@ msgstr "已暂停"
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Personal credential"
 msgstr "个人凭据"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Personal wallet"
-msgstr ""
 
 #: src/pages/shell/expert-create.tsx
 msgid "Pick an Expert — each ships with its own persona, connectors and skills."
@@ -3169,7 +3161,6 @@ msgid "Reload"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
-#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/ScratchpadSection.tsx
 msgid "Remove"
@@ -3673,6 +3664,10 @@ msgstr "语音模型"
 msgid "Start from scratch"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Start pairing"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "开始录制"
@@ -3682,6 +3677,7 @@ msgid "Starting"
 msgstr "正在开始"
 
 #: src/components/teach/TeachComputerOverlay.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -3799,9 +3795,17 @@ msgstr ""
 msgid "The API did not come back. Refresh this page."
 msgstr "API 未恢复。请刷新此页面。"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "The pairing link did not appear in time — try again or ask the bot in its chat."
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "所选记忆提供方在此构建中不可用。"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "The wallet key expired — pair again to let this bot spend on-chain."
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Thinking"
@@ -4179,10 +4183,6 @@ msgstr "你的邮箱"
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Your name"
 msgstr "你的名字"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Your own ThaiFi address — balances are read from the chain."
-msgstr ""
 
 #: src/pages/Welcome.tsx
 msgid "Your team of always-on agents<0/>that you can give real work to."

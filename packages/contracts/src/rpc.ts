@@ -92,7 +92,7 @@ import {
 import { MessageReactionSchema } from "./reactions.js";
 import { RunsListOutputSchema } from "./runs.js";
 import { SearchQueryOutputSchema } from "./search.js";
-import { WalletOverviewSchema } from "./wallet.js";
+import { WalletOverviewSchema, WalletPairingSchema } from "./wallet.js";
 
 const botId = z.object({ botId: Id });
 const groupId = z.object({ groupId: Id });
@@ -942,16 +942,7 @@ export const appContract = {
   },
   wallet: {
     get: oc.input(z.object({})).output(WalletOverviewSchema),
-    setPersonal: oc
-      .input(
-        z.object({
-          address: z
-            .string()
-            .regex(/^0x[0-9a-fA-F]{40}$/)
-            .nullable(),
-        }),
-      )
-      .output(z.object({ ok: z.literal(true) })),
+    pair: oc.input(z.object({ botId: Id })).output(WalletPairingSchema),
   },
 };
 

@@ -13,7 +13,11 @@ export const ThaifiTokenBalanceSchema = z.object({
 });
 export type ThaifiTokenBalance = z.infer<typeof ThaifiTokenBalanceSchema>;
 
-/** One bot's agent wallet: ready (paired), unpaired (no key in its home), or unavailable (computer not reachable). */
+/**
+ * One bot's agent wallet. "unpaired" = no key in the bot's home yet;
+ * "expired" = a key exists but its on-chain access expired (re-pair to fix);
+ * "unavailable" = the bot's computer is not running (nothing probed).
+ */
 export const AgentWalletEntrySchema = z.discriminatedUnion("state", [
   z.object({
     state: z.literal("ready"),
@@ -29,6 +33,12 @@ export const AgentWalletEntrySchema = z.discriminatedUnion("state", [
     botName: z.string(),
   }),
   z.object({
+    state: z.literal("expired"),
+    botId: Id,
+    botName: z.string(),
+    address: z.string(),
+  }),
+  z.object({
     state: z.literal("unavailable"),
     botId: Id,
     botName: z.string(),
@@ -41,8 +51,12 @@ export const WalletOverviewSchema = z.object({
   walletUrl: z.string(),
   explorerUrl: z.string(),
   agentWallets: z.array(AgentWalletEntrySchema),
-  personalAddress: z.string().nullable(),
-  personalBalances: z.array(ThaifiTokenBalanceSchema),
-  personalError: z.string().nullable(),
 });
 export type WalletOverview = z.infer<typeof WalletOverviewSchema>;
+
+/** Result of starting `thaifi login --no-browser` on a bot's computer. */
+export const WalletPairingSchema = z.object({
+  /** Approve URL at wallet.thaifi.com, or null when the CLI printed none. */
+  pairingUrl: z.string().nullable(),
+});
+export type WalletPairing = z.infer<typeof WalletPairingSchema>;

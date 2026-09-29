@@ -320,6 +320,10 @@ msgstr "고급 설정"
 msgid "Advanced..."
 msgstr "고급..."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "After approving, press Refresh to see the balance."
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Agent computer"
 msgstr "Agent 컴퓨터"
@@ -446,6 +450,10 @@ msgstr "승인"
 msgid "Approve this server to let your agent use its tools."
 msgstr "이 서버를 승인하면 Bot이 제공되는 도구를 사용할 수 있습니다."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Approve with passkey/PIN:"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Archive"
 msgstr "보관"
@@ -501,10 +509,6 @@ msgstr "결제하기 전에 확인"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Ask before sending external email"
 msgstr "외부 이메일을 보내기 전에 확인"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Ask the bot to run thaifi login to pair its wallet, then approve it at wallet.thaifi.com."
-msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
@@ -721,10 +725,6 @@ msgstr "취소됨"
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
-msgstr ""
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Change"
 msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -1499,7 +1499,7 @@ msgid "Couldn't register the webhook. Check the server logs."
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Couldn't save the wallet address"
+msgid "Couldn't start the pairing on the bot's computer"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -2241,6 +2241,10 @@ msgstr "기억은 유지"
 msgid "key"
 msgstr "key"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Key expired"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 msgid "Knowledge"
 msgstr "지식"
@@ -2763,10 +2767,6 @@ msgstr ""
 msgid "No trigger"
 msgstr "트리거 없음"
 
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "No wallet yet?"
-msgstr ""
-
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
 msgstr ""
@@ -2876,14 +2876,6 @@ msgstr "셸 열기"
 msgid "Open sign-ups"
 msgstr ""
 
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Open ThaiFi Wallet"
-msgstr ""
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Open wallet.thaifi.com"
-msgstr ""
-
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
 msgstr "진행 중인 작업"
@@ -2922,6 +2914,10 @@ msgstr "필요할 때만 쓰는 세부 설정"
 #: src/pages/McpServersOverlay.tsx
 msgid "Optional header value"
 msgstr "선택 사항인 헤더 값"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "or ask the bot in its chat to run thaifi login — the newest link wins."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Or connect an API key"
@@ -2975,10 +2971,6 @@ msgstr "일시 중지됨"
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Personal credential"
 msgstr "내 인증 정보"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Personal wallet"
-msgstr ""
 
 #: src/pages/shell/expert-create.tsx
 msgid "Pick an Expert — each ships with its own persona, connectors and skills."
@@ -3169,7 +3161,6 @@ msgid "Reload"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
-#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/ScratchpadSection.tsx
 msgid "Remove"
@@ -3673,6 +3664,10 @@ msgstr "음성 모델"
 msgid "Start from scratch"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Start pairing"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "작업 녹화 시작"
@@ -3682,6 +3677,7 @@ msgid "Starting"
 msgstr "시작 중"
 
 #: src/components/teach/TeachComputerOverlay.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -3799,9 +3795,17 @@ msgstr ""
 msgid "The API did not come back. Refresh this page."
 msgstr "API가 다시 작동하지 않습니다. 이 페이지를 새로 고침하세요."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "The pairing link did not appear in time — try again or ask the bot in its chat."
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "선택한 기억 서비스는 현재 빌드에서 사용할 수 없습니다."
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "The wallet key expired — pair again to let this bot spend on-chain."
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Thinking"
@@ -4179,10 +4183,6 @@ msgstr "이메일 주소"
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Your name"
 msgstr "이름"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Your own ThaiFi address — balances are read from the chain."
-msgstr ""
 
 #: src/pages/Welcome.tsx
 msgid "Your team of always-on agents<0/>that you can give real work to."

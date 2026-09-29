@@ -320,6 +320,10 @@ msgstr "Avancé"
 msgid "Advanced..."
 msgstr "Avancé..."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "After approving, press Refresh to see the balance."
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Agent computer"
 msgstr "Ordinateur de l'agent"
@@ -446,6 +450,10 @@ msgstr "Approuver"
 msgid "Approve this server to let your agent use its tools."
 msgstr "Approuvez ce serveur pour permettre à votre agent d'utiliser ses outils."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Approve with passkey/PIN:"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Archive"
 msgstr "Archiver"
@@ -501,10 +509,6 @@ msgstr "Demander avant les achats"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Ask before sending external email"
 msgstr "Demander avant d'envoyer un e-mail externe"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Ask the bot to run thaifi login to pair its wallet, then approve it at wallet.thaifi.com."
-msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
@@ -722,10 +726,6 @@ msgstr "Annulé"
 #: src/pages/Artifacts.tsx
 msgid "Card view"
 msgstr "Vue en cartes"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Change"
-msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Channels"
@@ -1499,7 +1499,7 @@ msgid "Couldn't register the webhook. Check the server logs."
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Couldn't save the wallet address"
+msgid "Couldn't start the pairing on the bot's computer"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -2241,6 +2241,10 @@ msgstr "Conserver les mémoires"
 msgid "key"
 msgstr "clé"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Key expired"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 msgid "Knowledge"
 msgstr "Connaissances"
@@ -2763,10 +2767,6 @@ msgstr "Aucun outil disponible."
 msgid "No trigger"
 msgstr "Aucun déclencheur"
 
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "No wallet yet?"
-msgstr ""
-
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
 msgstr ""
@@ -2876,14 +2876,6 @@ msgstr "Ouvrir le shell"
 msgid "Open sign-ups"
 msgstr ""
 
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Open ThaiFi Wallet"
-msgstr ""
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Open wallet.thaifi.com"
-msgstr ""
-
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
 msgstr "Travaux en cours"
@@ -2922,6 +2914,10 @@ msgstr "Options que la plupart des gens n'utilisent jamais"
 #: src/pages/McpServersOverlay.tsx
 msgid "Optional header value"
 msgstr "Valeur d'en-tête optionnelle"
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "or ask the bot in its chat to run thaifi login — the newest link wins."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Or connect an API key"
@@ -2975,10 +2971,6 @@ msgstr "En pause"
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Personal credential"
 msgstr "Identifiant personnel"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Personal wallet"
-msgstr ""
 
 #: src/pages/shell/expert-create.tsx
 msgid "Pick an Expert — each ships with its own persona, connectors and skills."
@@ -3169,7 +3161,6 @@ msgid "Reload"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
-#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/ScratchpadSection.tsx
 msgid "Remove"
@@ -3673,6 +3664,10 @@ msgstr "Modèle de parole"
 msgid "Start from scratch"
 msgstr ""
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Start pairing"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "Démarrer l'enregistrement"
@@ -3682,6 +3677,7 @@ msgid "Starting"
 msgstr "Démarrage"
 
 #: src/components/teach/TeachComputerOverlay.tsx
+#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -3799,9 +3795,17 @@ msgstr ""
 msgid "The API did not come back. Refresh this page."
 msgstr "L'API n'est pas revenue. Actualisez cette page."
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "The pairing link did not appear in time — try again or ask the bot in its chat."
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "Le fournisseur de mémoire sélectionné n'est pas disponible dans cette version."
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "The wallet key expired — pair again to let this bot spend on-chain."
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Thinking"
@@ -4179,10 +4183,6 @@ msgstr "Votre adresse e-mail"
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Your name"
 msgstr "Votre nom"
-
-#: src/pages/AccountSettingsOverlay.tsx
-msgid "Your own ThaiFi address — balances are read from the chain."
-msgstr ""
 
 #: src/pages/Welcome.tsx
 msgid "Your team of always-on agents<0/>that you can give real work to."

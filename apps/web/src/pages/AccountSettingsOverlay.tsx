@@ -336,10 +336,14 @@ export function GeneralSettingsPanels({
   );
 }
 
-const THAIIFI_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
-
 function shortAddress(address: string): string {
   return address.length > 16 ? `${address.slice(0, 8)}…${address.slice(-6)}` : address;
+}
+
+interface PairingState {
+  pending: boolean;
+  pairingUrl: string | null;
+  error: string | null;
 }
 
 export function WalletSettingsPanel() {
@@ -347,22 +351,13 @@ export function WalletSettingsPanel() {
   const [overview, setOverview] = useState<WalletOverview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [personalDraft, setPersonalDraft] = useState("");
-  const [personalPending, setPersonalPending] = useState(false);
-  const [personalError, setPersonalError] = useState<string | null>(null);
-  const [editingPersonal, setEditingPersonal] = useState(false);
-
-  function applyOverview(next: WalletOverview) {
-    setOverview(next);
-    setPersonalDraft(next.personalAddress ?? "");
-    setEditingPersonal(false);
-  }
+  const [pairing, setPairing] = useState<Record<string, PairingState>>({});
 
   async function refresh() {
     setRefreshing(true);
     setLoadError(null);
     try {
-      applyOverview(await rpc.wallet.get({}));
+      setOverview(await rpc.wallet.get({}));
     } catch {
       setLoadError(t`Couldn't load wallet information`);
     } finally {
@@ -375,28 +370,38 @@ export function WalletSettingsPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function savePersonalAddress(address: string | null) {
-    setPersonalPending(true);
-    setPersonalError(null);
+  async function startPairing(botId: string) {
+    if (pairing[botId]?.pending) return;
+    setPairing((current) => ({
+      ...current,
+      [botId]: { pending: true, pairingUrl: current[botId]?.pairingUrl ?? null, error: null },
+    }));
     try {
-      await rpc.wallet.setPersonal({ address });
-      applyOverview(await rpc.wallet.get({}));
-    } catch {
-      setPersonalError(t`Couldn't save the wallet address`);
-    } finally {
-      setPersonalPending(false);
+      const result = await rpc.wallet.pair({ botId });
+      setPairing((current) => ({
+        ...current,
+        [botId]: {
+          pending: false,
+          pairingUrl: result.pairingUrl,
+          error: result.pairingUrl
+            ? null
+            : t`The pairing link did not appear in time — try again or ask the bot in its chat.`,
+        },
+      }));
+    } catch (error) {
+      setPairing((current) => ({
+        ...current,
+        [botId]: {
+          pending: false,
+          pairingUrl: current[botId]?.pairingUrl ?? null,
+          error:
+            error instanceof Error && error.message
+              ? error.message
+              : t`Couldn't start the pairing on the bot's computer`,
+        },
+      }));
     }
   }
-
-  function submitPersonalDraft(event: React.FormEvent) {
-    event.preventDefault();
-    const address = personalDraft.trim();
-    if (!THAIIFI_ADDRESS_PATTERN.test(address) || personalPending) return;
-    void savePersonalAddress(address);
-  }
-
-  const personalAddress = overview?.personalAddress ?? null;
-  const personalValid = THAIIFI_ADDRESS_PATTERN.test(personalDraft.trim());
 
   return (
     <div className="space-y-5" data-testid="wallet-settings">
@@ -434,184 +439,111 @@ export function WalletSettingsPanel() {
           </p>
         ) : (
           <ul className="mt-3 space-y-3">
-            {overview.agentWallets.map((entry) => (
-              <li key={entry.botId} className="rounded-lg border border-border/60 px-3 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 truncate text-[14px] font-medium text-foreground">
-                    {entry.botName}
-                  </span>
+            {overview.agentWallets.map((entry) => {
+              const pair = pairing[entry.botId];
+              const pairable = entry.state === "unpaired" || entry.state === "expired";
+              return (
+                <li key={entry.botId} className="rounded-lg border border-border/60 px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-[14px] font-medium text-foreground">
+                      {entry.botName}
+                    </span>
+                    {entry.state === "ready" ? (
+                      <a
+                        href={`${overview.explorerUrl}/address/${entry.address}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 font-mono text-[12.5px] text-muted-foreground underline-offset-2 hover:underline"
+                      >
+                        {shortAddress(entry.address)}
+                      </a>
+                    ) : entry.state === "unpaired" ? (
+                      <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                        <Trans>Not paired</Trans>
+                      </span>
+                    ) : entry.state === "expired" ? (
+                      <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                        <Trans>Key expired</Trans>
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                        <Trans>Computer is off</Trans>
+                      </span>
+                    )}
+                  </div>
                   {entry.state === "ready" ? (
-                    <a
-                      href={`${overview.explorerUrl}/address/${entry.address}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="shrink-0 font-mono text-[12.5px] text-muted-foreground underline-offset-2 hover:underline"
-                    >
-                      {shortAddress(entry.address)}
-                    </a>
-                  ) : entry.state === "unpaired" ? (
-                    <span className="shrink-0 text-[12.5px] text-muted-foreground">
-                      <Trans>Not paired</Trans>
-                    </span>
-                  ) : (
-                    <span className="shrink-0 text-[12.5px] text-muted-foreground">
-                      <Trans>Computer is off</Trans>
-                    </span>
-                  )}
-                </div>
-                {entry.state === "ready" ? (
-                  <>
-                    <dl className="mt-2 grid grid-cols-3 gap-2">
-                      {entry.balances.map((balance) => (
-                        <div key={balance.symbol}>
-                          <dt className="text-[11.5px] uppercase tracking-wide text-muted-foreground">
-                            {balance.symbol}
-                          </dt>
-                          <dd className="text-[14px] text-foreground">{balance.formatted}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    {entry.error ? (
-                      <p role="alert" className="mt-2 text-[12.5px] text-destructive">
-                        {entry.error}
-                      </p>
-                    ) : null}
-                  </>
-                ) : entry.state === "unpaired" ? (
-                  <p className="mt-2 text-[12.5px] text-muted-foreground">
-                    <Trans>
-                      Ask the bot to run thaifi login to pair its wallet, then approve it at
-                      wallet.thaifi.com.
-                    </Trans>{" "}
-                    <a
-                      href={overview.walletUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-foreground underline-offset-2 hover:underline"
-                    >
-                      <Trans>Open ThaiFi Wallet</Trans>
-                    </a>
-                  </p>
-                ) : null}
-              </li>
-            ))}
+                    <>
+                      <dl className="mt-2 grid grid-cols-3 gap-2">
+                        {entry.balances.map((balance) => (
+                          <div key={balance.symbol}>
+                            <dt className="text-[11.5px] uppercase tracking-wide text-muted-foreground">
+                              {balance.symbol}
+                            </dt>
+                            <dd className="text-[14px] text-foreground">{balance.formatted}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {entry.error ? (
+                        <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+                          {entry.error}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : pairable ? (
+                    <div className="mt-2">
+                      {entry.state === "expired" ? (
+                        <p className="text-[12.5px] text-muted-foreground">
+                          <Trans>
+                            The wallet key expired — pair again to let this bot spend on-chain.
+                          </Trans>
+                        </p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="rounded-full"
+                          disabled={pair?.pending}
+                          onClick={() => void startPairing(entry.botId)}
+                        >
+                          {pair?.pending ? <Trans>Starting…</Trans> : <Trans>Start pairing</Trans>}
+                        </Button>
+                        <span className="text-[12.5px] text-muted-foreground">
+                          <Trans>
+                            or ask the bot in its chat to run thaifi login — the newest link wins.
+                          </Trans>
+                        </span>
+                      </div>
+                      {pair?.pairingUrl ? (
+                        <p className="mt-2 text-[12.5px]">
+                          <Trans>Approve with passkey/PIN:</Trans>{" "}
+                          <a
+                            href={pair.pairingUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="break-all font-medium text-foreground underline-offset-2 hover:underline"
+                          >
+                            {pair.pairingUrl}
+                          </a>
+                        </p>
+                      ) : null}
+                      {pair?.pairingUrl ? (
+                        <p className="mt-1 text-[12.5px] text-muted-foreground">
+                          <Trans>After approving, press Refresh to see the balance.</Trans>
+                        </p>
+                      ) : null}
+                      {pair?.error ? (
+                        <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+                          {pair.error}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
-      </section>
-
-      <section className="rounded-xl border border-border px-4 py-4">
-        <h3 className="text-[15px] font-medium text-foreground">
-          <Trans>Personal wallet</Trans>
-        </h3>
-        <p className="mt-1 text-[12.5px] text-muted-foreground/80">
-          <Trans>Your own ThaiFi address — balances are read from the chain.</Trans>
-        </p>
-        {overview && !editingPersonal && personalAddress ? (
-          <div className="mt-3">
-            <a
-              href={`${overview.explorerUrl}/address/${personalAddress}`}
-              target="_blank"
-              rel="noreferrer"
-              data-testid="wallet-personal-address"
-              className="block break-all font-mono text-[13px] text-foreground underline-offset-2 hover:underline"
-            >
-              {personalAddress}
-            </a>
-            {overview.personalError ? (
-              <p role="alert" className="mt-2 text-[12.5px] text-destructive">
-                {overview.personalError}
-              </p>
-            ) : (
-              <dl className="mt-2 grid grid-cols-3 gap-2">
-                {overview.personalBalances.map((balance) => (
-                  <div key={balance.symbol}>
-                    <dt className="text-[11.5px] uppercase tracking-wide text-muted-foreground">
-                      {balance.symbol}
-                    </dt>
-                    <dd className="text-[14px] text-foreground">{balance.formatted}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-            <div className="mt-3 flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-full"
-                onClick={() => {
-                  setPersonalDraft(personalAddress);
-                  setEditingPersonal(true);
-                }}
-              >
-                <Trans>Change</Trans>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full"
-                disabled={personalPending}
-                onClick={() => void savePersonalAddress(null)}
-              >
-                <Trans>Remove</Trans>
-              </Button>
-            </div>
-          </div>
-        ) : overview ? (
-          <div className="mt-3">
-            <form onSubmit={submitPersonalDraft} className="flex flex-wrap items-center gap-2">
-              <Input
-                value={personalDraft}
-                onChange={(e) => setPersonalDraft(e.target.value)}
-                placeholder="0x…"
-                spellCheck={false}
-                data-testid="wallet-personal-input"
-                className="h-9 min-w-0 flex-1 rounded-lg font-mono text-[13px]"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="rounded-full"
-                disabled={personalPending || !personalValid}
-              >
-                <Trans>Save</Trans>
-              </Button>
-              {personalAddress ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => {
-                    setPersonalDraft(personalAddress);
-                    setEditingPersonal(false);
-                  }}
-                >
-                  <Trans>Cancel</Trans>
-                </Button>
-              ) : null}
-            </form>
-            <p className="mt-2 text-[12.5px] text-muted-foreground/80">
-              <Trans>No wallet yet?</Trans>{" "}
-              <a
-                href={overview.walletUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-foreground underline-offset-2 hover:underline"
-              >
-                <Trans>Open wallet.thaifi.com</Trans>
-              </a>
-            </p>
-          </div>
-        ) : (
-          <p className="mt-3 text-[13px] text-muted-foreground/70">
-            <Trans>Loading…</Trans>
-          </p>
-        )}
-        {personalError ? (
-          <p role="alert" className="mt-2 text-[12.5px] text-destructive">
-            {personalError}
-          </p>
-        ) : null}
       </section>
 
       <p className="text-[12px] text-muted-foreground/70">

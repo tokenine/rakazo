@@ -11,31 +11,36 @@ import { fetchThaifiBalances, parseThaifiAddress } from "./thaifi.js";
  * (`thaifi` CLI is baked into every computer image; the paired key lives only
  * there), while balances are always fetched server-side from the public
  * ThaiFi RPC so computer egress restrictions cannot break the panel.
+ * Pairing is started the same way the bots themselves do it: a detached
+ * `thaifi login --no-browser` whose stdout lands in a temp file we read back.
  */
 
-const ADDRESS_PROBE_COMMAND = "thaifi fund 2>/dev/null || thaifi whoami";
-const ADDRESS_PROBE_TIMEOUT_MS = 15_000;
+const PROBE_COMMAND =
+  "thaifi fund 2>/dev/null; printf '\\n---WHOAMI---\\n'; thaifi whoami 2>/dev/null; true";
+const PROBE_TIMEOUT_MS = 15_000;
+
+/** Same recipe the bots use (see the thaifi-wallet expertise): detached login,
+ * URL captured to a file we can read; approval completes the background process. */
+const PAIR_COMMAND =
+  "nohup thaifi login --no-browser > /tmp/rakazo-thaifi-pair.txt 2>&1 & sleep 3; cat /tmp/rakazo-thaifi-pair.txt 2>/dev/null; true";
+const PAIR_TIMEOUT_MS = 25_000;
+const PAIRING_URL_PATTERN = /https:\/\/wallet\.thaifi\.com\/pair\?[^\s"']+/;
+const KEY_EXPIRES_PATTERN = /Key expires:\s*(\S+)/;
 
 export async function walletOverview(
   deps: { prisma: PrismaClient; sandbox: SandboxProvider },
   actor: Actor,
 ): Promise<WalletOverview> {
-  const [bots, user] = await Promise.all([
-    deps.prisma.bot.findMany({
-      where: {
-        spaceId: actor.spaceId,
-        userId: actor.userId,
-        archivedAt: null,
-        computer: { isNot: null },
-      },
-      include: { computer: true },
-      orderBy: [{ pinned: "desc" }, { position: "asc" }, { createdAt: "asc" }],
-    }),
-    deps.prisma.user.findUnique({
-      where: { id: actor.userId },
-      select: { walletAddress: true },
-    }),
-  ]);
+  const bots = await deps.prisma.bot.findMany({
+    where: {
+      spaceId: actor.spaceId,
+      userId: actor.userId,
+      archivedAt: null,
+      computer: { isNot: null },
+    },
+    include: { computer: true },
+    orderBy: [{ pinned: "desc" }, { position: "asc" }, { createdAt: "asc" }],
+  });
 
   const agentWallets = await Promise.all(
     bots.map(async (bot) => {
@@ -45,15 +50,22 @@ export async function walletOverview(
       if (!computer || computer.state !== "running" || !providerRef) {
         return { ...base, state: "unavailable" as const };
       }
-      const stdout = await probeWalletAddress(
+      const stdout = await execOnComputer(
         deps.sandbox,
         { homeKey: computer.homeKey, kind: computer.kind, providerRef },
         actor,
         bot.id,
+        PROBE_COMMAND,
+        PROBE_TIMEOUT_MS,
       );
       if (stdout === null) return { ...base, state: "unavailable" as const };
       const address = parseThaifiAddress(stdout);
       if (!address) return { ...base, state: "unpaired" as const };
+      const expiresText = KEY_EXPIRES_PATTERN.exec(stdout)?.[1];
+      const expiresAt = expiresText ? Date.parse(expiresText) : NaN;
+      if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+        return { ...base, state: "expired" as const, address };
+      }
       try {
         const balances = await fetchThaifiBalances(address);
         return { ...base, state: "ready" as const, address, balances, error: null };
@@ -69,53 +81,63 @@ export async function walletOverview(
     }),
   );
 
-  const personalAddress = user?.walletAddress ?? null;
-  let personalBalances: WalletOverview["personalBalances"] = [];
-  let personalError: string | null = null;
-  if (personalAddress) {
-    try {
-      personalBalances = await fetchThaifiBalances(personalAddress);
-    } catch (error) {
-      personalError = error instanceof Error ? error.message : "Could not fetch balances";
-    }
-  }
-
   return {
     chainId: THAIIFI_CHAIN_ID,
     walletUrl: THAIIFI_WALLET_URL,
     explorerUrl: THAIIFI_EXPLORER_URL,
     agentWallets,
-    personalAddress,
-    personalBalances,
-    personalError,
   };
 }
 
-export async function setPersonalWalletAddress(
-  deps: { prisma: PrismaClient },
+/**
+ * Starts the pairing flow on the bot's computer and returns the approval URL
+ * printed by `thaifi login --no-browser` (null when none appeared in time —
+ * the background process keeps running and the user can retry or pair later).
+ */
+export async function startWalletPairing(
+  deps: { prisma: PrismaClient; sandbox: SandboxProvider },
   actor: Actor,
-  address: string | null,
-): Promise<void> {
-  try {
-    await deps.prisma.user.update({
-      where: { id: actor.userId },
-      data: { walletAddress: address },
+  botId: string,
+): Promise<{ pairingUrl: string | null }> {
+  const bot = await deps.prisma.bot.findFirst({
+    where: { id: botId, spaceId: actor.spaceId, userId: actor.userId, archivedAt: null },
+    include: { computer: true },
+  });
+  if (!bot?.computer) throw new ORPCError("NOT_FOUND", { message: "Bot not found" });
+  const computer = bot.computer;
+  const providerRef = computer.providerRef;
+  if (computer.state !== "running" || !providerRef) {
+    throw new ORPCError("CONFLICT", {
+      message: "The bot's computer is not running. Start it first, then pair the wallet.",
     });
-  } catch {
-    throw new ORPCError("NOT_FOUND", { message: "User not found" });
   }
+  const stdout = await execOnComputer(
+    deps.sandbox,
+    { homeKey: computer.homeKey, kind: computer.kind, providerRef },
+    actor,
+    bot.id,
+    PAIR_COMMAND,
+    PAIR_TIMEOUT_MS,
+  );
+  if (stdout === null) {
+    throw new ORPCError("CONFLICT", { message: "Could not reach the bot's computer." });
+  }
+  const match = PAIRING_URL_PATTERN.exec(stdout);
+  return { pairingUrl: match ? match[0] : null };
 }
 
-/** Returns the probe stdout, or null when the computer could not be reached. */
-async function probeWalletAddress(
+/** Returns the command stdout, or null when the computer could not be reached. */
+async function execOnComputer(
   sandbox: SandboxProvider,
   computer: { homeKey: string; kind: string; providerRef: string },
   actor: Actor,
   botId: string,
+  command: string,
+  timeoutMs: number,
 ): Promise<string | null> {
   const context: AdapterContext = {
-    operationId: `wallet-probe-${botId}`,
-    traceId: `wallet-probe-${botId}`,
+    operationId: `wallet-${botId}`,
+    traceId: `wallet-${botId}`,
     spaceId: actor.spaceId,
     userId: actor.userId,
     botId,
@@ -125,7 +147,7 @@ async function probeWalletAddress(
     let stdout = "";
     const events = sandbox.execute(
       toComputerRef(computer),
-      { argv: ["bash", "-c", ADDRESS_PROBE_COMMAND], timeoutMs: ADDRESS_PROBE_TIMEOUT_MS },
+      { argv: ["bash", "-c", command], timeoutMs },
       context,
     );
     for await (const event of events) {
