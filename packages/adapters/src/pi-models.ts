@@ -7,6 +7,10 @@ import {
   OPENAI_COMPATIBLE_PROVIDER_ID,
   registerOpenAiCompatibleCatalog,
 } from "./pi-openai-compatible-provider.js";
+import {
+  registerZaiPlatformProvider,
+  ZAI_CODING_PLAN_PROVIDER_ID,
+} from "./pi-zai-platform-provider.js";
 
 export type PiCatalogAuth = "api-key" | "oauth" | "both";
 
@@ -34,7 +38,9 @@ export function listPiCatalog(): PiCatalogEntry[] {
 let cachedCatalog: PiCatalogEntry[] | undefined;
 
 function buildPiCatalog(): PiCatalogEntry[] {
-  const models = registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels()));
+  const models = registerZaiPlatformProvider(
+    registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+  );
   const entries: PiCatalogEntry[] = [];
   for (const provider of models.getProviders()) {
     const apiKey = Boolean(provider.auth.apiKey);
@@ -54,7 +60,10 @@ function buildPiCatalog(): PiCatalogEntry[] {
       const thinkingLevels = getSupportedThinkingLevels(model) as ThinkingLevel[];
       entries.push({
         provider: provider.id,
-        providerName: provider.name,
+        // pi's generated catalog names the Coding Plan endpoint "Z.AI"; label it
+        // by what its URL serves so the regular platform provider keeps "Z.AI".
+        providerName:
+          provider.id === ZAI_CODING_PLAN_PROVIDER_ID ? "Z.AI Coding Plan" : provider.name,
         id: model.id,
         label: catalogModelLabel(model.id, model.name, modelIds),
         billing,

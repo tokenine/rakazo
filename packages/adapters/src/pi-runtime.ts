@@ -55,6 +55,7 @@ import {
   type PiSessionHandle,
   type PiSessionRecorder,
 } from "./pi-session.js";
+import { registerZaiPlatformProvider } from "./pi-zai-platform-provider.js";
 import { textContentArg } from "./tool-text.js";
 
 const running = new Map<string, { controller: AbortController; work: Promise<void> }>();
@@ -71,7 +72,9 @@ const toolCallBudgetsByRun = new Map<string, ToolCallBudget>();
 // would run before .env is loaded and miss the local provider entirely.
 let catalogModelsCache: Models | undefined;
 function catalogModels(): Models {
-  catalogModelsCache ??= registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels()));
+  catalogModelsCache ??= registerZaiPlatformProvider(
+    registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+  );
   return catalogModelsCache;
 }
 const MAX_PARALLEL_SUBAGENTS = 4;
@@ -549,15 +552,17 @@ export function modelsForRequest(
   const oauth = request.model.oauth;
   if (oauth) {
     const persist = oauth.persist;
-    return registerOpenAiCompatibleCatalog(
-      registerLocalProvider(
-        builtinModels({
-          credentials: new PiRuntimeCredentialStore(
-            provider,
-            toOAuthCredential(oauth.credential),
-            persist ? (next) => persist(next) : undefined,
-          ),
-        }),
+    return registerZaiPlatformProvider(
+      registerOpenAiCompatibleCatalog(
+        registerLocalProvider(
+          builtinModels({
+            credentials: new PiRuntimeCredentialStore(
+              provider,
+              toOAuthCredential(oauth.credential),
+              persist ? (next) => persist(next) : undefined,
+            ),
+          }),
+        ),
       ),
     );
   }
@@ -566,7 +571,9 @@ export function modelsForRequest(
     request.model.baseUrl &&
     request.model.id.trim()
   ) {
-    const models = registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels()));
+    const models = registerZaiPlatformProvider(
+      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    );
     return registerOpenAiCompatibleRuntime(models, {
       modelId: request.model.id,
       baseUrl: request.model.baseUrl,
