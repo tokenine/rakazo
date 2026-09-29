@@ -95,6 +95,13 @@ export type GroupMember = z.infer<typeof GroupMemberSchema>;
 /** Selected-text excerpt carried by a reply; capped so a quote stays a quote. */
 export const REPLY_QUOTE_MAX_LENGTH = 2_000;
 
+/** Cap an excerpt at the quote limit without splitting a surrogate pair. */
+export function truncateReplyQuote(value: string): string {
+  const truncated = value.slice(0, REPLY_QUOTE_MAX_LENGTH);
+  const last = truncated.charCodeAt(truncated.length - 1);
+  return last >= 0xd800 && last <= 0xdbff ? truncated.slice(0, -1) : truncated;
+}
+
 export const GROUP_MEMBER_MIN = 2;
 export const GROUP_MEMBER_MAX = 6;
 
@@ -494,6 +501,7 @@ export const TeachRecordingEventSchema = z.object({
   key: z.string().optional(),
   text: z.string().optional(),
   summary: z.string().optional(),
+  sensitive: z.boolean().optional(),
 });
 export type TeachRecordingEvent = z.infer<typeof TeachRecordingEventSchema>;
 
@@ -754,10 +762,23 @@ export const ArtifactSchema = z.object({
   groupId: Id.nullable(),
   runId: Id.nullable(),
   name: z.string(),
+  description: z.string().nullable(),
   mimeType: z.string(),
   size: z.number().int(),
+  version: z.number().int(),
   createdAt: z.string(),
 });
+
+export type Artifact = z.infer<typeof ArtifactSchema>;
+
+export const ArtifactVersionSchema = z.object({
+  id: Id,
+  version: z.number().int(),
+  name: z.string(),
+  createdAt: z.string(),
+});
+
+export type ArtifactVersion = z.infer<typeof ArtifactVersionSchema>;
 
 export const ArtifactWithContentSchema = ArtifactSchema.extend({
   contentBase64: z.string(),
@@ -808,6 +829,7 @@ export const ComputerStatusSchema = z.object({
   homeRevision: z.string().nullable(),
   busyBotName: z.string().nullable(),
   canUpdate: z.boolean(),
+  terminalAvailable: z.boolean(),
 });
 export type ComputerStatus = z.infer<typeof ComputerStatusSchema>;
 
@@ -869,12 +891,14 @@ export const RunSchema = z.object({
     "resume",
     "follow_up",
     "reaction",
+    "call_end",
     "spawn",
     "skill",
     "bot_message",
     "webhook",
     "messaging",
     "cloud_agent",
+    "created",
   ]),
   routineId: Id.nullable(),
   modelProvider: z.string().nullable(),
@@ -1107,6 +1131,8 @@ export const VoiceCredentialSchema = z.object({
   hasKey: z.boolean(),
   isDefault: z.boolean(),
   voiceId: z.string(),
+  /** Fish speech-model override. Empty uses the deployment default. */
+  speechModel: z.string(),
   transcribe: z.boolean(),
 });
 export type VoiceCredential = z.infer<typeof VoiceCredentialSchema>;

@@ -79,6 +79,13 @@ function createDeps(
       })),
     },
     run: { findUnique: vi.fn(async () => null) },
+    // Artifact versioning (upstream #942) allocates inside the transaction:
+    // an advisory-lock probe, a previous-version lookup, then the insert.
+    $queryRaw: vi.fn(async () => []),
+    artifact: {
+      findFirst: vi.fn(async () => null),
+      create: artifactCreate,
+    },
   };
   const members = overrides.members ?? [];
   const linkCodes: Array<Record<string, unknown>> = overrides.linkCode ? [overrides.linkCode] : [];

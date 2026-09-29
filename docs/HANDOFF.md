@@ -35,7 +35,7 @@ Desktop rebuild (local):
 pnpm --filter @rakazo/web build && pnpm --filter @rakazo/desktop build
 pnpm --filter @rakazo/desktop exec electron-builder --mac --universal --publish never \
   -c.mac.notarize=false -c.forceCodeSigning=false
-# install: quit app → mount dmg → rm -rf /Applications/Ai7.app → cp -R → codesign --force --deep --sign "Rakazo Local Dev"
+# install: quit app → mount dmg → rm -rf /Applications/Ai7.app → cp -R → codesign --force --deep --sign "Ai7 Local Dev"
 # then: rm -rf apps/desktop/out/mac-universal   (prevents wrong-instance launches)
 ```
 

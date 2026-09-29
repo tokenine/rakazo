@@ -144,6 +144,8 @@ const EXTENSION_MIME_TYPES: Record<string, AttachmentMimeType> = {
   ".md": "text/markdown",
   ".markdown": "text/markdown",
   ".csv": "text/csv",
+  ".html": "text/html",
+  ".htm": "text/html",
   ".json": "application/json",
 };
 
@@ -156,6 +158,7 @@ const MIME_TYPE_EXTENSIONS: Record<AttachmentMimeType, string> = {
   "text/plain": ".txt",
   "text/markdown": ".md",
   "text/csv": ".csv",
+  "text/html": ".html",
   "application/json": ".json",
 };
 
@@ -193,17 +196,9 @@ export function attachmentsForBot<T extends { botId: string }>(
   return attachments.filter((attachment) => attachment.botId === botId);
 }
 
-export function userTurnBlocksForRun(
-  trigger: string,
-  runId: string,
-  messages: Array<{
-    id?: string;
-    role: string;
-    runId?: string | null;
-    blocks: MessageBlock[];
-  }>,
-  sourceMessageId?: string | null,
-): MessageBlock[] | undefined {
+export function userTurnMessageForRun<
+  T extends { id?: string; role: string; runId?: string | null; blocks: MessageBlock[] },
+>(trigger: string, runId: string, messages: T[], sourceMessageId?: string | null): T | undefined {
   // "messaging" runs (telegram/whatsapp/…) carry their source image blocks
   // too — the linked chat is exactly where users attach photos.
   if (trigger !== "user" && trigger !== "messaging") return undefined;
@@ -211,5 +206,5 @@ export function userTurnBlocksForRun(
     (message) =>
       message.role === "user" &&
       (sourceMessageId ? message.id === sourceMessageId : message.runId === runId),
-  )?.blocks;
+  );
 }
