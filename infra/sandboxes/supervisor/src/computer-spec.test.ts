@@ -773,6 +773,22 @@ describe("graphical computer spec", () => {
       "1",
     ]);
   });
+
+  it("types ASCII text with xdotool but pastes non-ASCII through the clipboard", () => {
+    expect(xdotoolCommand({ kind: "clipboard", text: "plain" })).toEqual([
+      "xdotool",
+      "type",
+      "--clearmodifiers",
+      "--",
+      "plain",
+    ]);
+    const text = "สวัสดีครับ";
+    expect(xdotoolCommand({ kind: "clipboard", text })).toEqual([
+      "sh",
+      "-c",
+      `printf %s ${Buffer.from(text, "utf8").toString("base64")} | base64 -d | xclip -selection clipboard -input && sleep 0.2 && xdotool key --clearmodifiers ctrl+v`,
+    ]);
+  });
 });
 
 describe("computer resource limits", () => {

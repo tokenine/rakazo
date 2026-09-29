@@ -65,6 +65,28 @@ describe.each([undefined, profile])(
       if (!("argv" in step)) throw new Error("expected command");
       expect(check(step.argv)).toEqual({ allowed: true, longLived: false });
     });
+
+    it("accepts ASCII typing through xdotool", () => {
+      const step = containerActionStep(
+        { kind: "clipboard", text: "hello world" },
+        display,
+        browserProfile,
+      );
+      if (!("argv" in step)) throw new Error("expected command");
+      expect(step.argv[2]).toBe("xdotool");
+      expect(check(step.argv)).toEqual({ allowed: true, longLived: false });
+    });
+
+    it("accepts the supervisor-emitted clipboard paste pipeline for non-ASCII typing", () => {
+      const step = containerActionStep(
+        { kind: "clipboard", text: "สวัสดีครับ" },
+        display,
+        browserProfile,
+      );
+      if (!("argv" in step)) throw new Error("expected command");
+      expect(step.argv[2]).toBe("sh");
+      expect(check(step.argv)).toEqual({ allowed: true, longLived: false });
+    });
   },
 );
 
@@ -102,6 +124,29 @@ describe("controller argv restrictions", () => {
     ["env", `DISPLAY=${display}`, "RAKAZO_BROWSER_PROFILE=/tmp/unsafe", "rakazo-browser"],
     ["env", `DISPLAY=${display}`, `RAKAZO_BROWSER_PROFILE=${profile}/../other`, "rakazo-browser"],
     ["env", `DISPLAY=${display}`, `RAKAZO_BROWSER_PROFILE=${profile}`, "sh", "-c", "true"],
+    ["env", `DISPLAY=${display}`, "sh", "-c", "true"],
+    ["env", `DISPLAY=${display}`, "sh"],
+    [
+      "env",
+      `DISPLAY=${display}`,
+      "sh",
+      "-c",
+      "printf %s UkNE | base64 -d | rm -rf /home/rakazo && xdotool key --clearmodifiers ctrl+v",
+    ],
+    [
+      "env",
+      `DISPLAY=${display}`,
+      "sh",
+      "-c",
+      "printf %s UkNE | base64 -d | xclip -selection clipboard -input && sleep 0.2 && xdotool key --clearmodifiers ctrl+c",
+    ],
+    [
+      "env",
+      `DISPLAY=${display}`,
+      "sh",
+      "-c",
+      "printf %s UkNE | base64 -d | xclip -selection clipboard -input; xdotool key --clearmodifiers ctrl+v",
+    ],
     ["env", `DISPLAY=${display}`, `RAKAZO_BROWSER_PROFILE=${profile}`, "xdotool", "key", "Return"],
     [
       "env",

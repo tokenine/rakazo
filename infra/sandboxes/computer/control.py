@@ -117,6 +117,15 @@ def _is_int_string(value):
     return value.isdigit()
 
 
+# Exact clipboard-paste pipeline emitted by supervisor clipboardPasteCommand()
+# for non-ASCII typing (xdotool XTEST cannot type Thai/emoji). The base64 body
+# is the only free-form part and it is restricted to the base64 alphabet.
+CONTROL_PASTE_SCRIPT = re.compile(
+    r"^printf %s [A-Za-z0-9+/=]+ \| base64 -d \| xclip -selection clipboard -input"
+    r" && sleep 0\.2 && xdotool key --clearmodifiers ctrl\+v$"
+)
+
+
 def allowed_xdotool_argv(argv):
     """Only xdotool forms emitted by containerActionStep / xdotoolCommand."""
     if len(argv) < 4 or argv[2] != "xdotool":
@@ -175,6 +184,12 @@ def allowed_control_argv(argv, display):
             return False
     if command == "xdotool":
         return allowed_xdotool_argv(argv)
+    if command == "sh":
+        return (
+            len(argv) == index + 3
+            and argv[index + 1] == "-c"
+            and bool(CONTROL_PASTE_SCRIPT.fullmatch(argv[index + 2]))
+        )
     if command == "xdg-open":
         return len(argv) == index + 2
     if "/" in command or command not in KNOWN_LAUNCH:

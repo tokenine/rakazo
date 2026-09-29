@@ -433,6 +433,22 @@ export function resolveComputerControlEndpoint(input: {
   return { url: `http://${address}:${COMPUTER_CONTROL_PORT}/v1/desktop`, token: input.token };
 }
 
+const ASCII_ONLY = /^[\t\n\r\x20-\x7e]*$/;
+
+// xdotool's XTEST typing only presses keysyms present in the X server's
+// keyboard layout, so non-ASCII text (Thai, emoji) silently types nothing.
+// Stage the text on the clipboard with xclip (baked into the computer image)
+// and paste it with Ctrl+V instead. Keep the script shape in lockstep with
+// the CONTROL_PASTE_SCRIPT whitelist in infra/sandboxes/computer/control.py.
+export function clipboardPasteCommand(text: string): string[] {
+  const encoded = Buffer.from(text, "utf8").toString("base64");
+  return [
+    "sh",
+    "-c",
+    `printf %s ${encoded} | base64 -d | xclip -selection clipboard -input && sleep 0.2 && xdotool key --clearmodifiers ctrl+v`,
+  ];
+}
+
 export function xdotoolCommand(input: SandboxInput): string[] {
   if (input.kind === "key") {
     const key = mapKey(input.key);
@@ -450,7 +466,10 @@ export function xdotoolCommand(input: SandboxInput): string[] {
     if (input.type === "up") return ["xdotool", "mouseup", btn];
     return ["xdotool", "mousemove", "--", String(input.x), String(input.y), "click", btn];
   }
-  return ["xdotool", "type", "--clearmodifiers", "--", input.text];
+  if (ASCII_ONLY.test(input.text)) {
+    return ["xdotool", "type", "--clearmodifiers", "--", input.text];
+  }
+  return clipboardPasteCommand(input.text);
 }
 
 function mapKey(key: string) {
