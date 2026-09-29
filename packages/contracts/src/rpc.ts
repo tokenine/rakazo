@@ -61,6 +61,14 @@ import {
   ServerUpdateRequestSchema,
   ServerUpdateRunSchema,
   ServerUpdateStatusSchema,
+} from "./domain.js";
+import {
+  AgentBundleSchema,
+  BUNDLE_MAX_BYTES,
+  ImportCommitInputSchema,
+  ImportPreviewSchema,
+} from "./agent-bundle.js";
+import {
   SkillPlaybookSchema,
   SpaceMemoryConfigSchema,
   SpaceNavigationSchema,
@@ -842,6 +850,29 @@ export const appContract = {
   },
   export: {
     bot: oc.input(botId).output(ExportManifestSchema),
+  },
+  /**
+   * Agent marketplace — two-phase import and cross-instance export.
+   * Preview shows the manifest; commit requires the HMAC-signed import token.
+   */
+  agents: {
+    /**
+     * Phase 1 — parse and validate a bundle, return a reviewable preview
+     * plus a time-limited HMAC token binding the bundle hash.
+     */
+    previewImport: oc
+      .input(z.object({ bundleJson: z.string().max(BUNDLE_MAX_BYTES) }))
+      .output(ImportPreviewSchema),
+    /**
+     * Phase 2 — commit an import previously previewed.
+     * Re-validates the token and bundle hash before creating any records.
+     */
+    import: oc.input(ImportCommitInputSchema).output(BotSchema),
+    /**
+     * Export a bot as a marketplace bundle.
+     * Refuses bots whose instructions or skill content contain embedded secrets.
+     */
+    export: oc.input(botId).output(AgentBundleSchema),
   },
   notifications: {
     registerPush: oc

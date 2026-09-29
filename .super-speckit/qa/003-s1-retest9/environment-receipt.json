@@ -1,0 +1,48 @@
+{
+  "run_id": "003-s1-retest9",
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "candidate_sha": "ccb1aa01",
+  "checker": "omp-checker-003-s1-retest9",
+  "host": {
+    "platform": "linux-arm64",
+    "os": "Linux 7.0.0-30-generic",
+    "cpu": "aarch64"
+  },
+  "readiness_checks": [
+    {
+      "id": "node-engine",
+      "requirement": "^22.22.2 || ^24.0.0 || >=26.0.0",
+      "observed": "system node v22.22.1 - NOT satisfied",
+      "resolution": "Node v22.23.3 at /opt/node-22.23.3",
+      "status": "pass"
+    },
+    {
+      "id": "pnpm-install",
+      "command": "pnpm install --frozen-lockfile",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "prisma-client",
+      "command": "pnpm --filter @rakazo/db generate",
+      "status": "pass",
+      "detail": "Prisma Client 7.10.0"
+    },
+    {
+      "id": "live-database",
+      "command": "reused the dedicated postgres:17-alpine container on port 55433",
+      "status": "pass",
+      "detail": "same recipe as retest3-8"
+    },
+    {
+      "id": "red-green",
+      "command": "revert router to 1d9b82f7, run the suite with the 2 new tests",
+      "status": "fail",
+      "detail": "expected - red half: SEC-17 test failed (1/83). SEC-18's first draft passed on both versions and was rewritten to a genuinely red case before being trusted."
+    }
+  ],
+  "namespace": "ss-003-s1-retest9",
+  "redaction_check": "no credentials; fixture secrets are literal placeholders",
+  "notes": "The systematic closure over decode depth. Closed SEC-17/18; the convergence lane then constructed SEC-19 (mixed per-segment depths) and SEC-20 (NFKC synthesising escapes), demonstrating the enumeration cannot converge."
+}

@@ -1,0 +1,9 @@
+{
+  "feature": "003-agent-marketplace",
+  "status": "confirmed",
+  "map": "purpose-map.md",
+  "visual": "purpose-map.html",
+  "confirmed_by": "maintainer",
+  "confirmed_at": "2026-09-28T23:14:46+0700",
+  "confirmation": "Confirmed via purpose gate on the visual map: three lanes (export/import/marketplace), neutral catalog seam (bundled + operator URL + hosted registry + labeled 3rd-party pulls), install equals local-agent security rules, secrets/memory/credentials never exported, no payments/telemetry/hosted-requirement in v1."
+}

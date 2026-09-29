@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Purpose Map — 003 Agent import/export + marketplaces (visual)</title>
+<style>
+  :root{--ink:#18212f;--muted:#5a6a78;--surface:#fff;--wash:#eef3f8;--line:#c9d6e2;--bot:#075bcc;--ok:#1a7f4b;--no:#b42318;--warn:#8a6100}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 system-ui,sans-serif;color:var(--ink);background:var(--wash)}
+  main{max-width:1080px;margin:auto;padding:28px 18px 60px}
+  header.page{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  h1{font-size:22px;margin:0}
+  .tag{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 12px}
+  .flow{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+  .node{border:2px solid var(--ink);border-radius:10px;padding:10px 12px;min-width:140px;text-align:center}
+  .node b{display:block;font-size:14px}
+  .node small{color:var(--muted)}
+  .node.start{background:var(--ink);color:#fff}
+  .node.guard{border-color:var(--warn);border-style:dashed}
+  .node.db{border-radius:50%/30%;background:var(--wash)}
+  .arrow{align-self:center;padding:0 10px;font-size:20px;color:var(--muted)}
+  .lanes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .lane{border:1.5px solid var(--line);border-radius:10px;padding:12px;font-size:13px}
+  .lane h3{margin:0 0 8px;font-size:13px}
+  .lane .step{border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin:5px 0;background:#fbfdff}
+  .lane .x{color:var(--no);font-weight:700}
+  .seam{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+  .seam .slot{border:2px solid var(--bot);border-radius:10px;padding:12px 16px;text-align:center;min-width:170px}
+  .seam .slot small{display:block;color:var(--muted)}
+  .seam .src{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+  .seam .src small{display:block;color:var(--muted)}
+  .src .pin{font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--wash);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .nope{display:flex;gap:10px;flex-wrap:wrap}
+  .nope span{border:1.5px solid var(--no);color:var(--no);border-radius:8px;padding:6px 12px;font-size:13px;text-decoration:line-through}
+  .gate{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .gate div{border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
+  .gate b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .k{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1.5px solid var(--line)}
+  .k.ink{background:var(--ink);border-color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+  <header class="page"><h1>Purpose Map — Agent import/export + marketplaces</h1><span class="tag">FEATURE 003 · DRAFT · HUMAN GATE PENDING · CLARIFICATION Q2 OPEN</span></header>
+
+  <section>
+    <h2>1 · The three lanes</h2>
+    <div class="lanes">
+      <div class="lane">
+        <h3>⬆ Export</h3>
+        <div class="step">Pick agent → export</div>
+        <div class="step">Bundle: persona · sections · tools · skills · MCP defs · avatar</div>
+        <div class="step x">secrets ✗ · memory ✗ · credentials ✗ — never leave</div>
+        <div class="step">Versioned JSON + asset files (portable, human-inspectable)</div>
+      </div>
+      <div class="lane">
+        <h3>⬇ Import</h3>
+        <div class="step">Bundle in → <b>pre-install review screen</b></div>
+        <div class="step">Shows: what will be created · capabilities granted · required connections</div>
+        <div class="step">Adjust to local model credentials</div>
+        <div class="step">Install → agent appears in space</div>
+      </div>
+      <div class="lane">
+        <h3>🛒 Marketplace</h3>
+        <div class="step">Browse agents · skills · MCP servers</div>
+        <div class="step">Search + categories + detail views</div>
+        <div class="step">Detail shows capabilities + required connections</div>
+        <div class="step">One-click install (same import review)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · Catalog seam — one client, swappable sources (Q1/Q3 resolved)</h2>
+    <div class="seam">
+      <div class="src">Bundled default<small>ships with product <span class="pin">always present</span></small></div>
+      <div class="arrow">＋</div>
+      <div class="src">Operator catalog URL<small>closed / enterprise <span class="pin">optional</span></small></div>
+      <div class="arrow">＋</div>
+      <div class="src">Hosted public registry<small>we may run later <span class="pin">optional</span></small></div>
+      <div class="arrow">＋</div>
+      <div class="src">3rd-party MCP registry pulls<small>reference-only until curated <span class="pin">labeled</span></small></div>
+      <div class="arrow">⇒</div>
+      <div class="slot"><b>Neutral catalog interface</b><small>same client · merged browsable list</small></div>
+      <div class="arrow">→</div>
+      <div class="node" style="min-width:120px"><b>Marketplace UI</b></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3 · Install = same rules as a locally built agent</h2>
+    <div class="flow">
+      <div class="node start"><b>Install</b></div>
+      <div class="arrow">→</div>
+      <div class="node guard"><b>Review screen</b><small>capabilities · approvals · consent</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Created with local credentials</b><small>model keys stay deployment-local</small></div>
+      <div class="arrow">→</div>
+      <div class="node db"><b>Existing machinery</b><small>AgentSkill/TaughtSkill · McpServer/BotMcpServer · Connection</small></div>
+    </div>
+    <div class="legend" style="margin-top:10px">
+      <span><span class="k ink"></span>nothing auto-grants host access</span>
+      <span>no parallel skill/MCP system — reuses current tables</span>
+      <span>security review (constitution §7) gates the import path</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>4 · Non-goals</h2>
+    <div class="nope">
+      <span>payments / ratings / accounts</span>
+      <span>install-count telemetry</span>
+      <span>hosted service required for v1</span>
+      <span>secrets, memory, or user data in bundles</span>
+      <span>auto-granted capabilities on install</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>5 · Open at gate time</h2>
+    <table>
+      <tr><th>Item</th><th>State</th><th>Path</th></tr>
+      <tr><td>Q2 — skill bundle format</td><td>open → research task (do existing AgentSkill/TaughtSkill serialize, or is a canonical format needed first?)</td><td>grill Investigator role</td></tr>
+      <tr><td>Scope risk</td><td>spec marks this the highest-risk of the three — expect milestone route with sliced delivery</td><td>route decision after grill</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>6 · The gate — four fields</h2>
+    <div class="gate">
+      <div><b>Outcome</b>Agents move between deployments via inspectable bundles; users discover and install agents/skills/MCP from a browsable marketplace with one-click install.</div>
+      <div><b>People</b>Users moving agents across accounts/deployments · operators curating closed catalogs · maintainers curating the bundled preset · anyone browsing the open marketplace later.</div>
+      <div><b>Success</b>Export→import round-trip preserves behavior (no secrets); malicious bundles rejected; marketplace browse→install→agent-runs works; install passes the same security constitution as local agents.</div>
+      <div><b>Non-goals</b>Payments/ratings/accounts · telemetry · hosted-service requirement for v1 · secrets/memory/credentials in bundles · auto-granted capabilities.</div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

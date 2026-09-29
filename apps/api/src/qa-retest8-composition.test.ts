@@ -1,0 +1,42 @@
+import { createDb, type Db } from "@rakazo/db";
+import { RPCHandler } from "@orpc/server/fetch";
+import type { Actor } from "@rakazo/contracts";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createRouter, type RouterDeps } from "./router.js";
+const db=process.env.DATABASE_URL; const describeDb=db&&process.env.VERIFY_DATABASE==="1"?describe:describe.skip;
+const SECRET="opaque/secret";
+describeDb("SEC-16 composition bypass",()=>{
+  let prisma:Db; const sfx=`${process.pid}-${Date.now()}`;
+  const sp=`qa40-space-${sfx}`, u=`qa40-user-${sfx}`, org=`qa40-org-${sfx}`;
+  beforeAll(async()=>{ ({prisma}=createDb(db as string));
+    await prisma.user.create({data:{id:u,name:"Q",email:`qa40-${sfx}@t.test`}});
+    await prisma.organization.create({data:{id:org,name:"O",slug:`qa40-${sfx}`,createdAt:new Date()}});
+    await prisma.member.create({data:{id:`m-${sfx}`,organizationId:org,userId:u,role:"owner",createdAt:new Date()}});
+    await prisma.space.create({data:{id:sp,organizationId:org,name:"S"}});
+    await prisma.spaceMember.create({data:{id:`sm-${sfx}`,spaceId:sp,organizationId:org,userId:u,role:"owner",createdAt:new Date()}});
+    const sid=`qa40-sid-${sfx}`;
+    await prisma.secret.create({data:{id:sid,spaceId:sp,userId:u,kind:"agent",ciphertext:"c"}});
+    await prisma.agentSecret.create({data:{id:`as-${sfx}`,spaceId:sp,createdByUserId:u,name:"PCT_SECRET",secretId:sid}});
+  });
+  afterAll(async()=>{ await prisma.botMcpServer.deleteMany({where:{bot:{spaceId:sp}}});
+    await prisma.mcpServer.deleteMany({where:{spaceId:sp}}); await prisma.bot.deleteMany({where:{spaceId:sp}});
+    await prisma.computer.deleteMany({where:{spaceId:sp}}); await prisma.thread.deleteMany({where:{spaceId:sp}});
+    await prisma.agentSecret.deleteMany({where:{spaceId:sp}}); await prisma.secret.deleteMany({where:{spaceId:sp}});
+    await prisma.spaceMember.deleteMany({where:{spaceId:sp}}); await prisma.space.deleteMany({where:{id:sp}});
+    await prisma.member.deleteMany({where:{organizationId:org}}); await prisma.organization.deleteMany({where:{id:org}});
+    await prisma.user.deleteMany({where:{id:u}}); await prisma.$disconnect(); });
+  it("refuses a slash-spanning secret encoded per character", async()=>{
+    const srv=await prisma.mcpServer.create({data:{spaceId:sp,userId:u,slug:`qa40-c-${sfx}`,name:"C",description:"d",
+      transport:"streamable_http",endpoint:"https://mcp.example.com/t/opa%71ue/se%63ret",enabled:true}});
+    const comp=await prisma.computer.create({data:{spaceId:sp,userId:u,scope:"team",kind:"docker",scopeKey:`c-${sfx}`,homeKey:`h-${sfx}`}});
+    const bot=await prisma.bot.create({data:{spaceId:sp,userId:u,computerId:comp.id,name:`qa40-b-${sfx}`,title:"t",description:"d",instructions:"i",notifyOnFinish:true,color:"#4F46E5",position:0}});
+    await prisma.botMcpServer.create({data:{spaceId:sp,userId:u,botId:bot.id,serverId:srv.id,allowAllTools:false,allowedTools:[]}});
+    await prisma.thread.create({data:{spaceId:sp,userId:u,botId:bot.id,isPrimary:true,name:"t"}});
+    const actor:Actor={spaceId:sp,userId:u,email:`qa40-${sfx}@t.test`,isDeploymentOwner:true};
+    const deps={prisma,env:{defaultProvider:"openai",defaultModel:"gpt-4o",webOrigin:"http://x",screenProxySecret:"s",sandboxProvider:"docker",marketplaceImportSecret:"test-marketplace-import-secret-32ch"},events:{notify:vi.fn()},auth:vi.fn(),jobs:{publish:vi.fn()},sandbox:{},memory:{get:vi.fn(),set:vi.fn()},memoryProviders:{},home:{exportHome:async function*(){}},secrets:{get:vi.fn(),load:vi.fn().mockReturnValue(SECRET)},oauthLogins:{},connectors:{},artifacts:{getOwnedArtifact:vi.fn()},dataDir:"/tmp/q40",messaging:{enabled:false,providers:[],openSignup:false}} as unknown as RouterDeps;
+    const h=new RPCHandler(createRouter(deps));
+    const {response}=await h.handle(new Request("http://127.0.0.1/rpc/agents/export",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({json:{botId:bot.id}})}),{prefix:"/rpc",context:{actor}});
+    console.error("COMPOSITION-STATUS:",response.status);
+    expect(response.status).toBe(400);
+  });
+});

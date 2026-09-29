@@ -1,0 +1,89 @@
+{
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "run_id": "003-s1-run2",
+  "candidate_sha": "3178940e5a55709fe7be3018541f541a15c6e211",
+  "fix_candidate_sha": "771be9891db896ccce0a5e20bae5e55b1d9ad701",
+  "checker": "omp-checker-003-s1-run2",
+  "verdict": "not-ready-for-merge",
+  "matrix_rows": {
+    "V1": {
+      "status": "not-verified",
+      "evidence": "round-trip half passes (25/25 -> 28/28) but the 'export REFUSED listing fields' clause is unreachable: containsSecret(text, []) always returns false",
+      "bug_found": "BUG-003-S1-02"
+    },
+    "V2": {
+      "status": "verified-after-fix-with-gap",
+      "evidence": "23/23 independent schema probes (qa-independent-probes.test.ts) + token-tamper reproducer (4/4 after fix)",
+      "bug_found": "BUG-003-S1-01",
+      "gap": "AGENT-BUNDLE-001 (MCP slug capability confusion) and AGENT-BUNDLE-002 (stdio host code execution) show allowAllTools=false is necessary but not sufficient"
+    },
+    "V6": {
+      "status": "verified-unit",
+      "evidence": "import handler creates AgentSkill(source='user'), McpServer + BotMcpServer(allowAllTools=false), CapabilityInstall(source='marketplace') — asserted via mock-prisma calls in agent-bundle.test.ts",
+      "caveat": "no live DB assertion in this run; no new tables introduced (no migration in candidate diff)"
+    },
+    "V8": {
+      "status": "verified",
+      "evidence": "full apps/api suite 419/419 at candidate, 426/426 at fix candidate; no regression"
+    },
+    "V3": { "status": "not-verified", "reason": "belongs to S2 (marketplace UI + Playwright E2E); not in S1 scope" },
+    "V4": {
+      "status": "performed-failed",
+      "evidence": ".super-speckit/qa/003-s1-run2/security-review.md — independent security-reviewer lane on candidate 3178940e",
+      "result": "3 high, 4 medium, 2 low confirmed; blocking",
+      "note": "run early rather than in S3 because the import path is the trust boundary; a passing V4 was not achievable"
+    },
+    "V5": { "status": "not-verified", "reason": "belongs to S2 (catalog seam)" },
+    "V7": { "status": "not-verified", "reason": "belongs to S3 (mobile degradation note)" }
+  },
+  "gates": [
+    { "gate": "bundle suite", "at_candidate": "25/25 pass", "at_fix": "28/28 pass" },
+    { "gate": "full api suite", "at_candidate": "419/419 pass (31 files)", "at_fix": "426/426 pass (32 files)" },
+    { "gate": "typecheck (tsc --noEmit, @rakazo/api)", "at_candidate": "clean", "at_fix": "clean" },
+    { "gate": "independent adversarial probes", "result": "23/23 pass" },
+    { "gate": "token tamper reproducer", "at_candidate": "FAIL — HTTP 500", "at_fix": "PASS — HTTP 401 UNAUTHORIZED" },
+    { "gate": "static security review (OCR substitute)", "result": "FAIL — 3 high / 4 medium / 2 low", "note": "gates.ocr_review is unconfigured; merge.require_ocr_triage_complete therefore cannot be satisfied on current config" }
+  ],
+  "bugs": [
+    {
+      "id": "BUG-003-S1-01",
+      "artifact": ".super-speckit/bugs/003-S1-token-hmac-crash.md",
+      "status": "closed",
+      "severity": "high",
+      "root_cause": "crypto.timingSafeEqual throws RangeError on buffers of differing length; provided HMAC segment length was never validated before the constant-time comparison",
+      "fix_commit": "771be9891db896ccce0a5e20bae5e55b1d9ad701",
+      "regression_test": "apps/api/src/agent-bundle.test.ts — 3 new cases (truncated HMAC, single-char HMAC, non-hex equal-length)",
+      "red_before": "2 failed | 26 passed on candidate 3178940e",
+      "green_after": "28/28 on fix 771be989",
+      "independent_retest": "ss/qa/003-s1-retest1 — original reproducer replayed: 500 -> 401 UNAUTHORIZED, 4/4 probes pass"
+    },
+    {
+      "id": "BUG-003-S1-02",
+      "artifact": ".super-speckit/bugs/003-S1-export-secret-scan-noop.md",
+      "status": "open",
+      "severity": "high",
+      "found_by": "security-reviewer static lane + runtime proof",
+      "root_cause": "containsSecret(value, []) returns false on the active.length === 0 guard, so every export scan call is a no-op and the refusal branch is unreachable",
+      "blocks": "V1 and S1 release"
+    }
+  ],
+  "open_blocking_findings": [
+    { "id": "AGENT-BUNDLE-001", "severity": "high", "triage": "fix", "summary": "bundle-controlled MCP slug collision reuses an existing credentialed server and grants it bundle-declared tools" },
+    { "id": "AGENT-BUNDLE-002", "severity": "high", "triage": "fix", "summary": "portable stdio command/args reach cross-spawn — imported bundle can propose a process the server executes" },
+    { "id": "AGENT-BUNDLE-003", "severity": "high", "triage": "fix", "summary": "export secret scan is a no-op (BUG-003-S1-02)" },
+    { "id": "AGENT-BUNDLE-004", "severity": "medium", "triage": "fix", "summary": "MCP endpoint query credentials exported verbatim; no MCP field scanned" },
+    { "id": "AGENT-BUNDLE-005", "severity": "medium", "triage": "fix", "summary": "localhost SSRF via bundle-supplied endpoint" },
+    { "id": "AGENT-BUNDLE-006", "severity": "medium", "triage": "fix", "summary": "importPreviewCache retained indefinitely after failed commit" },
+    { "id": "AGENT-BUNDLE-007", "severity": "medium", "triage": "fix", "summary": "unbounded skills/mcpServers arrays amplify into unbounded DB writes per import" },
+    { "id": "AGENT-BUNDLE-008", "severity": "low", "triage": "accepted-risk", "summary": "same-hash cross-actor preview-cache clobber" },
+    { "id": "AGENT-BUNDLE-009", "severity": "low", "triage": "needs-review", "summary": "schema-backed; exact Prisma runtime failure still needs a runtime test" }
+  ],
+  "unverified": [
+    "V6 live-DB assertion (no database provisioned on this host)",
+    "OCR lane itself: no adapter configured (gates.ocr_review = \"\") while merge.require_ocr_triage_complete = true — the configured merge gate cannot be satisfied regardless of code quality; an independent security-reviewer lane was run as a recorded substitute and failed",
+    "AGENT-BUNDLE-009 needs a runtime test before it can be closed",
+    "Playwright E2E (S2 scope)"
+  ],
+  "environment_receipt": ".super-speckit/qa/003-s1-run2/environment-receipt.json"
+}

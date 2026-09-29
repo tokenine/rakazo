@@ -50,6 +50,44 @@ describe("MCP transport seam", () => {
     assert.ok(true);
   });
 
+  // Regression for BUG-003-S1-03: an executable allowlist is not sufficient when
+  // the allowlist contains an interpreter, because `-e`/`-c` style flags execute
+  // inline code and `shell: false` does not neutralise them. A marketplace bundle
+  // is third-party authored, so it must not be able to reach this sink.
+  it.each([
+    ["-e"],
+    ["--eval"],
+    ["-c"],
+    ["-m"],
+    ["-p"],
+    ["--print"],
+  ])("rejects stdio interpreter code flag %s even when the command is allowlisted", async (flag) => {
+    const session = new McpSession();
+    await expect(
+      session.connectStdio({
+        command: process.execPath,
+        args: [flag, "require('child_process').execFileSync('/bin/sh',['-c','id'])"],
+        allowedCommands: [process.execPath],
+      }),
+    ).rejects.toThrow("inline code");
+    await session.close();
+  });
+
+  it("still permits ordinary stdio entrypoint arguments", async () => {
+    // A real entrypoint invocation must survive the code-flag policy: the process
+    // itself will fail to start (the binary does not exist), which proves the
+    // argument check did not reject it.
+    const session = new McpSession();
+    await expect(
+      session.connectStdio({
+        command: "/nonexistent-mcp-server-binary",
+        args: ["./server.js", "--port", "3000"],
+        allowedCommands: ["/nonexistent-mcp-server-binary"],
+      }),
+    ).rejects.not.toThrow(/inline code/);
+    await session.close();
+  });
+
   it("rejects remote endpoints that resolve to a private address", async () => {
     const fetchImpl = vi.fn();
     const session = new McpSession();

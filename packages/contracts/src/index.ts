@@ -1,3 +1,4 @@
+export * from "./agent-bundle.js";
 export * from "./ai-consent.js";
 export * from "./attachments.js";
 export * from "./inspiration-catalog.js";

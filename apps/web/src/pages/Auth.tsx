@@ -2,7 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { BRAND_NAME } from "@rakazo/contracts";
 import { readBoundedJsonResponse } from "@rakazo/core";
 import { Button, Input, Label } from "@rakazo/ui-web";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "../lib/auth";
 import { clearSpaceSelection } from "../lib/rpc";
@@ -15,14 +15,55 @@ const submitClass = "mt-3 h-12 w-full rounded-xl text-base";
 const AUTH_CAPABILITIES_TIMEOUT_MS = 8_000;
 const MAX_AUTH_CAPABILITIES_RESPONSE_BYTES = 64 * 1024;
 
+/**
+ * The pending code stage survives tab switches: browsers may discard and
+ * reload a backgrounded tab (Memory Saver) while the user checks their inbox,
+ * and returning must land back on the code entry with the email prefilled.
+ * TTL mirrors the server's 10-minute OTP expiry; closing the tab clears it.
+ */
+const AUTH_OTP_STAGE_KEY = "rakazo.auth.otp-stage";
+const AUTH_OTP_STAGE_TTL_MS = 10 * 60_000;
+
+interface StoredOtpStage {
+  email: string;
+  at: number;
+}
+
+function readStoredOtpStage(): StoredOtpStage | null {
+  try {
+    const raw = sessionStorage.getItem(AUTH_OTP_STAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredOtpStage> | null;
+    if (!parsed || typeof parsed.email !== "string" || typeof parsed.at !== "number") return null;
+    if (Date.now() - parsed.at > AUTH_OTP_STAGE_TTL_MS) {
+      sessionStorage.removeItem(AUTH_OTP_STAGE_KEY);
+      return null;
+    }
+    return { email: parsed.email, at: parsed.at };
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredOtpStage(): void {
+  try {
+    sessionStorage.removeItem(AUTH_OTP_STAGE_KEY);
+  } catch {
+    // Storage unavailable; clearing is best-effort.
+  }
+}
+
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const { t } = useLingui();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState("");
+  // Restored once per mount: a discarded/reloaded tab comes back on the code
+  // stage with the email prefilled instead of restarting at the email form.
+  const restoredStage = useMemo(() => readStoredOtpStage(), []);
+  const [email, setEmail] = useState(restoredStage?.email ?? "");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [stage, setStage] = useState<"email" | "code">("email");
+  const [stage, setStage] = useState<"email" | "code">(restoredStage ? "code" : "email");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [capabilities, setCapabilities] = useState<AuthCapabilities | null>(null);
@@ -75,6 +116,14 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
           setError(result.error.message ?? t`Could not send the sign-in code`);
           return;
         }
+        try {
+          sessionStorage.setItem(
+            AUTH_OTP_STAGE_KEY,
+            JSON.stringify({ email: email.trim(), at: Date.now() } satisfies StoredOtpStage),
+          );
+        } catch {
+          // Storage unavailable; the stage just won't survive a reload.
+        }
         setStage("code");
         return;
       }
@@ -88,6 +137,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         setError(result.error.message ?? t`Could not verify the code`);
         return;
       }
+      clearStoredOtpStage();
       clearSpaceSelection();
       navigate(
         mode === "up"
@@ -178,6 +228,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
               <button
                 type="button"
                 onClick={() => {
+                  clearStoredOtpStage();
                   setStage("email");
                   setCode("");
                   setError(null);
