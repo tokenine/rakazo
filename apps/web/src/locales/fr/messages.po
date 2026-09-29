@@ -142,6 +142,10 @@ msgstr "{workingBotName} est en cours d'exécution"
 msgid "@{0}"
 msgstr "@{0}"
 
+#: src/pages/Auth.tsx
+msgid "6-digit code"
+msgstr ""
+
 #: src/pages/shell/message-cards.tsx
 msgid "A bit of everything"
 msgstr "Un peu de tout"
@@ -371,6 +375,10 @@ msgstr "Autoriser l'écriture"
 msgid "Allowed once"
 msgstr "Autorisé une fois"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "Allowlist"
+msgstr ""
+
 #: src/pages/Auth.tsx
 msgid "Already have an account?"
 msgstr "Vous avez déjà un compte ?"
@@ -528,6 +536,7 @@ msgstr "Code d'autorisation ou URL de rappel"
 msgid "Authorization timed out. Please try again."
 msgstr "L'autorisation a expiré. Veuillez réessayer."
 
+#: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "Autoriser"
@@ -548,6 +557,10 @@ msgstr "Les expéditeurs automatisés apparaîtront après avoir publié ici."
 msgid "Available after the routine is saved"
 msgstr "Disponible après l'enregistrement de la routine"
 
+#: src/pages/shell/expert-create.tsx
+msgid "Avatar"
+msgstr ""
+
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Avatar Studio"
 msgstr "Studio d'avatars"
@@ -559,12 +572,21 @@ msgstr "Avatars"
 #: src/components/computer/FilesApp.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
+#: src/pages/shell/client-browser-panel.tsx
 msgid "Back"
 msgstr "Retour"
 
+#: src/pages/shell/expert-create.tsx
+msgid "Back to experts"
+msgstr ""
+
 #: src/pages/Auth.tsx
-msgid "Back to sign in"
-msgstr "Retour à la connexion"
+msgid "Back to home"
+msgstr ""
+
+#: src/pages/Auth.tsx
+#~ msgid "Back to sign in"
+#~ msgstr "Retour à la connexion"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Base URL"
@@ -611,6 +633,10 @@ msgstr "Aperçu de l'écran du bot"
 msgid "Bot to link"
 msgstr "Bot à connecter"
 
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Bot token"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "Bots"
 msgstr "Bots"
@@ -623,6 +649,10 @@ msgstr "Les bots agissent sans demander par défaut. Ajoutez une exception uniqu
 msgid "Bots are working"
 msgstr "Les bots sont en cours d'exécution"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Bots work in this app's Browser pane with your own logins (TikTok, Facebook, …) and cannot use their own computer's browser."
+msgstr ""
+
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Brain label"
 msgstr "Libellé du cerveau"
@@ -632,7 +662,20 @@ msgid "Browse MCP servers"
 msgstr "Parcourir les serveurs MCP"
 
 #: src/components/computer/ComputerWorkspace.tsx
+#: src/pages/Shell.tsx
 msgid "Browser"
+msgstr ""
+
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Built-in browser"
+msgstr ""
+
+#: src/pages/PluginsOverlay.tsx
+msgid "Bundled connectors"
+msgstr ""
+
+#: src/pages/shell/expert-create.tsx
+msgid "Bundled skills"
 msgstr ""
 
 #: src/App.tsx
@@ -649,6 +692,10 @@ msgstr "Impossible d'atteindre le serveur."
 #: src/pages/shell/dialogs.tsx
 msgid "Cancel"
 msgstr "Annuler"
+
+#: src/pages/shell/expert-create.tsx
+msgid "Cancel new agent"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Cancel new bot"
@@ -676,12 +723,12 @@ msgid "Card view"
 msgstr "Vue en cartes"
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Change password"
-msgstr "Changer le mot de passe"
+#~ msgid "Change password"
+#~ msgstr "Changer le mot de passe"
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Changing…"
-msgstr "Modification en cours…"
+#~ msgid "Changing…"
+#~ msgstr "Modification en cours…"
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Channels"
@@ -738,8 +785,8 @@ msgid "Choose a bot…"
 msgstr "Choisissez un bot…"
 
 #: src/pages/Auth.tsx
-msgid "Choose a new password"
-msgstr "Choisissez un nouveau mot de passe"
+#~ msgid "Choose a new password"
+#~ msgstr "Choisissez un nouveau mot de passe"
 
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Choose file"
@@ -926,12 +973,13 @@ msgstr "Confirmer la suppression"
 
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Auth.tsx
-msgid "Confirm password"
-msgstr "Confirmer le mot de passe"
+#~ msgid "Confirm password"
+#~ msgstr "Confirmer le mot de passe"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
+#: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connect"
 msgstr "Connecter"
@@ -968,6 +1016,7 @@ msgstr "Connecter Treg"
 #: src/pages/McpOAuthCallback.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
+#: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected"
@@ -989,6 +1038,11 @@ msgstr "Connecté à {0}."
 msgid "Connected and using {0}."
 msgstr "Connecté et utilise {0}."
 
+#. placeholder {0}: bot.username
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Connected as <0>@{0}</0>"
+msgstr ""
+
 #: src/pages/shell/message-cards.tsx
 msgid "Connected. Its tools are available from your next message."
 msgstr "Connecté. Ses outils sont disponibles dès votre prochain message."
@@ -1007,6 +1061,14 @@ msgstr "Connexion en cours…"
 msgid "Connection to {0} is still pending. You can close this and check again."
 msgstr "La connexion à {0} est toujours en attente. Vous pouvez fermer cette fenêtre et réessayer."
 
+#: src/pages/shell/expert-create.tsx
+msgid "Connectors"
+msgstr ""
+
+#: src/pages/shell/expert-create.tsx
+msgid "Connectors are pre-wired. Authorize each one once from MCP Servers after the agent is created."
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Context limit"
@@ -1024,6 +1086,10 @@ msgstr "Continuer en arrière-plan"
 #: src/pages/Auth.tsx
 msgid "Continue with email"
 msgstr "Continuer avec l'e-mail"
+
+#: src/pages/SettingsOverlay.tsx
+msgid "Control who can create an account. Entries are exact emails, or `@company.com` to admit everyone on that mail domain — leave empty to allow anyone."
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Copy"
@@ -1046,8 +1112,8 @@ msgid "Could not authorize this app"
 msgstr "Impossible d'autoriser cette application"
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Could not change password"
-msgstr "Impossible de changer le mot de passe"
+#~ msgid "Could not change password"
+#~ msgstr "Impossible de changer le mot de passe"
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not change the default model"
@@ -1095,7 +1161,6 @@ msgstr "Impossible de se connecter à ce fournisseur vocal"
 msgid "Could not connect to the computer screen"
 msgstr "Impossible de se connecter à l'écran de l'ordinateur"
 
-#: src/pages/Auth.tsx
 #: src/pages/Shell.tsx
 msgid "Could not continue"
 msgstr "Impossible de continuer"
@@ -1115,6 +1180,10 @@ msgstr "Impossible de créer la section"
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create space"
 msgstr "Impossible de créer l'espace"
+
+#: src/pages/shell/expert-create.tsx
+msgid "Could not create the agent"
+msgstr ""
 
 #: src/pages/Onboarding.tsx
 msgid "Could not create your bot"
@@ -1222,9 +1291,17 @@ msgstr "Impossible de charger les serveurs MCP"
 msgid "Could not load model settings"
 msgstr "Impossible de charger les paramètres du modèle"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "Could not load sign-up settings"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load skill"
 msgstr "Impossible de charger la compétence"
+
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Could not load that address."
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Could not load this artifact."
@@ -1262,7 +1339,6 @@ msgstr "Impossible d'ouvrir le terminal"
 msgid "Could not play a test clip"
 msgstr "Impossible de lire un extrait de test"
 
-#: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Auth.tsx
 msgid "Could not reach the server"
 msgstr "Impossible d'atteindre le serveur"
@@ -1301,8 +1377,8 @@ msgid "Could not render chart"
 msgstr "Impossible d'afficher le graphique"
 
 #: src/pages/Auth.tsx
-msgid "Could not reset password"
-msgstr "Impossible de réinitialiser le mot de passe"
+#~ msgid "Could not reset password"
+#~ msgstr "Impossible de réinitialiser le mot de passe"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not revoke connection"
@@ -1338,6 +1414,10 @@ msgstr "Impossible d'enregistrer la routine"
 msgid "Could not save rule"
 msgstr "Impossible d'enregistrer la règle"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "Could not save sign-up settings"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not save skill"
 msgstr "Impossible d'enregistrer la compétence"
@@ -1363,12 +1443,16 @@ msgid "Could not search catalog"
 msgstr "Impossible de rechercher dans le catalogue"
 
 #: src/pages/Auth.tsx
-msgid "Could not send reset email"
-msgstr "Impossible d'envoyer l'e-mail de réinitialisation"
+#~ msgid "Could not send reset email"
+#~ msgstr "Impossible d'envoyer l'e-mail de réinitialisation"
 
 #: src/lib/call-session.ts
 msgid "Could not send that"
 msgstr "Impossible d'envoyer cela"
+
+#: src/pages/Auth.tsx
+msgid "Could not send the sign-in code"
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
@@ -1410,9 +1494,25 @@ msgstr "Impossible de mettre à jour la portée de mémoire par défaut"
 msgid "Could not upload file"
 msgstr ""
 
+#: src/pages/Auth.tsx
+msgid "Could not verify the code"
+msgstr ""
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Couldn't connect that token. Check it and try again."
+msgstr ""
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Couldn't disconnect the bot."
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Couldn't load messaging settings"
 msgstr "Impossible de charger les paramètres de messagerie"
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Couldn't register the webhook. Check the server logs."
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Couldn't update avatars"
@@ -1422,11 +1522,23 @@ msgstr "Impossible de mettre à jour les avatars"
 msgid "Couldn't update messaging settings"
 msgstr "Impossible de mettre à jour les paramètres de messagerie"
 
+#: src/pages/AccountSettingsOverlay.tsx
+msgid "Couldn't update the built-in browser setting"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Create"
 msgstr "Créer"
+
+#: src/pages/shell/expert-create.tsx
+msgid "Create & Start"
+msgstr ""
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Create a bot with @BotFather (send /newbot), paste its token here, and chat with your Ai7 assistant from your own Telegram line."
+msgstr ""
 
 #. placeholder {0}: bot.name
 #: src/pages/shell/dialogs.tsx
@@ -1434,8 +1546,8 @@ msgid "Create a section and move {0} into it."
 msgstr "Créez une section et déplacez {0} dedans."
 
 #: src/pages/Auth.tsx
-msgid "Create account"
-msgstr "Créer un compte"
+#~ msgid "Create account"
+#~ msgstr "Créer un compte"
 
 #: src/pages/GroupPanel.tsx
 msgid "Create group"
@@ -1464,8 +1576,12 @@ msgid "Create space"
 msgstr "Créer un espace"
 
 #: src/pages/Auth.tsx
-msgid "Create your Ai7"
-msgstr "Créez votre Ai7"
+msgid "Create your {BRAND_NAME}"
+msgstr ""
+
+#: src/pages/Auth.tsx
+#~ msgid "Create your Ai7"
+#~ msgstr "Créez votre Ai7"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -1474,6 +1590,7 @@ msgstr "Créé"
 #: src/pages/GroupPanel.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/shell/expert-create.tsx
 msgid "Creating…"
 msgstr "Création en cours…"
 
@@ -1499,8 +1616,8 @@ msgid "Cron expression"
 msgstr "Expression Cron"
 
 #: src/pages/AccountSettingsOverlay.tsx
-msgid "Current password"
-msgstr "Mot de passe actuel"
+#~ msgid "Current password"
+#~ msgstr "Mot de passe actuel"
 
 #: src/pages/shell/dialogs.tsx
 msgid "Customer support"
@@ -1629,6 +1746,7 @@ msgstr "MCP direct"
 
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
+#: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Disconnect"
 msgstr "Déconnecter"
@@ -1899,8 +2017,12 @@ msgid "Flag unexpected actions"
 msgstr "Signaler les actions inattendues"
 
 #: src/pages/Auth.tsx
-msgid "Forgot password?"
-msgstr "Mot de passe oublié ?"
+#~ msgid "Forgot password?"
+#~ msgstr "Mot de passe oublié ?"
+
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Forward"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Free"
@@ -1985,8 +2107,8 @@ msgid "Hide bots"
 msgstr "Masquer les bots"
 
 #: src/pages/Auth.tsx
-msgid "Hide password"
-msgstr "Masquer le mot de passe"
+#~ msgid "Hide password"
+#~ msgstr "Masquer le mot de passe"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Hide transcript"
@@ -2031,9 +2153,23 @@ msgstr "Ignorer"
 msgid "Image upload area"
 msgstr "Zone de téléchargement d'image"
 
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Import Chrome"
+msgstr ""
+
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Import failed — check that Chrome is installed."
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Import OpenAPI JSON"
 msgstr "Importer OpenAPI JSON"
+
+#. placeholder {0}: importResult.cookies.imported
+#. placeholder {1}: importResult.localStorage.originsImported
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Imported {0} cookies · {1} sites of local storage."
+msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Inbox & email"
@@ -2181,6 +2317,10 @@ msgstr "Charger plus"
 msgid "Loading activity…"
 msgstr "Chargement de l'activité…"
 
+#: src/pages/shell/expert-create.tsx
+msgid "Loading experts…"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Loading integrations…"
 msgstr "Chargement des intégrations…"
@@ -2214,6 +2354,7 @@ msgstr "Chargement des fournisseurs vocaux…"
 #: src/pages/IntegrationSetup.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/PeerMessagesOverlay.tsx
+#: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
 msgid "Loading…"
 msgstr "Chargement…"
@@ -2243,6 +2384,10 @@ msgstr "Faible"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Make sure nothing is still running on this computer."
 msgstr "Assurez-vous qu'aucun processus ne tourne encore sur cet ordinateur."
+
+#: src/pages/PluginsOverlay.tsx
+msgid "Manage"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Manage MCP servers"
@@ -2344,6 +2489,10 @@ msgstr "Message"
 #: src/pages/Shell.tsx
 msgid "Message {activeName}"
 msgstr "Message à {activeName}"
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Message a bot on Telegram and your Ai7 assistant replies on this account. Paste another token to connect a second line."
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Message composer"
@@ -2464,6 +2613,7 @@ msgstr "Couper le micro"
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/shell/expert-create.tsx
 msgid "Name"
 msgstr "Nom"
 
@@ -2479,6 +2629,10 @@ msgstr "Nommez ce groupe"
 msgid "Name this routine"
 msgstr "Nommez cette routine"
 
+#: src/pages/PluginsOverlay.tsx
+msgid "Needs authorization"
+msgstr ""
+
 #: src/pages/ActivityList.tsx
 msgid "Needs input"
 msgstr "Nécessite une saisie"
@@ -2490,6 +2644,10 @@ msgstr "Nécessite une intervention"
 #: src/pages/Shell.tsx
 msgid "Needs you"
 msgstr "A besoin de vous"
+
+#: src/pages/shell/expert-create.tsx
+msgid "New agent"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "New bot"
@@ -2505,8 +2663,8 @@ msgstr "Nouvel élément de travaux en cours"
 
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Auth.tsx
-msgid "New password"
-msgstr "Nouveau mot de passe"
+#~ msgid "New password"
+#~ msgstr "Nouveau mot de passe"
 
 #: src/pages/BotContextMenu.tsx
 #: src/pages/shell/dialogs.tsx
@@ -2630,6 +2788,10 @@ msgstr "Aucun outil disponible."
 msgid "No trigger"
 msgstr "Aucun déclencheur"
 
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "No webhook registered — the bot receives messages by long-polling instead. Registering a webhook on a public HTTPS origin is more reliable."
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "Aucun pour le moment"
@@ -2683,6 +2845,10 @@ msgstr "Échec de la connexion OAuth"
 msgid "OAuth expired"
 msgstr "OAuth expiré"
 
+#: src/pages/PluginsOverlay.tsx
+msgid "Official remote MCP connectors ready to add — authorize once and your agents can use them."
+msgstr ""
+
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
 msgid "On a call with {0}"
@@ -2722,6 +2888,10 @@ msgstr "Ouvrir la navigation"
 #: src/components/computer/TerminalApp.tsx
 msgid "Open shell"
 msgstr "Ouvrir le shell"
+
+#: src/pages/SettingsOverlay.tsx
+msgid "Open sign-ups"
+msgstr ""
 
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
@@ -2792,24 +2962,22 @@ msgid "Park"
 msgstr "Mettre en attente"
 
 #: src/components/AskCard.tsx
-#: src/pages/AccountSettingsOverlay.tsx
-#: src/pages/Auth.tsx
 msgid "Password"
 msgstr "Mot de passe"
 
 #: src/pages/Auth.tsx
-msgid "Password recovery is not configured for this server"
-msgstr "La récupération de mot de passe n'est pas configurée pour ce serveur"
+#~ msgid "Password recovery is not configured for this server"
+#~ msgstr "La récupération de mot de passe n'est pas configurée pour ce serveur"
 
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Auth.tsx
-msgid "Password updated"
-msgstr "Mot de passe mis à jour"
+#~ msgid "Password updated"
+#~ msgstr "Mot de passe mis à jour"
 
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Auth.tsx
-msgid "Passwords do not match"
-msgstr "Les mots de passe ne correspondent pas"
+#~ msgid "Passwords do not match"
+#~ msgstr "Les mots de passe ne correspondent pas"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
@@ -2830,6 +2998,10 @@ msgstr "En pause"
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Personal credential"
 msgstr "Identifiant personnel"
+
+#: src/pages/shell/expert-create.tsx
+msgid "Pick an Expert — each ships with its own persona, connectors and skills."
+msgstr ""
 
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
@@ -2889,6 +3061,10 @@ msgstr "En file d'attente"
 #: src/pages/Shell.tsx
 msgid "Quote"
 msgstr "Citer"
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Re-register webhook"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "React"
@@ -2987,6 +3163,10 @@ msgstr "Actualiser la vue"
 msgid "Refreshing…"
 msgstr "Actualisation en cours…"
 
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Register webhook"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Release"
 msgstr "Libérer"
@@ -2998,6 +3178,10 @@ msgstr "Libérer l'ordinateur"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Release interrupted computer?"
 msgstr "Libérer l'ordinateur interrompu ?"
+
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Reload"
+msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3105,16 +3289,20 @@ msgid "Reset computer?"
 msgstr "Réinitialiser l'ordinateur ?"
 
 #: src/pages/Auth.tsx
-msgid "Reset password"
-msgstr "Réinitialiser le mot de passe"
+#~ msgid "Reset password"
+#~ msgstr "Réinitialiser le mot de passe"
 
 #: src/pages/Auth.tsx
-msgid "Reset your password"
-msgstr "Réinitialisez votre mot de passe"
+#~ msgid "Reset your password"
+#~ msgstr "Réinitialisez votre mot de passe"
 
 #: src/components/ComputerMaintenanceActions.tsx
 msgid "Resetting…"
 msgstr "Réinitialisation en cours…"
+
+#: src/pages/Shell.tsx
+msgid "Resize browser pane"
+msgstr ""
 
 #: src/components/DesktopUpdates.tsx
 msgid "Restart to update"
@@ -3214,6 +3402,7 @@ msgstr "S'exécute lorsque ce bot reçoit un message vérifié de ce fournisseur
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
+#: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Save"
@@ -3230,6 +3419,7 @@ msgid "Saved, but list refresh failed"
 msgstr "Enregistré, mais l'actualisation de la liste a échoué"
 
 #: src/pages/ModelSettingsOverlay.tsx
+#: src/pages/SettingsOverlay.tsx
 msgid "Saved."
 msgstr "Enregistré."
 
@@ -3250,6 +3440,7 @@ msgstr "Enregistrement..."
 #: src/pages/GroupPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
+#: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Enregistrement en cours…"
@@ -3291,6 +3482,10 @@ msgstr "Rechercher sur integrations.sh"
 msgid "Search models"
 msgstr "Rechercher des modèles"
 
+#: src/pages/shell/client-browser-panel.tsx
+msgid "Search or type a URL"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Search providers"
 msgstr "Rechercher des fournisseurs"
@@ -3321,8 +3516,8 @@ msgid "Send it"
 msgstr "L'envoyer"
 
 #: src/pages/Auth.tsx
-msgid "Send reset link"
-msgstr "Envoyer le lien de réinitialisation"
+#~ msgid "Send reset link"
+#~ msgstr "Envoyer le lien de réinitialisation"
 
 #: src/components/AskCard.tsx
 msgid "Sending…"
@@ -3411,8 +3606,8 @@ msgid "Show more"
 msgstr "Afficher plus"
 
 #: src/pages/Auth.tsx
-msgid "Show password"
-msgstr "Afficher le mot de passe"
+#~ msgid "Show password"
+#~ msgstr "Afficher le mot de passe"
 
 #: src/pages/Shell.tsx
 msgid "Show settings"
@@ -3430,13 +3625,25 @@ msgid "Sign in"
 msgstr "Se connecter"
 
 #: src/pages/Auth.tsx
-msgid "Sign in to Ai7"
-msgstr "Connectez-vous à Ai7"
+msgid "Sign in to {BRAND_NAME}"
+msgstr ""
+
+#: src/pages/Auth.tsx
+#~ msgid "Sign in to Ai7"
+#~ msgstr "Connectez-vous à Ai7"
 
 #: src/pages/Auth.tsx
 #: src/pages/Welcome.tsx
 msgid "Sign up"
 msgstr "S'inscrire"
+
+#: src/pages/Auth.tsx
+msgid "Sign-in code"
+msgstr ""
+
+#: src/pages/SettingsOverlay.tsx
+msgid "Sign-ups"
+msgstr ""
 
 #. placeholder {0}: skill.name
 #: src/pages/Shell.tsx
@@ -3500,6 +3707,10 @@ msgstr "Lire cette réponse à voix haute"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
 msgstr "Modèle de parole"
+
+#: src/pages/shell/expert-create.tsx
+msgid "Start from scratch"
+msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
@@ -3673,8 +3884,8 @@ msgid "This permanently removes every message and stops current work. The chat r
 msgstr "Ceci supprime définitivement tous les messages et arrête les travaux en cours. La conversation reste disponible."
 
 #: src/pages/Auth.tsx
-msgid "This reset link is invalid or expired"
-msgstr "Ce lien de réinitialisation est invalide ou a expiré"
+#~ msgid "This reset link is invalid or expired"
+#~ msgstr "Ce lien de réinitialisation est invalide ou a expiré"
 
 #: src/pages/shell/message-cards.tsx
 msgid "This server cannot be assigned without a bot."
@@ -3683,6 +3894,10 @@ msgstr "Ce serveur ne peut pas être assigné sans bot."
 #: src/pages/McpServersOverlay.tsx
 msgid "This server did not request browser authorization."
 msgstr "Ce serveur n'a pas demandé l'autorisation du navigateur."
+
+#: src/pages/Auth.tsx
+msgid "This server does not have email delivery configured, so sign-in codes cannot be sent. Ask the server owner to configure email delivery."
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "This server is already connected. Disconnect it first to authorize again."
@@ -3840,6 +4055,10 @@ msgstr "Utilisation"
 msgid "Use {hostLabel}"
 msgstr "Utiliser {hostLabel}"
 
+#: src/pages/Auth.tsx
+msgid "Use a different email"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Use a found model"
@@ -3864,6 +4083,10 @@ msgstr ""
 #: src/pages/PluginsOverlay.tsx
 msgid "Verify and add"
 msgstr "Vérifier et ajouter"
+
+#: src/pages/Auth.tsx
+msgid "Verify code"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Verifying…"
@@ -3901,6 +4124,11 @@ msgstr "En attente…"
 msgid "Webhook"
 msgstr "Webhook"
 
+#. placeholder {0}: status.webhookUrl
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Webhook: <0>{0}</0>"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 #: src/pages/RoutineSchedule.tsx
 msgid "Weekdays"
@@ -3933,6 +4161,10 @@ msgstr "Que retourner"
 #: src/pages/RoutineEditor.tsx
 msgid "When a webhook fires"
 msgstr "Lorsqu'un webhook se déclenche"
+
+#: src/pages/SettingsOverlay.tsx
+msgid "When off, only existing accounts can sign in."
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "When to run"
@@ -3985,3 +4217,7 @@ msgstr "Votre nom"
 #: src/pages/Welcome.tsx
 msgid "Your team of always-on agents<0/>that you can give real work to."
 msgstr "Votre équipe d'agents toujours actifs<0/>à qui vous pouvez confier de vrais travaux."
+
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "Your Telegram bots"
+msgstr ""
