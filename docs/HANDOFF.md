@@ -1,8 +1,8 @@
 # Ai7 — Session Handoff
 
-> Snapshot: 2026-09-27 · tagged `handoff-2026-09-27` · live deployment verified working
-> Product: **Ai7** (fork `tokenine/rakazo` of `elie222/rakazo`) — AI agent workbench sold to enterprises (on-prem), demo at **https://aidex.tk9.dev** and **https://demo.ai7.work**
-> Read this top-to-bottom before touching anything. Ops runbook: `~/.agents/skills/rakazo-ops/SKILL.md` (server-side detail), rebrand runbook: `REBRAND-NOTES.md`.
+> Snapshot: 2026-09-29 · main @ `972afca7` + docs `60eddddc` · upstream (elie222/rakazo) fully merged and deployed
+> Product: **Ai7** (fork `tokenine/rakazo` of `elie222/rakazo`) — AI agent workbench sold to enterprises (on-prem), demos at **https://demo.ai7.work** (199, sandbox=cloudflare) and **https://bs.ai7.work** (119.59.123.107, sandbox=docker — the canary; owner dome@tel.co.th signed up, default model Z.AI/glm-5.3-flash)
+> Read this top-to-bottom before touching anything. §7 newest entries first. Ops runbook: `~/.agents/skills/rakazo-ops/SKILL.md` (server-side detail), rebrand runbook: `REBRAND-NOTES.md`.
 
 ---
 
