@@ -1,0 +1,35 @@
+{
+  "id": "004-code-mode",
+  "state": "planned",
+  "candidate_sha": null,
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": ".super-speckit/docs/research/004-code-mode-engineering-investigations.md",
+  "purpose": {
+    "status": "draft",
+    "map": ".super-speckit/purpose/004-code-mode/purpose-map.md",
+    "decision": ".super-speckit/purpose/004-code-mode/decision.json"
+  },
+  "grill": {
+    "status": "not_started",
+    "artifact": null
+  },
+  "route": {
+    "kind": "unclassified",
+    "rationale": null
+  },
+  "atlas": {
+    "path": null
+  },
+  "change_story": {
+    "path": null
+  },
+  "handoff": {
+    "path": ".super-speckit/handoffs/004-purpose-gate-to-cloud-agent.md",
+    "transfer": "agent-to-agent",
+    "stage": "purpose-draft-pending-human-gate",
+    "attempt_id": "004-s1-artifact-rebuild-r1"
+  },
+  "runs": [],
+  "bugs": []
+}
