@@ -20,10 +20,10 @@ a competition to select one.
 
 **Established today:**
 
-- The normal-Pi path runs Pi's agent-core directly: `packages/adapters/src/pi-runtime.ts:3-9`
+- The normal-Pi path runs Pi's agent-core directly: `packages/adapters/src/pi-runtime.ts:2-7`
   imports `Agent`, `AgentMessage`, `AgentTool`, `AgentToolResult` from
   `@earendil-works/pi-agent-core`, with steering typed as `AgentSteeringMessage`
-  (`packages/adapters/src/pi-runtime.ts:22`) and JSONL session recording via `PiJsonlSessionRecorder`
+  (`packages/adapters/src/pi-runtime.ts:23`) and JSONL session recording via `PiJsonlSessionRecorder`
   (`packages/adapters/src/pi-runtime.ts:118-127`, started at `:237-261`).
 - The engine-facing execution seam is the sandbox contract: `execute(computer, request, context):
   AsyncIterable<ProcessEvent>` at `packages/adapter-kit/src/interfaces.ts:102-106`, where
@@ -79,7 +79,7 @@ active operations before transferring control; never silently overwriting either
   `this.checkout(botId, dest, context)` (`packages/adapters/src/home.ts:86-93`; `_revision` unused at
   `:88`). Revision "history" is one overwritten stamp per bot:
   `writeRevision` writes `rev-<ts>-<uuid>` into a single `home-revisions/<botId>.txt`
-  (`packages/adapters/src/home.ts:170-176`). `copyDir` overwrites destinations without read-before-
+  (`packages/adapters/src/home.ts:171-177`). `copyDir` overwrites destinations without read-before-
   write (`packages/adapters/src/home.ts:315-338`, `writeFile(to, ...)` at `:335`) — so a restore can
   clobber subsequent manual edits.
 - Takeover guards: screen/state-changing tools check `heldForTakeover` — `computer_observe`
@@ -88,7 +88,7 @@ active operations before transferring control; never silently overwriting either
   `if (name === "shell")` at `packages/adapters/src/executor.ts:2568` applies only the
   desktop-protection guard (`:2570-2574`). User takeover/release are screen-control leases:
   `takeover` at `apps/api/src/router.ts:2249`, `release` at `apps/api/src/router.ts:2399` (release
-  requires `controlHolder === "user"`, `:2403`); neither holds the filesystem.
+  requires `controlHolder === "user"`, `:2404`); neither holds the filesystem.
 
 **Resolution / open:** the gap the discovery brief describes is real in code: shell execution is not
 paused during user takeover, and restore neither honors a selected revision nor protects later manual
@@ -201,3 +201,4 @@ resume block `:1550-1559` → `:1550-1562`; `copyDir` `:315-337` → `:315-338`;
 count "+7" → eight real providers plus `fake-sandbox.ts:42` (test double). `executor.ts` cites
 resolve to `packages/adapters/src/executor.ts`; `router.ts` to `apps/api/src/router.ts`;
 `interfaces.ts`/`types.ts` to `packages/adapter-kit/src/`.
+Second checker pass on 2026-09-30 found and corrected four residual line offsets: pi-runtime.ts import block :3-9 → :2-7; AgentSteeringMessage :22 → :23; home.ts writeRevision :170-176 → :171-177; router.ts controlHolder check :2403 → :2404.
