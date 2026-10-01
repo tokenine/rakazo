@@ -1,0 +1,408 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/testkit/src/playwright-artifact-publication.test.ts [2m([22m[2m10 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 1023[2mms[22m[39m
+     [32m✓[39m keeps extraction and explicit report inputs outside the trusted checkout[32m 4[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry ../escape.txt before extracting any data[32m 96[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry nested/../../escape.txt before extracting any data[32m 92[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry /escape.txt before extracting any data[32m 89[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry nested\..\escape.txt before extracting any data[32m 86[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry apps/web/test-results/link before extracting any data[32m 87[2mms[22m[39m
+     [32m✓[39m refuses an existing destination, including a filesystem link[32m 87[2mms[22m[39m
+[31m     [31m×[31m publishes pull_request through trusted code with fake storage and credentials[39m[32m 192[2mms[22m[39m
+[31m     [31m×[31m publishes push through trusted code with fake storage and credentials[39m[32m 188[2mms[22m[39m
+[31m     [31m×[31m publishes timed_out through trusted code with fake storage and credentials[39m[32m 94[2mms[22m[39m
+ [31m❯[39m infra/sandboxes/supervisor/src/computer-spec.test.ts [2m([22m[2m61 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 689[2mms[22m[39m
+     [32m✓[39m binds the embed WebSocket path to the current screen capability[32m 3[2mms[22m[39m
+     [32m✓[39m has no small default cap and accepts optional operator limits[32m 2[2mms[22m[39m
+     [32m✓[39m validates space computer limit[32m 1[2mms[22m[39m
+     [32m✓[39m creates a VNC desktop, not an alpine sleep fallback[32m 82[2mms[22m[39m
+     [32m✓[39m still publishes host ports when NetworkMode is a per-bot isolated network[32m 1[2mms[22m[39m
+     [32m✓[39m keeps sanitized network names unique when botIds only differ by stripped characters[32m 1[2mms[22m[39m
+     [32m✓[39m lists prior network name variants for cleanup[32m 1[2mms[22m[39m
+     [32m✓[39m skips legacy network removal when another bot is still attached[32m 0[2mms[22m[39m
+     [32m✓[39m ships a browser desktop, not a fullscreen terminal[32m 2[2mms[22m[39m
+[31m     [31m×[31m selects a display-specific browser profile and preserves explicit profiles[39m[32m 42[2mms[22m[39m
+[31m     [31m×[31m clears crashed state from Chromium preferences and Local State[39m[32m 41[2mms[22m[39m
+     [32m✓[39m keeps container names stable so a bot can resume[32m 0[2mms[22m[39m
+     [32m✓[39m points the screen at the chrome-less noVNC embed[32m 0[2mms[22m[39m
+     [32m✓[39m wires host clipboard paste into the chrome-less embed[32m 0[2mms[22m[39m
+     [32m✓[39m uses the published host mapping in the default topology even when a container IP exists[32m 1[2mms[22m[39m
+     [32m✓[39m validates the configured screen network mode[32m 1[2mms[22m[39m
+     [32m✓[39m uses the host identity for host-run bind mounts without ever using root[32m 0[2mms[22m[39m
+     [32m✓[39m uses the container IP only for the internal screen network topology[32m 0[2mms[22m[39m
+     [32m✓[39m does not publish computer control port 7070 on the host[32m 0[2mms[22m[39m
+     [32m✓[39m publishes the control port to loopback only when explicitly opted in[32m 0[2mms[22m[39m
+     [32m✓[39m resolves computer control through the container network IP, never a host mapping[32m 1[2mms[22m[39m
+     [32m✓[39m resolves computer control through a published loopback port when provided[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled (undefined)[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled (null)[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled ({})[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled ({"7070/tcp":null})[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled ({"7070/tcp":[]})[32m 0[2mms[22m[39m
+     [32m✓[39m accepts configured loopback ports on resume, including unassigned ports ("")[32m 0[2mms[22m[39m
+     [32m✓[39m accepts configured loopback ports on resume, including unassigned ports ("0")[32m 0[2mms[22m[39m
+     [32m✓[39m accepts configured loopback ports on resume, including unassigned ports ("55101")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("0.0.0.0")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("::")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("192.0.2.1")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback (undefined)[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports (undefined)[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("-1")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("65536")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("abc")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("55101/other")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("80@192.0.2.1")[32m 0[2mms[22m[39m
+     [32m✓[39m does not fall back to the container IP when a published control port is required[32m 0[2mms[22m[39m
+     [33m[2m✓[22m[39m restricts computer control argv to supervisor shapes [33m 488[2mms[22m[39m
+     [32m✓[39m turns takeover input into xdotool[32m 1[2mms[22m[39m
+     [32m✓[39m caps memory and cpu by default and keeps #343's pids ceiling[32m 1[2mms[22m[39m
+     [32m✓[39m falls back to the defaults when a variable is blank[32m 1[2mms[22m[39m
+     [32m✓[39m pins MemorySwap to Memory so the ceiling cannot be swapped past[32m 1[2mms[22m[39m
+     [32m✓[39m accepts fractional CPUs[32m 1[2mms[22m[39m
+     [32m✓[39m lets an operator opt out explicitly[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a malformed size instead of silently falling back[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a negative cpu count[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a pids limit that is not a positive integer[32m 0[2mms[22m[39m
+     [32m✓[39m rejects a memory limit below Docker's 6 MiB minimum[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a CPU count that would floor to Docker's unlimited[32m 0[2mms[22m[39m
+     [32m✓[39m rejects a CPU count that leaves the safe-integer NanoCpus range[32m 1[2mms[22m[39m
+     [32m✓[39m parses byte counts without a unit suffix[32m 0[2mms[22m[39m
+     [32m✓[39m keeps named volumes native and exposes only the bot subdirectory[32m 1[2mms[22m[39m
+     [32m✓[39m preserves native host paths and translates supervisor bind mounts[32m 0[2mms[22m[39m
+     [32m✓[39m rejects paths outside the volume and missing volume names[32m 1[2mms[22m[39m
+     [32m✓[39m fails closed on daemons that could ignore volume subpaths[32m 1[2mms[22m[39m
+     [32m✓[39m stops promptly when Docker sends SIGTERM to the start script[32m 1[2mms[22m[39m
+ [31m❯[39m .agents/skills/pr-watch/pr-digest.test.ts [2m([22m[2m25 tests[22m[2m | [22m[31m24 failed[39m[2m)[22m[33m 402[2mms[22m[39m
+[31m     [31m×[31m does not infer whether tests ran from skipped steps after Run pnpm test:integration[39m[32m 21[2mms[22m[39m
+[31m     [31m×[31m does not infer whether tests ran from skipped steps after Install dependencies[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: [fixed](https://github.com/example/project/pull/1#issuecomment-12)[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12.[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123.[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: #issuecomment-12[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m reopens edited conversation comments[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: reviewer User [vc]: Please fix this[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: unknown[bot] Bot [vc]: Please fix this[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: vercel[bot] Bot [vc]: generated deployment[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: github-actions[bot] Bot <!-- rakazo-playwright-screenshots -->
+### Playwright screenshots
+[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: reviewer User <h3>Greptile Summary</h3>[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'APPROVED' ][39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'COMMENTED' ][39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'CHANGES_REQUESTED' ][39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'CHANGES_REQUESTED', 'APPROVED' ][39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'CHANGES_REQUESTED', 'COMMENTED' ][39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'DISMISSED' ][39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m does not let an inline reply close a conversation[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m requires a new reply after inline edits: 2026-01-01T00:00:00Z[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m requires a new reply after inline edits: 2026-01-03T00:00:00Z[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m removes terminal controls[39m[32m 10[2mms[22m[39m
+     [32m✓[39m does not retry failed replies[32m 124[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 29 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mdoes not infer whether tests ran from skipped steps after Run pnpm test:integration
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mdoes not infer whether tests ran from skipped steps after Install dependencies
+[31m[1mAssertionError[22m: expected 1 to be 10 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 10[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m114:29[22m[39m
+    [90m112|[39m         ][33m,[39m
+    [90m113|[39m       })[33m;[39m
+    [90m114|[39m       [34mexpect[39m(result[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m10[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m115|[39m       expect(result.stdout).toContain(`step "${name}" failure (later s…
+    [90m116|[39m       [34mexpect[39m(result[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"tests did not run"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: [fixed](https://github.com/example/project/pull/1#issuecomment-12)
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12.
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m127:73[22m[39m
+    [90m125|[39m     [[32m"#issuecomment-12"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m126|[39m   ])([32m"matches complete permalinks: %s"[39m[33m,[39m (body[33m,[39m expected) [33m=>[39m {
+    [90m127|[39m     expect(runDigest({ conversation: [original, reply(body)] }).status…
+    [90m   |[39m                                                                         [31m^[39m
+    [90m128|[39m   })[33m;[39m
+    [90m129|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123.
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: #issuecomment-12
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m127:73[22m[39m
+    [90m125|[39m     [[32m"#issuecomment-12"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m126|[39m   ])([32m"matches complete permalinks: %s"[39m[33m,[39m (body[33m,[39m expected) [33m=>[39m {
+    [90m127|[39m     expect(runDigest({ conversation: [original, reply(body)] }).status…
+    [90m   |[39m                                                                         [31m^[39m
+    [90m128|[39m   })[33m;[39m
+    [90m129|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mreopens edited conversation comments
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m132:82[22m[39m
+    [90m130|[39m   [34mit[39m([32m"reopens edited conversation comments"[39m[33m,[39m () [33m=>[39m {
+    [90m131|[39m     [35mconst[39m edited [33m=[39m [34mcomment[39m({ updated[33m:[39m [32m"2026-01-03T00:00:00Z"[39m })[33m;[39m
+    [90m132|[39m     expect(runDigest({ conversation: [edited, reply(edited.html_url)] …
+    [90m   |[39m                                                                                  [31m^[39m
+    [90m133|[39m   })[33m;[39m
+    [90m134|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: reviewer User [vc]: Please fix this
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: unknown[bot] Bot [vc]: Please fix this
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: reviewer User <h3>Greptile Summary</h3>
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m147:81[22m[39m
+    [90m145|[39m     [[32m"reviewer"[39m[33m,[39m [32m"User"[39m[33m,[39m [32m"<h3>Greptile Summary</h3>"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m146|[39m   ])("requires matching automation for noise: %s %s %s", (user, kind, …
+    [90m147|[39m     expect(runDigest({ conversation: [comment({ body, user, kind })] }…
+    [90m   |[39m                                                                                 [31m^[39m
+    [90m148|[39m   })[33m;[39m
+    [90m149|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: vercel[bot] Bot [vc]: generated deployment
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: github-actions[bot] Bot <!-- rakazo-playwright-screenshots -->
+### Playwright screenshots
+
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m147:81[22m[39m
+    [90m145|[39m     [[32m"reviewer"[39m[33m,[39m [32m"User"[39m[33m,[39m [32m"<h3>Greptile Summary</h3>"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m146|[39m   ])("requires matching automation for noise: %s %s %s", (user, kind, …
+    [90m147|[39m     expect(runDigest({ conversation: [comment({ body, user, kind })] }…
+    [90m   |[39m                                                                                 [31m^[39m
+    [90m148|[39m   })[33m;[39m
+    [90m149|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'APPROVED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'COMMENTED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'CHANGES_REQUESTED', 'APPROVED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'DISMISSED' ]
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m165:43[22m[39m
+    [90m163|[39m       user[33m:[39m { login[33m:[39m [32m"reviewer"[39m[33m,[39m type[33m:[39m [32m"User"[39m }[33m,[39m
+    [90m164|[39m     }))[33m;[39m
+    [90m165|[39m     [34mexpect[39m([34mrunDigest[39m({ reviews })[33m.[39mstatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   |[39m                                           [31m^[39m
+    [90m166|[39m   })[33m;[39m
+    [90m167|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'CHANGES_REQUESTED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'CHANGES_REQUESTED', 'COMMENTED' ]
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m165:43[22m[39m
+    [90m163|[39m       user[33m:[39m { login[33m:[39m [32m"reviewer"[39m[33m,[39m type[33m:[39m [32m"User"[39m }[33m,[39m
+    [90m164|[39m     }))[33m;[39m
+    [90m165|[39m     [34mexpect[39m([34mrunDigest[39m({ reviews })[33m.[39mstatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   |[39m                                           [31m^[39m
+    [90m166|[39m   })[33m;[39m
+    [90m167|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mdoes not let an inline reply close a conversation
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m170:78[22m[39m
+    [90m168|[39m   [34mit[39m([32m"does not let an inline reply close a conversation"[39m[33m,[39m () [33m=>[39m {
+    [90m169|[39m     [35mconst[39m inline [33m=[39m { [33m...[39m[34mreply[39m([32m"Already fixed"[39m)[33m,[39m in_reply_to_id[33m:[39m [34m19[39m }[33m;[39m
+    [90m170|[39m     expect(runDigest({ conversation: [original], inline: [inline] }).s…
+    [90m   |[39m                                                                              [31m^[39m
+    [90m171|[39m   })[33m;[39m
+    [90m172|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires a new reply after inline edits: 2026-01-01T00:00:00Z
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m179:60[22m[39m
+    [90m177|[39m     const root = { ...comment({ updated }), path: "example.sh", line: …
+    [90m178|[39m     [35mconst[39m response [33m=[39m { [33m...[39m[34mreply[39m([32m"Fixed"[39m)[33m,[39m in_reply_to_id[33m:[39m root[33m.[39mid }[33m;[39m
+    [90m179|[39m     expect(runDigest({ inline: [root, response] }).status).toBe(expect…
+    [90m   |[39m                                                            [31m^[39m
+    [90m180|[39m   })[33m;[39m
+    [90m181|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires a new reply after inline edits: 2026-01-03T00:00:00Z
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m179:60[22m[39m
+    [90m177|[39m     const root = { ...comment({ updated }), path: "example.sh", line: …
+    [90m178|[39m     [35mconst[39m response [33m=[39m { [33m...[39m[34mreply[39m([32m"Fixed"[39m)[33m,[39m in_reply_to_id[33m:[39m root[33m.[39mid }[33m;[39m
+    [90m179|[39m     expect(runDigest({ inline: [root, response] }).status).toBe(expect…
+    [90m   |[39m                                                            [31m^[39m
+    [90m180|[39m   })[33m;[39m
+    [90m181|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mremoves terminal controls
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m184:27[22m[39m
+    [90m182|[39m   [34mit[39m([32m"removes terminal controls"[39m[33m,[39m () [33m=>[39m {
+    [90m183|[39m     const result = runDigest({ conversation: [comment({ body: "Fix \x1…
+    [90m184|[39m     [34mexpect[39m(result[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m11[39m)[33m;[39m
+    [90m   |[39m                           [31m^[39m
+    [90m185|[39m     [34mexpect[39m(result[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"\x1b"[39m)[33m;[39m
+    [90m186|[39m     [34mexpect[39m(result[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"\x07"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/testkit/src/playwright-artifact-publication.test.ts[2m > [22mPlaywright artifact publication boundary[2m > [22mpublishes pull_request through trusted code with fake storage and credentials
+[41m[1m FAIL [22m[49m packages/testkit/src/playwright-artifact-publication.test.ts[2m > [22mPlaywright artifact publication boundary[2m > [22mpublishes push through trusted code with fake storage and credentials
+[41m[1m FAIL [22m[49m packages/testkit/src/playwright-artifact-publication.test.ts[2m > [22mPlaywright artifact publication boundary[2m > [22mpublishes timed_out through trusted code with fake storage and credentials
+[31m[1mError[22m: Command failed: bash scripts/publish-playwright-report.sh
+scripts/publish-playwright-report.sh: line 172: pnpm: command not found
+[39m
+[36m [2m❯[22m packages/testkit/src/playwright-artifact-publication.test.ts:[2m232:7[22m[39m
+    [90m230|[39m         [33mATTACK_MARKER[39m[33m:[39m path[33m.[39m[34mjoin[39m(root[33m,[39m [32m"executed-untrusted-code"[39m)[33m,[39m
+    [90m231|[39m       }[33m;[39m
+    [90m232|[39m       [34mexecFileSync[39m([32m"bash"[39m[33m,[39m [[32m"scripts/publish-playwright-report.sh"[39m][33m,[39m {
+    [90m   |[39m       [31m^[39m
+    [90m233|[39m         cwd[33m:[39m checkout[33m,[39m
+    [90m234|[39m         env[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m infra/sandboxes/supervisor/src/computer-spec.test.ts[2m > [22mgraphical computer spec[2m > [22mselects a display-specific browser profile and preserves explicit profiles
+[31m[1mAssertionError[22m: expected [ Array(15) ] to include '--user-data-dir=/tmp/rakazo-browser-w…'[39m
+[36m [2m❯[22m infra/sandboxes/supervisor/src/computer-spec.test.ts:[2m213:27[22m[39m
+    [90m211|[39m
+    [90m212|[39m       [35mtry[39m {
+    [90m213|[39m         expect(run(":1")).toContain(`--user-data-dir=${home}/.browser-…
+    [90m   |[39m                           [31m^[39m
+    [90m214|[39m         [34mexpect[39m([34mrun[39m([32m":1"[39m))[33m.[39m[34mtoContain[39m([32m"--restore-last-session"[39m)[33m;[39m
+    [90m215|[39m         expect(run(":1").some((arg) => arg.startsWith("--remote-debugg…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m infra/sandboxes/supervisor/src/computer-spec.test.ts[2m > [22mgraphical computer spec[2m > [22mclears crashed state from Chromium preferences and Local State
+[31m[1mAssertionError[22m: expected '{\n  "profile": {\n    "exit_type": "…' to contain '"exit_type":"Normal"'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- "exit_type":"Normal"[39m
+[31m+ {[39m
+[31m+   "profile": {[39m
+[31m+     "exit_type": "Crashed",[39m
+[31m+     "exited_cleanly": false[39m
+[31m+   }[39m
+[31m+ }[39m
+[31m+[39m
+
+[36m [2m❯[22m infra/sandboxes/supervisor/src/computer-spec.test.ts:[2m279:30[22m[39m
+    [90m277|[39m
+    [90m278|[39m         [35mconst[39m updatedPrefs [33m=[39m [34mreadFileSync[39m(prefsPath[33m,[39m [32m"utf8"[39m)[33m;[39m
+    [90m279|[39m         [34mexpect[39m(updatedPrefs)[33m.[39m[34mtoContain[39m([32m'"exit_type":"Normal"'[39m)[33m;[39m
+    [90m   |[39m                              [31m^[39m
+    [90m280|[39m         [34mexpect[39m(updatedPrefs)[33m.[39m[34mtoContain[39m([32m'"exited_cleanly":true'[39m)[33m;[39m
+    [90m281|[39m         [34mexpect[39m(updatedPrefs)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"Crashed"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/29]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m29 failed[39m[22m[2m | [22m[1m[32m67 passed[39m[22m[90m (96)[39m
+[2m   Start at [22m 07:36:33
+[2m   Duration [22m 3.03s[2m (transform 178ms, setup 55ms, import 258ms, tests 2.11s, environment 0ms)[22m
+

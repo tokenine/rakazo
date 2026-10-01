@@ -1,11 +1,18 @@
 # S2 final full-suite evidence — after all S2 commits (HEAD 83c748f1)
+# [fix round 1 LOW-4: provenance amended 2026-10-01T08:44:44Z — base-check log archived next to this file]
 # command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run
 # UTC: 2026-10-01T07:50:45Z
 # Result: Test Files 3 failed | 416 passed | 32 skipped (451); Tests 29 failed | 4778 passed | 171 skipped (4978)
 # The 29 failures are PRE-EXISTING: verified identical (29 failed | 67 passed of these same 96 tests)
-# on a detached checkout of the BASE commit 1e9378d7 (pr-watch/pr-digest 24, supervisor/computer-spec 2,
-# testkit/playwright-artifact-publication 3). None are in S2 scope; the earlier run-time flake trio
-# (coding-doctor / process-collision-matrix) was fixed by the nproc-default change (83c748f1).
+# on a detached checkout of the BASE commit 1e9378d7 — captured log archived at
+# green/base-check-at-1e9378d7.log (method: scoped run of the 3 pre-existing-failure files
+# at base: .agents/skills/pr-watch/pr-digest.test.ts [24 failed],
+# infra/sandboxes/supervisor/src/computer-spec.test.ts [2 failed],
+# packages/testkit/src/playwright-artifact-publication.test.ts [3 failed]).
+# Independent confirmation: the orchestrator separately reproduced the full-suite
+# conclusion at HEAD (4778 passed | 29 failed | 171 skipped).
+# None are in S2 scope; the earlier run-time flake trio (coding-doctor /
+# process-collision-matrix) was fixed by the nproc-default change (83c748f1).
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
 
