@@ -1,3 +1,8 @@
+004-code-mode S1 (candidate 43b1484e) — SINGLE FULL-SUITE RUN (LOW-5 scope honesty):
+this one captured run backs ALL Slice-1 matrix rows (V1 pi, V2 pi, V13, V14, V15).
+The former per-row copies of this file (v1-pi.txt, v2-pi.txt, v13.txt, v14.txt,
+v15.txt) were removed in the fix round; see NOTE.txt.
+----- original capture below -----
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
 

@@ -1,51 +1,23 @@
-packages/adapters/src/coding-pi-adapter.ts:15:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━━━
+004-code-mode S1 fix round 1 — biome, HONEST SCOPED RUN (MED-1):
+correction vs the candidate evidence: at 43b1484e biome reported 4 errors in
+3 new files (organizeImports + format); those were real. The claim of a clean
+scoped run was false. This file is the refreshed, unmodified command output.
+Command:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm exec biome check \
+    packages/adapters/src/coding-acceptance-gate.ts \
+    packages/adapters/src/coding-acceptance-gate.test.ts \
+    packages/adapters/src/coding-engine.ts \
+    packages/adapters/src/coding-engine.test.ts \
+    packages/adapters/src/coding-pi-adapter.ts \
+    packages/adapters/src/coding-pi-adapter.test.ts \
+    packages/adapters/src/coding-repo-to-pr.ts \
+    packages/adapters/src/coding-repo-to-pr.test.ts \
+    packages/adapters/src/coding-session-service.ts \
+    packages/adapters/src/coding-session-service.test.ts \
+    packages/adapters/src/coding-session.postgres.test.ts \
+    packages/adapters/src/executor-coding-gate.test.ts \
+    packages/adapters/src/executor.ts \
+    packages/db/src/coding-migration.test.ts
+Exit code: 0
 
-  × Sort the imported names.
-  
-    13 │  */
-    14 │ 
-  > 15 │ import { runContinueJob, type JobPublisher } from "@rakazo/adapter-kit";
-       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    16 │ import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
-    17 │ import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-  
-  i Safe fix: Organize imports and exports (Biome)
-  
-     13  13 │    */
-     14  14 │   
-     15     │ - import·{·runContinueJob,·type·JobPublisher·}·from·"@rakazo/adapter-kit";
-         15 │ + import·{·type·JobPublisher,·runContinueJob·}·from·"@rakazo/adapter-kit";
-     16  16 │   import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
-     17  17 │   import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-  
-
-packages/adapters/src/executor-coding-gate.test.ts:1:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━
-
-  × Sort these imports.
-  
-  > 1 │ import type { AgentRunRequest, ConnectorCall, ConnectorTool } from "@rakazo/adapter-kit";
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  > 2 │ import type { CodingAcceptanceGate } from "./coding-acceptance-gate.js";
-  > 3 │ import { beforeEach, describe, expect, it, vi } from "vitest";
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    4 │ import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
-    5 │ import { createRunExecutor } from "./executor.js";
-  
-  i Safe fix: Organize imports and exports (Biome)
-  
-      1   1 │   import type { AgentRunRequest, ConnectorCall, ConnectorTool } from "@rakazo/adapter-kit";
-      2     │ - import·type·{·CodingAcceptanceGate·}·from·"./coding-acceptance-gate.js";
-      3     │ - import·{·beforeEach,·describe,·expect,·it,·vi·}·from·"vitest";
-          2 │ + import·{·beforeEach,·describe,·expect,·it,·vi·}·from·"vitest";
-          3 │ + import·type·{·CodingAcceptanceGate·}·from·"./coding-acceptance-gate.js";
-      4   4 │   import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
-      5   5 │   import { createRunExecutor } from "./executor.js";
-  
-
-Checked 14 files in 177ms. No fixes applied.
-Found 2 errors.
-check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  × Some errors were emitted while running checks.
-  
-
+Checked 14 files in 179ms. No fixes applied.
