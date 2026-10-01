@@ -1,6 +1,6 @@
 {
   "id": "004-code-mode",
-  "state": "candidate_ready",
+  "state": "bug_fixing",
   "candidate_sha": "518d6049",
   "maker": "claude-maker",
   "checker": "claude-checker",
