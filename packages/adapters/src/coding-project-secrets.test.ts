@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_PROJECT_SECRETS_PER_WORKSPACE,
-  ProjectSecretNotFoundError,
-  ProjectSecretNameInvalidError,
-  type ProjectSecretsClient,
   createProjectSecretsStore,
+  MAX_PROJECT_SECRETS_PER_WORKSPACE,
+  ProjectSecretNameInvalidError,
+  ProjectSecretNotFoundError,
+  type ProjectSecretsClient,
   projectSecretRef,
 } from "./coding-project-secrets.js";
 import { EncryptedSecretStore } from "./secrets.js";
@@ -47,13 +47,7 @@ function fakePrisma() {
         ) ?? null,
       findMany: async ({ where }: { where: { workspaceId: string } }) =>
         rows.filter((row) => row.workspaceId === where.workspaceId),
-      update: async ({
-        where,
-        data,
-      }: {
-        where: { id: string };
-        data: Record<string, unknown>;
-      }) => {
+      update: async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
         const row = rows.find((entry) => entry.id === where.id);
         if (!row) throw new Error("row not found");
         Object.assign(row, data);
