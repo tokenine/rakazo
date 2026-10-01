@@ -186,11 +186,33 @@ describe("per-task process runtime — task contexts from the setup definition (
     ).resolves.toBe("retained");
   });
 
+  it("an aborted in-flight command settles with a bounded wait and a recorded exit (T12 wiring)", async () => {
+    const controller = new AbortController();
+    const abortCtx: AdapterContext = { ...ctx, signal: controller.signal };
+    const { provider } = await fixtureProvider();
+    const task = await provider.createTaskContext({ taskId: "task-settle" });
+    const running = collect(provider.execute(task.ref, { argv: ["sleep", "30"] }, abortCtx));
+    await waitFor(() => provider.liveTaskCount(task.ref) === 1);
+    controller.abort();
+    const stopped = await running;
+    // The recorded exit reflects the real settle: the child was killed and
+    // actually closed before the exit was reported.
+    expect(stopped.code).toBe(130);
+    expect(stopped.stderr).toMatch(/command aborted/);
+    // Group emptiness is asynchronous (the kernel needs a scheduling point to
+    // reap the SIGKILLed members) — wait for the remembered pgid to prune.
+    await waitFor(() => provider.liveTaskCount(task.ref) === 0);
+  });
+
   it("suspend reaps a daemon backgrounded by a wrapper that already exited (pgid outlives wrapper)", async () => {
     const { provider } = await fixtureProvider();
     const task = await provider.createTaskContext({ taskId: "task-orphan-daemon" });
     const result = await collect(
-      provider.execute(task.ref, { argv: ["bash", "-c", "sleep 300 >/dev/null 2>&1 & echo $! > daemon.pid"] }, ctx),
+      provider.execute(
+        task.ref,
+        { argv: ["bash", "-c", "sleep 300 >/dev/null 2>&1 & echo $! > daemon.pid"] },
+        ctx,
+      ),
     );
     expect(result.code).toBe(0);
     const daemonPid = Number.parseInt(

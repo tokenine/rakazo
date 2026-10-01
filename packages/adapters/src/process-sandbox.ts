@@ -48,6 +48,7 @@ import {
   placeholderObservation,
 } from "./computer-support.js";
 import { scrubProcessEnv } from "./process-env-scrub.js";
+import { settleForTakeover, TAKEOVER_SETTLE_BOUND_MS } from "./takeover-settle.js";
 
 /** Spawn-time resource limits (D-Q9): defaults the doctor also verifies. */
 export interface ProcessTaskLimits {
@@ -329,61 +330,92 @@ export class ProcessSandboxProvider implements SandboxProvider {
     let stderr = "";
     const timeoutMs = boundedSandboxCommandTimeoutMs(request.timeoutMs);
     try {
-      const outcome = await new Promise<{ code: number }>((resolve) => {
-        let settled = false;
-        const finish = (code: number) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          context.signal.removeEventListener("abort", onAbort);
-          resolve({ code });
-        };
-        const killTree = () => {
-          if (child.pid === undefined) return;
-          try {
-            process.kill(-child.pid, "SIGKILL");
-          } catch {
-            try {
-              child.kill("SIGKILL");
-            } catch {
-              // Already gone.
-            }
-          }
-        };
-        const onAbort = () => {
-          killTree();
-          stderr += "command aborted\n";
-          finish(130);
-        };
-        const timer = setTimeout(() => {
-          killTree();
-          stderr += `command timed out after ${timeoutMs} ms\n`;
-          finish(124);
-        }, timeoutMs);
-        timer.unref?.();
-        context.signal.addEventListener("abort", onAbort, { once: true });
-        child.stdout?.on("data", (chunk: Buffer) => {
-          stdout += chunk.toString("utf8");
-        });
-        child.stderr?.on("data", (chunk: Buffer) => {
-          stderr += chunk.toString("utf8");
-        });
-        child.on("error", (error) => {
-          stderr += error.message;
-          finish(1);
-        });
-        child.on("close", (code, signal) => {
-          if (signal) {
-            stderr += `command terminated by ${signal}\n`;
-            finish(signal === "SIGKILL" ? 137 : signal === "SIGTERM" ? 143 : 1);
-            return;
-          }
-          finish(code ?? 0);
-        });
-      });
+      // T12 settle wiring (LOW-1): the run's abort signal IS the takeover
+      // signal for an in-flight sandbox command. settleForTakeover supplies
+      // the bounded-wait + recorded-exit semantics: the exit event is yielded
+      // only after the child REALLY closed (completed — its true exit code),
+      // or, when no confirmed close arrives within the bound, as a
+      // settled-timeout whose exit is recorded unconfirmed instead of a
+      // fabricated instant code. The settle bound rides above the command's
+      // own timeout, so ordinary (non-aborted) commands always settle first
+      // and win the race.
+      const settlement = await settleForTakeover(
+        (settleSignal) =>
+          new Promise<{ code: number }>((resolve) => {
+            let settled = false;
+            const finish = (code: number) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timer);
+              resolve({ code });
+            };
+            const killTree = () => {
+              if (child.pid === undefined) return;
+              try {
+                process.kill(-child.pid, "SIGKILL");
+              } catch {
+                try {
+                  child.kill("SIGKILL");
+                } catch {
+                  // Already gone.
+                }
+              }
+            };
+            const onAbort = () => {
+              killTree();
+              stderr += "command aborted\n";
+              finish(130);
+            };
+            const timer = setTimeout(() => {
+              killTree();
+              stderr += `command timed out after ${timeoutMs} ms\n`;
+              finish(124);
+            }, timeoutMs);
+            timer.unref?.();
+            settleSignal.addEventListener("abort", onAbort, { once: true });
+            child.stdout?.on("data", (chunk: Buffer) => {
+              stdout += chunk.toString("utf8");
+            });
+            child.stderr?.on("data", (chunk: Buffer) => {
+              stderr += chunk.toString("utf8");
+            });
+            child.on("error", (error) => {
+              stderr += error.message;
+              finish(1);
+            });
+            child.on("close", (code, signal) => {
+              if (signal) {
+                stderr += `command terminated by ${signal}\n`;
+                finish(signal === "SIGKILL" ? 137 : signal === "SIGTERM" ? 143 : 1);
+                return;
+              }
+              finish(code ?? 0);
+            });
+          }),
+        {
+          takeover: context.signal,
+          // Above the command's own timeout: the utility's bound must never
+          // fire before the command's own timer does; it only trips when the
+          // child never confirms close even after SIGKILL (e.g. a group
+          // member still holding the stdio pipes) — then the exit is
+          // recorded unconfirmed instead of implied clean.
+          boundMs: timeoutMs + TAKEOVER_SETTLE_BOUND_MS,
+        },
+      );
       if (stdout) yield { type: "stdout", data: stdout };
       if (stderr) yield { type: "stderr", data: stderr };
-      yield { type: "exit", code: outcome.code };
+      if (settlement.outcome === "settled-timeout") {
+        // Recorded exit (V4 "settled … or blocked"): the command was
+        // signalled but never confirmed its close within the bounded settle
+        // wait — record the exit as unconfirmed, never as a clean kill.
+        yield {
+          type: "stderr",
+          data: `command aborted; exit unconfirmed after ${Math.round(settlement.waitedMs)} ms (takeover settle bound)`,
+        };
+        yield { type: "exit", code: 130 };
+      } else {
+        yield { type: "exit", code: settlement.value?.code ?? 130 };
+      }
     } finally {
       this.forgetChild(task.taskId, child);
     }

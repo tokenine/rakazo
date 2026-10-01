@@ -1,4 +1,11 @@
 # GREEN evidence — matrix row V4 (T12 takeover settle: four guarded handlers + settle mechanics + pre-resume recheck)
+# ADDENDUM (fix round 1, LOW-1): settleForTakeover is now WIRED into the product
+# path — process-sandbox.ts execute() routes the run-abort (takeover) signal for
+# in-flight sandbox commands through it, so "signal → bounded wait → recorded
+# exit" covers not only the four held handlers (guard + recorded block) but the
+# in-flight settle too (exit yielded only on real close, else recorded
+# unconfirmed). The capture below predates the wiring; the wiring's own evidence
+# is green/fix-round1-verification.txt (process-sandbox + settle suites).
 # UTC: 2026-10-01T07:11:53Z
 # command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/executor-takeover-settle.test.ts packages/adapters/src/takeover-settle.test.ts packages/adapters/src/takeover-resume.test.ts
 # UTC: 2026-10-01T07:11:53Z
