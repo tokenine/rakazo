@@ -49,6 +49,9 @@ export const ProductEventType = z.enum([
   "group.created",
   "group.updated",
   "group.handoff",
+  // 004-code-mode Slice 1: coding session surface events.
+  "coding_session.prompted",
+  "coding_session.stopped",
 ]);
 export type ProductEventType = z.infer<typeof ProductEventType>;
 
