@@ -1,0 +1,51 @@
+packages/adapters/src/coding-pi-adapter.ts:15:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━━━
+
+  × Sort the imported names.
+  
+    13 │  */
+    14 │ 
+  > 15 │ import { runContinueJob, type JobPublisher } from "@rakazo/adapter-kit";
+       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    16 │ import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
+    17 │ import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+  
+  i Safe fix: Organize imports and exports (Biome)
+  
+     13  13 │    */
+     14  14 │   
+     15     │ - import·{·runContinueJob,·type·JobPublisher·}·from·"@rakazo/adapter-kit";
+         15 │ + import·{·type·JobPublisher,·runContinueJob·}·from·"@rakazo/adapter-kit";
+     16  16 │   import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
+     17  17 │   import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+  
+
+packages/adapters/src/executor-coding-gate.test.ts:1:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━
+
+  × Sort these imports.
+  
+  > 1 │ import type { AgentRunRequest, ConnectorCall, ConnectorTool } from "@rakazo/adapter-kit";
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 2 │ import type { CodingAcceptanceGate } from "./coding-acceptance-gate.js";
+  > 3 │ import { beforeEach, describe, expect, it, vi } from "vitest";
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4 │ import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
+    5 │ import { createRunExecutor } from "./executor.js";
+  
+  i Safe fix: Organize imports and exports (Biome)
+  
+      1   1 │   import type { AgentRunRequest, ConnectorCall, ConnectorTool } from "@rakazo/adapter-kit";
+      2     │ - import·type·{·CodingAcceptanceGate·}·from·"./coding-acceptance-gate.js";
+      3     │ - import·{·beforeEach,·describe,·expect,·it,·vi·}·from·"vitest";
+          2 │ + import·{·beforeEach,·describe,·expect,·it,·vi·}·from·"vitest";
+          3 │ + import·type·{·CodingAcceptanceGate·}·from·"./coding-acceptance-gate.js";
+      4   4 │   import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
+      5   5 │   import { createRunExecutor } from "./executor.js";
+  
+
+Checked 14 files in 177ms. No fixes applied.
+Found 2 errors.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
