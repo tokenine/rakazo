@@ -3,8 +3,10 @@
 Lane: **`rakazo-004-s3-maker-r1`** (maker; super-speckit maker ≠ checker)
 Base SHA: **`1c0bb3479c005e8f38b450ef344b51126eabafe9`** (verified: `git rev-parse HEAD` at lane start; `git status --porcelain` empty)
 Branch: `tl/004-purpose-gate-r1` — NO push (per lane rules)
-Final HEAD SHA: **`222a491a`** (implementation HEAD `ec81b0a5` + this evidence commit;
-see commit list below; `apps/web` untouched — `git diff 1c0bb347..HEAD --stat -- apps/web` is empty)
+Final HEAD SHA: the tip of `tl/004-purpose-gate-r1` at lane end (reported in the lane
+message; the last commits are evidence-only). Implementation tip: **`ec81b0a5`**;
+evidence commits follow it (see commit list below). `apps/web` untouched —
+`git diff 1c0bb347..HEAD --stat -- apps/web` is empty.
 
 Scope executed: `specs/004-code-mode/tasks.md` Slice 3, T14–T21, against `plan.md` S3 + Risks
 (threat model = boundary), `verification-matrix.md` rows V8/V9/V10/V11, and
@@ -228,6 +230,9 @@ home / home-revisions / coding-session-service / process-sandbox / doctor):
 6. `aff422d4` — s3: T20 doc annotation (4 tests)
 7. `ec81b0a5` — s3: T21 doctor delegation + flow test + V9 grep gate (3+1 tests)
 8. `222a491a` — s3: S3 evidence (EVIDENCE.md + validate transcript + patch provenance)
+9. `f76669b9` — s3: evidence head correction (evidence-only)
+(Any further evidence-only commits after these are part of this lane's record; the
+authoritative lane-end tip ships in the lane report.)
 
 Explicit paths only in every commit; no `git add -A`; no push.
 
