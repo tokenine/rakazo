@@ -186,3 +186,66 @@ The T25 adapter must bridge the gap between Pi's tool-based approach and OMP's i
 - Rules: original run must stop first; engine change requires `ENGINE_CHANGE_LABEL` + handoff summary; no silent switch
 - `continueCodingSession` in `coding-session-service.ts` provides the durable continuation path
 - V15 tests cover: same-engine continuation, labelled engine-change continuation, refusal without label/summary, same-workspace preserved
+
+---
+
+## Empirical Probe Results — 2026-10-02 (full protocol map)
+
+### Protocol format
+- **Command field**: `type` JSON field carries the command name
+- **Parameters**: additional fields as `args` (object/array/string), `params` (JSON-RPC style), or top-level fields
+- **Response shape**: `{"type":"response","command":"<cmd>","success":false,"error":"<msg>"}` or `{"type":"response","success":true,"result":<value>}`
+
+### Commands tested and their results
+
+| Frame sent | Response | Interpretation |
+|---|---|---|
+| `{"type":"user_message","args":{"message":"hello"}}` | `Unknown command: user_message` | Not in RPC protocol |
+| `{"type":"steer","args":{"message":"..."}}` | `Unknown command: steer` | Not in RPC protocol |
+| `{"type":"stop"}` | `Unknown command: stop` | Not in RPC protocol |
+| `{"type":"resume"}` | `Unknown command: resume` | Not in RPC protocol |
+| `{"type":"inspect_changes"}` | `Unknown command: inspect_changes` | Not in RPC protocol |
+| `{"type":"get_approvals"}` | `Unknown command: get_approvals` | Not in RPC protocol |
+| `{"type":"available_commands"}` | `Unknown command: available_commands` | Not in RPC protocol |
+| `{"type":"tools"}` | `Unknown command: tools` | Not in RPC protocol |
+| `{"type":"memory"}` | `Unknown command: memory` | Not in RPC protocol |
+| `{"type":"security"}` | `Unknown command: security` | Not in RPC protocol |
+| `{"type":"compact"}` | `{"type":"response","command":"compact","success":false,"error":"Nothing to compact (session too small)"}` | **RECOGNIZED** — needs non-empty session |
+| `{"type":"handoff"}` | `{"type":"response","command":"handoff","success":false,"error":"Nothing to hand off (no messages yet)"}` | **RECOGNIZED** — needs messages |
+| `{"jsonrpc":"2.0","method":"user_message","params":{"message":"hello"}}` | `Unknown command: undefined` | `method` field not read; `params` becomes command name |
+| `{"type":"request","method":"user_message"}` | `Unknown command: request` | `type=request` overrides method |
+
+### Available commands list (from `available_commands_update` notification)
+```
+security, model, switch, fast, slow, skillful, extended-context, computer,
+ratchet, prewalk, modelpreset, advisor, export, trace, dump, share, browser,
+todo, session, jobs, usage, stats, changelog, tools, context, mcp, ssh, fresh,
+compact, shake, handoff, pin, retry, memory, rename, move, wt, add-dir, remove-dir,
+dirs, marketplace, plugins, reload-plugins, force, [140+ skill:* commands]
+```
+**None of these are callable via `omp --mode rpc`** except `compact` and `handoff` (with preconditions).
+
+### Async notifications received
+- `{"type":"extension_ui_request","id":"<uuid>","method":"setWidget","widgetKey":"autoresearch"}` — appears 1-4× on startup
+- `{"type":"advisor_cost_changed"}` — appears on startup
+- `{"type":"available_commands_update","commands":[...]}` — appears on startup with full command list
+
+### Implications for T25 dispatch()
+- **`prompt`/`steer`**: OMP has no `user_message` RPC command. The OMP session is interactive — you talk to it via stdin text (in `--mode json` you pass a message arg). In `--mode rpc` there is no programmatic chat API. **UNSUPPORTED with evidence.**
+- **`stop`/`resume`**: No such commands in OMP RPC protocol. **UNSUPPORTED with evidence.**
+- **`inspect_changes`**: No workspace inspection API in OMP RPC. **UNSUPPORTED with evidence.**
+- **`approvals`**: `extension_ui_request` messages ARE received asynchronously but there is NO `get_approvals` RPC method. We can capture them into a queue and surface them, but the protocol doesn't provide a pull API.
+- **`compact`**: Works but requires session to have content. Not applicable for coding session management.
+- **`handoff`**: Works but requires messages in session. Not applicable for coding session management.
+
+### T23 dirty-set: investigation result
+The dirty-set is tracked by `workspaceCheckpoint` in executor process memory:
+- `workspaceCheckpoint.markDirty()` sets an in-memory `dirty = true` flag
+- `workspaceCheckpoint.flush()` calls `checkpointRunComputerWorkspace(deps, storedComputer, computer, context)` which writes to `AgentHomeStore`
+- `AgentHomeStore.changesSince(homeKey, homeRevision)` computes changed paths at runtime
+- `Computer.homeRevision` in the DB only advances AFTER `flush()`, not on every dirty mark
+
+**After a crash**: If `flush()` was not called since the last `markDirty()`, the dirty-set is in executor memory and is LOST. There is no persisted "list of dirty paths" in the database — `homeRevision` only advances on checkpoint, and `changesSince()` requires a live `AgentHomeStore`.
+
+**Conclusion for T23**: A meaningful dirty-set cannot be recovered offline after a crash. The correct behavior is to return the last known `homeRevision` (which tells you "the checkpoint at revision X was the last clean state") and indicate that the dirty-set is unknown/lost. We should NOT return a constant empty array — that falsely claims "nothing dirty". We should return `{ dirtySet: null, dirtySetUnavailable: true, lastCheckpointRevision: string }`.
+

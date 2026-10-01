@@ -15,12 +15,7 @@
 import { runContinueJob } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it } from "vitest";
-import {
-  type CodingSessionRef,
-  createCodingSessionRef,
-  ENGINE_CHANGE_LABEL,
-  planContinuation,
-} from "./coding-engine.js";
+import { createCodingSessionRef, ENGINE_CHANGE_LABEL, planContinuation } from "./coding-engine.js";
 import {
   getCodingSessionApprovals,
   getCodingSessionResumeData,

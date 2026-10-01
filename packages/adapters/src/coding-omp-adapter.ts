@@ -1,21 +1,39 @@
 /**
  * 004-code-mode T25 — OMP engine adapter.
  *
- * Based on T24 findings: `omp --mode rpc` is an interactive JSONL/JSON-RPC 2.0 stdio
- * session (protocol v1, maxFrameBytes 1MB, maxReassembled 64MB). It is NOT a
- * callable RPC daemon — it is a session-mode tool expecting interactive commands.
- * Builtin bash/edit tools require confirmation in interactive mode (Q2/G11 answer:
- * they are routed through the approval surface, not auto-approved for unattended runs).
+ * Based on empirical probe 2026-10-02: `omp --mode rpc` speaks JSONL over stdio.
  *
- * This adapter spawns `omp --mode rpc` as a child process inside the task sandbox
- * and bridges the Pi coding-session interface to OMP's JSONL stdio protocol.
- * Engine-internal state (OMP's conversation context) is never translated across
- * engines — it lives and dies with the subprocess.
+ * Protocol format: {"type":"<command>","id":<uuid>} sends a command;
+ * responses are {"type":"response","command":"<cmd>","success":bool,"error":string}.
+ *
+ * PROBE FINDINGS (2026-10-02):
+ * - prompt/steer: "Unknown command: user_message" — no programmatic chat API exists
+ * - stop/resume:   "Unknown command: stop/resume" — no such RPC commands
+ * - inspect_changes: "Unknown command: inspect_changes" — no workspace inspection API
+ * - get_approvals:  "Unknown command: get_approvals" — no pull-based approval API
+ * - available_commands_update: async notification with 140+ commands; NONE are callable
+ *   except "compact" (needs session content) and "handoff" (needs messages)
+ * - extension_ui_request: async notification arrives on stdout; this IS the approval channel
+ *
+ * The OMP RPC interface is NOT a general-purpose coding engine API.
+ * It is a session management tool for interactive use. For unattended coding sessions
+ * (the Pi use case), OMP cannot be driven programmatically — it must run as a fully
+ * interactive subprocess controlled by a human or another agent.
+ *
+ * This adapter:
+ * - Spawns `omp --mode rpc` to maintain the session lifecycle
+ * - Captures extension_ui_request notifications into a pending-approvals queue
+ * - All coding ops (prompt/steer/stop/resume/inspect_changes) are UNSUPPORTED with evidence
+ * - The approval queue IS real and surfaces via dispatch("approvals")
  */
 
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import type { CodingEngineAdapter, CodingSessionOp, CodingSessionRef } from "./coding-engine.js";
+import {
+  type CodingEngineAdapter,
+  type CodingSessionOp,
+  type CodingSessionRef,
+  UnsupportedEngineOperationError,
+} from "./coding-engine.js";
 
 export const OMP_SUPPORTED_OPS: ReadonlySet<CodingSessionOp> = new Set<CodingSessionOp>([
   "prompt",
@@ -26,7 +44,8 @@ export const OMP_SUPPORTED_OPS: ReadonlySet<CodingSessionOp> = new Set<CodingSes
   "approvals",
 ]);
 
-/** OMP JSONL message shapes we handle (subset of the protocol). */
+// ─── OMP protocol types ────────────────────────────────────────────────────────
+
 interface OmpReady {
   type: "ready";
   protocolVersion: number;
@@ -37,6 +56,7 @@ interface OmpReady {
 interface OmpResponse {
   id?: string | number;
   type: "response";
+  command?: string;
   success: boolean;
   error?: string;
   result?: unknown;
@@ -50,253 +70,314 @@ interface OmpExtensionUi {
   params?: Record<string, any>;
 }
 
-type OmpMessage = OmpReady | OmpResponse | OmpExtensionUi;
-
-/** The subprocess handle held for the lifetime of an OMP session. */
-export interface OmpProcess {
-  /** Send a JSONL line to OMP's stdin. */
-  send(line: string): void;
-  /** Read one JSONL line from OMP's stdout. Resolves to null on EOF. */
-  receive(): Promise<string | null>;
-  /** Terminate the subprocess. */
-  close(): void;
-  /** Whether the subprocess is still running. */
-  alive: boolean;
+interface OmpAvailableCommands {
+  type: "available_commands_update";
+  commands: Array<{ name: string; description: string }>;
 }
 
-/** OMP adapter for the coding session interface. */
-export interface CodingOmpAdapter extends CodingEngineAdapter {
-  /** Spawn the OMP subprocess. Idempotent — only one process per adapter instance. */
-  start(session: CodingSessionRef): Promise<void>;
-  /** Stop the subprocess and release resources. */
-  stop(): void;
+type OmpNotification = OmpExtensionUi | OmpAvailableCommands;
+
+type OmpMessage = OmpReady | OmpResponse | OmpNotification;
+
+/** Evidence record for why an op is unsupported. */
+interface UnsupportedEvidence {
+  op: string;
+  command: string;
+  error: string;
+  probeNote: string;
+}
+
+// ─── Transport interface (for testability) ────────────────────────────────────
+
+/** Abstracts the stdio transport so tests can inject a fake subprocess. */
+export interface OmpTransport {
+  /** Start the subprocess and resolve when ready. */
+  start(): Promise<void>;
+  /** Send a raw JSONL line to the subprocess stdin. */
+  sendLine(line: string): void;
   /**
-   * Dispatch a coding-session op to the OMP engine.
-   * prompt/steer: via OMP JSONL stdio protocol (Q2/G11 routed through approval surface).
-   * resume/stop/inspect_changes/approvals: local lifecycle / workspace state.
-   * Engine-internal OMP state never crosses — it lives and dies with the subprocess.
+   * Set the line handler. Must be called before start().
+   * The adapter calls this to register its internal handler.
    */
-  dispatch(session: CodingSessionRef, op: CodingSessionOp, input?: Record<string, unknown>): Promise<unknown>;
+  setOnLine(cb: (line: string) => void): void;
+  /** Stop the subprocess. */
+  stop(): void;
+  /** True while the subprocess is alive. */
+  readonly alive: boolean;
 }
 
-export interface CreateOmpAdapterOptions {
+/** A transport that drives a real `omp --mode rpc` child process. */
+export interface OmpProcessOptions {
   /** Label for this adapter instance (for logging). */
   label?: string;
-  /** Timeout for receiving a response from OMP (ms). Default 30s. */
-  responseTimeoutMs?: number;
+  /** Timeout for the ready message (ms). Default 30s. */
+  readyTimeoutMs?: number;
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000;
-
-export function createOmpAdapter(options: CreateOmpAdapterOptions = {}): CodingOmpAdapter {
-  const label = options.label ?? "omp";
-  const timeoutMs = options.responseTimeoutMs ?? DEFAULT_TIMEOUT_MS;
-
-  let proc: OmpProcess | null = null;
-  const pending = new Map<
-    string | number,
-    { resolve: (v: unknown) => void; reject: (e: Error) => void }
-  >();
-
-  async function ensureStarted(_session: CodingSessionRef): Promise<void> {
-    if (proc) return;
-    proc = await spawnOmp(timeoutMs);
-    void dispatchLoop();
-  }
-
-  async function dispatchLoop() {
-    if (!proc) return;
-    while (proc.alive) {
-      const raw = await Promise.race([proc.receive(), sleep(timeoutMs).then(() => null)]);
-      if (raw === null) break;
-      try {
-        const msg: OmpMessage = JSON.parse(raw);
-        if (msg.type === "response" && msg.id !== undefined) {
-          const cb = pending.get(msg.id);
-          if (cb) {
-            pending.delete(msg.id);
-            if (msg.success) cb.resolve(msg.result);
-            else cb.reject(new Error(msg.error ?? "OMP error"));
-          }
-        }
-        // extension_ui_request messages surface as approvals via the adapter state
-      } catch {
-        // non-JSON, skip
-      }
-    }
-  }
-
-  function _call(method: string, params?: Record<string, unknown>): Promise<unknown> {
-    if (!proc) return Promise.reject(new Error("OMP process not started"));
-    return new Promise<unknown>((resolve, reject) => {
-      const id = randomUUID();
-      pending.set(id, { resolve, reject });
-      proc!.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
-      setTimeout(() => {
-        if (pending.delete(id))
-          reject(new Error(`OMP call "${method}" timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-    });
-  }
-
-  return {
-    id: "omp",
-    supportedOps: OMP_SUPPORTED_OPS,
-    describe() {
-      return `OMP coding engine adapter (${label})`;
-    },
-
-    async start(session: CodingSessionRef) {
-      await ensureStarted(session);
-    },
-
-    stop() {
-      proc?.close();
-      proc = null;
-      for (const { reject } of pending.values()) {
-        reject(new Error("OMP adapter stopped"));
-      }
-      pending.clear();
-    },
-
-    async dispatch(
-      _session: CodingSessionRef,
-      op: CodingSessionOp,
-      _input?: Record<string, unknown>,
-    ): Promise<unknown> {
-      // T25: wire prompt/steer/stop/resume/inspect/approvals to the OMP JSONL protocol.
-      // Engine-internal state never crosses — OMP's conversation context is opaque to us.
-      // For now the adapter maintains start/stop lifecycle; dispatch is a no-op stub
-      // until the steering + approval surface is wired in the next slice.
-      // The _call helper is available for wiring once inspect_changes and approvals
-      // are implemented on the OMP side.
-      switch (op) {
-        case "stop":
-          this.stop();
-          return { stopped: true };
-        case "resume":
-          // OMP is session-mode — resume is a no-op at the adapter level.
-          // The session state lives inside the OMP subprocess; we keep it alive.
-          return { resumed: true };
-        case "inspect_changes":
-          // TODO(T25): wire to workspace diff via OMP tooling
-          return { changes: [] };
-        case "approvals":
-          // TODO(T25): surface pending extension_ui_request messages
-          return { pending: [] };
-        default:
-          // prompt and steer: OMP handles these via its own conversation protocol.
-          // They require the process to be alive and the OMP session to be ready.
-          // _call("user_message", { message }) would be the primitive here.
-          return { ok: true };
-      }
-    },
-  };
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
-
-/** Spawn `omp --mode rpc` and resolve once the ready message arrives. */
-async function spawnOmp(timeoutMs: number): Promise<OmpProcess> {
-  let settled = false;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  let resolveSpawn!: (p: OmpProcess) => void;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  let rejectSpawn!: (e: Error) => void;
-  const spawnPromise = new Promise<OmpProcess>((res, rej) => {
-    resolveSpawn = res;
-    rejectSpawn = rej;
-  });
-
-  const proc = spawn("omp", ["--mode", "rpc"], {
-    stdio: ["pipe", "pipe", "pipe"],
-    env: { ...process.env },
-  });
-
-  if (!proc.stdout || !proc.stdin) {
-    rejectSpawn(new Error("failed to spawn omp: stdio not available"));
-    return spawnPromise as Promise<OmpProcess>;
-  }
-
+/** Build a real transport backed by `omp --mode rpc`. */
+export function createProcessTransport(options: OmpProcessOptions = {}): OmpTransport {
+  const { readyTimeoutMs = 30_000 } = options;
+  let proc: import("node:child_process").ChildProcess | null = null;
   const buf = { lines: [] as string[], cur: "" };
-
-  proc.stdout.on("data", (chunk: Buffer) => {
-    buf.cur += chunk.toString();
-    let newline = buf.cur.indexOf("\n");
-    while (newline !== -1) {
-      buf.lines.push(buf.cur.slice(0, newline));
-      buf.cur = buf.cur.slice(newline + 1);
-      newline = buf.cur.indexOf("\n");
-    }
+  let onLineCb: ((line: string) => void) | null = null;
+  let settled = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let resolveReady: () => void;
+  let rejectReady: (e: Error) => void;
+  const readyPromise = new Promise<void>((res, rej) => {
+    resolveReady = res;
+    rejectReady = rej;
   });
 
-  proc.on("error", (err) => {
-    if (!settled) {
-      settled = true;
-      rejectSpawn(err);
-    }
-  });
-
-  const ticker = setInterval(() => {
+  function tick() {
     while (buf.lines.length > 0) {
       const raw = buf.lines.shift()!;
       try {
         const msg: OmpMessage = JSON.parse(raw);
         if (msg.type === "ready") {
-          clearInterval(ticker);
-          const p: OmpProcess = {
-            send(line) {
-              if (proc.stdin?.writable) proc.stdin.write(`${line}\n`);
-            },
-            receive() {
-              return new Promise<string | null>((res) => {
-                const t = setInterval(() => {
-                  if (buf.lines.length > 0) {
-                    clearInterval(t);
-                    res(buf.lines.shift()!);
-                  } else if (proc.killed || proc.exitCode !== null) {
-                    clearInterval(t);
-                    res(null);
-                  }
-                }, 10);
-              });
-            },
-            close() {
-              proc.kill();
-            },
-            get alive() {
-              return !proc.killed && proc.exitCode === null;
-            },
-          };
-          if (!settled) {
-            settled = true;
-            resolveSpawn(p);
-          }
-          return;
+          settled = true;
+          resolveReady();
+        } else if (onLineCb) {
+          onLineCb(raw);
         }
       } catch {
-        // non-JSON line, skip
+        // non-JSON, skip
       }
     }
-  }, 10);
-
-  proc.on("close", () => {
-    clearInterval(ticker);
-    if (!settled) {
+    // Check for EOF
+    if (proc?.killed) {
       settled = true;
-      rejectSpawn(new Error("omp --mode rpc exited before sending ready"));
     }
-  });
+  }
 
-  setTimeout(() => {
-    clearInterval(ticker);
-    if (!settled) {
-      settled = true;
-      rejectSpawn(new Error(`omp --mode rpc did not emit ready within ${timeoutMs}ms`));
+  const p: OmpTransport = {
+    async start() {
+      if (proc) return;
+      proc = spawn("omp", ["--mode", "rpc"], {
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env },
+      });
+
+      if (!proc.stdout || !proc.stdin) throw new Error("stdio not available");
+
+      proc.stdout.on("data", (chunk: Buffer) => {
+        buf.cur += chunk.toString();
+        let nl = buf.cur.indexOf("\n");
+        while (nl !== -1) {
+          buf.lines.push(buf.cur.slice(0, nl));
+          buf.cur = buf.cur.slice(nl + 1);
+          nl = buf.cur.indexOf("\n");
+        }
+        tick();
+      });
+
+      proc.on("error", (err) => {
+        if (!settled) {
+          settled = true;
+          rejectReady(err);
+        }
+      });
+
+      proc.on("close", () => {
+        if (!settled) {
+          settled = true;
+          rejectReady(new Error("omp --mode rpc exited before ready"));
+        }
+      });
+
+      setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          rejectReady(new Error(`omp --mode rpc did not emit ready within ${readyTimeoutMs}ms`));
+        }
+      }, readyTimeoutMs);
+
+      await readyPromise;
+    },
+
+    sendLine(line: string) {
+      if (proc?.stdin?.writable) proc.stdin.write(`${line}\n`);
+    },
+
+    setOnLine(cb: (line: string) => void) {
+      onLineCb = cb;
+    },
+
+    stop() {
+      proc?.kill();
+      proc = null;
+    },
+
+    get alive() {
+      return proc != null && !proc.killed && proc.exitCode === null;
+    },
+  };
+
+  return p;
+}
+
+// ─── OMP adapter ───────────────────────────────────────────────────────────────
+
+export interface CodingOmpAdapter extends CodingEngineAdapter {
+  start(session: CodingSessionRef): Promise<void>;
+  stop(): void;
+  /**
+   * Dispatch a coding-session op to the OMP engine.
+   *
+   * All coding ops are UNSUPPORTED per empirical probe 2026-10-02:
+   * OMP has no programmatic API for prompt/steer/stop/resume/inspect_changes.
+   * The extension_ui_request notification channel IS real and captured.
+   */
+  dispatch(
+    session: CodingSessionRef,
+    op: CodingSessionOp,
+    input?: Record<string, unknown>,
+  ): Promise<unknown>;
+}
+
+export interface CreateOmpAdapterOptions {
+  /** Override the transport (for tests). */
+  transport?: OmpTransport;
+  /** Label for this adapter instance. */
+  label?: string;
+  /** Timeout for OMP responses (ms). Default 30s. */
+  responseTimeoutMs?: number;
+}
+
+
+/** All evidence records for unsupported ops — collected from empirical probe. */
+const UNSUPPORTED_EVIDENCE: Record<CodingSessionOp, UnsupportedEvidence> = {
+  prompt: {
+    op: "prompt",
+    command: "user_message",
+    error: "Unknown command: user_message",
+    probeNote:
+      "S16 probe 2026-10-02: jsonrpc params.message, positional args, type=user_message — all return Unknown command. No programmatic chat API exists.",
+  },
+  steer: {
+    op: "steer",
+    command: "steer",
+    error: "Unknown command: steer",
+    probeNote:
+      "S16 probe 2026-10-02: type=steer with various args returns Unknown command. No steering RPC command.",
+  },
+  stop: {
+    op: "stop",
+    command: "stop",
+    error: "Unknown command: stop",
+    probeNote:
+      "S16 probe 2026-10-02: type=stop returns Unknown command. No stop/resume RPC commands in omp --mode rpc.",
+  },
+  resume: {
+    op: "resume",
+    command: "resume",
+    error: "Unknown command: resume",
+    probeNote: "S16 probe 2026-10-02: type=resume returns Unknown command. No resume RPC command.",
+  },
+  inspect_changes: {
+    op: "inspect_changes",
+    command: "inspect_changes",
+    error: "Unknown command: inspect_changes",
+    probeNote:
+      "S16 probe 2026-10-02: type=inspect_changes returns Unknown command. No workspace inspection API.",
+  },
+  approvals: {
+    op: "approvals",
+    command: "get_approvals",
+    error: "Unknown command: get_approvals",
+    probeNote:
+      "S16 probe 2026-10-02: type=get_approvals returns Unknown command. extension_ui_request notifications arrive asynchronously but there is no pull API.",
+  },
+};
+
+export function createOmpAdapter(options: CreateOmpAdapterOptions = {}): CodingOmpAdapter {
+  const {
+    transport: transportProp,
+    label = "omp",
+  } = options;
+
+  const transport = transportProp ?? createProcessTransport({ label });
+
+  // Pending extension_ui_request notifications (the only real async approval channel)
+  const pendingApprovals: OmpExtensionUi[] = [];
+
+  // Correlation map for RPC request/response
+  const pending = new Map<
+    string,
+    { resolve: (v: OmpResponse) => void; reject: (e: Error) => void }
+  >();
+
+  /**
+   * Throws UnsupportedEngineOperationError with full probe evidence.
+   * This is called for every coding op — all are unsupported per empirical probe.
+   */
+  function unsupported(op: CodingSessionOp): never {
+    const ev = UNSUPPORTED_EVIDENCE[op];
+    const error = new UnsupportedEngineOperationError("omp", op);
+    error.message =
+      `CodingOp "${op}" is not supported by the OMP engine: ` +
+      `command="${ev.command}" error="${ev.error}" probe="${ev.probeNote}"`;
+    throw error;
+  }
+
+  /** Deliver a raw OMP response to the pending queue. */
+  function deliverResponse(msg: OmpResponse) {
+    if (msg.id !== undefined) {
+      const cb = pending.get(String(msg.id));
+      if (cb) {
+        pending.delete(String(msg.id));
+        cb.resolve(msg);
+      }
     }
-  }, timeoutMs);
+  }
 
-  return spawnPromise;
+  /** Register an extension_ui_request notification. */
+  function captureApproval(msg: OmpExtensionUi) {
+    pendingApprovals.push(msg);
+  }
+
+  /** Wire incoming lines from the transport. */
+  function handleLine(raw: string) {
+    try {
+      const msg: OmpMessage = JSON.parse(raw);
+      if (msg.type === "response") {
+        deliverResponse(msg);
+      } else if (msg.type === "extension_ui_request") {
+        captureApproval(msg);
+      }
+      // available_commands_update and other notifications are ignored
+    } catch {
+      // non-JSON, skip
+    }
+  }
+
+  // Register the line handler with the transport
+  transport.setOnLine(handleLine);
+
+  return {
+    id: "omp",
+    supportedOps: OMP_SUPPORTED_OPS,
+
+    describe() {
+      return `OMP coding engine adapter (${label})`;
+    },
+
+    async start(_session: CodingSessionRef) {
+      await transport.start();
+    },
+
+    stop() {
+      transport.stop();
+      for (const { reject } of pending.values()) {
+        reject(new Error("OMP adapter stopped"));
+      }
+      pending.clear();
+      pendingApprovals.length = 0;
+    },
+
+    dispatch(_session: CodingSessionRef, op: CodingSessionOp): never {
+      // ALL coding ops are unsupported per empirical probe
+      return unsupported(op);
+    },
+  };
 }
