@@ -1400,6 +1400,9 @@ model CodingSession {
   latestRunId       String?
   /// Verification records (command, exit status, evidence artifact) for the web view.
   verification      Json?
+  /// 004-code-mode S3 (T18): checkpointed secrets audit-chain head
+  /// {seq, hash, at} — the run-record side of the audit verify comparison.
+  secretsAuditHead  Json?
   /// Continuation provenance (V15): prior session id, engine-change label, handoff text.
   continuationOf    String?
   engineChangeLabel String?
