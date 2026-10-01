@@ -1,6 +1,6 @@
 {
   "id": "004-code-mode",
-  "state": "planned",
+  "state": "maker_running",
   "candidate_sha": null,
   "maker": "claude-maker",
   "checker": "claude-checker",
@@ -32,5 +32,15 @@
     "attempt_id": "004-s1-artifact-rebuild-r1"
   },
   "runs": [],
-  "bugs": []
+  "bugs": [],
+  "human_approval": {
+    "gate": "plan+tasks bundle r2 (5 slices T1-T33, V1-V21; Q9 Option 3 process isolation; Q10 Option B audited secrets)",
+    "approver": "Poom5741",
+    "relayed_by": "Chief (bot cmugsyh4d000532q9r7p81t0a)",
+    "decided_at": "2026-10-01T04:43:50Z",
+    "decided_at_clock": "Chief machine clock",
+    "card_sha": "407f7822",
+    "verified_tree": "1952097c",
+    "note": "Gate card quoted 407f7822; Chief's on-disk R2 verification passed on the tree that includes 1952097c (= 407f7822 + Chief-mandated secrets-state-disclosure fold, +7/-2, landed 2026-10-01 ~03:25Z, before the tap). Approved scope unchanged: same 5 slices, T1-T33, V1-V21. approver is the human user only; Chief is the relay, not the approver."
+  }
 }
