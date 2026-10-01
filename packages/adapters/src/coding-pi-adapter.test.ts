@@ -293,3 +293,28 @@ describe("normal-pi coding adapter rides the existing run machinery (V1 pi, T3)"
     expect(adapter.describe()).toMatch(/normal-pi/);
   });
 });
+
+describe('session rows without a threadId refuse instead of fabricating "null" (LOW-4 fix)', () => {
+  it("prompt refuses with an explicit threadId error and creates no task/run/job", async () => {
+    const { adapter, store, enqueued, appended } = await wired();
+    store.sessions[0]!.threadId = null;
+    await expect(
+      adapter.dispatch(session, "prompt", { text: "work", messageId: "message-1" }),
+    ).rejects.toThrow(/threadId/);
+    expect(store.tasks).toHaveLength(0);
+    expect(store.runs).toHaveLength(0);
+    expect(enqueued).toEqual([]);
+    expect(appended).toEqual([]);
+  });
+
+  it("stop with an active run refuses at the event append instead of emitting a null threadId", async () => {
+    const { adapter, store, appended } = await wired();
+    await adapter.dispatch(session, "prompt", { text: "work", messageId: "message-1" });
+    store.runs[0]!.status = "running";
+    store.sessions[0]!.threadId = null;
+    await expect(adapter.dispatch(session, "stop", {})).rejects.toThrow(/threadId/);
+    // No stopped event may carry the fabricated "null" thread id (the
+    // prompted event from the setup prompt above is the only one).
+    expect(appended.some((event) => event.type === "coding_session.stopped")).toBe(false);
+  });
+});

@@ -12,7 +12,7 @@
  * - approvals read the existing ExternalEffect surface.
  */
 
-import { runContinueJob, type JobPublisher } from "@rakazo/adapter-kit";
+import { type JobPublisher, runContinueJob } from "@rakazo/adapter-kit";
 import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import {
@@ -46,6 +46,23 @@ export interface CodingPiAdapterDeps {
 }
 
 export const CODING_SESSION_TRIGGER = "coding_session";
+
+/**
+ * LOW-4 (fix round): threadId is nullable on the session row, but the Task and
+ * Run shapes and the thread-events surface need a REAL thread id. Mapping a
+ * missing threadId with String() used to fabricate the string "null" — refuse
+ * with an explicit error instead.
+ */
+function requiredThreadId(row: { threadId?: unknown }, sessionId: string): string {
+  const value = row.threadId;
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(
+      `Coding session "${sessionId}" has no threadId; ` +
+        `this operation needs a thread to attach the run and its events to.`,
+    );
+  }
+  return value;
+}
 
 export interface CodingPiAdapter extends CodingEngineAdapter {
   dispatch<TResult>(
@@ -99,11 +116,12 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
       if (active) {
         return { steered: true as const, runId: active.id as string };
       }
+      const threadId = requiredThreadId(sessionRow, input.session.id);
       const task = await tx.task.create({
         data: {
           spaceId: String(sessionRow.spaceId),
           botId: String(sessionRow.botId),
-          threadId: String(sessionRow.threadId),
+          threadId,
           userId: String(sessionRow.userId),
           prompt: runPrompt,
           status: "queued",
@@ -113,7 +131,7 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
         data: {
           spaceId: String(sessionRow.spaceId),
           botId: String(sessionRow.botId),
-          threadId: String(sessionRow.threadId),
+          threadId,
           taskId: task.id as string,
           userId: input.userId ?? String(sessionRow.userId),
           status: "queued",
@@ -237,7 +255,7 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
     return row as unknown as Record<string, unknown>;
   }
   const spaceIdForSession = async (id: string) => String((await sessionRow(id)).spaceId);
-  const threadIdForSession = async (id: string) => String((await sessionRow(id)).threadId);
+  const threadIdForSession = async (id: string) => requiredThreadId(await sessionRow(id), id);
   const botIdForSession = async (id: string) => String((await sessionRow(id)).botId);
 
   async function runRow(runId: string): Promise<Record<string, unknown>> {
