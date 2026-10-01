@@ -55,7 +55,7 @@ features:
     candidate_sha: null
     maker: "claude-maker"
     checker: "claude-checker"
-    matrix: "specs/004-code-mode/spec.md"
+    matrix: "specs/004-code-mode/verification-matrix.md"
     purpose_status: "confirmed"
     purpose_map: ".super-speckit/purpose/004-code-mode/purpose-map.md"
     grill_status: "complete"

@@ -7,7 +7,7 @@ worktrees:
   retain_failed_qa_worktrees: false
 roles:
   require_distinct_maker_and_checker: true
-  merge_requires_human: false
+  merge_requires_human: true
 orchestration:
   entry_command: ask-super-speckit
   max_parallel_lanes: 3
