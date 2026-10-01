@@ -1,9 +1,11 @@
 import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it } from "vitest";
+import { builtinAgentTools } from "./builtin-tools.js";
 import {
   ACCEPTANCE_REFUSAL_HINT,
+  acceptanceRefusalReason,
+  CODING_READ_ONLY_TOOLS,
   createAcceptanceGateService,
-  EDIT_CLASS_CODING_TOOLS,
   parseAcceptanceRecord,
 } from "./coding-acceptance-gate.js";
 
@@ -46,46 +48,98 @@ function gateWithSession() {
   return { gate, sessions };
 }
 
-describe("acceptance-artifact gate (T4, V2 precondition)", () => {
-  it("classifies edit ops that require a recorded acceptance", () => {
-    expect(EDIT_CLASS_CODING_TOOLS.has("write_file")).toBe(true);
-    expect(EDIT_CLASS_CODING_TOOLS.has("shell")).toBe(true);
-    // Read-only tools never require the gate.
-    expect(EDIT_CLASS_CODING_TOOLS.has("read_file")).toBe(false);
-    expect(EDIT_CLASS_CODING_TOOLS.has("list_files")).toBe(false);
-  });
-
-  it("refuses the first edit before an acceptance record exists — explicitly", async () => {
-    const { gate, sessions } = gateWithSession();
-    const verdict = await gate.check({ runId: "run-1", toolName: "write_file", args: {} });
-    expect(verdict.allowed).toBe(false);
-    if (!verdict.allowed) {
-      expect(verdict.reason).toMatch(/acceptance/i);
-      expect(verdict.reason).toContain(ACCEPTANCE_REFUSAL_HINT);
+describe("acceptance-artifact gate is deny-by-default for coding sessions (T4, HIGH-1 fix)", () => {
+  it("every allowlist name is a real builtin tool — no phantom entries", () => {
+    const realNames = new Set(builtinAgentTools.map((tool) => tool.name));
+    expect(CODING_READ_ONLY_TOOLS.size).toBeGreaterThan(0);
+    for (const name of CODING_READ_ONLY_TOOLS) {
+      expect(realNames.has(name)).toBe(true);
     }
-    // The refusal is visible on the session, not silent.
-    expect(sessions[0]!.refusals).toBe(1);
   });
 
-  it("allows edits once the outcome and verification commands are recorded", async () => {
+  it("the allowlist is read-only: mutation-capable builtins are never exempt", () => {
+    for (const mutating of [
+      "js",
+      "client_js",
+      "computer_act",
+      "browser_act",
+      "browser_navigate",
+      "write_file",
+      "shell",
+      "attach_file",
+      "open_path",
+      "launch_app",
+      "add_mcp_server",
+      "schedule_create",
+      "request_secret",
+      "secret_request",
+      "spawn_bot",
+      "run_subagent",
+      "ask_user",
+      "message_user",
+    ]) {
+      expect(CODING_READ_ONLY_TOOLS.has(mutating)).toBe(false);
+    }
+  });
+
+  it("refuses real mutation tools before acceptance — explicitly, counted on the session", async () => {
+    const { gate, sessions } = gateWithSession();
+    for (const toolName of ["js", "computer_act", "shell", "write_file"]) {
+      const verdict = await gate.check({ runId: "run-1", toolName, args: {} });
+      expect(verdict.allowed).toBe(false);
+      if (!verdict.allowed) {
+        expect(verdict.reason).toContain(toolName);
+        expect(verdict.reason).toMatch(/acceptance/i);
+        expect(verdict.reason).toContain(ACCEPTANCE_REFUSAL_HINT);
+      }
+    }
+    // The refusals are visible on the session, not silent.
+    expect(sessions[0]!.refusals).toBe(4);
+  });
+
+  it("denies unknown and formerly-phantom tool names by default — no name-matching escape hatch", async () => {
+    const { gate } = gateWithSession();
+    for (const phantom of [
+      "edit_file",
+      "multi_edit",
+      "apply_patch",
+      "move_file",
+      "delete_file",
+      "totally_unknown_tool",
+    ]) {
+      const verdict = await gate.check({ runId: "run-1", toolName: phantom, args: {} });
+      expect(verdict.allowed).toBe(false);
+    }
+  });
+
+  it("lets every read-only allowlist tool through before acceptance", async () => {
+    const { gate } = gateWithSession();
+    for (const name of CODING_READ_ONLY_TOOLS) {
+      await expect(gate.check({ runId: "run-1", toolName: name, args: {} })).resolves.toEqual({
+        allowed: true,
+      });
+    }
+    // Spot-check the archetypal readers explicitly.
+    await expect(gate.check({ runId: "run-1", toolName: "read_file", args: {} })).resolves.toEqual({
+      allowed: true,
+    });
+    await expect(
+      gate.check({ runId: "run-1", toolName: "computer_observe", args: {} }),
+    ).resolves.toEqual({ allowed: true });
+  });
+
+  it("allows mutation tools once the outcome and verification commands are recorded", async () => {
     const { gate } = gateWithSession();
     await gate.record({
       sessionId: "session-1",
       outcome: "Login page renders and validates input",
       verificationCommands: ["pnpm vitest run login"],
     });
-    const verdict = await gate.check({ runId: "run-1", toolName: "write_file", args: {} });
-    expect(verdict).toEqual({ allowed: true });
-  });
-
-  it("never gates read-only tools, even before acceptance", async () => {
-    const { gate } = gateWithSession();
-    await expect(gate.check({ runId: "run-1", toolName: "read_file", args: {} })).resolves.toEqual({
-      allowed: true,
-    });
-    await expect(gate.check({ runId: "run-1", toolName: "list_files", args: {} })).resolves.toEqual(
-      { allowed: true },
-    );
+    for (const toolName of ["write_file", "js", "computer_act", "shell"]) {
+      await expect(gate.check({ runId: "run-1", toolName, args: {} })).resolves.toEqual({
+        allowed: true,
+      });
+    }
   });
 
   it("refuses the gate record itself unless it carries an outcome and at least one command", async () => {
@@ -131,9 +185,18 @@ describe("acceptance-artifact gate (T4, V2 precondition)", () => {
 
   it("counts repeated refusals so the block is observable, not a one-off", async () => {
     const { gate, sessions } = gateWithSession();
-    await gate.check({ runId: "run-1", toolName: "shell", args: {} });
-    await gate.check({ runId: "run-1", toolName: "write_file", args: {} });
+    await gate.check({ runId: "run-1", toolName: "js", args: {} });
+    await gate.check({ runId: "run-1", toolName: "computer_act", args: {} });
     expect(sessions[0]!.refusals).toBe(2);
+  });
+});
+
+describe("acceptanceRefusalReason — shared with the executor fail-closed path (HIGH-1)", () => {
+  it("names the refused tool and carries the actionable hint", () => {
+    const reason = acceptanceRefusalReason("computer_act");
+    expect(reason).toContain("computer_act");
+    expect(reason).toMatch(/refused/i);
+    expect(reason).toContain(ACCEPTANCE_REFUSAL_HINT);
   });
 });
 

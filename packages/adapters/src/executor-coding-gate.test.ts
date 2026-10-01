@@ -1,6 +1,7 @@
 import type { AgentRunRequest, ConnectorCall, ConnectorTool } from "@rakazo/adapter-kit";
-import type { CodingAcceptanceGate } from "./coding-acceptance-gate.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CODING_READ_ONLY_TOOLS, type CodingAcceptanceGate } from "./coding-acceptance-gate.js";
+import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
 import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
 import { createRunExecutor } from "./executor.js";
 
@@ -13,19 +14,31 @@ vi.mock("./computer-lifecycle.js", async (importOriginal) => ({
 /**
  * Executor-level proof that the coding acceptance gate sits at the tool
  * authorization point (T4): when the gate refuses, the tool call never
- * executes and the model receives the explicit refusal.
+ * executes and the model receives the explicit refusal. HIGH-1 fix: the same
+ * point FAILS CLOSED for coding_session runs when no gate is installed —
+ * only the shared read-only allowlist passes, mutation tools are refused.
+ * (Allowlist membership itself is proven against the real gate service in
+ * coding-acceptance-gate.test.ts; connector tools cannot shadow builtin
+ * names, so the pass-through case rides that shared set.)
  */
-function fixture(options: { codingGate?: CodingAcceptanceGate } = {}) {
+function fixture(
+  options: { codingGate?: CodingAcceptanceGate; trigger?: string; toolName?: string } = {},
+) {
   const tool: ConnectorTool = {
-    name: "demo_write_item",
+    name: options.toolName ?? "demo_write_item",
     description: "Write an item",
     inputSchema: {
       type: "object",
       properties: { id: { type: "string" } },
       required: ["id"],
     },
-    route: { connectorId: "demo", resourceId: "resource-1", toolName: "demo_write_item" },
+    route: {
+      connectorId: "demo",
+      resourceId: "resource-1",
+      toolName: options.toolName ?? "demo_write_item",
+    },
   };
+  const toolName = tool.name;
   const executed: ConnectorCall[] = [];
   const results: unknown[] = [];
   const run = {
@@ -36,7 +49,7 @@ function fixture(options: { codingGate?: CodingAcceptanceGate } = {}) {
     spaceId: "space-1",
     userId: "user-1",
     status: "queued",
-    trigger: "user",
+    trigger: options.trigger ?? "user",
     leaseFence: 0,
   };
   const prisma = {
@@ -94,7 +107,7 @@ function fixture(options: { codingGate?: CodingAcceptanceGate } = {}) {
     },
   };
   const runtimeRun = vi.fn(async function* (request: AgentRunRequest) {
-    const result = await request.executeTool!("demo_write_item", { id: "item-1" }, "call-1");
+    const result = await request.executeTool!(toolName, { id: "item-1" }, "call-1");
     results.push(result);
     yield { type: "done" as const, text: "Done" };
   });
@@ -163,10 +176,32 @@ describe("coding acceptance gate at the executor tool authorization point (T4)",
     expect(f.results[0]).not.toHaveProperty("error");
   });
 
-  it("leaves runs untouched when no coding gate is installed (default behavior)", async () => {
-    const f = fixture();
+  it("leaves non-coding runs untouched when no coding gate is installed (legacy behavior)", async () => {
+    const f = fixture({ trigger: "user" });
     await f.run();
     expect(f.executed).toHaveLength(1);
     expect(f.results[0]).not.toHaveProperty("error");
+  });
+
+  it("FAILS CLOSED: a coding_session run with no gate installed refuses mutation tools (HIGH-1)", async () => {
+    const f = fixture({ trigger: CODING_SESSION_TRIGGER });
+    await f.run();
+    expect(f.executed).toHaveLength(0);
+    expect(f.results[0]).toMatchObject({
+      error: expect.stringMatching(/refused/i),
+    });
+    expect(f.results[0]).toMatchObject({
+      error: expect.stringMatching(/acceptance/i),
+    });
+  });
+
+  it("fail-closed exemption is exactly the shared read-only allowlist, nothing broader", () => {
+    // Same set the gate service enforces (proven member-by-member in
+    // coding-acceptance-gate.test.ts), so the no-gate branch cannot drift.
+    expect(CODING_READ_ONLY_TOOLS.has("read_file")).toBe(true);
+    expect(CODING_READ_ONLY_TOOLS.has("computer_observe")).toBe(true);
+    expect(CODING_READ_ONLY_TOOLS.has("demo_write_item")).toBe(false);
+    expect(CODING_READ_ONLY_TOOLS.has("js")).toBe(false);
+    expect(CODING_READ_ONLY_TOOLS.has("computer_act")).toBe(false);
   });
 });

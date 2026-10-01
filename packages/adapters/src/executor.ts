@@ -174,7 +174,12 @@ import { type CloudAgentConnection, cloudAgentsEnabled } from "./cloud-agent-fac
 import { executeCloudAgentTool } from "./cloud-agent-service.js";
 import { validCloudAgentArgs } from "./cloud-agent-tools.js";
 import { selectCloudAgentTools } from "./cloud-agent-tools-select.js";
-import type { CodingAcceptanceGate } from "./coding-acceptance-gate.js";
+import {
+  acceptanceRefusalReason,
+  CODING_READ_ONLY_TOOLS,
+  type CodingAcceptanceGate,
+} from "./coding-acceptance-gate.js";
+import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
 import {
   collectLogIds,
   mergeConnectedPlugins,
@@ -1808,9 +1813,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
           if (deps.codingGate) {
             // 004-code-mode T4: acceptance-artifact gate at the authorization
-            // point. Refuses explicitly before any effect is recorded or executed.
+            // point. Deny-by-default (HIGH-1 fix): only CODING_READ_ONLY_TOOLS
+            // pass without a recorded acceptance artifact. Refuses explicitly
+            // before any effect is recorded or executed.
             const gateVerdict = await deps.codingGate.check({ runId, toolName: name, args });
             if (!gateVerdict.allowed) return { error: gateVerdict.reason };
+          } else if (run.trigger === CODING_SESSION_TRIGGER && !CODING_READ_ONLY_TOOLS.has(name)) {
+            // 004-code-mode fix (HIGH-1): FAIL CLOSED — a coding_session run
+            // with no gate installed must never be silently ungated. Only the
+            // read-only allowlist passes; everything else is refused until a
+            // gate records acceptance. Non-coding runs keep legacy behavior.
+            return { error: acceptanceRefusalReason(name) };
           }
           let connectorCall: ConnectorCall = {
             tool: name,
