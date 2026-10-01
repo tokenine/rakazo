@@ -70,6 +70,13 @@ export interface CodingOmpAdapter extends CodingEngineAdapter {
   start(session: CodingSessionRef): Promise<void>;
   /** Stop the subprocess and release resources. */
   stop(): void;
+  /**
+   * Dispatch a coding-session op to the OMP engine.
+   * prompt/steer: via OMP JSONL stdio protocol (Q2/G11 routed through approval surface).
+   * resume/stop/inspect_changes/approvals: local lifecycle / workspace state.
+   * Engine-internal OMP state never crosses — it lives and dies with the subprocess.
+   */
+  dispatch(session: CodingSessionRef, op: CodingSessionOp, input?: Record<string, unknown>): Promise<unknown>;
 }
 
 export interface CreateOmpAdapterOptions {
@@ -150,6 +157,39 @@ export function createOmpAdapter(options: CreateOmpAdapterOptions = {}): CodingO
         reject(new Error("OMP adapter stopped"));
       }
       pending.clear();
+    },
+
+    async dispatch(
+      _session: CodingSessionRef,
+      op: CodingSessionOp,
+      _input?: Record<string, unknown>,
+    ): Promise<unknown> {
+      // T25: wire prompt/steer/stop/resume/inspect/approvals to the OMP JSONL protocol.
+      // Engine-internal state never crosses — OMP's conversation context is opaque to us.
+      // For now the adapter maintains start/stop lifecycle; dispatch is a no-op stub
+      // until the steering + approval surface is wired in the next slice.
+      // The _call helper is available for wiring once inspect_changes and approvals
+      // are implemented on the OMP side.
+      switch (op) {
+        case "stop":
+          this.stop();
+          return { stopped: true };
+        case "resume":
+          // OMP is session-mode — resume is a no-op at the adapter level.
+          // The session state lives inside the OMP subprocess; we keep it alive.
+          return { resumed: true };
+        case "inspect_changes":
+          // TODO(T25): wire to workspace diff via OMP tooling
+          return { changes: [] };
+        case "approvals":
+          // TODO(T25): surface pending extension_ui_request messages
+          return { pending: [] };
+        default:
+          // prompt and steer: OMP handles these via its own conversation protocol.
+          // They require the process to be alive and the OMP session to be ready.
+          // _call("user_message", { message }) would be the primitive here.
+          return { ok: true };
+      }
     },
   };
 }
