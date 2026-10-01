@@ -218,18 +218,50 @@ export function withEndpointOriginFallback(
   };
 }
 
+/**
+ * Interpreter flags that execute attacker-supplied source as code.
+ *
+ * An executable allowlist is not sufficient on its own: allowlisting `node`,
+ * `python`, `npx`, `bun` or `deno` (all normal MCP stdio servers) makes
+ * `-e`/`-c`/`eval`-style flags an arbitrary-code-execution primitive, because
+ * `shell: false` does not neutralise them. A bundle is third-party authored
+ * content, so it must not be able to reach these.
+ */
+const INTERPRETER_CODE_FLAGS = new Set([
+  "-e",
+  "--eval",
+  "-c",
+  "-m",
+  "-p",
+  "--print",
+  "--eval-file",
+]);
+
+function assertStdioArgsAreNotCode(args: string[]): void {
+  for (const arg of args) {
+    if (INTERPRETER_CODE_FLAGS.has(arg)) {
+      throw new Error(
+        `MCP stdio argument "${arg}" can execute inline code and is not allowed; ` +
+          "use a reviewed MCP server entrypoint instead of an interpreter code flag",
+      );
+    }
+  }
+}
+
 function stdioParams(options: McpStdioOptions): StdioServerParameters {
   const command = options.command.trim();
   if (!command || !options.allowedCommands.includes(command)) {
     throw new Error("MCP stdio command is not in the configured allowlist");
   }
+  const args = options.args ?? [];
+  assertStdioArgsAreNotCode(args);
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(options.env ?? {})) {
     if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) env[key] = value;
   }
   return {
     command,
-    args: options.args ?? [],
+    args,
     cwd: options.cwd,
     env,
     stderr: "pipe",

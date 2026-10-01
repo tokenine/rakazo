@@ -1,0 +1,54 @@
+{
+  "run_id": "003-s1-retest5",
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "candidate_sha": "800eb1e4",
+  "checker": "omp-checker-003-s1-retest5",
+  "host": {
+    "platform": "linux-arm64",
+    "os": "Linux 7.0.0-30-generic",
+    "cpu": "aarch64"
+  },
+  "readiness_checks": [
+    {
+      "id": "node-engine",
+      "requirement": "^22.22.2 || ^24.0.0 || >=26.0.0",
+      "observed": "system node v22.22.1 - NOT satisfied",
+      "resolution": "Node v22.23.3 at /opt/node-22.23.3 for all gates",
+      "status": "pass"
+    },
+    {
+      "id": "pnpm-install",
+      "command": "pnpm install --frozen-lockfile",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "prisma-client",
+      "command": "pnpm --filter @rakazo/db generate",
+      "status": "pass",
+      "detail": "Prisma Client 7.10.0"
+    },
+    {
+      "id": "worktree-isolation",
+      "command": "git worktree add --detach /root/.super-speckit-worktrees/ss/qa/003-s1-retest5 800eb1e4",
+      "status": "pass",
+      "detail": "detached at the immutable tip; retest3/4 probe files copied in verbatim, plus a new medium-control probe written from the matrix rows"
+    },
+    {
+      "id": "live-database",
+      "command": "reused the dedicated postgres:17-alpine container from retest3/4",
+      "status": "pass",
+      "detail": "same recipe: dedicated container, port 55433, prisma migrate deploy"
+    },
+    {
+      "id": "sink-reachability-probe",
+      "command": "tsx tmp/https-localhost-probe.mts (assertSafeRemoteUrl with injected resolver, no contact)",
+      "status": "pass",
+      "detail": "confirms every loopback form is blocked at the runtime sink regardless of protocol, which is what makes BUG-003-S1-06 defence-in-depth rather than a live SSRF"
+    }
+  ],
+  "namespace": "ss-003-s1-retest5",
+  "redaction_check": "no credentials; the fixture token is a literal placeholder string, not a real credential",
+  "notes": "Retests the three medium fixes (466a8bcf, 8abb09f5, 800eb1e4) and re-verifies BUG-003-S1-01..05 with the retest3/4 reproducers unchanged. 4 probe-authoring bugs were hit and corrected (createDb returns {prisma,pool}; Organization requires slug+createdAt; SpaceMember FK chain needs User/Member; Thread has no title and requires userId; Computer requires kind; export requires bot.computer or it 500s on IsolationError). These were checker-fixture errors, not product defects - each was diagnosed before being treated as evidence."
+}

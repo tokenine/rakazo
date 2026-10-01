@@ -75,6 +75,8 @@ export interface AppEnv {
   larkVerificationToken: string | undefined;
   larkEncryptKey: string | undefined;
   larkDomain: string | undefined;
+  /** HMAC secret for signing marketplace import tokens. */
+  marketplaceImportSecret: string | undefined;
   /** Unknown chat senders auto-provision their own accounts when true. */
   messagingOpenSignup: boolean;
   /** Public HTTPS origin Telegram webhooks post to (defaults to WEB_ORIGIN). */
@@ -173,6 +175,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     larkEncryptKey: optional(source.LARK_ENCRYPT_KEY),
     larkDomain: optional(source.LARK_DOMAIN),
     messagingOpenSignup: source.MESSAGING_OPEN_SIGNUP === "true",
+    /** HMAC secret for marketplace import token signing. */
+    marketplaceImportSecret: optional(source.MARKETPLACE_IMPORT_SECRET),
     /** Public HTTPS origin Telegram webhooks post to (defaults to WEB_ORIGIN). */
     messagingPublicOrigin: optional(source.MESSAGING_PUBLIC_ORIGIN),
     teamChatBotId: optional(source.TEAM_CHAT_BOT_ID) ?? optional(source.SLACK_RAKAZO_BOT_ID),

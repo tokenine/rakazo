@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "run_id": "003-s1-retest3",
+  "candidate_sha": "16c261cffdab84d31f553dcdf42f3ade27832eea",
+  "fix_candidate_sha": "16c261cffdab84d31f553dcdf42f3ade27832eea",
+  "checker": "omp-checker-003-s1-retest3",
+  "verdict": "not-ready-for-merge",
+  "matrix": "specs/003-agent-marketplace/verification-matrix.md",
+  "environment_receipt": "environment-receipt.json",
+  "matrix_rows": {
+    "V1": {
+      "status": "verified-live-db",
+      "evidence": "real-Postgres import probe 1: bot + AgentSkill(source=user) + McpServer + BotMcpServer(allowAllTools=false) + CapabilityInstall(source=marketplace) all persist, exactly 1 primary session. Export refusal covered by the V1 refusal block in agent-bundle.test.ts.",
+      "note": "upgraded from run2's not-verified, which had no database at all"
+    },
+    "V2": {
+      "status": "failed",
+      "evidence": "real-Postgres probes 2/3/4 pass (no partial writes on refusal; cross-actor previews independent), but probe qa-retest3-credinherit FAILS",
+      "bug_found": "BUG-003-S1-05"
+    },
+    "V6": {
+      "status": "verified-live-db",
+      "evidence": "the import path now runs against a real migrated Postgres, not only mock-prisma assertions; the exact-column audit write is proven by an actual insert"
+    },
+    "V8": {
+      "status": "verified",
+      "evidence": "442/442 api (4 DB-gated skipped in the offline pass, run separately), 59/59 contracts, tsc --noEmit clean; no regression from the fix stack"
+    },
+    "V3": { "status": "not-verified", "reason": "S2 scope (marketplace UI + Playwright E2E)" },
+    "V4": {
+      "status": "performed-failed",
+      "evidence": "independent security-reviewer lane re-run at 16c261cf",
+      "result": "1 high, 3 medium, 1 low confirmed; blocking",
+      "note": "AGENT-BUNDLE-001 confirmed NOT fixed by the endpoint/transport guard; 002, 003, 007, 008, 009 now verified fixed"
+    },
+    "V5": { "status": "not-verified", "reason": "S2 scope (catalog seam)" },
+    "V7": { "status": "not-verified", "reason": "S3 scope (mobile degradation note)" }
+  },
+  "gates": [
+    { "gate": "full api suite", "result": "442 passed / 446 (4 DB-gated skipped offline)" },
+    { "gate": "contracts suite", "result": "59/59 pass" },
+    { "gate": "typecheck (tsc --noEmit, @rakazo/api)", "result": "clean" },
+    { "gate": "real-Postgres import probes (qa-retest3-realdb)", "result": "4/4 pass" },
+    { "gate": "real-Postgres probes, red-before at 3cbeeaca", "result": "4/4 FAIL - diagnostic (500 from non-existent audit columns; bot counts 2-vs-1 and 3-vs-2 proving partial writes)" },
+    { "gate": "real-Postgres credential-inheritance probe", "result": "FAIL - import returned 200 and persisted allowedTools on a credentialed server" },
+    { "gate": "static security review (OCR substitute)", "result": "FAIL - 1 high / 3 medium / 1 low" }
+  ],
+  "bugs": [
+    {
+      "id": "BUG-003-S1-01",
+      "artifact": ".super-speckit/bugs/003-S1-token-hmac-crash.md",
+      "status": "closed",
+      "severity": "high",
+      "fix_commit": "771be989",
+      "retest": "003-s1-retest1 (4/4)"
+    },
+    {
+      "id": "BUG-003-S1-02",
+      "artifact": ".super-speckit/bugs/003-S1-export-secret-scan-noop.md",
+      "status": "closed",
+      "severity": "high",
+      "fix_commit": "f399d4ee",
+      "note": "security lane at 16c261cf verified AGENT-BUNDLE-003 fixed: export loads and decrypts space AgentSecrets, fails closed on decryption failure, and refuses with named fields"
+    },
+    {
+      "id": "BUG-003-S1-03",
+      "artifact": ".super-speckit/bugs/003-S1-stdio-import-rce.md",
+      "status": "closed",
+      "severity": "high",
+      "fix_commit": "0fe3d561",
+      "note": "security lane verified AGENT-BUNDLE-002 fixed: stdio/command/args refused before the first write, so bundle command lines cannot reach cross-spawn"
+    },
+    {
+      "id": "BUG-003-S1-04",
+      "artifact": ".super-speckit/bugs/003-S1-preview-cache-cross-actor-clobber.md",
+      "status": "closed",
+      "severity": "low",
+      "fix_commit": "16c261cf",
+      "red_before": "1 failed / 47 passed at 6783f681",
+      "green_after": "48/48 in-file; 442/442 full api suite; real-DB cross-actor probe green",
+      "note": "recovered from an uncommitted working state during this run; the draft test read .status off the handle result instead of .response, which made it fail regardless of the fix. Corrected before the red/green pair was measured."
+    },
+    {
+      "id": "BUG-003-S1-05",
+      "artifact": ".super-speckit/bugs/003-S1-mcp-slug-capability-confusion.md",
+      "status": "open",
+      "severity": "high",
+      "found_by": "security-reviewer static lane at 16c261cf, confirmed by this checker against real Postgres",
+      "root_cause": "the collision guard compares only slug+transport+endpoint and never reads secretId, so a bundle matching an existing server's slug and endpoint reuses that row including its credential, then receives the bundle's declaredTools",
+      "blocks": "V2 and S1 release",
+      "fix_lane": "ss/bug/003-s1-05 (Option B: reuse only when the existing server has no credential)"
+    }
+  ],
+  "open_blocking_findings": [
+    { "id": "AGENT-BUNDLE-001", "severity": "high", "triage": "fix", "status": "CONFIRMED OPEN (BUG-003-S1-05)", "summary": "same-slug same-endpoint bundle inherits an existing server's credential and grants it bundle-declared tools" },
+    { "id": "AGENT-BUNDLE-004", "severity": "medium", "triage": "fix", "status": "open (partial)", "summary": "query/userinfo credentials in an MCP endpoint are refused on export, but pathname credentials (https://host/token/SECRET) are not" },
+    { "id": "AGENT-BUNDLE-005", "severity": "medium", "triage": "fix", "status": "open", "summary": "bundle endpoint validation is z.string().url() only, so localhost/127.0.0.1 endpoints are accepted and bypass the remote-fetch protections on local HTTP" },
+    { "id": "AGENT-BUNDLE-006", "severity": "medium", "triage": "fix", "status": "open (partial)", "summary": "prune and TTL now bound entry lifetime, but importPreviewCache is still an unbounded map: many distinct near-2MiB previews inside the TTL are retained concurrently" },
+    { "id": "AGENT-BUNDLE-010", "severity": "low", "triage": "needs-review", "status": "new this run", "summary": "export loads every space AgentSecret without the owner check used by the agentSecrets APIs, giving a non-owner member a membership oracle against short secrets" }
+  ],
+  "closed_findings": [
+    { "id": "AGENT-BUNDLE-002", "severity": "high", "verified_by": "security lane at 16c261cf" },
+    { "id": "AGENT-BUNDLE-003", "severity": "high", "verified_by": "security lane at 16c261cf" },
+    { "id": "AGENT-BUNDLE-007", "severity": "medium", "verified_by": "security lane at 16c261cf (caps 100 skills / 25 MCP servers, re-applied at import)" },
+    { "id": "AGENT-BUNDLE-008", "severity": "low", "verified_by": "security lane at 16c261cf + real-DB cross-actor probe" },
+    { "id": "AGENT-BUNDLE-009", "severity": "low", "verified_by": "security lane at 16c261cf + real-Postgres proof (the mock double had hidden it)" }
+  ],
+  "unverified": [
+    "Playwright E2E (S2 scope)",
+    "OCR lane itself: gates.ocr_review is \"\" while merge.require_ocr_triage_complete is true, so the configured merge gate cannot be satisfied regardless of code quality. An independent security-reviewer lane was run as a recorded substitute; it failed.",
+    "V2 remains unsigned while BUG-003-S1-05 is open"
+  ],
+  "redaction_completed": true
+}

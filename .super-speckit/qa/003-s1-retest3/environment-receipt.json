@@ -1,0 +1,54 @@
+{
+  "run_id": "003-s1-retest3",
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "candidate_sha": "16c261cffdab84d31f553dcdf42f3ade27832eea",
+  "checker": "omp-checker-003-s1-retest3",
+  "host": {
+    "platform": "linux-arm64",
+    "os": "Linux 7.0.0-30-generic",
+    "cpu": "aarch64"
+  },
+  "readiness_checks": [
+    {
+      "id": "node-engine",
+      "requirement": "^22.22.2 || ^24.0.0 || >=26.0.0 (package.json engines, engine-strict=true)",
+      "observed": "system node v22.22.1 - NOT satisfied",
+      "resolution": "used the Node v22.23.3 already installed at /opt/node-22.23.3 for every gate command",
+      "status": "pass"
+    },
+    {
+      "id": "pnpm-install",
+      "command": "pnpm install --frozen-lockfile",
+      "status": "pass",
+      "detail": "vitest 4.1.11, typescript 7.0.2, prisma 7.10.0 resolved from pnpm-lock.yaml"
+    },
+    {
+      "id": "prisma-client",
+      "command": "pnpm --filter @rakazo/db generate",
+      "status": "pass",
+      "detail": "Generated Prisma Client 7.10.0 (gitignored; required before any db-importing suite)"
+    },
+    {
+      "id": "worktree-isolation",
+      "command": "git worktree add --detach /root/.super-speckit-worktrees/ss/qa/003-s1-retest3 16c261cf",
+      "status": "pass",
+      "detail": "detached checkout of the immutable candidate SHA; the only untracked files are this run's two throwaway probe files. The maker worktrees were not modified."
+    },
+    {
+      "id": "live-database",
+      "command": "docker run -d --name ss003pg -e POSTGRES_USER=ss003 -e POSTGRES_PASSWORD=ss003 -e POSTGRES_DB=ss003 -p 55433:5432 postgres:17-alpine && prisma migrate deploy",
+      "status": "pass",
+      "detail": "PostgreSQL 17.11 on a dedicated container and dedicated port, schema rebuilt from migrations. Closes the 'no live database was provisioned' gap recorded in run2. This is the first live-DB evidence for feature 003."
+    },
+    {
+      "id": "db-backed-suites",
+      "command": "VERIFY_DATABASE=1 DATABASE_URL=postgresql://ss003:ss003@127.0.0.1:55433/ss003 vitest run apps/api/src/qa-retest3-realdb.test.ts apps/api/src/qa-retest3-credinherit.test.ts",
+      "status": "fail",
+      "detail": "4/5 pass; the credential-inheritance probe fails. See qa-summary.md and .super-speckit/bugs/003-S1-mcp-slug-capability-confusion.md. Reported as a product finding, not an environment failure."
+    }
+  ],
+  "namespace": "ss-003-s1-retest3",
+  "redaction_check": "no credentials present; the fixture secret uses the literal placeholder 'opaque-credential-blob' and the HMAC material uses a test-only constant",
+  "notes": "The state index recorded qa_failed at 771be989 while git carried a seven-commit fix stack plus an uncommitted eighth fix. That index staleness is itself the recovery this run resolved: the AGENT-BUNDLE-008 fix was completed, red/green measured, and committed as 16c261cf before this run began. run2 evidence referenced /Users/poom-work (macOS); everything in this receipt is produced on linux-arm64."
+}

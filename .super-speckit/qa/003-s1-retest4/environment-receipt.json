@@ -1,0 +1,54 @@
+{
+  "run_id": "003-s1-retest4",
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "candidate_sha": "61154e37",
+  "checker": "omp-checker-003-s1-retest4",
+  "host": {
+    "platform": "linux-arm64",
+    "os": "Linux 7.0.0-30-generic",
+    "cpu": "aarch64"
+  },
+  "readiness_checks": [
+    {
+      "id": "node-engine",
+      "requirement": "^22.22.2 || ^24.0.0 || >=26.0.0 (package.json engines, engine-strict=true)",
+      "observed": "system node v22.22.1 - NOT satisfied",
+      "resolution": "used Node v22.23.3 at /opt/node-22.23.3 for every gate command",
+      "status": "pass"
+    },
+    {
+      "id": "pnpm-install",
+      "command": "pnpm install --frozen-lockfile",
+      "status": "pass",
+      "detail": "resolved from pnpm-lock.yaml"
+    },
+    {
+      "id": "prisma-client",
+      "command": "pnpm --filter @rakazo/db generate",
+      "status": "pass",
+      "detail": "Prisma Client 7.10.0 (gitignored)"
+    },
+    {
+      "id": "worktree-isolation",
+      "command": "git worktree add --detach /root/.super-speckit-worktrees/ss/qa/003-s1-retest4 61154e37",
+      "status": "pass",
+      "detail": "detached checkout of the immutable fix SHA; retest3 probe files copied in verbatim, not edited"
+    },
+    {
+      "id": "live-database",
+      "command": "reused the dedicated postgres:17-alpine container and migrated schema from retest3",
+      "status": "pass",
+      "detail": "same recipe as retest3: dedicated container, dedicated port 55433, prisma migrate deploy"
+    },
+    {
+      "id": "reproducer-replay",
+      "command": "revert apps/api/src/router.ts to 16c261cf, run qa-retest3-credinherit.test.ts unchanged",
+      "status": "fail",
+      "detail": "expected - this is the red half of the red/green pair: import returned 200 on the unfixed router. Restored afterwards; router verified identical to the fix commit before the green run."
+    }
+  ],
+  "namespace": "ss-003-s1-retest4",
+  "redaction_check": "no credentials present; fixture secret uses the literal placeholder 'opaque-credential-blob'",
+  "notes": "Retests BUG-003-S1-05 only. Three mediums (AGENT-BUNDLE-004/005/006) and AGENT-BUNDLE-010 remain open, so S1 is not merge-ready."
+}
