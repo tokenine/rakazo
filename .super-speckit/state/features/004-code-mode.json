@@ -6,7 +6,7 @@
   "checker": "claude-checker",
   "matrix": ".super-speckit/docs/research/004-code-mode-engineering-investigations.md",
   "purpose": {
-    "status": "draft",
+    "status": "confirmed",
     "map": ".super-speckit/purpose/004-code-mode/purpose-map.md",
     "decision": ".super-speckit/purpose/004-code-mode/decision.json"
   },

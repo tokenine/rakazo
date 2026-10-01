@@ -1,9 +1,9 @@
 {
   "feature": "004-code-mode",
-  "status": "draft",
+  "status": "confirmed",
   "map": "purpose-map.md",
   "visual": "purpose-map.html",
-  "confirmed_by": null,
-  "confirmed_at": null,
-  "confirmation": null
+  "confirmed_by": "Poom5741",
+  "confirmed_at": "2026-10-01T02:19:58Z",
+  "confirmation": "Human approval relayed by Chief 2026-10-01T02:15Z: user tapped 'Approve - record me as confirmer' on the DRAFT purpose map in Chief's chat. Executed by Tech Lead as owner on tl/004-purpose-gate-r1 from 0e86d8ca. Earlier 'pass continue proceed' was explicitly NOT treated as this decision."
 }

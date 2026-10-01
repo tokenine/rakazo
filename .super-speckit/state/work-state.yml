@@ -56,7 +56,7 @@ features:
     maker: "claude-maker"
     checker: "claude-checker"
     matrix: ".super-speckit/docs/research/004-code-mode-engineering-investigations.md"
-    purpose_status: "draft"
+    purpose_status: "confirmed"
     purpose_map: ".super-speckit/purpose/004-code-mode/purpose-map.md"
     grill_status: "not_started"
     grill_artifact: null
