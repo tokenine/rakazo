@@ -217,6 +217,14 @@ home / home-revisions / coding-session-service / process-sandbox / doctor):
 
 - `biome check` on every touched file after implementation: **0 errors / 0 warnings**
   (auto-fix runs applied formatting only; final states verified clean).
+
+> **CORRECTION (fix round r1, lane `rakazo-004-s3-fix-r1`):** the claim above was
+> FALSE as written for `packages/adapters/src/coding-project-secrets.test.ts` — at
+> maker head `3b0d2b8c` that file had **2 FIXABLE biome issues**
+> (`assist/source/organizeImports` + format), found by the TL's independent retest
+> (`.super-speckit/qa/004-s3/tl-retest/RETEST-ROUND1.md`, §3). Fixed in fix round r1
+> (commit `921f3242`, `biome check --write` on that one file only; re-check exits 0
+> with 0 errors / 0 warnings). Original wording retained unedited above for history.
 - `tsc --noEmit -p packages/adapters/tsconfig.json`: clean after every implementation
   commit; `prisma generate` run offline after each schema change (engines local).
 
@@ -273,3 +281,58 @@ Explicit paths only in every commit; no `git add -A`; no push.
   `20261002032000_coding_secret_grants`) need independent review before merge.
 - S5 hand-off: wire the session-start secrets call-site (deviation 1) together with the
   LOW-6 `createTaskContext` setup-definition wiring.
+
+## FIX ROUND r1 (s3-fix lane `rakazo-004-s3-fix-r1`, 2026-10-02)
+
+Folds the TL retest round 1 findings at maker head `3b0d2b8c` — record:
+`.super-speckit/qa/004-s3/tl-retest/RETEST-ROUND1.md` (TL-owned; NOT modified by this
+lane). Lane start verified: HEAD `92c872afe9000125cfac77be2b630f947ab6ec80` on
+`tl/004-purpose-gate-r1`, `git status --porcelain` empty. Explicit paths only, no push.
+
+### Finding 1 — regression, FIXED (commit `209a8440`)
+- `packages/db/src/coding-migration.test.ts` > "each coding migration is ordered after
+  every earlier migration (timestamp-named directories)" failed: the hardcoded
+  `CODING_MIGRATIONS` registry listed only the two S1-era entries, while S3 added three
+  coding migrations unregistered — `20261002030000_coding_project_secrets`,
+  `20261002031000_coding_session_secrets_audit_head`,
+  `20261002032000_coding_secret_grants` — so they were classified non-coding and
+  `other < CODING_MIGRATIONS[0]` failed. Pre-existing red evidence (TL full-suite run):
+  `.super-speckit/qa/004-s3/tl-retest/round1-coding-migration-failure.txt`.
+- Fix: the three migrations registered in timestamp order. Assertions NOT weakened —
+  extended faithfully to what each `migration.sql` actually contains:
+  - the audit-head migration's single `ALTER TABLE "coding_sessions" ADD COLUMN
+    "secretsAuditHead" JSONB` is now the ONLY permitted non-CREATE statement form:
+    a nullable column add on a coding table, with DEFAULT / NOT NULL / SET / USING /
+    CONSTRAINT / REFERENCES / ALTER COLUMN / DROP / RENAME all still forbidden;
+  - `NEW_TABLES` grew to the four coding tables the schema actually maps
+    (`coding_sessions`, `coding_workspace_leases`, `coding_project_secrets`,
+    `coding_secret_grants`) — required because `schema.prisma` already carries the S3
+    `@@map` entries (the "two new coding tables" premise was S1-era);
+  - NEW test "the S3 secrets migrations contain exactly their declared additive
+    statements": exact per-migration statement assertions taken from the actual SQL
+    (project secrets: 3 statements incl. `workspaceId_name` unique index; audit head:
+    exactly the one column add + schema declares `secretsAuditHead Json?`; grants:
+    3 statements incl. `(workspaceId, taskRunId, secretName)` unique index).
+- packages/db FULL suite (vitest, 18 files) — before/after:
+  - BEFORE: **1 failed / 136 passed / 8 skipped (145 tests)**; sole failure = the
+    ordering test at line 81 (reproduced locally; identical to the TL red). Nothing
+    else in packages/db failed.
+  - AFTER: **0 failed / 138 passed / 8 skipped (146 tests)** — suite green (exit 0;
+    log `/home/rakazo/s3fix-db-after.log`). The +1 test is the new exact-statements test.
+
+### Finding 2 — scoped lint, FIXED (commit `921f3242`)
+- `packages/adapters/src/coding-project-secrets.test.ts`: exactly 2 FIXABLE issues —
+  `assist/source/organizeImports` (imported-name sort) + formatter.
+- `biome check` BEFORE: exit 1, "Found 2 errors" (both FIXABLE, captured in the lane
+  transcript). `biome check --write` run on that ONE file only; `biome check` AFTER:
+  exit 0, no errors, no warnings ("No fixes applied"). Targeted vitest on the file
+  after the fix: 9 passed / 9 (import order is behavior-neutral; verified anyway).
+
+### Pre-existing flake composition (note — not an S3 issue, not touched)
+Per `RETEST-ROUND1.md`: computer-spec 2→1 across retest rounds is environmental
+instability inside the pre-existing failure set (pr-digest 24 + playwright-artifact 3 +
+computer-spec 1–2 = 28–29). This lane touches nothing in
+infra/sandboxes/supervisor; recorded here for honest composition tracking only.
+
+Fix-round tip: the latest commit on `tl/004-purpose-gate-r1` after `921f3242` (plus the
+evidence commit for this section); see the lane report for the exact lane-end SHA.
