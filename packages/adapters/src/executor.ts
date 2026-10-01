@@ -94,11 +94,11 @@ import {
   isTooManyDatabaseConnections,
   loadRunHistoryMessages,
   type McpServer,
+  PRIMARY_SESSION_ORDER,
   type Prisma,
   type PrismaClient,
   parseComputerMode,
   SpaceLimitError,
-  PRIMARY_SESSION_ORDER,
   type ThreadEvents,
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
@@ -174,6 +174,7 @@ import { type CloudAgentConnection, cloudAgentsEnabled } from "./cloud-agent-fac
 import { executeCloudAgentTool } from "./cloud-agent-service.js";
 import { validCloudAgentArgs } from "./cloud-agent-tools.js";
 import { selectCloudAgentTools } from "./cloud-agent-tools-select.js";
+import type { CodingAcceptanceGate } from "./coding-acceptance-gate.js";
 import {
   collectLogIds,
   mergeConnectedPlugins,
@@ -583,6 +584,8 @@ export interface ExecutorDeps {
   browser?: BrowserProvider;
   secretHttp?: RemoteTransportDependencies;
   /** Remote cloud coding agents. Null/omit means tools stay uninjected. */
+  /** 004-code-mode: coding acceptance gate. Present only for coding-session runs. */
+  codingGate?: CodingAcceptanceGate;
   cloudAgent?: CloudAgentConnection | null;
   /** Optional Auto Review verifier. When omitted, the factory selects from env (llm | jev | scripted). */
   autoReview?: AutoReviewProvider;
@@ -1802,6 +1805,12 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
           if (IMAGE_RETURNING_COMPUTER_TOOLS.has(name) && !acceptsImages) {
             return { error: MODEL_CANNOT_SEE_MESSAGE };
+          }
+          if (deps.codingGate) {
+            // 004-code-mode T4: acceptance-artifact gate at the authorization
+            // point. Refuses explicitly before any effect is recorded or executed.
+            const gateVerdict = await deps.codingGate.check({ runId, toolName: name, args });
+            if (!gateVerdict.allowed) return { error: gateVerdict.reason };
           }
           let connectorCall: ConnectorCall = {
             tool: name,
