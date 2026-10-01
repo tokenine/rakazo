@@ -3,6 +3,7 @@ import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it } from "vitest";
 import { EngineMismatchError } from "./coding-engine.js";
 import { type CodingRunMachinery, createCodingPiAdapter } from "./coding-pi-adapter.js";
+import { LeaseLostError } from "./coding-session-service.js";
 
 interface RunRow {
   id: string;
@@ -22,6 +23,7 @@ function fakePrisma() {
   const runs: RunRow[] = [];
   const tasks: Array<Record<string, unknown>> = [];
   const steering: Array<Record<string, unknown>> = [];
+  const leases: Array<Record<string, unknown>> = [];
   const pendingEffects = [{ id: "effect-1", kind: "shell", status: "pending", runId: "run-1" }];
   const prisma = {
     codingSession: {
@@ -86,11 +88,35 @@ function fakePrisma() {
             (!where.status || effect.status === where.status),
         ),
     },
+    codingWorkspaceLease: {
+      findUnique: async ({ where }: { where: { workspaceId: string } }) =>
+        leases.find((lease) => lease.workspaceId === where.workspaceId) ?? null,
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: { workspaceId: string; sessionId?: string; fence?: number };
+        data: Record<string, unknown>;
+      }) => {
+        const lease = leases.find((entry) => entry.workspaceId === where.workspaceId);
+        if (!lease) return { count: 0 };
+        if (where.sessionId !== undefined && lease.sessionId !== where.sessionId) {
+          return { count: 0 };
+        }
+        if (where.fence !== undefined && lease.fence !== where.fence) {
+          return { count: 0 };
+        }
+        for (const key of Object.keys(data)) {
+          lease[key] = data[key];
+        }
+        return { count: 1 };
+      },
+    },
     $transaction: async (work: (client: unknown) => Promise<unknown>) => work(prisma),
   };
   return {
     prisma: prisma as unknown as PrismaClient,
-    store: { sessions, runs, tasks, steering, pendingEffects },
+    store: { sessions, runs, tasks, steering, pendingEffects, leases },
   };
 }
 
@@ -151,6 +177,15 @@ const sessionRow = {
 async function wired() {
   const { prisma, store } = fakePrisma();
   store.sessions.push({ ...sessionRow });
+  // The session holds its workspace lease (as createCodingSession leaves it).
+  store.leases.push({
+    workspaceId: "ws-1",
+    sessionId: "session-1",
+    owner: "user-1",
+    fence: 1,
+    // Held and live, but close to lapsing: renewal must slide it forward.
+    expiresAt: new Date(Date.now() + 60_000),
+  });
   const machinery = fakeMachinery();
   const { jobs, enqueued } = fakeJobs();
   const { events, appended } = fakeEvents();
@@ -315,6 +350,37 @@ describe('session rows without a threadId refuse instead of fabricating "null" (
     await expect(adapter.dispatch(session, "stop", {})).rejects.toThrow(/threadId/);
     // No stopped event may carry the fabricated "null" thread id (the
     // prompted event from the setup prompt above is the only one).
+    expect(appended.some((event) => event.type === "coding_session.stopped")).toBe(false);
+  });
+});
+
+describe("session activity revalidates and renews the workspace lease (MED-2 fix)", () => {
+  it("prompt renews a held lease — the expiry slides forward", async () => {
+    const { adapter, store } = await wired();
+    const before = store.leases[0]!.expiresAt as Date;
+    await adapter.dispatch(session, "prompt", { text: "work", messageId: "message-1" });
+    const after = store.leases[0]!.expiresAt as Date;
+    expect(after.getTime()).toBeGreaterThan(before.getTime());
+  });
+
+  it("prompt refuses with a typed error once the lease was lost — no run, no job", async () => {
+    const { adapter, store, enqueued } = await wired();
+    store.leases.length = 0;
+    await expect(
+      adapter.dispatch(session, "prompt", { text: "work", messageId: "message-1" }),
+    ).rejects.toBeInstanceOf(LeaseLostError);
+    expect(store.runs).toHaveLength(0);
+    expect(store.tasks).toHaveLength(0);
+    expect(enqueued).toEqual([]);
+  });
+
+  it("stop refuses once the lease was lost — the runtime is never aborted by a leaseless caller", async () => {
+    const { adapter, store, machinery, appended } = await wired();
+    await adapter.dispatch(session, "prompt", { text: "work", messageId: "message-1" });
+    store.runs[0]!.status = "running";
+    store.leases.length = 0;
+    await expect(adapter.dispatch(session, "stop", {})).rejects.toBeInstanceOf(LeaseLostError);
+    expect(machinery.aborted).toEqual([]);
     expect(appended.some((event) => event.type === "coding_session.stopped")).toBe(false);
   });
 });

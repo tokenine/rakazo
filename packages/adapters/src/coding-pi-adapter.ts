@@ -22,6 +22,11 @@ import {
   createEngineRegistry,
   dispatchSessionOp,
 } from "./coding-engine.js";
+import {
+  DEFAULT_LEASE_TTL_MS,
+  touchCodingSessionLease,
+  touchCodingSessionLeaseInTx,
+} from "./coding-session-service.js";
 
 /** The slice of the existing machinery coding runs ride. */
 export interface CodingRunMachinery {
@@ -43,6 +48,8 @@ export interface CodingPiAdapterDeps {
   /** Workspace diff surface for inspect_changes (wired at integration time). */
   inspectChanges: () => Promise<unknown>;
   now?: () => Date;
+  /** Lease TTL for the session-activity revalidation/renewal (MED-2). Defaults to the service default. */
+  leaseTtlMs?: number;
 }
 
 export const CODING_SESSION_TRIGGER = "coding_session";
@@ -84,6 +91,11 @@ const PI_SUPPORTED_OPS: ReadonlySet<CodingSessionOp> = new Set<CodingSessionOp>(
 
 export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapter {
   const now = deps.now ?? (() => new Date());
+  // MED-2 (fix round): every activity touchpoint (prompt/steer/stop/resume)
+  // revalidates that the session still holds its workspace lease and slides
+  // the expiry forward. A lost/expired lease refuses with LeaseLostError —
+  // never silently re-taken and never silently ungated.
+  const leaseClock = { now, leaseTtlMs: deps.leaseTtlMs ?? DEFAULT_LEASE_TTL_MS };
   const registry = createEngineRegistry([
     {
       id: "normal-pi",
@@ -105,6 +117,7 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
         where: { id: input.session.id },
       });
       if (!sessionRow) throw new Error(`Coding session "${input.session.id}" not found`);
+      await touchCodingSessionLeaseInTx(tx, leaseClock, { sessionId: input.session.id });
       const active = sessionRow.latestRunId
         ? await tx.run.findFirst({
             where: {
@@ -172,6 +185,12 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
   };
 
   const stop = async (input: { session: CodingSessionRef }) => {
+    await touchCodingSessionLease(
+      { prisma: deps.prisma, ...leaseClock },
+      {
+        sessionId: input.session.id,
+      },
+    );
     const sessionRow = await deps.prisma.codingSession.findUnique({
       where: { id: input.session.id },
     });
@@ -202,6 +221,12 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
   };
 
   const resume = async (input: { session: CodingSessionRef }) => {
+    await touchCodingSessionLease(
+      { prisma: deps.prisma, ...leaseClock },
+      {
+        sessionId: input.session.id,
+      },
+    );
     const sessionRow = await deps.prisma.codingSession.findUnique({
       where: { id: input.session.id },
     });
@@ -238,6 +263,12 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
     });
     const runId = sessionRow?.latestRunId ? String(sessionRow.latestRunId) : null;
     if (!runId) throw new Error("no active run to steer");
+    await touchCodingSessionLease(
+      { prisma: deps.prisma, ...leaseClock },
+      {
+        sessionId: input.session.id,
+      },
+    );
     await deps.prisma.steeringMessage.create({
       data: {
         messageId: input.messageId,
