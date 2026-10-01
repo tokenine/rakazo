@@ -26,8 +26,8 @@ import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DEFAULT_LEASE_TTL_MS } from "./coding-session-service.js";
-import { DEFAULT_PROCESS_TASK_LIMITS } from "./process-sandbox.js";
 import { scrubProcessEnv } from "./process-env-scrub.js";
+import { DEFAULT_PROCESS_TASK_LIMITS } from "./process-sandbox.js";
 
 /** The v1 isolation driver per D-Q9 FINAL r2 (option 3, process-level). */
 export const CODE_MODE_DRIVER_KIND = "process";
@@ -199,7 +199,13 @@ async function probeSpawnLimits(): Promise<CodeModeDoctorProbeResult> {
   return {
     ok,
     detail: ok
-      ? `ulimit -t/-v/-u/-f and nice -n ${limits.nice} applied in a spawned shell (exit ${outcome.code})`
+      ? `ulimit -t/-v/-u/-f and nice -n ${limits.nice} applied in a spawned shell (exit ${outcome.code}); ` +
+        // LOW-5 honest disclosure: RLIMIT_NPROC is PER-UID, not per task.
+        "note: RLIMIT_NPROC (ulimit -u " +
+        limits.maxProcesses +
+        ") bounds the runtime " +
+        "user's TOTAL process count on this box — shared across concurrent tasks and " +
+        "everything else running as this UID — an accident/resource guard, not per-task containment"
       : `spawned shell could not apply limits: exit ${outcome.code} ${outcome.stderr.trim()}`,
   };
 }

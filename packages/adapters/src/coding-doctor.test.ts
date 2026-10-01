@@ -56,6 +56,13 @@ describe("code-mode doctor preflight (V12)", () => {
     }
     expect(report.verdict).toBe("pass");
     expect(report.remediation).toEqual([]);
+    // LOW-5: the spawn-limits detail must disclose RLIMIT_NPROC's per-UID
+    // semantics — an accident guard shared across the whole UID, not
+    // per-task containment.
+    const limits = report.checks.find((check) => check.id === "spawn-limits");
+    expect(limits?.detail).toMatch(/RLIMIT_NPROC/);
+    expect(limits?.detail).toMatch(/user's TOTAL process count/i);
+    expect(limits?.detail).toMatch(/not per-task containment/i);
   });
 
   it("creates per-task trees that are isolated from each other (probe-level proof)", async () => {
