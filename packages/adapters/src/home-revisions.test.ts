@@ -173,6 +173,80 @@ describe("versioned workspace store — append-only revision archive (V5/G2)", (
     await expect(readFile(path.join(dest, "a.txt"), "utf8")).resolves.toBe("newer");
   });
 
+  describe("checkpoint contents policy (T13 technical remainder — default awaits user sign-off)", () => {
+    it("declares the policy: node_modules excluded, dev-service data not checkpointed, external side effects reported not rolled back", async () => {
+      const { CHECKPOINT_CONTENTS_POLICY } = await import("./home.js");
+      expect(CHECKPOINT_CONTENTS_POLICY.excludedDirectoryNames).toEqual(["node_modules"]);
+      expect(CHECKPOINT_CONTENTS_POLICY.notCheckpointed).toMatch(
+        /dev-service data|databases|queues|caches/i,
+      );
+      expect(CHECKPOINT_CONTENTS_POLICY.externalSideEffects).toMatch(
+        /reported.*not.*rolled back|not implied rolled back/i,
+      );
+    });
+
+    it("node_modules is excluded from the archive, manifests, and dirty sets", async () => {
+      const { store } = await fixture();
+      const r1 = await store.commit(
+        "bot-1",
+        await stagingWith({
+          "src/index.ts": "code",
+          "node_modules/pkg/index.js": "dep-bytes",
+        }),
+        context,
+      );
+      const dirty = await store.changesSince("bot-1", r1);
+      expect(dirty).toEqual({ changed: [], added: [], removed: [] });
+
+      // Committing a change ONLY inside node_modules does not dirty the tree.
+      const r2 = await store.commit(
+        "bot-1",
+        await stagingWith({
+          "src/index.ts": "code",
+          "node_modules/pkg/index.js": "dep-bytes-v2",
+        }),
+        context,
+      );
+      const dirty2 = await store.changesSince("bot-1", r1);
+      expect(dirty2).toEqual({ changed: [], added: [], removed: [] });
+
+      // A real source change still dirties normally.
+      const r3 = await store.commit(
+        "bot-1",
+        await stagingWith({
+          "src/index.ts": "code-v2",
+          "node_modules/pkg/index.js": "dep-bytes-v2",
+        }),
+        context,
+      );
+      const dirty3 = await store.changesSince("bot-1", r2);
+      expect(dirty3.changed).toEqual(["src/index.ts"]);
+
+      // The archived revisions never contain node_modules content.
+      const probe = await mkdtemp(path.join(tmpdir(), "rakazo-home-policy-"));
+      dirs.push(probe);
+      await store.restore("bot-1", r3, probe, context);
+      await expect(stat(path.join(probe, "node_modules"))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      await expect(readFile(path.join(probe, "src/index.ts"), "utf8")).resolves.toBe("code-v2");
+    });
+
+    it("the live tree is untouched by the policy: node_modules keeps working between checkpoints", async () => {
+      const { store } = await fixture();
+      await store.commit(
+        "bot-1",
+        await stagingWith({ "node_modules/pkg/index.js": "dep", "app.ts": "x" }),
+        context,
+      );
+      const home = store.pathFor("bot-1");
+      // The policy governs checkpoint CONTENTS, not the live workspace.
+      await expect(stat(path.join(home, "node_modules/pkg/index.js"))).resolves.toMatchObject({
+        isFile: expect.any(Function),
+      });
+    });
+  });
+
   it("restoring an unknown revision fails explicitly", async () => {
     const { store } = await fixture();
     await store.commit("bot-1", await stagingWith({ "a.txt": "one" }), context);

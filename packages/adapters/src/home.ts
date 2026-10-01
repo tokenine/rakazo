@@ -24,6 +24,34 @@ import type {
 } from "@rakazo/adapter-kit";
 import { fileHandlePath } from "./file-handle-path.js";
 
+/**
+ * 004-code-mode T13 — checkpoint contents policy (TECHNICAL REMAINDER ONLY).
+ * The DEFAULT below still requires user sign-off at the slice review before
+ * it is treated as final (same treatment as Q6/Q7); it is isolated here so
+ * the review can change it without touching the store mechanics.
+ *
+ * - node_modules is excluded from checkpoints (restores rebuild deps).
+ * - dev-service data (databases, queues, caches under data dirs) is NOT
+ *   checkpointed; documented here, not discovered by surprise.
+ * - external side effects are reported (see the takeover recheck note and
+ *   restore reports), never implied rolled back by a checkpoint/restore.
+ */
+export const CHECKPOINT_CONTENTS_POLICY = {
+  excludedDirectoryNames: ["node_modules"],
+  notCheckpointed:
+    "dev-service data (databases, queues, caches under data dirs) is not checkpointed",
+  externalSideEffects: "external side effects are reported, not implied rolled back (T13 policy)",
+} as const;
+
+/** True when a workspace-relative path is excluded from checkpoint contents. */
+export function shouldExcludeFromCheckpoint(relative: string): boolean {
+  return relative
+    .split("/")
+    .some((segment) =>
+      (CHECKPOINT_CONTENTS_POLICY.excludedDirectoryNames as readonly string[]).includes(segment),
+    );
+}
+
 export class LocalAgentHomeStore implements AgentHomeStore {
   private readonly botWrites = new Map<string, Promise<void>>();
 
@@ -307,7 +335,7 @@ export class LocalAgentHomeStore implements AgentHomeStore {
     const revision = `rev-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const contentDir = this.revisionDir(botId, revision);
     await mkdir(contentDir, { recursive: true });
-    await copyDir(dir, contentDir);
+    await copyDirFiltered(dir, contentDir);
     const manifest: RevisionManifest = {
       id: revision,
       seq: existing.length + 1,
@@ -480,6 +508,13 @@ async function scanTree(
   const entries = await readdir(absolute, { withFileTypes: true }).catch(() => []);
   for (const entry of entries) {
     const childRelative = relative ? `${relative}/${entry.name}` : entry.name;
+    // T13: excluded directories never enter manifests or dirty sets.
+    if (
+      entry.isDirectory() &&
+      (CHECKPOINT_CONTENTS_POLICY.excludedDirectoryNames as readonly string[]).includes(entry.name)
+    ) {
+      continue;
+    }
     const childPath = path.join(absolute, entry.name);
     if (entry.isSymbolicLink()) {
       // External/escaping links are excluded from manifests exactly as they
@@ -558,6 +593,38 @@ async function readTraversalFile(root: string, full: string) {
     return { content: await handle.readFile(), mode: info.mode };
   } finally {
     await handle.close();
+  }
+}
+
+/** copyDir that drops T13-excluded directories (checkpoint contents policy). */
+async function copyDirFiltered(
+  src: string,
+  dest: string,
+  sourceRoot?: string,
+  visited = new Set<string>(),
+) {
+  const root = sourceRoot ?? (await realpath(src));
+  const current = await traversalTarget(root, src).catch(() => null);
+  if (!current || visited.has(current)) return;
+  await mkdir(dest, { recursive: true });
+  visited.add(current);
+  const entries = await readdir(current, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    if (
+      entry.isDirectory() &&
+      (CHECKPOINT_CONTENTS_POLICY.excludedDirectoryNames as readonly string[]).includes(entry.name)
+    ) {
+      continue;
+    }
+    const from = await traversalTarget(root, path.join(current, entry.name)).catch(() => null);
+    if (!from) continue;
+    const to = path.join(dest, entry.name);
+    const info = await stat(from);
+    if (info.isDirectory()) await copyDirFiltered(from, to, root, visited);
+    else if (info.isFile()) {
+      const file = await readTraversalFile(root, from);
+      await writeFile(to, file.content, { mode: file.mode & 0o777 });
+    }
   }
 }
 
