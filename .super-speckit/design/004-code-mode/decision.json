@@ -1,0 +1,16 @@
+{
+  "feature": "004-code-mode",
+  "status": "approved",
+  "prototype": null,
+  "brief": "design-brief.md",
+  "design_system_sources": [],
+  "external_sources": [
+    "docs/computer-runtime.md",
+    "docs/bot-secrets.md",
+    ".super-speckit/grills/004-code-mode/spec-grill.md",
+    ".super-speckit/purpose/004-code-mode/decision.json"
+  ],
+  "decision_by": "Poom5741",
+  "decision_at": "2026-10-01T03:00:48Z",
+  "notes": "Approved status records TWO human decisions relayed by Chief, not a Tech-lead self-decision. Q9 (isolation execution environment), 2026-10-01 ~03:00Z: DOCKER ON THE EXISTING BOX - no separate machine; requires one host-side action first (restricted docker socket recommended; seccomp blocks CLONE_NEWUSER so nothing is installable from inside - evidence in design-brief.md D-Q9). Q10 (secrets boundary), 2026-10-01 ~02:43Z: OPTION B - ALLOW LIMITED SECRETS + AUDIT LOG (R10 wins); docs/bot-secrets.md blanket refusal superseded FOR THIS FEATURE as a documented carve-out (annotation task in S3; doc not rewritten). prototype=null: this stage is architecture-only; the web slice UI design-first (config design.required_when_paths **/*.tsx) still requires its own prototype.html + decision before UI implementation. Mechanism details (scoping, audit hash-chain, revocation semantics, fallback-disables-secrets rule) authored by Tech Lead within the user-set five constraints, per Chief delegation. decision_at is the record-finalization stamp on this box; Q9 relay time ~03:00Z and Q10 relay time ~02:43Z are Chief's machine clock (cross-box skew observed: this box read ~02:49Z at first stamp). Decision order per Chief relay sequence: Q10 (~02:43) then Q9 (~03:00)."
+}

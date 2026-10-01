@@ -1,6 +1,6 @@
 # Feature 004 — Code mode (Rakazo Code)
 
-Status: specified · grilled 2026-10-01 (r1) · plan pending
+Status: specified · grilled 2026-10-01 (r1) · design decided (Q9+Q10) 2026-10-01 · plan drafted, pending human approval gate
 Base commit: c2e6bb119fd38a25e11b68158ea69a065be8d899 (`integration/001-multi-session-agents`)
 Purpose: confirmed 2026-10-01 by the user (Poom5741) — `.super-speckit/purpose/004-code-mode/decision.json`
 Grill: `.super-speckit/grills/004-code-mode/spec-grill.md` (amendments below are grill resolutions)
@@ -158,10 +158,15 @@ unsupported environment requirements disclosed explicitly.
 - Q8: Mobile v1 workflow enumeration. (grill: inferred — A2 step 4)
 - Q9 (grill): Isolation execution environment for concurrent tasks — separate computers vs
   in-computer namespacing (docker) — cost/quota tradeoff; `docs/computer-runtime.md:34` says
-  team bots share the OS user today. Decision required before plan.
+  team bots share the OS user today. RESOLVED 2026-10-01 (user, via Chief): docker on the existing team box — one host-side
+  action required first (restricted docker socket recommended; seccomp blocks CLONE_NEWUSER
+  from inside). `.super-speckit/design/004-code-mode/decision.json` + design-brief.md D-Q9.
 - Q10 (grill): Secrets-boundary revision — R10's scoped injection vs `docs/bot-secrets.md`'s
   explicit refusal to expose credential injection into shell/files/env. Explicit recorded
-  decision required before plan.
+  decision required before plan. RESOLVED 2026-10-01 (user, via Chief): Option B — scoped,
+  audited injection allowed (R10 wins); docs/bot-secrets.md superseded for this feature as a
+  documented carve-out. `.super-speckit/design/004-code-mode/decision.json` + design-brief.md
+  D-Q10.
 
 ## Verification sketch (matrix rows to expand)
 
