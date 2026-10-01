@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { createDb, type PrismaClient } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  WorkspaceBusyError,
   continueCodingSession,
   createCodingSession,
   createSessionServiceDeps,
   loadCodingSession,
+  releaseCodingSession,
+  WorkspaceBusyError,
 } from "./coding-session-service.js";
 
 /**
@@ -72,10 +73,9 @@ describePostgres("coding sessions (PostgreSQL)", () => {
     ).rejects.toBeInstanceOf(WorkspaceBusyError);
 
     // Durable across "restart": a fresh service instance over the same DB rows.
-    const reattached = await loadCodingSession(
-      createSessionServiceDeps({ prisma }),
-      { sessionId: first.id },
-    );
+    const reattached = await loadCodingSession(createSessionServiceDeps({ prisma }), {
+      sessionId: first.id,
+    });
     expect(reattached).toMatchObject({ workspaceId: `ws-${userId}`, engine: "normal-pi" });
   });
 
@@ -89,17 +89,24 @@ describePostgres("coding sessions (PostgreSQL)", () => {
       userId,
       botId: userId,
     });
+    // MED-4 (fix round): the original run must be stopped first — the row's
+    // status is authoritative, the caller cannot claim it.
+    await releaseCodingSession(deps, { sessionId: original.id });
     const continuation = await continueCodingSession(deps, {
       originalSessionId: original.id,
-      originalRunStopped: true,
       targetEngine: "omp",
       label: "engine-change",
       handoffSummary: "handoff",
     });
     const leases = await prisma.codingWorkspaceLease.findMany();
     expect(leases.filter((lease) => lease.workspaceId === `ws-cont-${userId}`)).toHaveLength(1);
-    expect(leases[0]).toMatchObject({ sessionId: continuation.id, workspaceId: `ws-cont-${userId}` });
-    const originalRow = await prisma.codingSession.findUniqueOrThrow({ where: { id: original.id } });
+    expect(leases[0]).toMatchObject({
+      sessionId: continuation.id,
+      workspaceId: `ws-cont-${userId}`,
+    });
+    const originalRow = await prisma.codingSession.findUniqueOrThrow({
+      where: { id: original.id },
+    });
     expect(originalRow).toMatchObject({ status: "stopped", engine: "normal-pi" });
   });
 });

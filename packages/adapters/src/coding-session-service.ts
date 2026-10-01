@@ -7,21 +7,36 @@
  * leases are taken over with a bumped fence, mirroring the existing
  * run/computer lease pattern. Rows live in Postgres, so the binding survives
  * restarts; reattach never changes the engine.
+ *
+ * Fix-round hardening (checker MED-2/3/4, LOW-1/2):
+ * - MED-3: takeover of an expired lease is ONE conditional update (expiry +
+ *   fence) — of two concurrent attaches exactly one wins; the loser gets an
+ *   explicit WorkspaceBusyError instead of both silently winning.
+ * - LOW-2: every lease mutation is conditioned on the fence read moments
+ *   earlier (updateMany where fence = expected), including releases.
+ * - MED-2: touchCodingSessionLease revalidates ownership and slides the
+ *   expiry on session activity (prompt/steer/stop/resume); a lost or expired
+ *   lease refuses with LeaseLostError and is never silently re-taken.
+ * - MED-4: continueCodingSession is one transaction (stop → release → create
+ *   → provenance) and derives "original stopped" from the row itself.
+ * - LOW-1: a requestedEngine that differs from the durable binding is a typed
+ *   EngineMismatchError.
  */
 
 import type { PrismaClient } from "@rakazo/db";
 import {
   type CodingSessionRef,
   createCodingSessionRef,
+  EngineMismatchError,
   type EngineRegistry,
   isCodingEngineId,
   planContinuation,
 } from "./coding-engine.js";
 
 // continueCodingSession surfaces these rules; re-exported for consumers.
-export { ContinuationRefusedError } from "./coding-engine.js";
+export { ContinuationRefusedError, EngineMismatchError } from "./coding-engine.js";
 
-const DEFAULT_LEASE_TTL_MS = 10 * 60_000;
+export const DEFAULT_LEASE_TTL_MS = 10 * 60_000;
 
 export class WorkspaceBusyError extends Error {
   readonly workspaceId: string;
@@ -40,18 +55,41 @@ export class CodingSessionNotFoundError extends Error {
   }
 }
 
+/**
+ * MED-2 (fix round): raised by activity touchpoints (prompt/steer/stop/resume)
+ * when the session no longer owns its workspace lease. A lost lease is never
+ * healed silently — re-taking an expired lease is an explicit
+ * loadCodingSession decision, not a side effect of continuing work.
+ */
+export class LeaseLostError extends Error {
+  readonly sessionId: string;
+
+  constructor(sessionId: string, detail: string) {
+    super(`Coding session "${sessionId}" no longer holds its workspace lease: ${detail}`);
+    this.name = "LeaseLostError";
+    this.sessionId = sessionId;
+  }
+}
+
 /** The prisma surface this service uses (also the fake-double contract). */
 export interface SessionServiceStore {
   sessions: Array<Record<string, unknown>>;
   leases: Array<Record<string, unknown>>;
 }
 
-export interface SessionServiceDeps {
+/** The lease-relevant clock the service (and the adapter) pass around. */
+export interface SessionLeaseClock {
+  now: () => Date;
+  leaseTtlMs: number;
+}
+
+/** The subset of a prisma transaction client this service touches. */
+type SessionStoreTx = Pick<PrismaClient, "codingSession" | "codingWorkspaceLease">;
+
+export interface SessionServiceDeps extends SessionLeaseClock {
   prisma: PrismaClient;
   /** When present, continuation engine changes also require a registered adapter. */
   registry?: EngineRegistry;
-  now: () => Date;
-  leaseTtlMs: number;
 }
 
 export function createSessionServiceDeps(input: {
@@ -74,6 +112,14 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+function leaseExpiry(clock: SessionLeaseClock, at: Date): Date {
+  return new Date(at.getTime() + clock.leaseTtlMs);
+}
+
+function leaseExpired(lease: { expiresAt: Date }, at: Date): boolean {
+  return lease.expiresAt.getTime() <= at.getTime();
+}
+
 function sessionView(row: Record<string, unknown>): CodingSessionRef & { status: string } {
   if (!isCodingEngineId(row.engine)) {
     throw new Error(`Coding session row has unknown engine ${JSON.stringify(row.engine)}`);
@@ -84,6 +130,90 @@ function sessionView(row: Record<string, unknown>): CodingSessionRef & { status:
     engine: row.engine,
     status: row.status as string,
   });
+}
+
+/**
+ * Session + lease creation against an existing transaction. Shared by
+ * createCodingSession (own transaction) and continueCodingSession (MED-4: the
+ * whole continuation is a single transaction). The engine must be validated by
+ * the caller. On a lease create race, the takeover is a single conditional
+ * update (expired + fence) so exactly one racer can claim the workspace
+ * (MED-3/LOW-2); the loser gets an explicit WorkspaceBusyError and, running
+ * inside the caller's transaction, leaves no rows behind.
+ */
+async function createCodingSessionInTx(
+  tx: SessionStoreTx,
+  clock: SessionLeaseClock,
+  input: {
+    workspaceId: string;
+    engine: CodingSessionRef["engine"];
+    spaceId: string;
+    userId: string;
+    botId: string;
+    threadId?: string;
+    title?: string;
+    owner?: string;
+  },
+): Promise<string> {
+  const now = clock.now();
+  const expiresAt = leaseExpiry(clock, now);
+  const owner = input.owner ?? input.userId;
+  try {
+    await tx.codingWorkspaceLease.create({
+      data: {
+        workspaceId: input.workspaceId,
+        sessionId: "pending",
+        owner,
+        fence: 1,
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+    // Lease row exists: take it over only when expired, conditioned on the
+    // fence we just read; refuse when busy — never last-writer-wins.
+    const existing = await tx.codingWorkspaceLease.findUnique({
+      where: { workspaceId: input.workspaceId },
+    });
+    if (!existing) {
+      throw new WorkspaceBusyError(input.workspaceId, "lease row vanished while claiming");
+    }
+    if (!leaseExpired(existing, now)) {
+      throw new WorkspaceBusyError(
+        input.workspaceId,
+        "another coding session holds the lease; never last-writer-wins on an active workspace",
+      );
+    }
+    const taken = await tx.codingWorkspaceLease.updateMany({
+      where: { workspaceId: input.workspaceId, fence: existing.fence, expiresAt: { lte: now } },
+      data: { owner, fence: { increment: 1 }, expiresAt, updatedAt: now },
+    });
+    if (taken.count !== 1) {
+      throw new WorkspaceBusyError(
+        input.workspaceId,
+        "another session claimed the expired lease concurrently",
+      );
+    }
+  }
+  const session = await tx.codingSession.create({
+    data: {
+      workspaceId: input.workspaceId,
+      engine: input.engine,
+      spaceId: input.spaceId,
+      userId: input.userId,
+      botId: input.botId,
+      ...(input.threadId ? { threadId: input.threadId } : {}),
+      ...(input.title ? { title: input.title } : {}),
+      status: "active",
+    },
+  });
+  await tx.codingWorkspaceLease.updateMany({
+    where: { workspaceId: input.workspaceId },
+    data: { sessionId: session.id as string, updatedAt: now },
+  });
+  return session.id as string;
 }
 
 /**
@@ -112,54 +242,9 @@ export async function createCodingSession(
   if (deps.registry && !deps.registry.get(input.engine)) {
     throw new EngineUnavailableError(input.engine);
   }
-  const now = deps.now();
-  const expiresAt = new Date(now.getTime() + deps.leaseTtlMs);
-  const owner = input.owner ?? input.userId;
-  const sessionId = await deps.prisma.$transaction(async (tx) => {
-    try {
-      await tx.codingWorkspaceLease.create({
-        data: {
-          workspaceId: input.workspaceId,
-          sessionId: "pending",
-          owner,
-          fence: 1,
-          expiresAt,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-    } catch (error) {
-      if (!isUniqueViolation(error)) throw error;
-      // Lease row exists: take it over only when expired; refuse when busy.
-      const taken = await tx.codingWorkspaceLease.updateMany({
-        where: { workspaceId: input.workspaceId, expiresAt: { lte: now } },
-        data: { owner, fence: { increment: 1 }, expiresAt, updatedAt: now },
-      });
-      if (taken.count !== 1) {
-        throw new WorkspaceBusyError(
-          input.workspaceId,
-          "another coding session holds the lease; never last-writer-wins on an active workspace",
-        );
-      }
-    }
-    const session = await tx.codingSession.create({
-      data: {
-        workspaceId: input.workspaceId,
-        engine: input.engine,
-        spaceId: input.spaceId,
-        userId: input.userId,
-        botId: input.botId,
-        ...(input.threadId ? { threadId: input.threadId } : {}),
-        ...(input.title ? { title: input.title } : {}),
-        status: "active",
-      },
-    });
-    await tx.codingWorkspaceLease.updateMany({
-      where: { workspaceId: input.workspaceId },
-      data: { sessionId: session.id as string, updatedAt: now },
-    });
-    return session.id as string;
-  });
+  const sessionId = await deps.prisma.$transaction(async (tx) =>
+    createCodingSessionInTx(tx, deps, input),
+  );
   return createCodingSessionRef({
     id: sessionId,
     workspaceId: input.workspaceId,
@@ -182,55 +267,153 @@ export class EngineUnavailableError extends Error {
 /**
  * Loads a session and reattaches to its workspace lease. Durable across
  * restarts: the (workspace, engine) binding comes from the stored row and can
- * never change on reattach. A foreign active holder refuses; an expired lease
- * is taken over with a bumped fence.
+ * never change on reattach — a requestedEngine that differs is a typed
+ * EngineMismatchError (LOW-1). MED-3 (fix round): claiming an expired foreign
+ * lease is a single conditional update (expiry + fence), so of two concurrent
+ * attaches exactly one wins and the loser is refused explicitly. LOW-2: the
+ * own-lease renewal is conditioned on the fence read moments earlier.
  */
 export async function loadCodingSession(
   deps: SessionServiceDeps,
   input: { sessionId: string; requestedEngine?: CodingSessionRef["engine"]; owner?: string },
 ): Promise<CodingSessionRef> {
-  const now = deps.now();
   return deps.prisma.$transaction(async (tx) => {
     const row = await tx.codingSession.findUnique({ where: { id: input.sessionId } });
     if (!row) throw new CodingSessionNotFoundError(input.sessionId);
     const view = sessionView(row as Record<string, unknown>);
-    const lease = await tx.codingWorkspaceLease.findUnique({
+    if (input.requestedEngine !== undefined && input.requestedEngine !== view.engine) {
+      throw new EngineMismatchError(view.engine, input.requestedEngine);
+    }
+    const owner = input.owner ?? String(row.userId);
+    const existing = await tx.codingWorkspaceLease.findUnique({
       where: { workspaceId: view.workspaceId },
     });
-    if (lease && lease.sessionId !== view.id) {
-      const expired = (lease.expiresAt as Date).getTime() <= now.getTime();
-      if (!expired) {
-        throw new WorkspaceBusyError(
-          view.workspaceId,
-          `lease is held by another session (${String(lease.sessionId)})`,
-        );
+    if (!existing) {
+      // No lease row: create one; on a create race, fall through to the
+      // conditional takeover of whatever the winner wrote.
+      try {
+        await tx.codingWorkspaceLease.create({
+          data: {
+            workspaceId: view.workspaceId,
+            sessionId: view.id,
+            owner,
+            fence: 1,
+            expiresAt: leaseExpiry(deps, deps.now()),
+            createdAt: deps.now(),
+            updatedAt: deps.now(),
+          },
+        });
+        return view;
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
       }
     }
-    // (Re)claim the lease for this session, bumping the fence on every take.
-    await tx.codingWorkspaceLease.upsert({
-      where: { workspaceId: view.workspaceId },
-      create: {
+    const now = deps.now();
+    const expiresAt = leaseExpiry(deps, now);
+    const current =
+      existing ??
+      (await tx.codingWorkspaceLease.findUnique({ where: { workspaceId: view.workspaceId } }));
+    if (!current) {
+      throw new WorkspaceBusyError(view.workspaceId, "lease row vanished during attach");
+    }
+    if (current.sessionId === view.id) {
+      // Own lease (fresh or lapsed): renew and bump the fence, conditioned on
+      // the fence just read — a concurrent claim would have moved it (LOW-2).
+      const renewed = await tx.codingWorkspaceLease.updateMany({
+        where: { workspaceId: view.workspaceId, sessionId: view.id, fence: current.fence },
+        data: { owner, fence: { increment: 1 }, expiresAt, updatedAt: now },
+      });
+      if (renewed.count !== 1) {
+        throw new WorkspaceBusyError(
+          view.workspaceId,
+          "the lease changed concurrently during reattach",
+        );
+      }
+      return view;
+    }
+    // Foreign lease: only an EXPIRED one can be taken over, atomically.
+    if (!leaseExpired(current, now)) {
+      throw new WorkspaceBusyError(
+        view.workspaceId,
+        `lease is held by another session (${String(current.sessionId)})`,
+      );
+    }
+    const taken = await tx.codingWorkspaceLease.updateMany({
+      where: {
         workspaceId: view.workspaceId,
-        sessionId: view.id,
-        owner: input.owner ?? String(row.userId),
-        fence: 1,
-        expiresAt: new Date(now.getTime() + deps.leaseTtlMs),
-        createdAt: now,
-        updatedAt: now,
+        sessionId: String(current.sessionId),
+        fence: current.fence,
+        expiresAt: { lte: now },
       },
-      update: {
-        sessionId: view.id,
-        owner: input.owner ?? String(row.userId),
-        fence: { increment: 1 },
-        expiresAt: new Date(now.getTime() + deps.leaseTtlMs),
-        updatedAt: now,
-      },
+      data: { sessionId: view.id, owner, fence: { increment: 1 }, expiresAt, updatedAt: now },
     });
+    if (taken.count !== 1) {
+      throw new WorkspaceBusyError(
+        view.workspaceId,
+        "another attach claimed the expired lease concurrently; never last-writer-wins",
+      );
+    }
     return view;
   });
 }
 
-/** Stops a session and releases its workspace lease. */
+/**
+ * MED-2 (fix round): lease ownership revalidation + renewal for the session
+ * activity touchpoints (prompt/steer/stop/resume). Slides the expiry forward
+ * when — and only when — the session still holds a LIVE lease at the fence
+ * read here. A lost or expired lease refuses with LeaseLostError; it is never
+ * silently re-taken (that is an explicit loadCodingSession decision).
+ */
+export async function touchCodingSessionLease(
+  deps: SessionServiceDeps,
+  input: { sessionId: string },
+): Promise<void> {
+  await deps.prisma.$transaction(async (tx) => touchCodingSessionLeaseInTx(tx, deps, input));
+}
+
+/**
+ * Transaction-client variant of touchCodingSessionLease for callers that are
+ * already inside a transaction (the adapter's prompt path).
+ */
+export async function touchCodingSessionLeaseInTx(
+  tx: SessionStoreTx,
+  clock: SessionLeaseClock,
+  input: { sessionId: string },
+): Promise<void> {
+  const now = clock.now();
+  const row = await tx.codingSession.findUnique({ where: { id: input.sessionId } });
+  if (!row) throw new CodingSessionNotFoundError(input.sessionId);
+  const view = sessionView(row as Record<string, unknown>);
+  const lease = await tx.codingWorkspaceLease.findUnique({
+    where: { workspaceId: view.workspaceId },
+  });
+  if (!lease) {
+    throw new LeaseLostError(view.id, "no lease row exists for the workspace");
+  }
+  if (lease.sessionId !== view.id) {
+    throw new LeaseLostError(
+      view.id,
+      `the lease is held by another session (${String(lease.sessionId)})`,
+    );
+  }
+  if (leaseExpired(lease, now)) {
+    throw new LeaseLostError(view.id, "the lease expired and was not renewed in time");
+  }
+  const renewed = await tx.codingWorkspaceLease.updateMany({
+    where: { workspaceId: view.workspaceId, sessionId: view.id, fence: lease.fence },
+    data: { expiresAt: leaseExpiry(clock, now), updatedAt: now },
+  });
+  if (renewed.count !== 1) {
+    throw new LeaseLostError(view.id, "the lease changed concurrently during renewal");
+  }
+}
+
+/**
+ * Stops a session and releases its workspace lease. LOW-2 (fix round): the
+ * delete is conditioned on the fence read here — if a concurrent takeover
+ * moved the fence between read and delete, the lease belongs to a new owner
+ * and is left alone.
+ */
 export async function releaseCodingSession(
   deps: SessionServiceDeps,
   input: { sessionId: string },
@@ -243,7 +426,12 @@ export async function releaseCodingSession(
       where: { id: input.sessionId },
       data: { status: "stopped", updatedAt: now },
     });
-    await tx.codingWorkspaceLease.deleteMany({ where: { sessionId: input.sessionId } });
+    const lease = await tx.codingWorkspaceLease.findFirst({
+      where: { sessionId: input.sessionId },
+    });
+    await tx.codingWorkspaceLease.deleteMany({
+      where: { sessionId: input.sessionId, ...(lease ? { fence: lease.fence } : {}) },
+    });
   });
 }
 
@@ -252,56 +440,78 @@ export async function releaseCodingSession(
  * continuation on the same workspace (engine change only when labelled with a
  * handoff summary — the rules live in planContinuation). The original row is
  * never mutated beyond status/handoff provenance; history is preserved.
+ *
+ * MED-4 (fix round): stop → lease release → continuation create → provenance
+ * update all run inside ONE transaction — a mid-sequence throw leaves no
+ * partial continuation. "The original run stopped" is derived from the row
+ * inside the transaction (status === "stopped"), never from a caller-supplied
+ * boolean.
  */
 export async function continueCodingSession(
   deps: SessionServiceDeps,
   input: {
     originalSessionId: string;
-    originalRunStopped: boolean;
     targetEngine: CodingSessionRef["engine"];
     label?: string;
     handoffSummary?: string;
     owner?: string;
   },
 ): Promise<CodingSessionRef> {
-  const originalRow = await deps.prisma.codingSession.findUnique({
-    where: { id: input.originalSessionId },
-  });
-  if (!originalRow) throw new CodingSessionNotFoundError(input.originalSessionId);
-  const original = sessionView(originalRow as Record<string, unknown>);
-  const plan = planContinuation({
-    originalSession: original,
-    originalRunStopped: input.originalRunStopped,
-    targetEngine: input.targetEngine,
-    ...(deps.registry ? { registry: deps.registry } : {}),
-    ...(input.handoffSummary !== undefined ? { handoffSummary: input.handoffSummary } : {}),
-    ...(input.label !== undefined ? { label: input.label } : {}),
-  });
-  await deps.prisma.codingSession.update({
-    where: { id: original.id },
-    data: {
-      status: "stopped",
-      ...(plan.label ? { engineChangeLabel: plan.label } : {}),
-      ...(plan.handoffSummary ? { handoffSummary: plan.handoffSummary } : {}),
+  const created = await deps.prisma.$transaction(
+    async (
+      tx,
+    ): Promise<{ id: string; workspaceId: string; engine: CodingSessionRef["engine"] }> => {
+      const originalRow = await tx.codingSession.findUnique({
+        where: { id: input.originalSessionId },
+      });
+      if (!originalRow) throw new CodingSessionNotFoundError(input.originalSessionId);
+      const original = sessionView(originalRow as Record<string, unknown>);
+      const plan = planContinuation({
+        originalSession: original,
+        originalRunStopped: originalRow.status === "stopped",
+        targetEngine: input.targetEngine,
+        ...(deps.registry ? { registry: deps.registry } : {}),
+        ...(input.handoffSummary !== undefined ? { handoffSummary: input.handoffSummary } : {}),
+        ...(input.label !== undefined ? { label: input.label } : {}),
+      });
+      await tx.codingSession.update({
+        where: { id: original.id },
+        data: {
+          status: "stopped",
+          ...(plan.label ? { engineChangeLabel: plan.label } : {}),
+          ...(plan.handoffSummary ? { handoffSummary: plan.handoffSummary } : {}),
+        },
+      });
+      // Release the original's lease, conditioned on the fence read here.
+      const lease = await tx.codingWorkspaceLease.findFirst({
+        where: { sessionId: original.id },
+      });
+      await tx.codingWorkspaceLease.deleteMany({
+        where: { sessionId: original.id, ...(lease ? { fence: lease.fence } : {}) },
+      });
+      const continuationId = await createCodingSessionInTx(tx, deps, {
+        workspaceId: original.workspaceId,
+        engine: plan.nextSession.engine,
+        spaceId: String(originalRow.spaceId),
+        userId: String(originalRow.userId),
+        botId: String(originalRow.botId),
+        ...(originalRow.threadId ? { threadId: String(originalRow.threadId) } : {}),
+        owner: input.owner,
+      });
+      await tx.codingSession.update({
+        where: { id: continuationId },
+        data: {
+          continuationOf: original.id,
+          ...(plan.label ? { engineChangeLabel: plan.label } : {}),
+          ...(plan.handoffSummary ? { handoffSummary: plan.handoffSummary } : {}),
+        },
+      });
+      return {
+        id: continuationId,
+        workspaceId: original.workspaceId,
+        engine: plan.nextSession.engine,
+      };
     },
-  });
-  await deps.prisma.codingWorkspaceLease.deleteMany({ where: { sessionId: original.id } });
-  const continuation = await createCodingSession(deps, {
-    workspaceId: original.workspaceId,
-    engine: plan.nextSession.engine,
-    spaceId: String(originalRow.spaceId),
-    userId: String(originalRow.userId),
-    botId: String(originalRow.botId),
-    ...(originalRow.threadId ? { threadId: String(originalRow.threadId) } : {}),
-    owner: input.owner,
-  });
-  await deps.prisma.codingSession.update({
-    where: { id: continuation.id },
-    data: {
-      continuationOf: original.id,
-      ...(plan.label ? { engineChangeLabel: plan.label } : {}),
-      ...(plan.handoffSummary ? { handoffSummary: plan.handoffSummary } : {}),
-    },
-  });
-  return continuation;
+  );
+  return createCodingSessionRef(created);
 }
