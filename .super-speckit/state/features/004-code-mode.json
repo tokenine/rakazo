@@ -4,25 +4,26 @@
   "candidate_sha": null,
   "maker": "claude-maker",
   "checker": "claude-checker",
-  "matrix": ".super-speckit/docs/research/004-code-mode-engineering-investigations.md",
+  "matrix": "specs/004-code-mode/spec.md",
   "purpose": {
     "status": "confirmed",
     "map": ".super-speckit/purpose/004-code-mode/purpose-map.md",
     "decision": ".super-speckit/purpose/004-code-mode/decision.json"
   },
   "grill": {
-    "status": "not_started",
-    "artifact": null
+    "status": "complete",
+    "artifact": ".super-speckit/grills/004-code-mode/spec-grill.md"
   },
   "route": {
-    "kind": "unclassified",
-    "rationale": null
+    "kind": "milestone",
+    "rationale": "Multi-slice program, not one demoable change: 2 engines x (conformance + repo-to-PR E2E), workspace isolation decision (Q9), versioned workspace store (G2), takeover/settle across 4 unguarded handlers (G1), reconnectable terminals via adapter-kit extension (G7), then continuity/checkpoints/budgets; web first, CLI+mobile completeness sequenced after (A4). Builder slice 1 = web repo-to-PR on normal Pi; slice 2 = isolation + checkpoint restore."
   },
   "atlas": {
-    "path": null
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
   },
   "change_story": {
-    "path": null
+    "path": ".super-speckit/atlas/changes/004-code-mode/change-story.md"
   },
   "handoff": {
     "path": ".super-speckit/handoffs/004-purpose-gate-to-cloud-agent.md",

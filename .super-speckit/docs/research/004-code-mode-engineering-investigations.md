@@ -1,6 +1,6 @@
 # 004 Code Mode — engineering investigations (pre-implementation)
 
-Status: **DRAFT — PENDING HUMAN GATE.** Rebuilt 2026-09-30 from `docs/code-mode-discovery.md` and the
+Status: **GATE CONFIRMED 2026-10-01 (user: Poom5741)** — see .super-speckit/purpose/004-code-mode/decision.json. **Superseded as verification matrix by specs/004-code-mode/spec.md (grill r1).** Rebuilt 2026-09-30 from `docs/code-mode-discovery.md` and the
 out-of-repo verification record `004-s1-purpose-gate-r1` (attempt lineage), with every file:line
 citation re-verified against the tree at `c2e6bb119fd38a25e11b68158ea69a065be8d899`
 (`integration/001-multi-session-agents`). This is a planning input distilled from read-only code
