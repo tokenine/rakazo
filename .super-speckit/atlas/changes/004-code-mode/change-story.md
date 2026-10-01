@@ -1,7 +1,7 @@
 # Change Story — 004-code-mode
 
 ## Confirmed purpose
-Rakazo Code: agent-assisted development workspace. Purpose confirmed 2026-10-01 (user: Poom5741). First journey: repo-to-PR on Linux-compatible JS/TS web repos with normal Pi + OMP engines fixed per session. Grill r1 resolved takeover-gap scope, versioned store scope, engine-continuation rule, secrets-boundary flag; Q9 (isolation: docker on the existing box) + Q10 (secrets: scoped audited injection, Option B) decided 2026-10-01 — `.super-speckit/design/004-code-mode/decision.json`.
+Rakazo Code: agent-assisted development workspace. Purpose confirmed 2026-10-01 (user: Poom5741). First journey: repo-to-PR on Linux-compatible JS/TS web repos with normal Pi + OMP engines fixed per session. Grill r1 resolved takeover-gap scope, versioned store scope, engine-continuation rule, secrets-boundary flag; Q9 FINAL (isolation: process-level, trusted-code threat model; supersedes the docker answer) + Q10 (secrets: scoped audited injection, Option B) decided 2026-10-01 — `.super-speckit/design/004-code-mode/decision.json`.
 
 ## Route
 milestone
@@ -12,7 +12,7 @@ milestone
 flowchart LR
   Request[Confirmed purpose] --> Entry[Entry: session create + engine pick + repo config]
   Entry --> Logic[Changed logic: CodingSession + workspace lease, engine registry/adapters, acceptance gate, takeover settle across 4 handlers, versioned workspace store]
-  Logic --> Data[Data / external boundary: per-task docker container Q9, secrets store + bootstrap injection Q10, audit chain, PR via workspace credential]
+  Logic --> Data[Data / external boundary: per-task process context Q9-final, secrets store + spawn-env injection Q10, audit chain, PR via workspace credential]
   Data --> Proof[Verification evidence: verification-matrix.md V1-V21, doctor preflight, audit verify]
 ```
 
@@ -28,8 +28,9 @@ flowchart LR
   (:2424-2436), schedule_create (:2761), add_mcp_server (:2865) with settle semantics.
 - **Workspace persistence**: latest-only commit/.previous deletion (home.ts:57-82) replaced by
   a versioned revision archive with dirty-set query and selected-revision restore (:86-93).
-- **Isolation runtime**: per-task container lifecycle on the existing docker sandbox seam,
-  doctor preflight, collision policy (Q9; one host-side action prerequisite).
+- **Isolation runtime**: per-task process context (dedicated trees, spawn limits, env scrub)
+  as a new sandbox provider, doctor preflight, collision policy (Q9-final; no host-side
+  prerequisite).
 - **Secrets path**: project-scoped encrypted store, declared-name grants, bootstrap-only
   injection, single deny-list egress filter replacing literal-only redaction
   (executor.ts:2601) for coding sessions, hash-chained audit (Q10; docs/bot-secrets.md
@@ -43,14 +44,14 @@ flowchart LR
 - Existing run/session contracts for non-coding sessions — coding sessions are additive.
 - migrations/** changes are additive and lossless (V14); computer lease semantics per-bot
   unchanged for non-coding flows.
-- docs/bot-secrets.md refusal everywhere except the 004 task-container carve-out.
+- docs/bot-secrets.md refusal everywhere except the 004 task-runtime carve-out.
 
 ## Evidence and unknowns
 
 | Claim | Classification | Evidence / next probe |
 | --- | --- | --- |
 | Q9/Q10 decisions recorded | proven | .super-speckit/design/004-code-mode/decision.json |
-| Isolation needs one host-side action | proven | design-brief.md D-Q9 (seccomp EPERM evidence, 2026-10-01) |
+| Q9-final upgrade paths documented with host-side preconditions | proven | design-brief.md D-Q9 (seccomp EPERM evidence, 2026-10-01) |
 | OMP RPC transport + builtin approvals | unknown | Q1/G10 experiment (S4 T24) before adapter work |
 | Session/lease schema shape | inferred | S1 T1 investigation + migration review |
 | Setup format (Q7), budgets (Q6) | unknown | S5 tasks propose reversible defaults for user sign-off |

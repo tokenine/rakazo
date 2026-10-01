@@ -2,12 +2,13 @@
 
 Spec: specs/004-code-mode/spec.md · Plan: specs/004-code-mode/plan.md ·
 Matrix: specs/004-code-mode/verification-matrix.md · Route: milestone ·
-Design: .super-speckit/design/004-code-mode/ (Q9+Q10 approved 2026-10-01) ·
+Design: .super-speckit/design/004-code-mode/ (Q10 approved · Q9 FINAL r2 2026-10-01) ·
 Grill: .super-speckit/grills/004-code-mode/spec-grill.md
 
 Convention: red-green per slice — the slice's matrix rows are written as failing tests first,
 then implementation turns them green. Deterministic offline where possible (fake sandbox
-double); V3/V12 team-box rows run only after the host-side docker action + doctor pass.
+double); V3/V12 run directly on the team box under the process-level driver after doctor
+passes (no host action required).
 
 ## Slice 1 — Repo-to-PR core, normal Pi, web (P1)
 
@@ -40,14 +41,16 @@ first supported journey (R1/R3), on a session that owns its workspace.
 **Goal**: concurrent tasks cannot collide; takeover is safe; checkpoints restore a chosen
 revision without clobbering manual work.
 
-- [ ] T8 (P1) `code-mode doctor` preflight: docker endpoint reachable, scratch container run
-      + mount check, image pull; verdict + remediation text (ranked host actions) — V12
-- [ ] T9 (P1) Per-task container runtime on the existing sandbox seam (docker-sandbox.ts):
-      create at session start from setup definition; idle-suspend stops container, retains
-      volume; resume recreates (design brief D-Q9 lifecycle) — V3 prerequisite
-- [ ] T10 (P1) Collision policy + fixture matrix: id-prefixed container/volume/compose names,
-      dynamic host ports, namespaced service/db names; two tasks one bot, zero collisions
-      across all enumerated classes — V3 (host-side docker action must land for team-box run)
+- [ ] T8 (P1) `code-mode doctor` preflight: spawn limits enforceable (ulimit/nice), per-task
+      tree creation + isolation, env scrub active; verdict + remediation text — V12
+- [ ] T9 (P1) Per-task process-level runtime as a NEW sandbox provider behind the existing
+      seam: dedicated workspace/data trees, spawn-time resource limits, env scrub; create at
+      session start from setup definition; idle-suspend stops the task, retains the
+      workspace; resume recreates (design brief D-Q9 lifecycle) — V3 prerequisite
+- [ ] T10 (P1) Collision policy + fixture matrix: id-prefixed workspace/data dirs, dynamic
+      port binding with retry, per-task process-group naming, namespaced service/db names;
+      two tasks one bot, zero collisions across all enumerated classes — V3 (runs on the
+      team box directly; no host-side prerequisite)
 - [ ] T11 (P1) Versioned workspace store: append-only revision archive replaces `.previous`
       deletion (home.ts:57-82); dirty-set query; restore honors selected revision
       (`_revision`, home.ts:86-93); post-restore manual edits protected — V5
@@ -59,12 +62,12 @@ revision without clobbering manual work.
       as not-checkpointed; external side effects reported, not implied rolled back) (Q5; default
       presented to user at slice review before hardcoding, same treatment as Q6/Q7) — V5
 
-**Checkpoint**: validate + status strict; V4/V5 green; V3/V12 green on local docker;
-team-box evidence tracked blocked-pending-host-action and re-run after the host action lands.
+**Checkpoint**: validate + status strict; V4/V5 green; V3/V12 green on the team box under
+the process-level driver (no host action involved).
 
 ## Slice 3 — Secrets subsystem: Q10 (P1)
 
-**Goal**: project secrets reach the task container, scoped and audited, and appear nowhere
+**Goal**: project secrets reach the task context, scoped and audited, and appear nowhere
 else (R10 as decided under Option B).
 
 - [ ] T14 (P1) Project secrets store: per-project, encrypted at rest, reusing existing
@@ -72,8 +75,9 @@ else (R10 as decided under Option B).
 - [ ] T15 (P1) Grants: task config declares required secret NAMES before start (same gate
       family as T4); injection resolves granted names only; no wildcards v1; TTL per
       (workspace, taskRun) — V9
-- [ ] T16 (P1) Bootstrap injection at container create only (env or mounted file); values
-      never written to host/repo/workspace trees by the injection path — V9 grep gate
+- [ ] T16 (P1) Bootstrap injection at process spawn/bootstrap env only (env var or file in
+      the task's own data dir); values never written to host/repo/workspace trees by the
+      injection path — V9 grep gate
 - [ ] T17 (P1) Egress deny-list filter: literal + base64/hex/URL transforms of granted values,
       applied to transcripts, command results, checkpoints, handoff summaries, QA evidence
       (replaces literal-only redaction executor.ts:2601 for coding sessions) — V8
@@ -81,11 +85,12 @@ else (R10 as decided under Option B).
       secretName, secretRef, mechanism, ttl, grantRef} + sha256(prev_hash+entry) chain, head
       checkpointed to the run record; `audit verify` in QA evidence collection — V10
 - [ ] T19 (P2) Revocation + rotation: TTL expiry, revoke (enforced next start) + `--force`
-      stops container now; settings rotation marks grants stale — V11
+      stops the task now; settings rotation marks grants stale — V11
 - [ ] T20 (P1) `docs/bot-secrets.md` carve-out annotation at top: superseded for 004-code-mode
-      task containers only, pointer to decision.json; blanket refusal stands elsewhere — V9 doc row
-- [ ] T21 (P2) Fallback disclosure: under process-level driver, secrets features disabled with
-      explicit user-facing disclosure (never silent) — V11
+      task runtimes only, pointer to decision.json; blanket refusal stands elsewhere — V9 doc row
+- [ ] T21 (P2) Fail-closed guard + disclosure: if spawn-env injection cannot be guaranteed,
+      secrets features disable with explicit user-facing disclosure (never silent);
+      confidentiality-bounded-by-threat-model disclosure shown at gate — V11
 
 **Checkpoint**: validate + status strict; V8/V9/V10/V11 green.
 
@@ -122,10 +127,10 @@ else (R10 as decided under Option B).
 
 ## Dependencies
 
-S1 → S2 → S3 (injection needs the container boundary) → S4 (OMP experiment may start early,
-adapter lands after S1 seam) → S5. T10 blocked on the user's host-side docker action for
-team-box evidence (local/CI docker unblocks development). T6 and every UI task gated on the
-UI design-first decision. T24 precedes T25. T20 is doc-only but ships with S3.
+S1 → S2 → S3 (injection needs the spawn boundary) → S4 (OMP experiment may start early,
+adapter lands after S1 seam) → S5. No host-side prerequisites anywhere in v1 (Q9-final
+process driver). T6 and every UI task gated on the UI design-first decision. T24 precedes
+T25. T20 is doc-only but ships with S3.
 
 ## Boundaries (standing)
 

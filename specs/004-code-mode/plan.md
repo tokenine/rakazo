@@ -3,20 +3,20 @@
 Spec: `specs/004-code-mode/spec.md` · Base: c2e6bb11 (`integration/001-multi-session-agents`) ·
 Branch `tl/004-purpose-gate-r1` · Route: milestone ·
 Grill: `.super-speckit/grills/004-code-mode/spec-grill.md` ·
-Design: `.super-speckit/design/004-code-mode/{design-brief.md,decision.json}` (Q9+Q10 approved)
+Design: `.super-speckit/design/004-code-mode/{design-brief.md,decision.json}` (Q10 approved · Q9 FINAL r2)
 
 ## Key findings (research + grill, 2026-10-01)
 
 - Run/context machinery already exists and is reusable (`executor.ts:1102-1163`, `:4721-4739`);
   what is absent is the *coding-session concept*: no engine field, no engine dispatch, no
   workspace-lease ownership (two runs must never own one workspace).
-- A docker sandbox provider already ships (`docker-sandbox.ts`, 8 real providers + fake
-  double) — Q9's runtime builds on that seam; the new work is task-scoped lifecycle + collision
-  policy + doctor preflight, not a new container stack.
+- A sandbox-provider seam already ships (`docker-sandbox.ts` among 8 real providers + fake
+  double) — Q9-final's process runtime lands as a NEW provider behind that seam; the new
+  work is task-scoped lifecycle + collision policy + doctor preflight, not a new container
+  stack. Docker remains a documented future driver (host-side preconditions in D-Q9), not v1.
 - Q9 evidence: team box seccomp blocks `CLONE_NEWUSER` (nothing container-ish installable from
-  inside) → decided mechanism needs ONE host-side action (restricted docker socket,
-  recommended). Until it lands, docker-gated tasks are built against local/CI docker behind the
-  doctor check.
+  inside) — which drove the FINAL pick: option 3 process-level isolation (no host action,
+  no docker dependency). The docker paths are recorded as future upgrades, not v1 work.
 - Q10 evidence: redaction today is literal-only (`executor.ts:2601`) and checkpoints are raw
   snapshots (`home.ts:57-82`) — the egress filter + V8 sweep are net-new, and the versioned
   workspace store (G2) is prerequisite to safe checkpoint/restore (R7).
@@ -32,9 +32,11 @@ Design: `.super-speckit/design/004-code-mode/{design-brief.md,decision.json}` (Q
 - **Acceptance-artifact gate (R1)**: before the agent's first edit, the session requires a
   recorded acceptance record (outcome + verification commands); gate lives at the same
   authorization point as existing approvals.
-- **Isolation runtime (Q9)**: `code-mode doctor` preflight; one container per task from the
-  setup definition; collision policy per design brief (id-prefixed names/volumes, dynamic host
-  ports, namespaced service/db names); idle-suspend stops container, retains volume (R9).
+- **Isolation runtime (Q9-final)**: `code-mode doctor` preflight; one process-level task
+  context per run from the setup definition — dedicated workspace/data trees, spawn-time
+  resource limits (ulimit/nice), env scrub — as a new sandbox provider; collision policy per
+  design brief (dynamic port binding with retry, id-prefixed dirs, per-task process-group
+  naming); idle-suspend stops the task, retains the workspace (R9).
 - **Versioned workspace store (G2/R7)**: replace latest-only commit/`.previous` deletion
   (`home.ts:57-82`) with an append-only revision archive + dirty-set query; restore takes a
   selected revision (`:86-93` `_revision` honored) and protects post-restore manual edits.
@@ -42,11 +44,13 @@ Design: `.super-speckit/design/004-code-mode/{design-brief.md,decision.json}` (Q
   `heldForTakeover` check; settle = signal → bounded wait → recorded exit; pre-resume recheck
   compares workspace dirty-set against the takeover baseline.
 - **Secrets subsystem (Q10)**: per-project encrypted store (reusing existing credential
-  primitives), declared-name grants resolved before start, injection at container create only,
-  single deny-list egress filter (literal + base64/hex/URL transforms) across transcripts/
-  checkpoints/handoffs/QA, hash-chained JSONL audit with `audit verify`, TTL + revoke
-  (enforced at next container start; `--force` stops immediately). Under the process-level
-  fallback driver, secrets are disabled with explicit disclosure.
+  primitives), declared-name grants resolved before start, injection at process spawn/bootstrap
+  env only, single deny-list egress filter (literal + base64/hex/URL transforms) across
+  transcripts/checkpoints/handoffs/QA, hash-chained JSONL audit with `audit verify`, TTL +
+  revoke (enforced at next task start; `--force` stops the task immediately). Fail-closed: if
+  spawn-env injection cannot be guaranteed, secrets are disabled with explicit disclosure.
+  Confidentiality under process isolation is bounded by the trusted-code threat model —
+  disclosed at the gate.
 - **Continuity (R8)**: server-owned runs survive disconnect; reconnect sees pending approvals;
   crash reconciliation = workspace dirty-set + last recorded action, surfaced before retry;
   explicit continuation into a new session may change engine only as a labelled handoff (R2).
@@ -60,10 +64,10 @@ Design: `.super-speckit/design/004-code-mode/{design-brief.md,decision.json}` (Q
    acceptance gate, implement → diff → verification record → PR via existing workspace
    credential (V2 pi path; V1 pi subset). Web UI tasks gated on the UI design-first decision.
 2. **S2 — Isolation + workspace safety (Q9 + G2 + R7)**: doctor preflight (V12); per-task
-   docker runtime + collision fixture matrix (V3); versioned workspace store (G2);
-   takeover settle across all four handlers + pre-resume recheck (V4); selected-revision
-   restore + manual-edit protection (V5). Blocked on the host-side docker action for team-box
-   verification; local/CI docker OK for development.
+   process-level runtime (new sandbox provider) + collision fixture matrix (V3); versioned
+   workspace store (G2); takeover settle across all four handlers + pre-resume recheck (V4);
+   selected-revision restore + manual-edit protection (V5). No host-side prerequisites —
+   team-box evidence runs directly under the process driver.
 3. **S3 — Secrets subsystem (Q10)**: store + grants + bootstrap injection + egress filter
    (V8/V9) + audit chain (V10) + revocation/rotation (V11) + `docs/bot-secrets.md` carve-out
    annotation (doc edit, not rewrite).
@@ -79,11 +83,13 @@ Design: `.super-speckit/design/004-code-mode/{design-brief.md,decision.json}` (Q
 
 ## Risks / constitution checks
 
-- **Host-side dependency (Q9)**: V3/V12 team-box evidence requires the user's one-time docker
-  action; design discloses the fallback's limits (no secrets under process driver). Plan does
-  not silently degrade — it blocks with disclosure.
-- **Threat-model honesty**: docker isolation is workload isolation on a trusted host, not
-  hostile-code containment (design brief D-Q9); this disclosure rides the human approval gate.
+- **Threat model is the boundary (Q9-final)**: process isolation guards accidents/resource
+  conflicts on trusted user code, NOT malice — no container-grade containment is claimed
+  anywhere; secret confidentiality is bounded the same way (spawn-env readable by same-UID
+  processes). Disclosed at the approval gate and in D-Q9/D-Q10; the docker upgrade paths stay
+  documented with their host-side preconditions if containment is ever demanded.
+- **Fail-closed secrets**: if spawn-env injection cannot be guaranteed on a runtime, secrets
+  features disable themselves with explicit disclosure — never silent degradation.
 - **Protected paths**: `migrations/**` (CodingSession + lease tables) → independent review
   before merge; additive-only migrations.
 - **OMP unknowns (Q1/Q2)**: unapproved builtin bash/edit would be a silent R10 breach — the
