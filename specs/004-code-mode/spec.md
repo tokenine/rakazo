@@ -1,6 +1,6 @@
 # Feature 004 — Code mode (Rakazo Code)
 
-Status: specified · grilled 2026-10-01 (r1) · design decided (Q9+Q10) 2026-10-01 · plan drafted, pending human approval gate
+Status: specified · grilled 2026-10-01 (r1) · design decided (Q10; Q9 FINAL r2) 2026-10-01 · plan drafted r2, pending human approval gate
 Base commit: c2e6bb119fd38a25e11b68158ea69a065be8d899 (`integration/001-multi-session-agents`)
 Purpose: confirmed 2026-10-01 by the user (Poom5741) — `.super-speckit/purpose/004-code-mode/decision.json`
 Grill: `.super-speckit/grills/004-code-mode/spec-grill.md` (amendments below are grill resolutions)
@@ -61,7 +61,8 @@ unsupported environment requirements disclosed explicitly.
    For verification, collision classes are enumerated: listening ports, process names,
    database/service names, volumes/directories (fixture matrix in plan). Changes integrate
    explicitly rather than via last-writer-wins. The isolation mechanism (separate computers vs
-   in-computer namespacing) is decision Q9 — open before plan.
+   in-computer namespacing) is decision Q9 — RESOLVED FINAL 2026-10-01: process-level
+   isolation, trusted-code threat model (design-brief D-Q9).
 5. **R5 — Reproducible project setup.** A reviewable definition (dependencies, setup commands,
    development services, verification commands) that re-runs to reproduce the environment; the
    agent may propose changes to it. Replacing the environment reproduces setup and truthfully
@@ -158,9 +159,11 @@ unsupported environment requirements disclosed explicitly.
 - Q8: Mobile v1 workflow enumeration. (grill: inferred — A2 step 4)
 - Q9 (grill): Isolation execution environment for concurrent tasks — separate computers vs
   in-computer namespacing (docker) — cost/quota tradeoff; `docs/computer-runtime.md:34` says
-  team bots share the OS user today. RESOLVED 2026-10-01 (user, via Chief): docker on the existing team box — one host-side
-  action required first (restricted docker socket recommended; seccomp blocks CLONE_NEWUSER
-  from inside). `.super-speckit/design/004-code-mode/decision.json` + design-brief.md D-Q9.
+  team bots share the OS user today. RESOLVED FINAL 2026-10-01T02:49:19Z (user card tap via
+  Chief, "decide for me"): Option 3 — process-level isolation, trusted-code threat model
+  (guards accidents/resource conflicts, NOT malice); supersedes the earlier same-day
+  docker-on-box answer, retained as documented future upgrade paths with host-side
+  preconditions. `.super-speckit/design/004-code-mode/decision.json` + design-brief.md D-Q9.
 - Q10 (grill): Secrets-boundary revision — R10's scoped injection vs `docs/bot-secrets.md`'s
   explicit refusal to expose credential injection into shell/files/env. Explicit recorded
   decision required before plan. RESOLVED 2026-10-01 (user, via Chief): Option B — scoped,
