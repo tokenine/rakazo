@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -183,6 +184,44 @@ describe("per-task process runtime — task contexts from the setup definition (
         new TextDecoder().decode(bytes),
       ),
     ).resolves.toBe("retained");
+  });
+
+  it("suspend reaps a daemon backgrounded by a wrapper that already exited (pgid outlives wrapper)", async () => {
+    const { provider } = await fixtureProvider();
+    const task = await provider.createTaskContext({ taskId: "task-orphan-daemon" });
+    const result = await collect(
+      provider.execute(task.ref, { argv: ["bash", "-c", "sleep 300 >/dev/null 2>&1 & echo $! > daemon.pid"] }, ctx),
+    );
+    expect(result.code).toBe(0);
+    const daemonPid = Number.parseInt(
+      readFileSync(path.join(task.workspaceDir, "daemon.pid"), "utf8").trim(),
+      10,
+    );
+    expect(Number.isFinite(daemonPid)).toBe(true);
+    // The daemon (same task process group) outlived its already-exited wrapper.
+    await waitFor(() => {
+      try {
+        process.kill(daemonPid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    // The task still has live work even though execute() forgot the wrapper:
+    // the remembered pgid must keep counting (liveTaskCount reflects it).
+    expect(provider.liveTaskCount(task.ref)).toBe(1);
+    // Suspend must kill the WHOLE task group — daemon included — and verify
+    // the group emptied.
+    await provider.suspend(task.ref);
+    await waitFor(() => {
+      try {
+        process.kill(daemonPid, 0);
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    expect(provider.liveTaskCount(task.ref)).toBe(0);
   });
 
   it("destroy() drops the runtime record, never the workspace", async () => {
