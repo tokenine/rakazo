@@ -559,6 +559,14 @@ export class ProcessSandboxProvider implements SandboxProvider {
    * ephemeral, kernel-selected port (no fixed ranges) and releases the probe
    * socket so the task process itself can bind it; the hand-off window is
    * exactly what the bounded retry covers. `onAttempt` reports each try.
+   *
+   * Contract (LOW-3): this call only proves the port was free AT PROBE TIME.
+   * The probe is loopback-IPv4-only (127.0.0.1) and the socket is released
+   * before returning, so a task-side bind can still lose the race to another
+   * opener — that TOCTOU window is inherent without fd passing or
+   * SO_REUSEPORT and is NOT closed here. A task-side bind failure (EADDRINUSE)
+   * MUST therefore be handled by the caller re-invoking allocatePort with
+   * bounded retries; never by falling back to a fixed port.
    */
   async allocatePort(
     options: { onAttempt?: (attempt: number) => void } = {},
