@@ -1378,3 +1378,54 @@ model ClientBrowserSession {
 
   @@map("client_browser_sessions")
 }
+
+/// 004-code-mode: durable coding session. Bound to (workspaceId, engine) at
+/// creation; the engine never changes mid-session (continuation = new session,
+/// labelled). Loosely coupled to chat rows on purpose (CloudAgent precedent):
+/// the session and its workspace outlive the originating thread.
+model CodingSession {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  engine            String   @default("normal-pi")
+  spaceId           String
+  userId            String
+  botId             String
+  threadId          String?
+  title             String   @default("")
+  status            String   @default("active")
+  /// Recorded acceptance artifact (V2 precondition): outcome + verification commands.
+  acceptance        Json?
+  /// Explicit refusals counted while the gate blocks edits before acceptance.
+  refusals          Int      @default(0)
+  latestRunId       String?
+  /// Verification records (command, exit status, evidence artifact) for the web view.
+  verification      Json?
+  /// Continuation provenance (V15): prior session id, engine-change label, handoff text.
+  continuationOf    String?
+  engineChangeLabel String?
+  handoffSummary    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([userId, createdAt])
+  @@index([botId])
+  @@map("coding_sessions")
+}
+
+/// 004-code-mode: exclusive per-workspace lease. A second coding session
+/// cannot attach while the lease is held; expired leases are taken over with
+/// a bumped fence (never last-writer-wins on an active workspace).
+model CodingWorkspaceLease {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  sessionId   String
+  owner       String
+  fence       Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sessionId])
+  @@map("coding_workspace_leases")
+}
