@@ -92,7 +92,7 @@ export interface ProcessTaskContext {
 
 export interface AllocatedPort {
   port: number;
-  listening: boolean;
+  /** The probe socket is already released; kept for symmetric teardown. */
   close: () => Promise<void>;
 }
 
@@ -263,9 +263,20 @@ export class ProcessSandboxProvider implements SandboxProvider {
             `ulimit -f ${limits.fileSizeBlocks}`,
             `exec nice -n ${limits.nice} "$@"`,
           ].join(" && ");
+    // Driver-injected per-task identity (process-group naming, V3 class).
+    // These are runtime metadata ordered UNDER the task's declared vars —
+    // never parent env leakage: the scrub still drops every undeclared
+    // parent variable.
+    const childEnv = {
+      CODE_MODE_TASK_ID: task.taskId,
+      CODE_MODE_TASK_GROUP: task.processGroupName,
+      ...scrubProcessEnv(process.env, { ...task.env, ...request.env }),
+    };
     const child = spawn("bash", ["-c", preamble, processGroupNameFor(task.taskId), ...argv], {
       cwd,
-      env: scrubProcessEnv(process.env, { ...task.env, ...request.env }),
+      env: childEnv,
+      // detached: each task becomes its own process group (pgid = wrapper
+      // pid), so suspend/stop kills exactly this task's tree (V3 class).
       detached: process.platform !== "win32",
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -485,9 +496,10 @@ export class ProcessSandboxProvider implements SandboxProvider {
   }
 
   /**
-   * Dynamic port binding with retry (V3 class: listening ports). Binds an
-   * ephemeral port (kernel-selected, no fixed ranges), keeps the socket open
-   * so the allocation is real, and hands back a release handle.
+   * Dynamic port binding with retry (V3 class: listening ports). Probes an
+   * ephemeral, kernel-selected port (no fixed ranges) and releases the probe
+   * socket so the task process itself can bind it; the hand-off window is
+   * exactly what the bounded retry covers. `onAttempt` reports each try.
    */
   async allocatePort(
     options: { onAttempt?: (attempt: number) => void } = {},
@@ -495,27 +507,27 @@ export class ProcessSandboxProvider implements SandboxProvider {
     let lastError: unknown;
     for (let attempt = 1; attempt <= MAX_PORT_ALLOCATION_ATTEMPTS; attempt += 1) {
       options.onAttempt?.(attempt);
+      const server = createServer();
       try {
-        const server = createServer();
         await new Promise<void>((resolve, reject) => {
           server.once("error", reject);
           server.listen(0, "127.0.0.1", () => resolve());
         });
         const address = server.address();
         if (address === null || typeof address === "string") {
-          await new Promise<void>((resolve) => server.close(() => resolve()));
           throw new Error("ephemeral port allocation returned no TCP address");
         }
+        const port = address.port;
+        await new Promise<void>((resolve) => server.close(() => resolve()));
         return {
-          port: address.port,
-          listening: server.listening,
-          close: () =>
-            new Promise<void>((resolve) => {
-              server.close(() => resolve());
-            }),
+          port,
+          // The probe socket is already released; close stays for symmetric
+          // teardown at the caller.
+          close: async () => undefined,
         };
       } catch (error) {
         lastError = error;
+        await new Promise<void>((resolve) => server.close(() => resolve()));
       }
     }
     throw new Error(

@@ -22,3 +22,19 @@
 [2m   Start at [22m 06:51:23
 [2m   Duration [22m 8.27s[2m (transform 1.71s, setup 98ms, import 5.55s, tests 766ms, environment 1ms)[22m
 
+# GREEN evidence — matrix row V3, T10 collision fixture matrix portion (all enumerated classes + zero-collision E2E)
+# UTC: 2026-10-01T06:59:30Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/process-collision-matrix.test.ts packages/adapters/src/process-sandbox.test.ts
+# UTC: 2026-10-01T06:59:30Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/process-collision-matrix.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 780[2mms[22m[39m
+     [33m[2m✓[22m[39m zero collisions end-to-end: two real task servers serve concurrently on distinct ports [33m 728[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/process-sandbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 158[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 06:59:31
+[2m   Duration [22m 4.57s[2m (transform 1.56s, setup 47ms, import 3.19s, tests 937ms, environment 0ms)[22m
+
