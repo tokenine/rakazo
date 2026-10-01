@@ -22,6 +22,7 @@ import type {
   WorkspaceRestoreReport,
   WorkspaceRevisionInfo,
 } from "@rakazo/adapter-kit";
+import type { SecretEgressFilter } from "./coding-secrets-egress.js";
 import { fileHandlePath } from "./file-handle-path.js";
 
 /**
@@ -52,10 +53,23 @@ export function shouldExcludeFromCheckpoint(relative: string): boolean {
     );
 }
 
+export interface LocalAgentHomeStoreOptions {
+  /**
+   * S3 (T17): when present, checkpoint file contents are passed through the
+   * deny-list egress filter (literal + base64/hex/URL of granted values)
+   * BEFORE hashing/archiving, so revisions never store a secret variant.
+   * The filter applies to UTF-8 files up to 1 MiB; binaries pass unchanged.
+   */
+  egressFilter?: SecretEgressFilter;
+}
+
 export class LocalAgentHomeStore implements AgentHomeStore {
   private readonly botWrites = new Map<string, Promise<void>>();
 
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    private readonly opts: LocalAgentHomeStoreOptions = {},
+  ) {}
 
   describe() {
     return {
@@ -105,7 +119,11 @@ export class LocalAgentHomeStore implements AgentHomeStore {
       await mkdir(parent, { recursive: true });
       await mkdir(staging, { recursive: true });
       try {
-        await copyDir(src, staging);
+        // S3 (T17): the egress filter runs BEFORE hashing/archiving so the
+        // manifest hashes describe the FILTERED content that is stored.
+        await copyDir(src, staging, undefined, undefined, (_relative, content) =>
+          this.opts.egressFilter ? this.opts.egressFilter.filterFileContent(content) : content,
+        );
         // Archive the OUTGOING state before the swap (append-only).
         if (await pathExists(dest)) {
           await this.archiveRevision(botId, dest);
@@ -633,6 +651,7 @@ async function copyDir(
   dest: string,
   sourceRoot?: string,
   visited = new Set<string>(),
+  transform?: (relative: string, content: Uint8Array) => Uint8Array,
 ) {
   const root = sourceRoot ?? (await realpath(src));
   const current = await traversalTarget(root, src).catch(() => null);
@@ -645,10 +664,11 @@ async function copyDir(
     if (!from) continue;
     const to = path.join(dest, entry.name);
     const info = await stat(from);
-    if (info.isDirectory()) await copyDir(from, to, root, visited);
+    if (info.isDirectory()) await copyDir(from, to, root, visited, transform);
     else if (info.isFile()) {
       const file = await readTraversalFile(root, from);
-      await writeFile(to, file.content, { mode: file.mode & 0o777 });
+      const content = transform ? transform(entry.name, file.content) : file.content;
+      await writeFile(to, content, { mode: file.mode & 0o777 });
     }
   }
 }

@@ -180,6 +180,7 @@ import {
   type CodingAcceptanceGate,
 } from "./coding-acceptance-gate.js";
 import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
+import { SecretEgressFilter } from "./coding-secrets-egress.js";
 import {
   collectLogIds,
   mergeConnectedPlugins,
@@ -595,6 +596,14 @@ export interface ExecutorDeps {
   /** Remote cloud coding agents. Null/omit means tools stay uninjected. */
   /** 004-code-mode: coding acceptance gate. Present only for coding-session runs. */
   codingGate?: CodingAcceptanceGate;
+  /**
+   * 004-code-mode S3 (T17): granted-secret egress values for the run, when
+   * the run belongs to a coding session with an active secrets grant. Shell
+   * command results for coding sessions are redacted with the TRANSFORM-AWARE
+   * deny-list filter (literal + base64/hex/URL); non-coding runs keep the
+   * legacy literal-only behavior (scoped replacement per the task).
+   */
+  codingSecrets?: { egressValuesForRun(runId: string): string[] };
   cloudAgent?: CloudAgentConnection | null;
   /** Optional Auto Review verifier. When omitted, the factory selects from env (llm | jev | scripted). */
   autoReview?: AutoReviewProvider;
@@ -2662,6 +2671,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
               agentEnvironment,
               context,
             );
+            // 004-code-mode S3 (T17): coding sessions redact with the
+            // transform-aware egress filter over run secrets PLUS granted
+            // secrets; non-coding runs keep the legacy literal-only form.
+            const codingEgressValues =
+              run.trigger === CODING_SESSION_TRIGGER
+                ? (deps.codingSecrets?.egressValuesForRun(runId) ?? [])
+                : [];
+            if (codingEgressValues.length > 0) {
+              const egress = new SecretEgressFilter([...runSecrets, ...codingEgressValues]);
+              return finish(egress.filterCommandResult(result));
+            }
             return finish(redactAgentCommandResult(result, runSecrets));
           }
           if (name === "open_path") {
