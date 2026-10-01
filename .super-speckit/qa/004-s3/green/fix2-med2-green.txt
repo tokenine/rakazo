@@ -1,0 +1,27 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/db/src/coding-migration.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m packages/db/src/events.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 84[2mms[22m[39m
+ [32m✓[39m packages/db/src/client.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m packages/db/src/repos.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m packages/db/src/messaging.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m packages/db/src/model-credentials.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m packages/db/src/bootstrap-user.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m packages/db/src/groups.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m packages/db/src/external-conversations.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/db/src/scope.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/db/src/thread-listing.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/db/src/messages.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/db/src/credential-secrets.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/db/src/messaging-migration.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/db/src/memory-config.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [2m[90m↓[39m[22m packages/db/src/messaging.postgres.test.ts [2m([22m[2m5 tests[22m[2m | [22m[33m5 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/db/src/sessions-lease-guard.postgres.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/db/src/space-membership.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+
+[2m Test Files [22m [1m[32m15 passed[39m[22m[2m | [22m[33m3 skipped[39m[90m (18)[39m
+[2m      Tests [22m [1m[32m143 passed[39m[22m[2m | [22m[33m8 skipped[39m[90m (151)[39m
+[2m   Start at [22m 10:42:35
+[2m   Duration [22m 9.39s[2m (transform 1.50s, setup 157ms, import 5.52s, tests 396ms, environment 2ms)[22m
+
