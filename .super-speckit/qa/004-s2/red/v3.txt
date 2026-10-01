@@ -1,0 +1,29 @@
+# RED evidence — matrix row V3, T9 provider portion (process-sandbox provider; T10 matrix appends below)
+# UTC: 2026-10-01T06:44:20Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/process-sandbox.test.ts
+# UTC: 2026-10-01T06:44:20Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/process-sandbox.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-sandbox.test.ts[2m [ packages/adapters/src/process-sandbox.test.ts ][22m
+[31m[1mError[22m: Cannot find module './process-sandbox.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/process-sandbox.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/process-sandbox.test.ts:[2m6:1[22m[39m
+    [90m  4|[39m import type { AdapterContext, ProcessEvent } from "@rakazo/adapter-kit…
+    [90m  5|[39m [35mimport[39m { afterEach[33m,[39m describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  6|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  7|[39m   [33mDEFAULT_PROCESS_TASK_LIMITS[39m[33m,[39m
+    [90m  8|[39m   [33mProcessSandboxProvider[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 06:44:21
+[2m   Duration [22m 331ms[2m (transform 65ms, setup 42ms, import 0ms, tests 0ms, environment 0ms)[22m
+

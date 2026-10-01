@@ -47,6 +47,7 @@ export const SandboxKind = z.enum([
   "box",
   "cloudflare",
   "desktop",
+  "process",
   "fake",
 ]);
 export type SandboxKind = z.infer<typeof SandboxKind>;

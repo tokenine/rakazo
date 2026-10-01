@@ -1,0 +1,24 @@
+# GREEN evidence — matrix row V3, T9 provider portion (process sandbox provider behind the seam)
+# UTC: 2026-10-01T06:51:22Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/process-sandbox.test.ts packages/adapters/src/sandbox-factory.test.ts packages/adapters/src/sandbox-conformance.test.ts packages/contracts/src
+# UTC: 2026-10-01T06:51:22Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/sandbox-conformance.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 466[2mms[22m[39m
+     [33m[2m✓[22m[39m desktop executor times out and kills descendants that inherited its pipes [33m 352[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/process-sandbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 141[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/index.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/bot-secrets.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/inspiration-catalog.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/sandbox-factory.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/bot-avatar.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/attachments.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/search.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/openai-compatible-ui.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m      Tests [22m [1m[32m84 passed[39m[22m[90m (84)[39m
+[2m   Start at [22m 06:51:23
+[2m   Duration [22m 8.27s[2m (transform 1.71s, setup 98ms, import 5.55s, tests 766ms, environment 1ms)[22m
+
