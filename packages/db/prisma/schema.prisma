@@ -1410,6 +1410,9 @@ model CodingSession {
   @@index([workspaceId, status])
   @@index([userId, createdAt])
   @@index([botId])
+  /// LOW-3 (fix round): the acceptance gate resolves coding sessions by run id
+  /// on every gated tool call (coding-acceptance-gate.ts).
+  @@index([latestRunId])
   @@map("coding_sessions")
 }
 
