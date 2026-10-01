@@ -1,0 +1,22 @@
+004-code-mode S1 (candidate 43b1484e) — SINGLE FULL-SUITE RUN (LOW-5 scope honesty):
+this one captured run backs ALL Slice-1 matrix rows (V1 pi, V2 pi, V13, V14, V15).
+The former per-row copies of this file (v1-pi.txt, v2-pi.txt, v13.txt, v14.txt,
+v15.txt) were removed in the fix round; see NOTE.txt.
+----- original capture below -----
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/coding-repo-to-pr.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 529[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-coding-gate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-session-service.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-acceptance-gate.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-pi-adapter.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-engine.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/db/src/coding-migration.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [2m[90m↓[39m[22m packages/adapters/src/coding-session.postgres.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+
+[2m Test Files [22m [1m[32m7 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (8)[39m
+[2m      Tests [22m [1m[32m63 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (65)[39m
+[2m   Start at [22m 05:28:44
+[2m   Duration [22m 8.30s[2m (transform 2.24s, setup 80ms, import 6.07s, tests 667ms, environment 1ms)[22m
+

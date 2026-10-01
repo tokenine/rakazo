@@ -12,6 +12,7 @@ import { ManagedSandboxEmulator } from "./e2b-emulator.js";
 import { E2BSandboxProvider } from "./e2b-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { NoneSandboxProvider } from "./none-sandbox.js";
+import { ProcessSandboxProvider } from "./process-sandbox.js";
 
 export interface SandboxProviderOptions {
   supervisorUrl?: string;
@@ -92,11 +93,15 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
       return new DesktopSandboxProvider({
         root: opts.dataDir,
       });
+    case "process":
+      // 004-code-mode T9: per-task process-level runtime (Q9 FINAL, trusted-code
+      // threat model — guards accidents/resource conflicts, NOT malice).
+      return new ProcessSandboxProvider({ root: opts.dataDir });
     case "fake":
       return new FakeSandboxProvider();
     default:
       throw new Error(
-        `Unknown SANDBOX_PROVIDER "${kind}". Use none | docker | e2b | daytona | createos | box | cloudflare | e2b-emulator | daytona-emulator | box-emulator | cloudflare-emulator | desktop | fake.`,
+        `Unknown SANDBOX_PROVIDER "${kind}". Use none | docker | e2b | daytona | createos | box | cloudflare | e2b-emulator | daytona-emulator | box-emulator | cloudflare-emulator | desktop | process | fake.`,
       );
   }
 }

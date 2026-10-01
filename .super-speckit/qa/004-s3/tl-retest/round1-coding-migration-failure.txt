@@ -1,0 +1,20 @@
+ ❯ packages/db/src/coding-migration.test.ts (6 tests | 1 failed) 23ms
+     ✓ every coding migration only creates tables/indexes — no drops, alters, renames, or rewrites 5ms
+     ✓ every coding migration touches only the two new coding tables — existing tables are untouched 2ms
+     × each coding migration is ordered after every earlier migration (timestamp-named directories) 10ms
+     ✓ the latestRunId index exists as a NEW migration — the original coding migration is untouched 2ms
+     ✓ the schema declares the session bound to (workspaceId, engine), the lease table, and the gate lookup index 1ms
+     ✓ the generated prisma client includes the new models 0ms
+ ✓ packages/adapters/src/pi-local-provider.test.ts (8 tests) 17ms
+ ✓ packages/adapters/src/coding-engine.test.ts (17 tests) 16ms
+--
+ FAIL  packages/db/src/coding-migration.test.ts > coding migrations are additive (V14, T1) > each coding migration is ordered after every earlier migration (timestamp-named directories)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/db/src/coding-migration.test.ts:81:44

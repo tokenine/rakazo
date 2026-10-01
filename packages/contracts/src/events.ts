@@ -53,6 +53,9 @@ export const ProductEventType = z.enum([
   "group.handoff",
   /** Liveness only: never persisted, never applied to a snapshot, always seq 0. */
   "heartbeat",
+  // 004-code-mode Slice 1: coding session surface events.
+  "coding_session.prompted",
+  "coding_session.stopped",
 ]);
 export type ProductEventType = z.infer<typeof ProductEventType>;
 

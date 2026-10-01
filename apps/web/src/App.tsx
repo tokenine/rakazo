@@ -26,9 +26,6 @@ const OnboardingPage = lazy(() =>
 const WelcomePage = lazy(() =>
   import("./pages/Welcome").then((module) => ({ default: module.WelcomePage })),
 );
-const HubPage = lazy(() =>
-  import("./pages/HubPage").then((module) => ({ default: module.HubPage })),
-);
 const ArtifactsPage = lazy(() =>
   import("./pages/Artifacts").then((module) => ({ default: module.ArtifactsPage })),
 );

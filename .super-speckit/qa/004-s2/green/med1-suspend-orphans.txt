@@ -1,0 +1,20 @@
+# GREEN evidence — MED-1 fix: suspend kills remembered pgids (daemons orphaned
+# by exited wrappers), verifies group emptiness via kill(-pgid, 0), and
+# liveTaskCount reflects remembered pgids.
+# UTC: 2026-10-01T08:40:30Z
+# fix: process-sandbox.ts — rememberTaskPgid at spawn; suspend() kills tracked
+#      groups + remembered pgids and bounded-verifies each group emptied;
+#      destroy() drops remembered pgids; liveTaskCount counts remembered pgids.
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/process-sandbox.test.ts
+# result: 13 passed (13) — includes the MED-1 red test now green
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/process-sandbox.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 218[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 08:40:07
+[2m   Duration [22m 3.33s[2m (transform 1.55s, setup 47ms, import 2.88s, tests 218ms, environment 0ms)[22m
+

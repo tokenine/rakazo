@@ -887,7 +887,9 @@ describeIntegration("run executor lifecycle", () => {
       instructions: "",
       notifyOnFinish: false,
     });
-    const thread = await handles.prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
+    const thread = await handles.prisma.thread.findFirstOrThrow({
+      where: { botId: bot.id, isPrimary: true },
+    });
     const task = await handles.prisma.task.create({
       data: {
         spaceId: me.spaceId,

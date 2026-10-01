@@ -22,7 +22,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
 import type { BotIntroHarness } from "./discard-bot-intro.js";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
-import { otpSignUp, sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 process.env.WAKEUP_DRIVER = "memory";
@@ -567,7 +567,9 @@ describeJourneys("required product journeys", () => {
       notify: false,
       active: false,
     });
-    const thread = await prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
+    const thread = await prisma.thread.findFirstOrThrow({
+      where: { botId: bot.id, isPrimary: true },
+    });
     const task = await prisma.task.create({
       data: {
         spaceId: thread.spaceId,
@@ -1269,7 +1271,9 @@ describeJourneys("required product journeys", () => {
       instructions: "",
       notifyOnFinish: false,
     });
-    const dmThread = await prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
+    const dmThread = await prisma.thread.findFirstOrThrow({
+      where: { botId: bot.id, isPrimary: true },
+    });
     const group = await rpc<{ id: string; threadId: string }>(app, cookie, "groups/create", {
       name: "Schedule room",
       botIds: [bot.id, peer.id],
@@ -1384,7 +1388,9 @@ describeJourneys("required product journeys", () => {
       instructions: "",
       notifyOnFinish: false,
     });
-    const thread = await prisma.thread.findFirstOrThrow({ where: { botId: bot.id, isPrimary: true } });
+    const thread = await prisma.thread.findFirstOrThrow({
+      where: { botId: bot.id, isPrimary: true },
+    });
 
     await Promise.all(
       Array.from({ length: 40 }, (_, index) =>

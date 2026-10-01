@@ -641,7 +641,8 @@ export const RU_MESSAGES: Record<string, string> = {
   "Rename session": "Переименовать сеанс",
   Rename: "Переименовать",
   "Delete session": "Удалить сеанс",
-  "Are you sure you want to delete this session? This cannot be undone.": "Вы уверены, что хотите удалить этот сеанс? Это действие нельзя отменить.",
+  "Are you sure you want to delete this session? This cannot be undone.":
+    "Вы уверены, что хотите удалить этот сеанс? Это действие нельзя отменить.",
   "No sessions yet": "Сеансов пока нет",
   "Create your first session": "Создайте свой первый сеанс",
   "Enter a name for this session": "Введите название для этого сеанса",

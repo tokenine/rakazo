@@ -1,0 +1,4 @@
+⎯⎯⎯⎯⎯⎯ Failed Tests 29 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  4 failed | 424 passed | 32 skipped (460)
+      Tests  29 failed | 4840 passed | 171 skipped (5040)
+   Duration  535.23s (transform 14.54s, setup 3.15s, import 332.69s, tests 112.56s, environment 1.04s)

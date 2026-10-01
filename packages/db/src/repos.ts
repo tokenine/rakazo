@@ -8,12 +8,9 @@ import {
   type SpaceBot,
 } from "@rakazo/contracts";
 import { userVisibleMessages } from "@rakazo/core";
-import type { Prisma, PrismaClient } from "./client.js";
+import type { PrismaClient } from "./client.js";
 import { type ComputerMode, ensureComputerRecord, parseComputerMode } from "./computers.js";
-import {
-  appendSessionEventInTransaction,
-  type SessionEventNotice,
-} from "./events.js";
+import { appendSessionEventInTransaction, type SessionEventNotice } from "./events.js";
 import { createThreadMessageInTransaction } from "./messages.js";
 import {
   BotSectionNameConflictError,
@@ -26,8 +23,8 @@ import {
   activeRunSelection,
   activeRunStatuses,
   PRIMARY_SESSION_ORDER,
-  SESSION_LIST_ORDER,
   previewFromBlocks,
+  SESSION_LIST_ORDER,
 } from "./thread-listing.js";
 import { withTransactionRetry } from "./transaction-retry.js";
 

@@ -1,5 +1,11 @@
 import { eventIterator, oc } from "@orpc/contract";
 import * as z from "zod";
+import {
+  AgentBundleSchema,
+  BUNDLE_MAX_BYTES,
+  ImportCommitInputSchema,
+  ImportPreviewSchema,
+} from "./agent-bundle.js";
 import { AiConsentQuerySchema, AiConsentStatusSchema } from "./ai-consent.js";
 import {
   ARTIFACT_DESCRIPTION_MAX_LENGTH,
@@ -7,7 +13,6 @@ import {
   ATTACHMENT_MAX_BASE64_LENGTH,
   ATTACHMENT_MAX_COUNT,
 } from "./attachments.js";
-import { InspirationCaseSchema } from "./inspiration-catalog.js";
 import {
   ActionApprovalRuleSchema,
   ActionAutoReviewSettingsSchema,
@@ -67,14 +72,6 @@ import {
   ServerUpdateRequestSchema,
   ServerUpdateRunSchema,
   ServerUpdateStatusSchema,
-} from "./domain.js";
-import {
-  AgentBundleSchema,
-  BUNDLE_MAX_BYTES,
-  ImportCommitInputSchema,
-  ImportPreviewSchema,
-} from "./agent-bundle.js";
-import {
   SkillPlaybookSchema,
   SpaceMemoryConfigSchema,
   SpaceNavigationSchema,
@@ -95,6 +92,7 @@ import {
 } from "./domain.js";
 import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { Id, IsoDate } from "./ids.js";
+import { InspirationCaseSchema } from "./inspiration-catalog.js";
 import {
   IntegrationProviderConfigSchema,
   IntegrationSetupStateSchema,
@@ -394,9 +392,7 @@ export const appContract = {
       .output(z.object({ ok: z.literal(true) })),
     markRead: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
     markUnread: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
-    listSessions: oc
-      .input(z.object({ botId: Id }))
-      .output(z.array(BotSessionSchema)),
+    listSessions: oc.input(z.object({ botId: Id })).output(z.array(BotSessionSchema)),
     createSession: oc
       .input(
         z.object({
@@ -413,9 +409,7 @@ export const appContract = {
         }),
       )
       .output(BotSessionSchema),
-    deleteSession: oc
-      .input(z.object({ sessionId: Id }))
-      .output(z.object({ ok: z.literal(true) })),
+    deleteSession: oc.input(z.object({ sessionId: Id })).output(z.object({ ok: z.literal(true) })),
   },
   computer: {
     status: oc.input(botId).output(ComputerStatusSchema),

@@ -1,0 +1,101 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/db/src/coding-migration.test.ts [2m([22m[2m12 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+     [32m✓[39m every coding migration is additive — new tables/indexes plus nullable column adds only; no drops, renames, or rewrites[32m 7[2mms[22m[39m
+     [32m✓[39m every coding migration touches only the new coding tables — existing tables are untouched[32m 2[2mms[22m[39m
+     [32m✓[39m each coding migration is ordered after every earlier migration (timestamp-named directories)[32m 4[2mms[22m[39m
+     [32m✓[39m the latestRunId index exists as a NEW migration — the original coding migration is untouched[32m 1[2mms[22m[39m
+     [32m✓[39m the S3 secrets migrations contain exactly their declared additive statements[32m 2[2mms[22m[39m
+     [32m✓[39m the schema declares the session bound to (workspaceId, engine), the lease table, and the gate lookup index[32m 1[2mms[22m[39m
+[31m     [31m×[31m probe (fix r2 MED-2): a DEFAULT-bearing column add FAILS the gate — r1 claimed 'no default' but the lookahead omitted it[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m probe (fix r2 MED-2): a COLLATE-bearing column add FAILS the gate[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m probe (fix r2 MED-2): a GENERATED column add FAILS the gate[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m probe (fix r2 MED-2): an IDENTITY column add FAILS the gate[39m[32m 1[2mms[22m[39m
+     [32m✓[39m probe control: the plain nullable column add still PASSES the gate[32m 0[2mms[22m[39m
+     [32m✓[39m the generated prisma client includes the new models[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/db/src/coding-migration.test.ts[2m > [22mcoding migrations are additive (V14, T1)[2m > [22mprobe (fix r2 MED-2): a DEFAULT-bearing column add FAILS the gate — r1 claimed 'no default' but the lookahead omitted it
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m packages/db/src/coding-migration.test.ts:[2m221:7[22m[39m
+    [90m219|[39m         'ALTER TABLE "coding_sessions" ADD COLUMN "x" JSONB DEFAULT \'…
+    [90m220|[39m       )[33m,[39m
+    [90m221|[39m     )[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   |[39m       [31m^[39m
+    [90m222|[39m   })[33m;[39m
+    [90m223|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/db/src/coding-migration.test.ts[2m > [22mcoding migrations are additive (V14, T1)[2m > [22mprobe (fix r2 MED-2): a COLLATE-bearing column add FAILS the gate
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m packages/db/src/coding-migration.test.ts:[2m227:7[22m[39m
+    [90m225|[39m     [34mexpect[39m(
+    [90m226|[39m       isAdditiveCodingColumnAdd('ALTER TABLE "coding_sessions" ADD COL…
+    [90m227|[39m     )[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   |[39m       [31m^[39m
+    [90m228|[39m   })[33m;[39m
+    [90m229|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/db/src/coding-migration.test.ts[2m > [22mcoding migrations are additive (V14, T1)[2m > [22mprobe (fix r2 MED-2): a GENERATED column add FAILS the gate
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m packages/db/src/coding-migration.test.ts:[2m235:7[22m[39m
+    [90m233|[39m         'ALTER TABLE "coding_sessions" ADD COLUMN "x" TEXT GENERATED A…
+    [90m234|[39m       )[33m,[39m
+    [90m235|[39m     )[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   |[39m       [31m^[39m
+    [90m236|[39m   })[33m;[39m
+    [90m237|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/db/src/coding-migration.test.ts[2m > [22mcoding migrations are additive (V14, T1)[2m > [22mprobe (fix r2 MED-2): an IDENTITY column add FAILS the gate
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m packages/db/src/coding-migration.test.ts:[2m243:7[22m[39m
+    [90m241|[39m         'ALTER TABLE "coding_sessions" ADD COLUMN "x" BIGINT GENERATED…
+    [90m242|[39m       )[33m,[39m
+    [90m243|[39m     )[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   |[39m       [31m^[39m
+    [90m244|[39m   })[33m;[39m
+    [90m245|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 10:42:24
+[2m   Duration [22m 353ms[2m (transform 58ms, setup 40ms, import 52ms, tests 35ms, environment 0ms)[22m
+

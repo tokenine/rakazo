@@ -116,8 +116,8 @@ import type {
   SpaceNavigation,
 } from "@rakazo/contracts";
 import {
-  ATTACHMENT_MAX_BYTES,
   AgentBundleSchema,
+  ATTACHMENT_MAX_BYTES,
   appContract,
   ComputerCommandSchema,
   EXPERT_AVATARS,
@@ -125,8 +125,8 @@ import {
   EXPERT_MCP_PRESETS,
   EXPERT_SKILLS,
   findExpert,
-  INSPIRATION_CATALOG,
   foldComputerCommands,
+  INSPIRATION_CATALOG,
   IntegrationProviderIdSchema,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,
@@ -166,8 +166,8 @@ import {
   formatMessagingLinkCode,
   InvalidSpaceNameError,
   IsolationError,
-  LastSessionError,
   issueMessagingLinkCode,
+  LastSessionError,
   lockOwnedGroup,
   newestModelCredentialOrder,
   newestVoiceCredentialOrder,
@@ -175,9 +175,9 @@ import {
   parseComputerMode,
   releaseSpaceDeletionClaim,
   renewSpaceDeletionClaim,
-  type SessionEventNotice,
-  SessionActiveRunError,
   restoreBotUnderComputerQuota,
+  SessionActiveRunError,
+  type SessionEventNotice,
   SPACE_DELETION_CLAIM_TIMEOUT_MS,
   SpaceDeletionInProgressError,
   SpaceLimitError,
@@ -189,7 +189,6 @@ import {
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import { deleteAgentSecret, listAgentSecrets, putAgentSecret } from "./agent-secrets.js";
-import { detectCredentialPatterns } from "./credential-patterns.js";
 import { createAgentSkillsService } from "./agent-skills.js";
 import { aiConsentStatus, allowAiConsent } from "./ai-consent.js";
 import {
@@ -208,6 +207,7 @@ import {
   resolveBusyBotName,
   toComputerStatus,
 } from "./computer-status.js";
+import { detectCredentialPatterns } from "./credential-patterns.js";
 import { searchIntegrationCatalog } from "./integration-catalog.js";
 import {
   dismissMcpServerApprovals,
@@ -342,7 +342,10 @@ const IMPORT_PREVIEW_CACHE_MAX_ENTRIES = 50;
  * stayed as a second check; scoping the key is what prevents the clobber.
  * See AGENT-BUNDLE-008.
  */
-function importPreviewCacheKey(actor: Pick<Actor, "spaceId" | "userId">, bundleHash: string): string {
+function importPreviewCacheKey(
+  actor: Pick<Actor, "spaceId" | "userId">,
+  bundleHash: string,
+): string {
   return `${actor.spaceId}:${actor.userId}:${bundleHash}`;
 }
 
@@ -353,7 +356,9 @@ function pruneImportPreviewCache(now: number): void {
   }
   // Phase 2: if still over capacity, evict oldest-to-expire first
   if (importPreviewCache.size > IMPORT_PREVIEW_CACHE_MAX_ENTRIES) {
-    const sorted = [...importPreviewCache.entries()].sort((a, b) => a[1].expiresAt - b[1].expiresAt);
+    const sorted = [...importPreviewCache.entries()].sort(
+      (a, b) => a[1].expiresAt - b[1].expiresAt,
+    );
     const toRemove = importPreviewCache.size - IMPORT_PREVIEW_CACHE_MAX_ENTRIES;
     for (let i = 0; i < toRemove; i++) {
       importPreviewCache.delete(sorted[i]![0]);
@@ -811,6 +816,7 @@ function endpointPathRefuses(endpoint: string, storedSecrets: readonly string[])
   }
 
   return false;
+}
 
 const BOT_INTRO_PROMPT =
   "You were just created. In one reply, say what you understood your role to be from your title, description and instructions, and ask for anything you need to get started.";
@@ -2487,8 +2493,7 @@ export function createRouter(deps: RouterDeps) {
       deleteSession: authed.threads.deleteSession.handler(async ({ context, input }) => {
         let notifications: SessionEventNotice[];
         try {
-          notifications = (await repos.deleteSession(context.actor, input.sessionId))
-            .notifications;
+          notifications = (await repos.deleteSession(context.actor, input.sessionId)).notifications;
         } catch (error) {
           if (error instanceof LastSessionError || error instanceof SessionActiveRunError) {
             throw new ORPCError("CONFLICT", { message: error.message });
@@ -5944,9 +5949,7 @@ export function createRouter(deps: RouterDeps) {
         // Generate HMAC-bound import token.
         const bundleHash = createHash("sha256").update(input.bundleJson).digest("hex");
         const expiryMs = Date.now() + 10 * 60 * 1000; // 10 minutes
-        const hmac = createHmac("sha256", secret)
-          .update(`${bundleHash}.${expiryMs}`)
-          .digest("hex");
+        const hmac = createHmac("sha256", secret).update(`${bundleHash}.${expiryMs}`).digest("hex");
         const importToken = `${bundleHash}.${expiryMs}.${hmac}`;
 
         // Cache the parsed bundle for the commit phase (valid for this actor + space only).
@@ -6007,7 +6010,10 @@ export function createRouter(deps: RouterDeps) {
         }
         const expectedDigest = Buffer.from(expectedHmac, "utf8");
         const providedDigest = Buffer.from(providedHmac, "utf8");
-        if (providedDigest.length !== expectedDigest.length || !timingSafeEqual(expectedDigest, providedDigest)) {
+        if (
+          providedDigest.length !== expectedDigest.length ||
+          !timingSafeEqual(expectedDigest, providedDigest)
+        ) {
           throw new ORPCError("UNAUTHORIZED", { message: "Invalid import token" });
         }
 
@@ -6067,7 +6073,10 @@ export function createRouter(deps: RouterDeps) {
         }
         for (const mcp of b.mcpServers) {
           const existing = existingBySlug[mcp.slug];
-          if (existing && (existing.transport !== mcp.transport || existing.endpoint !== mcp.endpoint)) {
+          if (
+            existing &&
+            (existing.transport !== mcp.transport || existing.endpoint !== mcp.endpoint)
+          ) {
             throw new ORPCError("BAD_REQUEST", {
               message: `MCP server "${mcp.slug}" already exists with a different endpoint or transport. Rename the bundle's server or remove the conflicting one; a bundle cannot take over an existing server.`,
             });
@@ -6304,7 +6313,10 @@ export function createRouter(deps: RouterDeps) {
           // A malformed escape is a bare % or a % not followed by exactly two hex digits.
           // The negative lookahead %(![0-9A-Fa-f]{2}) matches any % that is NOT followed
           // by two hex digits, catching %ZZ, bare %, and truncated escapes.
-          if (/%(?![0-9A-Fa-f]{2})/.test(assignment.server.endpoint ?? "") || (assignment.server.endpoint ?? "").endsWith("%")) {
+          if (
+            /%(?![0-9A-Fa-f]{2})/.test(assignment.server.endpoint ?? "") ||
+            (assignment.server.endpoint ?? "").endsWith("%")
+          ) {
             throw new ORPCError("BAD_REQUEST", {
               message: `Export refused: MCP server "${assignment.server.slug}" endpoint contains a malformed percent-escape.`,
             });
@@ -6328,7 +6340,12 @@ export function createRouter(deps: RouterDeps) {
             expertKey: bot.expertKey ?? undefined,
             modelProvider: bot.modelProvider ?? undefined,
             modelId: bot.modelId ?? undefined,
-            thinkingLevel: (bot.thinkingLevel ?? undefined) as "off" | "low" | "medium" | "high" | undefined,
+            thinkingLevel: (bot.thinkingLevel ?? undefined) as
+              | "off"
+              | "low"
+              | "medium"
+              | "high"
+              | undefined,
             color: bot.color ?? undefined,
           },
           skills: agentSkills.map((s) => ({

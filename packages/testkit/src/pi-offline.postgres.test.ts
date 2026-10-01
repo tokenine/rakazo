@@ -5,7 +5,7 @@ import path from "node:path";
 import { ComposioEmulator, EmailEmulator } from "@rakazo/adapters";
 import { describe, expect, it } from "vitest";
 import { discardBotIntroRun } from "./discard-bot-intro.js";
-import { otpSignUp, sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 import { startModelEmulator } from "./model-emulator.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };

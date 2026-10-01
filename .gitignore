@@ -38,7 +38,7 @@ verify-report
 .astro
 .deploy.lock
 .last-deployed-revision
-design/
+/design/
 PRODUCT_PLAN.md
 
 # Lingui compiled catalogs — Vite plugin compiles .po at build time

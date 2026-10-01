@@ -1,0 +1,1640 @@
+# S2 final full-suite evidence — after all S2 commits (HEAD 83c748f1)
+# [fix round 1 LOW-4: provenance amended 2026-10-01T08:44:44Z — base-check log archived next to this file]
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run
+# UTC: 2026-10-01T07:50:45Z
+# Result: Test Files 3 failed | 416 passed | 32 skipped (451); Tests 29 failed | 4778 passed | 171 skipped (4978)
+# The 29 failures are PRE-EXISTING: verified identical (29 failed | 67 passed of these same 96 tests)
+# on a detached checkout of the BASE commit 1e9378d7 — captured log archived at
+# green/base-check-at-1e9378d7.log (method: scoped run of the 3 pre-existing-failure files
+# at base: .agents/skills/pr-watch/pr-digest.test.ts [24 failed],
+# infra/sandboxes/supervisor/src/computer-spec.test.ts [2 failed],
+# packages/testkit/src/playwright-artifact-publication.test.ts [3 failed]).
+# Independent confirmation: the orchestrator separately reproduced the full-suite
+# conclusion at HEAD (4778 passed | 29 failed | 171 skipped).
+# None are in S2 scope; the earlier run-time flake trio (coding-doctor /
+# process-collision-matrix) was fixed by the nproc-default change (83c748f1).
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/testkit/src/playwright-artifact-publication.test.ts [2m([22m[2m10 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 1045[2mms[22m[39m
+     [32m✓[39m keeps extraction and explicit report inputs outside the trusted checkout[32m 4[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry ../escape.txt before extracting any data[32m 92[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry nested/../../escape.txt before extracting any data[32m 87[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry /escape.txt before extracting any data[32m 88[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry nested\..\escape.txt before extracting any data[32m 112[2mms[22m[39m
+     [32m✓[39m rejects unsafe ZIP entry apps/web/test-results/link before extracting any data[32m 91[2mms[22m[39m
+     [32m✓[39m refuses an existing destination, including a filesystem link[32m 89[2mms[22m[39m
+[31m     [31m×[31m publishes pull_request through trusted code with fake storage and credentials[39m[32m 199[2mms[22m[39m
+[31m     [31m×[31m publishes push through trusted code with fake storage and credentials[39m[32m 188[2mms[22m[39m
+[31m     [31m×[31m publishes timed_out through trusted code with fake storage and credentials[39m[32m 91[2mms[22m[39m
+ [31m❯[39m infra/sandboxes/supervisor/src/computer-spec.test.ts [2m([22m[2m61 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 695[2mms[22m[39m
+     [32m✓[39m binds the embed WebSocket path to the current screen capability[32m 3[2mms[22m[39m
+     [32m✓[39m has no small default cap and accepts optional operator limits[32m 3[2mms[22m[39m
+     [32m✓[39m validates space computer limit[32m 1[2mms[22m[39m
+     [32m✓[39m creates a VNC desktop, not an alpine sleep fallback[32m 80[2mms[22m[39m
+     [32m✓[39m still publishes host ports when NetworkMode is a per-bot isolated network[32m 2[2mms[22m[39m
+     [32m✓[39m keeps sanitized network names unique when botIds only differ by stripped characters[32m 1[2mms[22m[39m
+     [32m✓[39m lists prior network name variants for cleanup[32m 1[2mms[22m[39m
+     [32m✓[39m skips legacy network removal when another bot is still attached[32m 0[2mms[22m[39m
+     [32m✓[39m ships a browser desktop, not a fullscreen terminal[32m 2[2mms[22m[39m
+[31m     [31m×[31m selects a display-specific browser profile and preserves explicit profiles[39m[32m 41[2mms[22m[39m
+[31m     [31m×[31m clears crashed state from Chromium preferences and Local State[39m[32m 44[2mms[22m[39m
+     [32m✓[39m keeps container names stable so a bot can resume[32m 0[2mms[22m[39m
+     [32m✓[39m points the screen at the chrome-less noVNC embed[32m 0[2mms[22m[39m
+     [32m✓[39m wires host clipboard paste into the chrome-less embed[32m 1[2mms[22m[39m
+     [32m✓[39m uses the published host mapping in the default topology even when a container IP exists[32m 1[2mms[22m[39m
+     [32m✓[39m validates the configured screen network mode[32m 1[2mms[22m[39m
+     [32m✓[39m uses the host identity for host-run bind mounts without ever using root[32m 0[2mms[22m[39m
+     [32m✓[39m uses the container IP only for the internal screen network topology[32m 0[2mms[22m[39m
+     [32m✓[39m does not publish computer control port 7070 on the host[32m 0[2mms[22m[39m
+     [32m✓[39m publishes the control port to loopback only when explicitly opted in[32m 0[2mms[22m[39m
+     [32m✓[39m resolves computer control through the container network IP, never a host mapping[32m 1[2mms[22m[39m
+     [32m✓[39m resolves computer control through a published loopback port when provided[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled (undefined)[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled (null)[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled ({})[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled ({"7070/tcp":null})[32m 0[2mms[22m[39m
+     [32m✓[39m recreates unpublished computers only when loopback control is enabled ({"7070/tcp":[]})[32m 0[2mms[22m[39m
+     [32m✓[39m accepts configured loopback ports on resume, including unassigned ports ("")[32m 0[2mms[22m[39m
+     [32m✓[39m accepts configured loopback ports on resume, including unassigned ports ("0")[32m 0[2mms[22m[39m
+     [32m✓[39m accepts configured loopback ports on resume, including unassigned ports ("55101")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("0.0.0.0")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("::")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback ("192.0.2.1")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects external control bindings even alongside loopback (undefined)[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports (undefined)[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("-1")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("65536")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("abc")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("55101/other")[32m 0[2mms[22m[39m
+     [32m✓[39m rejects invalid configured and runtime control ports ("80@192.0.2.1")[32m 0[2mms[22m[39m
+     [32m✓[39m does not fall back to the container IP when a published control port is required[32m 0[2mms[22m[39m
+     [33m[2m✓[22m[39m restricts computer control argv to supervisor shapes [33m 490[2mms[22m[39m
+     [32m✓[39m turns takeover input into xdotool[32m 1[2mms[22m[39m
+     [32m✓[39m caps memory and cpu by default and keeps #343's pids ceiling[32m 1[2mms[22m[39m
+     [32m✓[39m falls back to the defaults when a variable is blank[32m 1[2mms[22m[39m
+     [32m✓[39m pins MemorySwap to Memory so the ceiling cannot be swapped past[32m 1[2mms[22m[39m
+     [32m✓[39m accepts fractional CPUs[32m 0[2mms[22m[39m
+     [32m✓[39m lets an operator opt out explicitly[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a malformed size instead of silently falling back[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a negative cpu count[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a pids limit that is not a positive integer[32m 0[2mms[22m[39m
+     [32m✓[39m rejects a memory limit below Docker's 6 MiB minimum[32m 1[2mms[22m[39m
+     [32m✓[39m rejects a CPU count that would floor to Docker's unlimited[32m 0[2mms[22m[39m
+     [32m✓[39m rejects a CPU count that leaves the safe-integer NanoCpus range[32m 1[2mms[22m[39m
+     [32m✓[39m parses byte counts without a unit suffix[32m 0[2mms[22m[39m
+     [32m✓[39m keeps named volumes native and exposes only the bot subdirectory[32m 1[2mms[22m[39m
+     [32m✓[39m preserves native host paths and translates supervisor bind mounts[32m 0[2mms[22m[39m
+     [32m✓[39m rejects paths outside the volume and missing volume names[32m 1[2mms[22m[39m
+     [32m✓[39m fails closed on daemons that could ignore volume subpaths[32m 1[2mms[22m[39m
+     [32m✓[39m stops promptly when Docker sends SIGTERM to the start script[32m 1[2mms[22m[39m
+ [31m❯[39m .agents/skills/pr-watch/pr-digest.test.ts [2m([22m[2m25 tests[22m[2m | [22m[31m24 failed[39m[2m)[22m[33m 377[2mms[22m[39m
+[31m     [31m×[31m does not infer whether tests ran from skipped steps after Run pnpm test:integration[39m[32m 22[2mms[22m[39m
+[31m     [31m×[31m does not infer whether tests ran from skipped steps after Install dependencies[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: [fixed](https://github.com/example/project/pull/1#issuecomment-12)[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12.[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123.[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m matches complete permalinks: #issuecomment-12[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m reopens edited conversation comments[39m[32m 15[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: reviewer User [vc]: Please fix this[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: unknown[bot] Bot [vc]: Please fix this[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: vercel[bot] Bot [vc]: generated deployment[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: github-actions[bot] Bot <!-- rakazo-playwright-screenshots -->
+### Playwright screenshots
+[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m requires matching automation for noise: reviewer User <h3>Greptile Summary</h3>[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'APPROVED' ][39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'COMMENTED' ][39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'CHANGES_REQUESTED' ][39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'CHANGES_REQUESTED', 'APPROVED' ][39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'CHANGES_REQUESTED', 'COMMENTED' ][39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m only blocks effective change requests: [ 'DISMISSED' ][39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m does not let an inline reply close a conversation[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m requires a new reply after inline edits: 2026-01-01T00:00:00Z[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m requires a new reply after inline edits: 2026-01-03T00:00:00Z[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m removes terminal controls[39m[32m 11[2mms[22m[39m
+     [32m✓[39m does not retry failed replies[32m 118[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-idle.test.ts [2m([22m[2m25 tests[22m[2m)[22m[33m 36406[2mms[22m[39m
+     [33m[2m✓[22m[39m detects active work only when launch and probe share the same marker id [33m 9062[2mms[22m[39m
+     [33m[2m✓[22m[39m cleans a completed marker without blocking a later launch [33m 9004[2mms[22m[39m
+     [33m[2m✓[22m[39m cancel tears down background shell work for that run [33m 18249[2mms[22m[39m
+ [32m✓[39m packages/core/src/node/desktop-runtime.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 11136[2mms[22m[39m
+     [33m[2m✓[22m[39m allocates live slots past 1000 bots, keeps assignments across callers, and rejects stale leases [33m 503[2mms[22m[39m
+     [33m[2m✓[22m[39m quiesces the debugger-owning Chromium process and keeps cookie databases [33m 9849[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/createos-sandbox.test.ts [2m([22m[2m42 tests[22m[2m)[22m[33m 6191[2mms[22m[39m
+     [33m[2m✓[22m[39m creates a sandbox and waits until it runs [33m 1060[2mms[22m[39m
+     [33m[2m✓[22m[39m lets a pausing sandbox settle before it resumes [33m 2010[2mms[22m[39m
+     [33m[2m✓[22m[39m reuses one screen assignment across provider instances [33m 360[2mms[22m[39m
+     [33m[2m✓[22m[39m replaces a screen whose connection is already gone [33m 402[2mms[22m[39m
+     [33m[2m✓[22m[39m deletes a screen only after its in-flight connection finishes [33m 532[2mms[22m[39m
+     [33m[2m✓[22m[39m does not reuse a released screen id from the process-local cache [33m 481[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps a screen assignment when deletion fails so a later release can retry [33m 507[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/cloudflare-sandbox.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 6045[2mms[22m[39m
+     [33m[2m✓[22m[39m retries connectScreen once when the desktop races its own startup [33m 3008[2mms[22m[39m
+     [33m[2m✓[22m[39m surfaces a friendly retry error when the screen stays unavailable [33m 3007[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-openai-compatible-provider.test.ts [2m([22m[2m28 tests[22m[2m)[22m[33m 5126[2mms[22m[39m
+     [33m[2m✓[22m[39m clarifies probe timeouts with hand-fill hint [33m 5006[2mms[22m[39m
+[90mstdout[2m | infra/sandboxes/supervisor/src/index.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+ [32m✓[39m infra/sandboxes/supervisor/src/index.test.ts [2m([22m[2m47 tests[22m[2m)[22m[33m 3988[2mms[22m[39m
+     [33m[2m✓[22m[39m does not treat an open TCP port as ready when nothing is serving HTTP on it yet [33m 915[2mms[22m[39m
+     [33m[2m✓[22m[39m does not treat HTTP error responses as ready [33m 914[2mms[22m[39m
+     [33m[2m✓[22m[39m does not treat redirect responses as ready [33m 915[2mms[22m[39m
+     [33m[2m✓[22m[39m times out instead of hanging when nothing is listening [33m 910[2mms[22m[39m
+[90mstderr[2m | packages/adapters/src/plot-tool.test.ts[2m > [22m[2mrender_plot[2m > [22m[2mpreserves numeric-looking category labels
+[22m[39mWarning: some data associated with the x scale are strings that appear to be numbers. If these strings represent numbers, you should parse or coerce them to numbers. Numbers are typically associated with a "linear" scale rather than a "band" scale. If you want to treat this data as ordinal, you can specify the interval of the x scale (e.g., 1 for integers), or you can suppress this warning by setting the type of the x scale to "band".
+
+ [32m✓[39m packages/adapters/src/plot-tool.test.ts [2m([22m[2m41 tests[22m[2m)[22m[33m 3676[2mms[22m[39m
+     [33m[2m✓[22m[39m renders every chart catalog example spec verbatim [33m 591[2mms[22m[39m
+     [33m[2m✓[22m[39m rasterizes to a fully opaque PNG (no transparent background) [33m 388[2mms[22m[39m
+ [32m✓[39m infra/sandboxes/supervisor/src/control-argv.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 4321[2mms[22m[39m
+ [32m✓[39m infra/updater/src/fork-recovery.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 4431[2mms[22m[39m
+     [33m[2m✓[22m[39m restores 'deploy' and its Compose configuration before recovery [33m 724[2mms[22m[39m
+     [33m[2m✓[22m[39m restores 'HEAD' and its Compose configuration before recovery [33m 681[2mms[22m[39m
+     [33m[2m✓[22m[39m skips Compose recovery when restoring the checkout fails [33m 662[2mms[22m[39m
+     [33m[2m✓[22m[39m reports failed Compose recovery while keeping the restored checkout and image pin [33m 735[2mms[22m[39m
+     [33m[2m✓[22m[39m restores a partially failed checkout without invoking Compose [33m 426[2mms[22m[39m
+     [33m[2m✓[22m[39m restores a partially failed merge without invoking Compose [33m 523[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps the new checkout and image pin after a successful update [33m 524[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/backup-scripts.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 2728[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves host archiving and the live-file warning allowance from PR #618 [33m 309[2mms[22m[39m
+ [32m✓[39m infra/sandboxes/supervisor/src/browser-profile.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 3243[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps both bots' data through stop and restart without copying the default profile [33m 3241[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/bot-secrets.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 1564[2mms[22m[39m
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mreports inspection failures correctly when stopping: 500
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mreports inspection failures correctly when stopping: 500
+[22m[39m◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mreports inspection failures correctly when stopping: 404
+[22m[39m◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mrejects another computer identity without stopping its container
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mrechecks stopped state after a concurrent stop owns the screen lock
+[22m[39m◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mstops the computer after a failed checkpoint while reporting the failure
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mquiesces browser profiles with Browser.close before stopping the container
+[22m[39m◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mmatches publication on stopped container reuse: {"enabled":true,"hosts":[],"resumed":false}
+[22m[39m◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mmatches publication on stopped container reuse: {"enabled":true,"hosts":["127.0.0.1"],"resumed":true}
+[22m[39m◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mmatches publication on stopped container reuse: {"enabled":true,"hosts":["0.0.0.0","127.0.0.1"],"resumed":false}
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mmatches publication on stopped container reuse: {"enabled":false,"hosts":["127.0.0.1"],"resumed":false}
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mmatches publication on stopped container reuse: {"enabled":false,"hosts":["0.0.0.0"],"resumed":false}
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mcomputer loopback provision lifecycle[2m > [22m[2mmatches publication on stopped container reuse: {"enabled":false,"hosts":[],"resumed":true}
+[22m[39m◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mprovisions named-volume homes only with subpath support (1.44)
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mprovisions named-volume homes only with subpath support (1.45)
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mdoes not allocate a network for an invalid home
+[22m[39m◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mdoes not allocate a network when home validation fails
+[22m[39m◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mremoves the new network on every failed container creation, then can retry
+[22m[39m◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mremoves a failed new container before its new network
+[22m[39m◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mpreserves the existing computer when its replacement network cannot be allocated
+[22m[39m◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mdoes not remove an existing network after failed creation
+[22m[39m◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mpreserves the provision error if Docker refuses cleanup of active resources
+[22m[39m◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mprovisioning network rollback[2m > [22m[2mdoes not allocate or delete the shared internal network
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mspace computer limit enforcement[2m > [22m[2mrejects new container creation with 429 when space container limit is reached
+[22m[39m◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mspace computer limit enforcement[2m > [22m[2mallows new container creation when under space limit
+[22m[39m◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mspace computer limit enforcement[2m > [22m[2mresumes existing container even if space is at limit
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mspace computer limit enforcement[2m > [22m[2mcounts legacy workspaceId COMPUTER_IMAGE containers toward the limit
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mspace computer limit enforcement[2m > [22m[2mserializes concurrent creates for different bots in the same space
+[22m[39m◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-loopback.test.ts[2m > [22m[2mspace computer limit enforcement[2m > [22m[2mserializes incompatible replace with a concurrent fresh create at the cap
+[22m[39m◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+ [32m✓[39m infra/sandboxes/supervisor/src/computer-loopback.test.ts [2m([22m[2m29 tests[22m[2m)[22m[33m 3292[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/evals/cli.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1804[2mms[22m[39m
+   [33m[2m✓[22m[39m lists eval cases without importing a generated database client or runtime adapters [33m 1800[2mms[22m[39m
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a DM webhook into a direct inbound message
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a DM webhook into a direct inbound message
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a DM webhook into a direct inbound message
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a DM webhook into a direct inbound message
+[22m[39m[chat-sdk:sendblue] Sendblue webhook message received {
+  is_outbound: [33mfalse[39m,
+  status: [32m'RECEIVED'[39m,
+  hasContent: [33mtrue[39m,
+  hasMediaUrl: [33mfalse[39m,
+  mediaUrlPrefix: [32m''[39m,
+  service: [32m'iMessage'[39m
+}
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a group webhook with roster and display name
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a group webhook with roster and display name
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a group webhook with roster and display name
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform inbound[2m > [22m[2mnormalizes a group webhook with roster and display name
+[22m[39m[chat-sdk:sendblue] Sendblue webhook message received {
+  is_outbound: [33mfalse[39m,
+  status: [32m'RECEIVED'[39m,
+  hasContent: [33mtrue[39m,
+  hasMediaUrl: [33mfalse[39m,
+  mediaUrlPrefix: [32m''[39m,
+  service: [32m'iMessage'[39m
+}
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2msends a DM through openDirectThread + sendToThread
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2msends a DM through openDirectThread + sendToThread
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2msends a DM through openDirectThread + sendToThread
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mposts to a group via the thread id captured from an inbound group event
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mposts to a group via the thread id captured from an inbound group event
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mposts to a group via the thread id captured from an inbound group event
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mposts to a group via the thread id captured from an inbound group event
+[22m[39m[chat-sdk:sendblue] Sendblue webhook message received {
+  is_outbound: [33mfalse[39m,
+  status: [32m'RECEIVED'[39m,
+  hasContent: [33mtrue[39m,
+  hasMediaUrl: [33mfalse[39m,
+  mediaUrlPrefix: [32m''[39m,
+  service: [32m'iMessage'[39m
+}
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mrejects the send when the vendor API fails
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mrejects the send when the vendor API fails
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform outbound[2m > [22m[2mrejects the send when the vendor API fails
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2msurfaces a signed status webhook to the sink
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2msurfaces a signed status webhook to the sink
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2msurfaces a signed status webhook to the sink
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2msurfaces a signed status webhook to the sink
+[22m[39m[chat-sdk:sendblue] Sendblue webhook message received {
+  is_outbound: [33mtrue[39m,
+  status: [32m'DELIVERED'[39m,
+  hasContent: [33mfalse[39m,
+  hasMediaUrl: [33mfalse[39m,
+  mediaUrlPrefix: [32m''[39m,
+  service: [32m'iMessage'[39m
+}
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2mrejects a wrong signing secret with 401 and no sink event
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2mrejects a wrong signing secret with 401 and no sink event
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2mrejects a wrong signing secret with 401 and no sink event
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+[90mstderr[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform delivery status[2m > [22m[2mrejects a wrong signing secret with 401 and no sink event
+[22m[39m[chat-sdk:sendblue] Sendblue webhook secret mismatch { header: [32m'sb-signing-secret'[39m }
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform typing[2m > [22m[2mrecords DM typing indicators
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform typing[2m > [22m[2mrecords DM typing indicators
+[22m[39m[chat-sdk:sendblue] Sendblue adapter initialized
+
+[90mstdout[2m | packages/adapters/src/sendblue-emulator.test.ts[2m > [22m[2memulated sendblue platform typing[2m > [22m[2mrecords DM typing indicators
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'sendblue'[39m ] }
+
+ [32m✓[39m packages/adapters/src/sendblue-emulator.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1585[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects the send when the vendor API fails [33m 1482[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/computer-recording.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1574[2mms[22m[39m
+     [33m[2m✓[22m[39m replays the captured Luna/OpenRouter + Docker export with an independent artifact oracle [33m 584[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/model-modalities.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 1412[2mms[22m[39m
+     [33m[2m✓[22m[39m defaults openai-compatible models to text-only [33m 900[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/api.test.ts [2m([22m[2m89 tests[22m[2m)[22m[33m 1263[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-repo-to-pr.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 520[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/i18n.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 356[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/process-collision-matrix.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 781[2mms[22m[39m
+     [33m[2m✓[22m[39m zero collisions end-to-end: two real task servers serve concurrently on distinct ports [33m 725[2mms[22m[39m
+ [32m✓[39m apps/api/src/agent-bundle.test.ts [2m([22m[2m84 tests[22m[2m)[22m[33m 781[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/home-revisions.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 453[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-lifecycle.test.ts [2m([22m[2m65 tests[22m[2m)[22m[33m 978[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/sandbox-conformance.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 550[2mms[22m[39m
+     [33m[2m✓[22m[39m desktop executor times out and kills descendants that inherited its pipes [33m 375[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/computer-replay.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1088[2mms[22m[39m
+     [33m[2m✓[22m[39m exports contacts through fresh page refs and verifies the resulting artifact [33m 780[2mms[22m[39m
+ [32m✓[39m packages/core/src/markdown-plain.test.ts [2m([22m[2m37 tests[22m[2m)[22m[33m 1119[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves a long sequence of unmatched underscore openers [33m 627[2mms[22m[39m
+     [33m[2m✓[22m[39m does not treat existing private-use characters as code placeholders [33m 403[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/local-stack.test.ts [2m([22m[2m51 tests[22m[2m)[22m[33m 871[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/compose-installer-smoke.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1165[2mms[22m[39m
+     [33m[2m✓[22m[39m passes every infra/compose/*.smoke.sh [33m 1162[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/keyless-http-web.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 773[2mms[22m[39m
+     [33m[2m✓[22m[39m searches via the HTML backend without a vendor API key [33m 370[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/ui-direction.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 1190[2mms[22m[39m
+     [33m[2m✓[22m[39m resolves a locale tag from Intl [33m 779[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/docker-cli.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 456[2mms[22m[39m
+     [33m[2m✓[22m[39m kills a command that exceeds its timeout [33m 305[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/web-ssrf.test.ts [2m([22m[2m29 tests[22m[2m)[22m[33m 516[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/dictation.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 491[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/integration-provider-settings.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 390[2mms[22m[39m
+ [32m✓[39m apps/api/src/router.test.ts [2m([22m[2m37 tests[22m[2m)[22m[33m 406[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-readonly-approval.test.ts [2m([22m[2m32 tests[22m[2m)[22m[33m 305[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-recovery.test.ts [2m([22m[2m23 tests[22m[2m)[22m[33m 329[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-models.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 169[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/browser-tools.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 242[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/endpoint.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 161[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/pi-offline.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 314[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pipedream-connector.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 279[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/composio-catalog-cache.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 164[2mms[22m[39m
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token undefined
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token undefined
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token undefined
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token undefined
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token undefined
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token undefined
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token wrong-token
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token wrong-token
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token wrong-token
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token wrong-token
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token wrong-token
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects a webhook with token wrong-token
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: false)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: false)
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: false)
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: false)
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: false)
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: false)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: true)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: true)
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: true)
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: true)
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: true)
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2manswers authenticated URL verification (encrypted: true)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: false)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: false)
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: false)
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: false)
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: false)
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: false)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: true)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: true)
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: true)
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: true)
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: true)
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mdelivers direct messages and sends replies (encrypted: true)
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects an invalid encrypted signature
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects an invalid encrypted signature
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects an invalid encrypted signature
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects an invalid encrypted signature
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects an invalid encrypted signature
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mrejects an invalid encrypted signature
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores group messages from ou-test
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores group messages from ou-test
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores group messages from ou-test
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores group messages from ou-test
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores group messages from ou-test
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores group messages from ou-test
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstderr[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mignores p2p messages from ou-bot
+[22m[39m[chat-sdk:lark:sdk] Lark SDK log [
+  Error: Unexpected HTTP request: https://open.feishu.cn/open-apis/contact/v3/users/ou-bot
+      at Object.<anonymous> [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/lark-messaging.test.ts:124:11[90m)[39m
+      at Object.Mock [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/@vitest+spy@4.1.11/node_modules/[4m@vitest/spy[24m/dist/index.js:332:34[90m)[39m
+      at Client.<anonymous> [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/@larksuiteoapi+node-sdk@1.73.1/node_modules/[4m@larksuiteoapi/node-sdk[24m/lib/index.js:25417:26[90m)[39m
+      at Generator.next (<anonymous>)
+      at fulfilled [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/@larksuiteoapi+node-sdk@1.73.1/node_modules/[4m@larksuiteoapi/node-sdk[24m/lib/index.js:77:58[90m)[39m
+  [90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+]
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk:lark:sdk] client ready
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk:lark] Initialized { botOpenId: [32m'ou-bot'[39m }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'lark'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstderr[2m | packages/adapters/src/lark-messaging.test.ts[2m > [22m[2mLark messaging conformance[2m > [22m[2mreturns a retryable failure when inbound persistence fails
+[22m[39m[chat-sdk] Message processing error {
+  error: Error: Persistence unavailable
+      at ChatSdkMessagingSurface.sink [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/lark-messaging.test.ts:208:13[90m)[39m
+      at deliver [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/chat-sdk-surface.ts:87:20[90m)[39m
+      at Chat.dispatchToHandlersWithSignal [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2696:15[90m)[39m
+  [90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+      at Chat.dispatchToHandlers [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2604:7[90m)[39m
+      at Chat.handleConcurrent [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2535:7[90m)[39m
+      at Chat.routeIncomingMessage [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2101:7[90m)[39m
+      at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:1101:7
+      at async Promise.all (index 0)
+      at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/chat-sdk-surface.ts:279:7,
+  threadId: [32m'lark:b2MtdGVzdA'[39m
+}
+
+ [32m✓[39m packages/adapters/src/lark-messaging.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 188[2mms[22m[39m
+ [32m✓[39m infra/sandboxes/supervisor/src/page-browser-helper.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 260[2mms[22m[39m
+ [32m✓[39m packages/auth/src/identity-trust.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 409[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/e2b-sandbox.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 322[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-browser.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 559[2mms[22m[39m
+ [32m✓[39m apps/api/src/thread-target.test.ts [2m([22m[2m44 tests[22m[2m)[22m[33m 488[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/history-compaction-pi.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 221[2mms[22m[39m
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mnormalizes a DM into a provider-neutral inbound message
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mnormalizes a DM into a provider-neutral inbound message
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mnever surfaces the bot's own messages
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mnever surfaces the bot's own messages
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mdelivers non-DM events with the platform's roster hooks when groups are supported
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mdelivers non-DM events with the platform's roster hooks when groups are supported
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mdrops non-DM events for platforms without group support
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mdrops non-DM events for platforms without group support
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mstill delivers a follow-up after the thread is subscribed
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mstill delivers a follow-up after the thread is subscribed
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mdelivers overlapping messages on one conversation instead of dropping them
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface inbound[2m > [22m[2mdelivers overlapping messages on one conversation instead of dropping them
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook waitUntil drain[2m > [22m[2mdoes not return 2xx until the inbound sink finishes
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook waitUntil drain[2m > [22m[2mdoes not return 2xx until the inbound sink finishes
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook waitUntil drain[2m > [22m[2mreturns 5xx when the inbound sink throws so the vendor can retry
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook waitUntil drain[2m > [22m[2mreturns 5xx when the inbound sink throws so the vendor can retry
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstderr[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook waitUntil drain[2m > [22m[2mreturns 5xx when the inbound sink throws so the vendor can retry
+[22m[39m[chat-sdk] Message processing error {
+  error: Error: provision failed
+      at ChatSdkMessagingSurface.sink [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/chat-sdk-surface.test.ts:248:13[90m)[39m
+      at deliver [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/chat-sdk-surface.ts:87:20[90m)[39m
+      at Chat.dispatchToHandlersWithSignal [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2696:15[90m)[39m
+      at Chat.dispatchToHandlers [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2604:7[90m)[39m
+      at Chat.handleConcurrent [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2535:7[90m)[39m
+      at Chat.routeIncomingMessage [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:2101:7[90m)[39m
+      at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/chat@4.40.0_zod@4.6.2/node_modules/[4mchat[24m/dist/index.js:1101:7
+      at async Promise.all (index 0)
+      at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/chat-sdk-surface.ts:279:7
+      at ChatSdkMessagingSurface.dispatchWebhook [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/adapters/src/chat-sdk-surface.ts:273:22[90m)[39m,
+  threadId: [32m'mock:Duser:1'[39m
+}
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook plumbing[2m > [22m[2mpeeks status payloads only after the adapter accepted the request
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook plumbing[2m > [22m[2mpeeks status payloads only after the adapter accepted the request
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook plumbing[2m > [22m[2mpeeks status payloads only after the adapter accepted the request
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface webhook plumbing[2m > [22m[2mpeeks status payloads only after the adapter accepted the request
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface outbound[2m > [22m[2mposts to a thread through the platform adapter and returns the handle
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface outbound[2m > [22m[2mposts to a thread through the platform adapter and returns the handle
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface outbound[2m > [22m[2mfalls back to the adapter's openDM
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface outbound[2m > [22m[2mfalls back to the adapter's openDM
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface outbound[2m > [22m[2mthrows when the platform cannot open direct conversations
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface outbound[2m > [22m[2mthrows when the platform cannot open direct conversations
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface typing[2m > [22m[2mforwards typing to platforms that support it
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface typing[2m > [22m[2mforwards typing to platforms that support it
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Shutting down chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Chat instance shut down
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'mock'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Shutting down chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface shape[2m > [22m[2mretries initialize after a failure and stops polling on shutdown
+[22m[39m[chat-sdk] Chat instance shut down
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface multi-bot coexistence[2m > [22m[2mroutes each bot's webhook into its own provider namespace
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface multi-bot coexistence[2m > [22m[2mroutes each bot's webhook into its own provider namespace
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'telegram-urow-a'[39m, [32m'telegram-urow-b'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface multi-bot coexistence[2m > [22m[2mroutes outbound posts by thread-id prefix so bots never swap channels
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface multi-bot coexistence[2m > [22m[2mroutes outbound posts by thread-id prefix so bots never swap channels
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'telegram-urow-a'[39m, [32m'telegram-urow-b'[39m ] }
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface multi-bot coexistence[2m > [22m[2maccepts a late-registered bot without disturbing the others
+[22m[39m[chat-sdk] Initializing chat instance...
+
+[90mstdout[2m | packages/adapters/src/chat-sdk-surface.test.ts[2m > [22m[2mChatSdkMessagingSurface multi-bot coexistence[2m > [22m[2maccepts a late-registered bot without disturbing the others
+[22m[39m[chat-sdk] Chat instance initialized { adapters: [ [32m'telegram-urow-a'[39m, [32m'telegram-urow-b'[39m ] }
+
+ [32m✓[39m packages/adapters/src/chat-sdk-surface.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 220[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/runtime-stream.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 222[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/takeover-settle.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 235[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/peer-history.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 220[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/web-conformance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 218[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/openai-compatible-thinking.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 154[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/mcp-connector.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 202[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/mcp-transport.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 192[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/home.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 107[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/browser-conformance.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 191[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/wakeup-graphile-host.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 131[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/secrets-model-visibility-conformance.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 174[2mms[22m[39m
+ [32m✓[39m infra/updater/src/index.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 172[2mms[22m[39m
+[90mstdout[2m | infra/sandboxes/supervisor/src/computer-control.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+ [32m✓[39m infra/sandboxes/supervisor/src/computer-control.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 169[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/auto-review.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 168[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/sandbox-faults.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 139[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/box-sandbox.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 174[2mms[22m[39m
+ [32m✓[39m apps/api/src/router-messaging.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 139[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/bot-avatar.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 143[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/index.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 159[2mms[22m[39m
+ [32m✓[39m apps/api/src/messaging-inbound.test.ts [2m([22m[2m50 tests[22m[2m)[22m[32m 155[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/mcp-oauth.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 149[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/process-sandbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 142[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/graphql-connectors.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 132[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/home-races.test.ts [2m([22m[2m15 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 141[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/remote-mcp.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-doctor.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 138[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-takeover-settle.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 131[2mms[22m[39m
+ [32m✓[39m packages/db/src/events.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 84[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-effect-idempotency.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 125[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/browser-auth.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/wakeup.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m apps/api/src/team-chat-bridge.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 115[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/expo-push.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 121[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/history-compaction.test.ts [2m([22m[2m60 tests[22m[2m)[22m[32m 106[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/smtp-email.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/desktop-sandbox-write-containment.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 94[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/computer-refresh.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 104[2mms[22m[39m
+ [32m✓[39m packages/core/src/cron.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/serenity-client.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/daytona-sandbox.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-session.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/schedule-tools.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-tool-dispatch.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/session.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor.test.ts [2m([22m[2m60 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-tool-schema.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-anthropic-oauth.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+[90mstdout[2m | infra/sandboxes/supervisor/src/page-browser-route.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstderr[2m | infra/sandboxes/supervisor/src/page-browser-route.test.ts[2m > [22m[2mrejects http URL credentials before executing any command
+[22m[39mZodError: [
+  {
+    "code": "custom",
+    "path": [
+      "url"
+    ],
+    "message": "Invalid input"
+  }
+]
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/index.ts:385:6
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/index.ts:148:3
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/hono.ts:20:9
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/hono-base.js:308:25
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/page-browser-route.test.ts:90:22
+
+[90mstderr[2m | infra/sandboxes/supervisor/src/page-browser-route.test.ts[2m > [22m[2mrejects https URL credentials before executing any command
+[22m[39mZodError: [
+  {
+    "code": "custom",
+    "path": [
+      "url"
+    ],
+    "message": "Invalid input"
+  }
+]
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/index.ts:385:6
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/index.ts:148:3
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/hono.ts:20:9
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/hono-base.js:308:25
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/page-browser-route.test.ts:90:22
+
+[90mstderr[2m | infra/sandboxes/supervisor/src/page-browser-route.test.ts[2m > [22m[2mrejects oversized eval code before executing anything
+[22m[39mZodError: [
+  {
+    "origin": "string",
+    "code": "too_big",
+    "maximum": 100000,
+    "inclusive": true,
+    "path": [
+      "code"
+    ],
+    "message": "Too big: expected string to have <=100000 characters"
+  }
+]
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/index.ts:385:6
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/index.ts:148:3
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/hono.ts:20:9
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:17[90m)[39m
+    at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/hono-base.js:308:25
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39minfra/sandboxes/supervisor/src/page-browser-route.test.ts:174:20
+
+ [32m✓[39m infra/sandboxes/supervisor/src/page-browser-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 91[2mms[22m[39m
+ [32m✓[39m apps/api/src/integration-catalog.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/local-settings.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 89[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/model-emulator.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 88[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-thinking-level.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 86[2mms[22m[39m
+ [32m✓[39m apps/web/src/pages/KnowledgeSection.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 82[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/voice.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/auto-update.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/installed-connectors.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 84[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/evals/runner.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m apps/api/src/server-update.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m packages/db/src/bootstrap-user.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m packages/core/src/message-quote.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-update.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/run-secret.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/inbox-spaces.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32m✓[39m apps/api/src/webhook.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+ [32m✓[39m packages/db/src/client.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/realtime.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 72[2mms[22m[39m
+ [32m✓[39m apps/api/src/team-chat-startup.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/voice-factory.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 72[2mms[22m[39m
+ [32m✓[39m packages/db/src/messaging.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/setup-config.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/docker-sandbox.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/cursor-cloud-agent.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m infra/updater/src/compose-images.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/index.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-coding-gate.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m apps/api/src/request-body-limit.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m packages/ui-web/src/bot-avatar.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-cancellation.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/session-permissions.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/messaging-delivery.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/setup-store.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+[90mstderr[2m | packages/logging/src/hono.test.ts[2m > [22m[2mhono request logging[2m > [22m[2mreports handler exceptions as failed requests
+[22m[39mError: boom
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/hono.test.ts:16:11
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:23[90m)[39m
+    at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:46
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/hono.ts:20:15
+[90m    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14)[39m
+    at runWithLogContext [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/context.ts:11:18[90m)[39m
+    at LoggerImpl.withContext [90m(/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/logger.ts:66:12[90m)[39m
+    at [90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mpackages/logging/src/hono.ts:17:16
+    at dispatch [90m(file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:22:23[90m)[39m
+    at [90mfile:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/[39mnode_modules/[4m.pnpm[24m/hono@4.13.7/node_modules/[4mhono[24m/dist/compose.js:5:12
+
+ [32m✓[39m packages/logging/src/hono.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/supermemory-client.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-credentials.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m apps/api/src/screen-proxy.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/lazy-tool-catalog.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m infra/updater/src/compose-dev-proxy.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m packages/db/src/repos.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/tts.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/local-stack-networking.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 59[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-completion.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m apps/api/src/local-settings.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+[90mstderr[2m | packages/logging/src/logger.test.ts[2m > [22m[2mlogger[2m > [22m[2mkeeps logging when a sink throws
+[22m[39mlog sink failed Error: sink down
+    at Object.write (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/logger.test.ts:84:19)
+    at /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/logger.ts:103:31
+    at guardedWrite (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/sink-guard.ts:20:20)
+    at LoggerImpl.emit (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/logger.ts:103:7)
+    at LoggerImpl.info (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/logger.ts:37:10)
+    at /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/logger.test.ts:90:25
+    at Proxy.assertThrows (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:2798:5)
+    at Proxy.methodWrapper (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)
+    at Proxy.<anonymous> (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/@vitest+expect@4.1.11/node_modules/@vitest/expect/dist/index.js:1216:12)
+    at Proxy.overwritingMethodWrapper (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1750:33)
+
+ [32m✓[39m packages/logging/src/logger.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m apps/api/src/messaging-webhook.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/cloud-agent-conformance.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m apps/www/src/waitlist.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/child-bots.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m packages/core/src/http-response.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m packages/core/src/attachments.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/chat-markdown.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m packages/core/src/response-bytes.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m apps/www/src/github.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/renderer-assets.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/bot-messages.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-workspace.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/host-aware-sandbox.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/playwright-report-dashboard.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m apps/web/src/screen-proxy.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m packages/ui-web/src/group-avatar.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2mmounts nothing without credentials and everything with full credentials
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2mrequires all four sendblue values
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2mrequires each platform's full credential set
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2mforces Lark into webhook inbound so worker initialize cannot open a long connection
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2mmaps LARK_* process env and accepts the international domain switch
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2muses normalized Lark defaults for domain 
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2muses normalized Lark defaults for domain unknown
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2muses normalized Lark defaults for domain feishu
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2mmessagingPlatformsFromEnv[2m > [22m[2mdeclares group and typing support only for sendblue
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2misMessagingEnabled[2m > [22m[2mrequires at least one platform
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2misMessagingEnabled[2m > [22m[2mis disabled under vitest even with platforms configured
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2misMessagingEnabled[2m > [22m[2mdoes not treat VITEST=0 as an active test runner
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2misMessagingEnabled[2m > [22m[2mdoes not treat VITEST=false as an active test runner
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+[90mstdout[2m | packages/adapters/src/messaging-platforms.test.ts[2m > [22m[2misMessagingSurfaceEnabled[2m > [22m[2mrequires the deployment model key only for open signup
+[22m[39m[chat-sdk:lark:sdk] event-dispatch is ready
+
+ [32m✓[39m packages/adapters/src/messaging-platforms.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/agent-connections.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m packages/core/src/compose-update.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-models.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m apps/api/src/voice.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m apps/api/src/persist-memory-provider-config.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/emulators.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/teaching-session.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m infra/sandboxes/supervisor/src/home-ownership.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/messaging-team-chat-emulator.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/i18n-catalog.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m infra/sandboxes/supervisor/src/clipboard-bridge.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m apps/www/src/middleware.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/box-errors.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/jev-auto-review.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-oauth.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-secret-schema.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/thread-events.test.ts [2m([22m[2m59 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/skill-tools.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-control.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/app-version.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/model-connect.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m apps/www/src/agent-content.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/evals/evals.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/serenity-memory-provider.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m packages/core/src/agent-skill.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/appearance.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/composio-connector.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/github-webhook-emulator.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/network-address.test.ts [2m([22m[2m49 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/job-reconciler.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-acceptance-gate.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/inbox.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m packages/core/src/events.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/voice-http.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m apps/web/src/components/ai/CollaborationMarker.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m packages/core/src/action-approval.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/openai-tool-parameters.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m apps/api/src/ai-consent.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/memory-provider-factory.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m packages/core/src/bot-messages.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-session-service.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/openai-compatible-url.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/approval-effect.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/android-platform-contract.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/current-time.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m packages/core/src/group-mentions.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/local-timezone.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/supermemory-memory-provider.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m packages/core/src/node/screen-capability.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m packages/core/src/speech-text.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/group-handoff.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-pi-adapter.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/run-error-storage.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m packages/core/src/thread-subscription.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-approval-replay.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m infra/sandboxes/supervisor/src/mobile-keyboard.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+[90mstderr[2m | packages/adapters/src/messaging-context.test.ts[2m > [22m[2mcreateMessagingContextLoader[2m > [22m[2mreports an unlinked bot with a single identity query
+[22m[39mPromise returned by `expect(actual).resolves.toEqual(expected)` was not awaited. Vitest currently auto-awaits hanging assertions at the end of the test, but this will cause the test to fail in the next Vitest major. Please remember to await the assertion.
+    at /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/messaging-context.test.ts:12:47
+
+ [32m✓[39m packages/adapters/src/messaging-context.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m packages/logging/src/jobs.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m packages/db/src/groups.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/background-job-handlers.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/artifacts.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-computer.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m apps/www/src/i18n/demo.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m packages/core/src/self-update.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/pending-attachments.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m infra/updater/src/updater-logic.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m packages/adapter-kit/src/background-jobs.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/computer.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m apps/api/src/thread-message-pages.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m packages/core/src/composer-mentions.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m packages/db/src/model-credentials.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-computer-safety.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/bot-secrets.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m apps/api/src/agent-skills.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/desktop.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/peer-messages.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/preload.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/inspiration-catalog.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+[90mstderr[2m | packages/logging/src/axiom.test.ts[2m > [22m[2maxiom sink[2m > [22m[2mdoes not throw when ingest or flush fails
+[22m[39mlog sink failed Error: ingest failed
+    at FakeAxiom.ingest (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/axiom.test.ts:13:32)
+    at /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/axiom.ts:35:16
+    at guardedWrite (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/sink-guard.ts:20:20)
+    at Object.write (/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/axiom.ts:34:7)
+    at /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/logging/src/axiom.test.ts:53:23
+    at Proxy.assertThrows (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:2798:5)
+    at Proxy.methodWrapper (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)
+    at Proxy.<anonymous> (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/@vitest+expect@4.1.11/node_modules/@vitest/expect/dist/index.js:1216:12)
+    at Proxy.overwritingMethodWrapper (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1750:33)
+    at Proxy.<anonymous> (file:///home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/node_modules/.pnpm/@vitest+expect@4.1.11/node_modules/@vitest/expect/dist/index.js:1552:16)
+
+ [32m✓[39m packages/logging/src/axiom.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/ai-consent.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/composio-emulator.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/scratchpad-context.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/team-chat-messaging.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-local-provider.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m packages/db/src/coding-migration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m apps/api/src/env.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/ui-tokens/src/appearance.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/reply-context.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-error.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/db/src/external-conversations.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/logging/src/redaction.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/model-vision.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m apps/web/src/components/MessageHoverMetadata.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/telegram-keyed-adapter.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/model-selection.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/window-options.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-screens.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/core/src/secrets-guard.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/thread-artifacts.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/core/src/run-state.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/core/src/approval-effect-key.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/playwright-pr-screenshot-comment.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/core/src/teach-playbook.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m infra/updater/src/compose-service.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-engine.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m apps/api/src/search.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/scratchpad-tools.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-attachments.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-approval-pi.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m apps/api/src/bot-update.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/mcp-server-tool.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/computer-screen.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/core/src/model-probe.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/sandbox-factory.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/i18n-activate.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/desktop-sandbox-paths.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/scripted-runtime.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/core/src/avatar-shape.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/user-progress.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/focus-prompt.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/png-validation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/preview.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-choice.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/bot-avatar.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-limits.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m apps/api/src/log-unexpected-rpc-error.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m packages/core/src/model-oauth.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/search.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m packages/db/src/scope.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/cloud-agent-tools.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/core/src/teach-recording.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m apps/api/src/onboarding.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/core/src/ai-consent.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m packages/core/src/computer-updates.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/browser-notifications.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/auth/src/index.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/ui-locale.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/mcp-origin-fallback.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m apps/api/src/agent-secrets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/attachments.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/file-handle-path.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/release-watch.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-connections.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/device-voice.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m packages/core/src/featured-connectors.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/db/src/thread-listing.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/takeover-resume.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/release-workflow.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/core/src/composer-mention-picker.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m apps/www/src/components/product-demo-when.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/memory-context.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/performance-report.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-secret-pi.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/updater-recreate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/core/src/messaging-prompts.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/model-auth.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m apps/web/src/novnc-html.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m apps/api/src/runs.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/quote-selection.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m packages/core/src/node/screen-proxy-response.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m apps/api/src/serializable-retry.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m apps/api/src/request-origin.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/pi-runtime-transport.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/live-notifications.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/ui-locale.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/oauth-callback.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m packages/memory/src/index.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/db/src/messages.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/rpc.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/reconcile-telegram-user-bots.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/email-emulator.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m apps/mobile/plugins/with-scene-lifecycle.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m packages/db/src/credential-secrets.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-tools.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/src/search.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/src/thread-message-updates.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/agent-environment.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m infra/updater/src/caddy-deploy-retry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/auto-review-factory.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/sandbox-provider-env.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m apps/api/src/mcp-material.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/thread-scroll.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/approval-ask.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/src/composer-slash.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/src/bot-sections.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/core/src/answerable-ask.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/core/src/model-providers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/metro-resolver.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/model-auth.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/session-gate.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m apps/api/src/computer-status.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/message-action-sheet.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/src/bot-avatar-shapes.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/evals/sandbox.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/core/src/signup-policy.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/core/src/screen-lease.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m packages/core/src/message-reactions.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/src/message-visibility.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m infra/updater/src/publish-workflow.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/bot-avatar.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/message-presentation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/performance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m packages/chat-ui/src/markdown.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/core/src/cloud-agent.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/window-open.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/shared-inflight.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/db/src/messaging-migration.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m packages/testkit/src/pin-test-env.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/pick-attachments.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/preload-recovery.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/routine-scheduling.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/optional-catalog-feed.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/ui-web/src/avatar-motion-sync.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/web/src/components/ai/primitives.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/connector-registry.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/computer-support.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/transcript-scroll.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/bootstrap-target.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/api/src/team-chat-judge.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/search.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/memory-tools.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/core/src/tool-activity.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/app-connect.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/tool-loop.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/web/src/pages/shell/command-palette.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/connector-safety.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/core/src/avatar-motion.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/core/src/text-direction.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/chart-viewport.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/ui-appearance.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/core/src/messaging-commands.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/auth-routing.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/message-text.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/apply-ui-direction.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/contracts/src/openai-compatible-ui.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/adapter-kit/src/registry.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/extra-displays.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/bots-sidebar-pref.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m packages/logging/src/env.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/core/src/sandbox-command.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/avatar-motion.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/db/src/memory-config.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/worker-artifacts.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/theme.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/deployment-model.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/teaching.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/refresh.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m apps/web/src/components/AskCard.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/core/src/bot-avatar-colors.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m apps/mobile/lib/artifact-file.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/release-watch-guidance.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m apps/desktop/src/package-metadata.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m apps/web/src/lib/index-html-theme.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [2m[90m↓[39m[22m apps/api/src/qa-retest8-composition.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/adapters/src/cloud-agent.postgres.test.ts [2m([22m[2m18 tests[22m[2m | [22m[33m18 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/adapters/src/coding-session.postgres.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/adapters/src/job-reconciler.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/adapters/src/realtime.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/adapters/src/wakeup.postgres.test.ts [2m([22m[2m4 tests[22m[2m | [22m[33m4 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/db/src/messaging.postgres.test.ts [2m([22m[2m5 tests[22m[2m | [22m[33m5 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/db/src/sessions-lease-guard.postgres.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/db/src/space-membership.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/memory/src/commit.postgres.test.ts [2m([22m[2m5 tests[22m[2m | [22m[33m5 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/attachments.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/authorization.test.ts [2m([22m[2m15 tests[22m[2m | [22m[33m15 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/bot-secrets.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/compose.backup.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/computer-approval.postgres.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/computer-replay.docker.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/computer-use.e2e.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/connections.test.ts [2m([22m[2m9 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/eval-customer-support.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/eval-history.postgres.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/executor-lifecycle.test.ts [2m([22m[2m21 tests[22m[2m | [22m[33m21 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/journeys.test.ts [2m([22m[2m37 tests[22m[2m | [22m[33m37 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/mention-targets.test.ts [2m([22m[2m7 tests[22m[2m | [22m[33m7 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/messaging.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m10 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/pi-offline.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/providers.canary.test.ts [2m([22m[2m5 tests[22m[2m | [22m[33m5 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/release-watch.canary.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/runs-list.test.ts [2m([22m[2m4 tests[22m[2m | [22m[33m4 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/search.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/sessions.postgres.test.ts [2m([22m[2m1 test[22m[2m | [22m[33m1 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m packages/testkit/src/voice.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+ [2m[90m↓[39m[22m infra/sandboxes/supervisor/src/team-desktops.docker.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 29 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mdoes not infer whether tests ran from skipped steps after Run pnpm test:integration
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mdoes not infer whether tests ran from skipped steps after Install dependencies
+[31m[1mAssertionError[22m: expected 1 to be 10 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 10[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m114:29[22m[39m
+    [90m112|[39m         ][33m,[39m
+    [90m113|[39m       })[33m;[39m
+    [90m114|[39m       [34mexpect[39m(result[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m10[39m)[33m;[39m
+    [90m   |[39m                             [31m^[39m
+    [90m115|[39m       expect(result.stdout).toContain(`step "${name}" failure (later s…
+    [90m116|[39m       [34mexpect[39m(result[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"tests did not run"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: [fixed](https://github.com/example/project/pull/1#issuecomment-12)
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-12.
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m127:73[22m[39m
+    [90m125|[39m     [[32m"#issuecomment-12"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m126|[39m   ])([32m"matches complete permalinks: %s"[39m[33m,[39m (body[33m,[39m expected) [33m=>[39m {
+    [90m127|[39m     expect(runDigest({ conversation: [original, reply(body)] }).status…
+    [90m   |[39m                                                                         [31m^[39m
+    [90m128|[39m   })[33m;[39m
+    [90m129|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123.
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: https://github.com/example/project/pull/1#issuecomment-123
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mmatches complete permalinks: #issuecomment-12
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m127:73[22m[39m
+    [90m125|[39m     [[32m"#issuecomment-12"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m126|[39m   ])([32m"matches complete permalinks: %s"[39m[33m,[39m (body[33m,[39m expected) [33m=>[39m {
+    [90m127|[39m     expect(runDigest({ conversation: [original, reply(body)] }).status…
+    [90m   |[39m                                                                         [31m^[39m
+    [90m128|[39m   })[33m;[39m
+    [90m129|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mreopens edited conversation comments
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m132:82[22m[39m
+    [90m130|[39m   [34mit[39m([32m"reopens edited conversation comments"[39m[33m,[39m () [33m=>[39m {
+    [90m131|[39m     [35mconst[39m edited [33m=[39m [34mcomment[39m({ updated[33m:[39m [32m"2026-01-03T00:00:00Z"[39m })[33m;[39m
+    [90m132|[39m     expect(runDigest({ conversation: [edited, reply(edited.html_url)] …
+    [90m   |[39m                                                                                  [31m^[39m
+    [90m133|[39m   })[33m;[39m
+    [90m134|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: reviewer User [vc]: Please fix this
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: unknown[bot] Bot [vc]: Please fix this
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: reviewer User <h3>Greptile Summary</h3>
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m147:81[22m[39m
+    [90m145|[39m     [[32m"reviewer"[39m[33m,[39m [32m"User"[39m[33m,[39m [32m"<h3>Greptile Summary</h3>"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m146|[39m   ])("requires matching automation for noise: %s %s %s", (user, kind, …
+    [90m147|[39m     expect(runDigest({ conversation: [comment({ body, user, kind })] }…
+    [90m   |[39m                                                                                 [31m^[39m
+    [90m148|[39m   })[33m;[39m
+    [90m149|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: vercel[bot] Bot [vc]: generated deployment
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires matching automation for noise: github-actions[bot] Bot <!-- rakazo-playwright-screenshots -->
+### Playwright screenshots
+
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m147:81[22m[39m
+    [90m145|[39m     [[32m"reviewer"[39m[33m,[39m [32m"User"[39m[33m,[39m [32m"<h3>Greptile Summary</h3>"[39m[33m,[39m [34m11[39m][33m,[39m
+    [90m146|[39m   ])("requires matching automation for noise: %s %s %s", (user, kind, …
+    [90m147|[39m     expect(runDigest({ conversation: [comment({ body, user, kind })] }…
+    [90m   |[39m                                                                                 [31m^[39m
+    [90m148|[39m   })[33m;[39m
+    [90m149|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'APPROVED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'COMMENTED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'CHANGES_REQUESTED', 'APPROVED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'DISMISSED' ]
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m165:43[22m[39m
+    [90m163|[39m       user[33m:[39m { login[33m:[39m [32m"reviewer"[39m[33m,[39m type[33m:[39m [32m"User"[39m }[33m,[39m
+    [90m164|[39m     }))[33m;[39m
+    [90m165|[39m     [34mexpect[39m([34mrunDigest[39m({ reviews })[33m.[39mstatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   |[39m                                           [31m^[39m
+    [90m166|[39m   })[33m;[39m
+    [90m167|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'CHANGES_REQUESTED' ]
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22monly blocks effective change requests: [ 'CHANGES_REQUESTED', 'COMMENTED' ]
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m165:43[22m[39m
+    [90m163|[39m       user[33m:[39m { login[33m:[39m [32m"reviewer"[39m[33m,[39m type[33m:[39m [32m"User"[39m }[33m,[39m
+    [90m164|[39m     }))[33m;[39m
+    [90m165|[39m     [34mexpect[39m([34mrunDigest[39m({ reviews })[33m.[39mstatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   |[39m                                           [31m^[39m
+    [90m166|[39m   })[33m;[39m
+    [90m167|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mdoes not let an inline reply close a conversation
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m170:78[22m[39m
+    [90m168|[39m   [34mit[39m([32m"does not let an inline reply close a conversation"[39m[33m,[39m () [33m=>[39m {
+    [90m169|[39m     [35mconst[39m inline [33m=[39m { [33m...[39m[34mreply[39m([32m"Already fixed"[39m)[33m,[39m in_reply_to_id[33m:[39m [34m19[39m }[33m;[39m
+    [90m170|[39m     expect(runDigest({ conversation: [original], inline: [inline] }).s…
+    [90m   |[39m                                                                              [31m^[39m
+    [90m171|[39m   })[33m;[39m
+    [90m172|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires a new reply after inline edits: 2026-01-01T00:00:00Z
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m179:60[22m[39m
+    [90m177|[39m     const root = { ...comment({ updated }), path: "example.sh", line: …
+    [90m178|[39m     [35mconst[39m response [33m=[39m { [33m...[39m[34mreply[39m([32m"Fixed"[39m)[33m,[39m in_reply_to_id[33m:[39m root[33m.[39mid }[33m;[39m
+    [90m179|[39m     expect(runDigest({ inline: [root, response] }).status).toBe(expect…
+    [90m   |[39m                                                            [31m^[39m
+    [90m180|[39m   })[33m;[39m
+    [90m181|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mrequires a new reply after inline edits: 2026-01-03T00:00:00Z
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m179:60[22m[39m
+    [90m177|[39m     const root = { ...comment({ updated }), path: "example.sh", line: …
+    [90m178|[39m     [35mconst[39m response [33m=[39m { [33m...[39m[34mreply[39m([32m"Fixed"[39m)[33m,[39m in_reply_to_id[33m:[39m root[33m.[39mid }[33m;[39m
+    [90m179|[39m     expect(runDigest({ inline: [root, response] }).status).toBe(expect…
+    [90m   |[39m                                                            [31m^[39m
+    [90m180|[39m   })[33m;[39m
+    [90m181|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m .agents/skills/pr-watch/pr-digest.test.ts[2m > [22mpr-digest[2m > [22mremoves terminal controls
+[31m[1mAssertionError[22m: expected 1 to be 11 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 11[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m .agents/skills/pr-watch/pr-digest.test.ts:[2m184:27[22m[39m
+    [90m182|[39m   [34mit[39m([32m"removes terminal controls"[39m[33m,[39m () [33m=>[39m {
+    [90m183|[39m     const result = runDigest({ conversation: [comment({ body: "Fix \x1…
+    [90m184|[39m     [34mexpect[39m(result[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m11[39m)[33m;[39m
+    [90m   |[39m                           [31m^[39m
+    [90m185|[39m     [34mexpect[39m(result[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"\x1b"[39m)[33m;[39m
+    [90m186|[39m     [34mexpect[39m(result[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"\x07"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/testkit/src/playwright-artifact-publication.test.ts[2m > [22mPlaywright artifact publication boundary[2m > [22mpublishes pull_request through trusted code with fake storage and credentials
+[41m[1m FAIL [22m[49m packages/testkit/src/playwright-artifact-publication.test.ts[2m > [22mPlaywright artifact publication boundary[2m > [22mpublishes push through trusted code with fake storage and credentials
+[41m[1m FAIL [22m[49m packages/testkit/src/playwright-artifact-publication.test.ts[2m > [22mPlaywright artifact publication boundary[2m > [22mpublishes timed_out through trusted code with fake storage and credentials
+[31m[1mError[22m: Command failed: bash scripts/publish-playwright-report.sh
+scripts/publish-playwright-report.sh: line 172: pnpm: command not found
+[39m
+[36m [2m❯[22m packages/testkit/src/playwright-artifact-publication.test.ts:[2m232:7[22m[39m
+    [90m230|[39m         [33mATTACK_MARKER[39m[33m:[39m path[33m.[39m[34mjoin[39m(root[33m,[39m [32m"executed-untrusted-code"[39m)[33m,[39m
+    [90m231|[39m       }[33m;[39m
+    [90m232|[39m       [34mexecFileSync[39m([32m"bash"[39m[33m,[39m [[32m"scripts/publish-playwright-report.sh"[39m][33m,[39m {
+    [90m   |[39m       [31m^[39m
+    [90m233|[39m         cwd[33m:[39m checkout[33m,[39m
+    [90m234|[39m         env[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m infra/sandboxes/supervisor/src/computer-spec.test.ts[2m > [22mgraphical computer spec[2m > [22mselects a display-specific browser profile and preserves explicit profiles
+[31m[1mAssertionError[22m: expected [ Array(15) ] to include '--user-data-dir=/tmp/rakazo-browser-w…'[39m
+[36m [2m❯[22m infra/sandboxes/supervisor/src/computer-spec.test.ts:[2m213:27[22m[39m
+    [90m211|[39m
+    [90m212|[39m       [35mtry[39m {
+    [90m213|[39m         expect(run(":1")).toContain(`--user-data-dir=${home}/.browser-…
+    [90m   |[39m                           [31m^[39m
+    [90m214|[39m         [34mexpect[39m([34mrun[39m([32m":1"[39m))[33m.[39m[34mtoContain[39m([32m"--restore-last-session"[39m)[33m;[39m
+    [90m215|[39m         expect(run(":1").some((arg) => arg.startsWith("--remote-debugg…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/29]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m infra/sandboxes/supervisor/src/computer-spec.test.ts[2m > [22mgraphical computer spec[2m > [22mclears crashed state from Chromium preferences and Local State
+[31m[1mAssertionError[22m: expected '{\n  "profile": {\n    "exit_type": "…' to contain '"exit_type":"Normal"'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- "exit_type":"Normal"[39m
+[31m+ {[39m
+[31m+   "profile": {[39m
+[31m+     "exit_type": "Crashed",[39m
+[31m+     "exited_cleanly": false[39m
+[31m+   }[39m
+[31m+ }[39m
+[31m+[39m
+
+[36m [2m❯[22m infra/sandboxes/supervisor/src/computer-spec.test.ts:[2m279:30[22m[39m
+    [90m277|[39m
+    [90m278|[39m         [35mconst[39m updatedPrefs [33m=[39m [34mreadFileSync[39m(prefsPath[33m,[39m [32m"utf8"[39m)[33m;[39m
+    [90m279|[39m         [34mexpect[39m(updatedPrefs)[33m.[39m[34mtoContain[39m([32m'"exit_type":"Normal"'[39m)[33m;[39m
+    [90m   |[39m                              [31m^[39m
+    [90m280|[39m         [34mexpect[39m(updatedPrefs)[33m.[39m[34mtoContain[39m([32m'"exited_cleanly":true'[39m)[33m;[39m
+    [90m281|[39m         [34mexpect[39m(updatedPrefs)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"Crashed"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/29]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m416 passed[39m[22m[2m | [22m[33m32 skipped[39m[90m (451)[39m
+[2m      Tests [22m [1m[31m29 failed[39m[22m[2m | [22m[1m[32m4778 passed[39m[22m[2m | [22m[33m171 skipped[39m[90m (4978)[39m
+[2m   Start at [22m 07:37:10
+[2m   Duration [22m 601.48s[2m (transform 17.35s, setup 3.45s, import 367.76s, tests 133.61s, environment 1.10s)[22m
+
+EXIT:1

@@ -1,0 +1,44 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/coding-secret-grants.test.ts [2m([22m[2m15 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1499[2mms[22m[39m
+     [32m✓[39m grants only declared names that exist in the project store; refusal is explicit and lists the missing[32m 99[2mms[22m[39m
+     [32m✓[39m refuses wildcards and malformed names at declaration (v1: no wildcards)[32m 85[2mms[22m[39m
+     [32m✓[39m injection resolves granted names ONLY — an existing but ungranted secret never resolves[32m 123[2mms[22m[39m
+     [32m✓[39m TTL per (workspace, taskRun): expiry is grantedAt + the ratified 10-minute default[32m 83[2mms[22m[39m
+     [32m✓[39m grants are scoped to the (workspace, taskRun) pair — another run does not inherit them[32m 81[2mms[22m[39m
+     [32m✓[39m prepareTaskSecretInjection audits inject BEFORE handing values to the provider (audit-then-act)[32m 124[2mms[22m[39m
+[31m     [31m×[31m fix r2 LOW-5: a partial re-grant leaves two grantRefs on one run — each injected name is audited with its OWN row's grantRef[39m[32m 176[2mms[22m[39m
+     [32m✓[39m refuses injection through a provider that cannot guarantee spawn-env injection (T21, structural)[32m 120[2mms[22m[39m
+     [32m✓[39m revoke without force is enforced at the NEXT start; the message documents it[32m 85[2mms[22m[39m
+     [32m✓[39m revoke with --force stops the task NOW[32m 83[2mms[22m[39m
+     [32m✓[39m --force without a stop handle refuses explicitly instead of pretending to stop[32m 80[2mms[22m[39m
+     [32m✓[39m TTL expiry is enforced at the next start and audited once[32m 84[2mms[22m[39m
+     [32m✓[39m rotation marks grants stale: refusal at next start until an explicit re-grant[32m 184[2mms[22m[39m
+     [32m✓[39m a driver that cannot guarantee spawn-env injection disables secrets with an explicit disclosure — never silent[32m 3[2mms[22m[39m
+     [32m✓[39m the confidentiality-bounded-by-threat-model disclosure rides the grant result and the disabled error[32m 85[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-secret-grants.test.ts[2m > [22mgrants (T15, V9)[2m > [22mfix r2 LOW-5: a partial re-grant leaves two grantRefs on one run — each injected name is audited with its OWN row's grantRef
+[31m[1mAssertionError[22m: expected 'grant-565dc4a6-6cf6-4ea0-9b8c-e0d8de1…' to deeply equal 'grant-0bc4c47f-b1b3-468e-b82c-c5b5a4a…'[39m
+
+Expected: [32m"grant-[7m0bc4c47f-b1b3-468e-[27mb8[7m2[27mc-[7mc5b5a4acccbb[27m"[39m
+Received: [31m"grant-[7m565dc4a6-6cf6-4ea0-9[27mb8c-[7me0d8de189265[27m"[39m
+
+[36m [2m❯[22m packages/adapters/src/coding-secret-grants.test.ts:[2m311:51[22m[39m
+    [90m309|[39m     [90m// never rows[0]'s ref applied to the whole batch.[39m
+    [90m310|[39m     expect(injectEntryFor("github_token")?.grantRef).toEqual(first.gra…
+    [90m311|[39m     expect(injectEntryFor("npm_token")?.grantRef).toEqual(second.grant…
+    [90m   |[39m                                                   [31m^[39m
+    [90m312|[39m     [90m// The provider batch ref stays a real, auditable grant ref.[39m
+    [90m313|[39m     [35mconst[39m ref [33m=[39m applied[[34m0[39m][33m![39m[33m.[39mref [35mas[39m { grantRef[33m:[39m string }[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (15)[39m
+[2m   Start at [22m 10:43:17
+[2m   Duration [22m 2.45s[2m (transform 449ms, setup 44ms, import 708ms, tests 1.50s, environment 0ms)[22m
+

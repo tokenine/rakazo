@@ -1,0 +1,70 @@
+[41m[1m FAIL [22m[49m packages/adapters/src/process-sandbox-secrets.test.ts[2m > [22mT16: bootstrap injection at process spawn env, via the audited grant channel only[2m > [22mclearSecretGrant removes the injected values for subsequent spawns
+[31m[1mTypeError[22m: provider.applySecretGrant is not a function[39m
+[36m [2m❯[22m packages/adapters/src/process-sandbox-secrets.test.ts:[2m211:20[22m[39m
+    [90m209|[39m   it("clearSecretGrant removes the injected values for subsequent spaw…
+    [90m210|[39m     [35mconst[39m { provider[33m,[39m task } [33m=[39m [35mawait[39m [34mfixture[39m()[33m;[39m
+    [90m211|[39m     await provider.applySecretGrant(task.taskId, { github_token: "ghp_…
+    [90m   |[39m                    [31m^[39m
+    [90m212|[39m     [35mawait[39m provider[33m.[39m[34mclearSecretGrant[39m(task[33m.[39mtaskId)[33m;[39m
+    [90m213|[39m     [35mconst[39m outcome [33m=[39m [35mawait[39m [34mcollect[39m(
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-sandbox-secrets.test.ts[2m > [22mT16: bootstrap injection at process spawn env, via the audited grant channel only[2m > [22mthe injection path writes values to NO tree: workspace, data and provider root stay clean (V9, in-test grep gate)
+[31m[1mTypeError[22m: provider.applySecretGrant is not a function[39m
+[36m [2m❯[22m packages/adapters/src/process-sandbox-secrets.test.ts:[2m225:20[22m[39m
+    [90m223|[39m   it("the injection path writes values to NO tree: workspace, data and…
+    [90m224|[39m     [35mconst[39m { provider[33m,[39m task[33m,[39m root } [33m=[39m [35mawait[39m [34mfixture[39m()[33m;[39m
+    [90m225|[39m     await provider.applySecretGrant(task.taskId, { github_token: "ghp_…
+    [90m   |[39m                    [31m^[39m
+    [90m226|[39m     [35mawait[39m [34mcollect[39m(
+    [90m227|[39m       provider.execute(task.ref, { argv: ["bash", "-c", "true"] }, ctx…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m9 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 09:33:12
+[2m   Duration [22m 1.51s[2m (transform 797ms, setup 45ms, import 1.18s, tests 80ms, environment 0ms)[22m
+
+
+ [31m❯[39m packages/adapters/src/process-sandbox-secrets.test.ts [2m([22m[2m10 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 76[2mms[22m[39m
+[31m     [31m×[31m refuses a command whose request.env carries a declared secret name — the value never reaches the child[39m[32m 25[2mms[22m[39m
+[31m     [31m×[31m refuses request.env value collisions: a granted value under another name is still blocked[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m a declared-but-not-yet-granted name is already gated: declaration alone closes the channel[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m no error path silently downgrades: refusal wins even when the command would fail anyway[39m[32m 4[2mms[22m[39m
+     [32m✓[39m ordinary (non-gated) request.env still passes; parent-env scrub still holds[32m 14[2mms[22m[39m
+[31m     [31m×[31m applySecretGrant injects granted values into the child env (and only those)[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m applySecretGrant refuses keys outside the task's declared secret names[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applySecretGrant refuses to act without the grant + audit reference[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m clearSecretGrant removes the injected values for subsequent spawns[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m the injection path writes values to NO tree: workspace, data and provider root stay clean (V9, in-test grep gate)[39m[32m 3[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 9 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-sandbox-secrets.test.ts[2m > [22mbinding constraint: request.env can never re-inject grant-gated secrets (LOW-7)[2m > [22mrefuses a command whose request.env carries a declared secret name — the value never reaches the child
+[31m[1mAssertionError[22m: expected 'LEAKED:attacker-controlled-value' not to contain 'attacker-controlled-value'[39m
+
+Expected: [32m"attacker-controlled-value"[39m
+Received: [31m"[7mLEAKED:[27mattacker-controlled-value"[39m
+
+[36m [2m❯[22m packages/adapters/src/process-sandbox-secrets.test.ts:[2m85:32[22m[39m
+    [90m 83|[39m       )[33m,[39m
+    [90m 84|[39m     )[33m;[39m
+    [90m 85|[39m     [34mexpect[39m(outcome[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"attacker-controlled-value"[39m)[33m;[39m
+    [90m   |[39m                                [31m^[39m
+    [90m 86|[39m     [34mexpect[39m(outcome[33m.[39mstdout)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m"LEAKED:"[39m)[33m;[39m
+    [90m 87|[39m     [34mexpect[39m(outcome[33m.[39mcode)[33m.[39mnot[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-sandbox-secrets.test.ts[2m > [22mbinding constraint: request.env can never re-inject grant-gated secrets (LOW-7)[2m > [22mrefuses request.env value collisions: a granted value under another name is still blocked
+[31m[1mTypeError[22m: provider.applySecretGrant is not a function[39m
+[36m [2m❯[22m packages/adapters/src/process-sandbox-secrets.test.ts:[2m94:20[22m[39m
+    [90m 92|[39m   it("refuses request.env value collisions: a granted value under anot…
+    [90m 93|[39m     [35mconst[39m { provider[33m,[39m task } [33m=[39m [35mawait[39m [34mfixture[39m()[33m;[39m
+    [90m 94|[39m     await provider.applySecretGrant(task.taskId, { github_token: "ghp_…
+    [90m   |[39m                    [31m^[39m
+    [90m 95|[39m     [35mconst[39m outcome [33m=[39m [35mawait[39m [34mcollect[39m(
+    [90m 96|[39m       provider[33m.[39m[34mexecute[39m(

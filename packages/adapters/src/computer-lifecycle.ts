@@ -11,6 +11,7 @@ import type { ComputerUpdate } from "@rakazo/contracts";
 import { ACTIVE_RUN_STATUSES, parseScreenLeaseId, screenLeaseId } from "@rakazo/core";
 import {
   expireComputerExecutionLeases,
+  PRIMARY_SESSION_ORDER,
   type PrismaClient,
   parseComputerMode,
   type ThreadEvents,
@@ -771,12 +772,13 @@ export async function replaceComputer(
     try {
       const bot = await deps.prisma.bot.findFirst({
         where: { id: botId },
-        select: { thread: { select: { id: true } } },
+        select: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } } },
       });
-      if (bot?.thread) {
+      const primaryThread = bot?.threads[0];
+      if (bot && primaryThread) {
         await deps.events.append({
           spaceId: context.spaceId,
-          threadId: bot.thread.id,
+          threadId: primaryThread.id,
           botId,
           type: "computer.takeover.released",
           payload: {

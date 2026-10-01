@@ -1,0 +1,103 @@
+# RED evidence — matrix row V4 (T12 takeover settle across the four handlers + pre-resume recheck)
+# UTC: 2026-10-01T07:08:01Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/takeover-settle.test.ts packages/adapters/src/executor-takeover-settle.test.ts
+# UTC: 2026-10-01T07:08:01Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/executor-takeover-settle.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 84[2mms[22m[39m
+[31m     [31m×[31m shell: blocked with an explicit recorded error while the user holds the screen[39m[32m 26[2mms[22m[39m
+[31m     [31m×[31m write_file: blocked with an explicit recorded error while the user holds the screen[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m schedule_create: blocked with an explicit recorded error while the user holds the screen[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m add_mcp_server: blocked with an explicit recorded error while the user holds the screen[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m the same handlers work normally when no takeover hold is active (control)[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m manual edits made during the takeover are reported as protected, not rolled back[39m[32m 30[2mms[22m[39m
+[31m     [31m×[31m a clean baseline resumes without a protection note[39m[32m 17[2mms[22m[39m
+ [31m❯[39m packages/adapters/src/takeover-settle.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/takeover-settle.test.ts[2m [ packages/adapters/src/takeover-settle.test.ts ][22m
+[31m[1mError[22m: Cannot find module './takeover-settle.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/takeover-settle.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/takeover-settle.test.ts:[2m6:1[22m[39m
+    [90m  4|[39m [35mimport[39m { afterEach[33m,[39m describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  5|[39m [35mimport[39m { [33mLocalAgentHomeStore[39m } [35mfrom[39m [32m"./home.js"[39m[33m;[39m
+    [90m  6|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  7|[39m   [33mTAKEOVER_SETTLE_BOUND_MS[39m[33m,[39m
+    [90m  8|[39m   [33mDESKTOP_HELD_FOR_TAKEOVER_MESSAGE[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 7 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mtakeover hold: the four guarded handlers settle or block (V4)[2m > [22mshell: blocked with an explicit recorded error while the user holds the screen
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mtakeover hold: the four guarded handlers settle or block (V4)[2m > [22mwrite_file: blocked with an explicit recorded error while the user holds the screen
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mtakeover hold: the four guarded handlers settle or block (V4)[2m > [22mschedule_create: blocked with an explicit recorded error while the user holds the screen
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mtakeover hold: the four guarded handlers settle or block (V4)[2m > [22madd_mcp_server: blocked with an explicit recorded error while the user holds the screen
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'findUniqueOrThrow')[39m
+[36m [2m❯[22m acquireComputerExecutionLease packages/adapters/src/computer-lifecycle.ts:[2m448:42[22m[39m
+    [90m446|[39m   }[33m,[39m
+    [90m447|[39m )[33m:[39m [33mPromise[39m[33m<[39m[33mComputerExecutionLease[39m [33m|[39m [35mnull[39m[33m>[39m {
+    [90m448|[39m   const computer = await prisma.computer.findUniqueOrThrow({ where: { …
+    [90m   |[39m                                          [31m^[39m
+    [90m449|[39m   [35mif[39m (computer[33m.[39mmaintenanceId [33m&&[39m computer[33m.[39mmaintenanceId [33m!==[39m input[33m.[39mrunId)
+    [90m450|[39m     [35mthrow[39m [35mnew[39m [33mComputerBusyError[39m()[33m;[39m
+[90m [2m❯[22m Object.continueRun packages/adapters/src/executor.ts:[2m1163:31[22m[39m
+[90m [2m❯[22m Object.run packages/adapters/src/executor-takeover-settle.test.ts:[2m151:7[22m[39m
+[90m [2m❯[22m packages/adapters/src/executor-takeover-settle.test.ts:[2m164:7[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mtakeover hold: the four guarded handlers settle or block (V4)[2m > [22mthe same handlers work normally when no takeover hold is active (control)
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'findUniqueOrThrow')[39m
+[36m [2m❯[22m acquireComputerExecutionLease packages/adapters/src/computer-lifecycle.ts:[2m448:42[22m[39m
+    [90m446|[39m   }[33m,[39m
+    [90m447|[39m )[33m:[39m [33mPromise[39m[33m<[39m[33mComputerExecutionLease[39m [33m|[39m [35mnull[39m[33m>[39m {
+    [90m448|[39m   const computer = await prisma.computer.findUniqueOrThrow({ where: { …
+    [90m   |[39m                                          [31m^[39m
+    [90m449|[39m   [35mif[39m (computer[33m.[39mmaintenanceId [33m&&[39m computer[33m.[39mmaintenanceId [33m!==[39m input[33m.[39mrunId)
+    [90m450|[39m     [35mthrow[39m [35mnew[39m [33mComputerBusyError[39m()[33m;[39m
+[90m [2m❯[22m Object.continueRun packages/adapters/src/executor.ts:[2m1163:31[22m[39m
+[90m [2m❯[22m Object.run packages/adapters/src/executor-takeover-settle.test.ts:[2m151:7[22m[39m
+[90m [2m❯[22m packages/adapters/src/executor-takeover-settle.test.ts:[2m176:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mpre-resume recheck note reaches the continuation prompt (V4)[2m > [22mmanual edits made during the takeover are reported as protected, not rolled back
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'findUniqueOrThrow')[39m
+[36m [2m❯[22m acquireComputerExecutionLease packages/adapters/src/computer-lifecycle.ts:[2m448:42[22m[39m
+    [90m446|[39m   }[33m,[39m
+    [90m447|[39m )[33m:[39m [33mPromise[39m[33m<[39m[33mComputerExecutionLease[39m [33m|[39m [35mnull[39m[33m>[39m {
+    [90m448|[39m   const computer = await prisma.computer.findUniqueOrThrow({ where: { …
+    [90m   |[39m                                          [31m^[39m
+    [90m449|[39m   [35mif[39m (computer[33m.[39mmaintenanceId [33m&&[39m computer[33m.[39mmaintenanceId [33m!==[39m input[33m.[39mrunId)
+    [90m450|[39m     [35mthrow[39m [35mnew[39m [33mComputerBusyError[39m()[33m;[39m
+[90m [2m❯[22m Object.continueRun packages/adapters/src/executor.ts:[2m1163:31[22m[39m
+[90m [2m❯[22m Object.run packages/adapters/src/executor-takeover-settle.test.ts:[2m151:7[22m[39m
+[90m [2m❯[22m packages/adapters/src/executor-takeover-settle.test.ts:[2m227:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-takeover-settle.test.ts[2m > [22mpre-resume recheck note reaches the continuation prompt (V4)[2m > [22ma clean baseline resumes without a protection note
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'findUniqueOrThrow')[39m
+[36m [2m❯[22m acquireComputerExecutionLease packages/adapters/src/computer-lifecycle.ts:[2m448:42[22m[39m
+    [90m446|[39m   }[33m,[39m
+    [90m447|[39m )[33m:[39m [33mPromise[39m[33m<[39m[33mComputerExecutionLease[39m [33m|[39m [35mnull[39m[33m>[39m {
+    [90m448|[39m   const computer = await prisma.computer.findUniqueOrThrow({ where: { …
+    [90m   |[39m                                          [31m^[39m
+    [90m449|[39m   [35mif[39m (computer[33m.[39mmaintenanceId [33m&&[39m computer[33m.[39mmaintenanceId [33m!==[39m input[33m.[39mrunId)
+    [90m450|[39m     [35mthrow[39m [35mnew[39m [33mComputerBusyError[39m()[33m;[39m
+[90m [2m❯[22m Object.continueRun packages/adapters/src/executor.ts:[2m1163:31[22m[39m
+[90m [2m❯[22m Object.run packages/adapters/src/executor-takeover-settle.test.ts:[2m151:7[22m[39m
+[90m [2m❯[22m packages/adapters/src/executor-takeover-settle.test.ts:[2m262:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[90m (7)[39m
+[2m   Start at [22m 07:08:02
+[2m   Duration [22m 5.47s[2m (transform 2.15s, setup 48ms, import 4.89s, tests 84ms, environment 0ms)[22m
+

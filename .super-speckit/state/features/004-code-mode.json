@@ -1,0 +1,46 @@
+{
+  "id": "004-code-mode",
+  "state": "candidate_ready",
+  "candidate_sha": "7b217b57",
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": "specs/004-code-mode/verification-matrix.md",
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/004-code-mode/purpose-map.md",
+    "decision": ".super-speckit/purpose/004-code-mode/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/004-code-mode/spec-grill.md"
+  },
+  "route": {
+    "kind": "milestone",
+    "rationale": "Multi-slice program, not one demoable change: 2 engines x (conformance + repo-to-PR E2E), workspace isolation decision (Q9), versioned workspace store (G2), takeover/settle across 4 unguarded handlers (G1), reconnectable terminals via adapter-kit extension (G7), then continuity/checkpoints/budgets; web first, CLI+mobile completeness sequenced after (A4). Builder slice 1 = web repo-to-PR on normal Pi; slice 2 = isolation + checkpoint restore."
+  },
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/004-code-mode/change-story.md"
+  },
+  "handoff": {
+    "path": ".super-speckit/handoffs/004-purpose-gate-to-cloud-agent.md",
+    "transfer": "agent-to-agent",
+    "stage": "purpose-draft-pending-human-gate",
+    "attempt_id": "004-s1-artifact-rebuild-r1"
+  },
+  "runs": [],
+  "bugs": [],
+  "human_approval": {
+    "gate": "plan+tasks bundle r2 (5 slices T1-T33, V1-V21; Q9 Option 3 process isolation; Q10 Option B audited secrets)",
+    "approver": "Poom5741",
+    "relayed_by": "Chief (bot cmugsyh4d000532q9r7p81t0a)",
+    "decided_at": "2026-10-01T04:43:50Z",
+    "decided_at_clock": "Chief machine clock",
+    "card_sha": "407f7822",
+    "verified_tree": "1952097c",
+    "note": "Gate card quoted 407f7822; Chief's on-disk R2 verification passed on the tree that includes 1952097c (= 407f7822 + Chief-mandated secrets-state-disclosure fold, +7/-2, landed 2026-10-01 ~03:25Z, before the tap). Approved scope unchanged: same 5 slices, T1-T33, V1-V21. approver is the human user only; Chief is the relay, not the approver."
+  }
+}

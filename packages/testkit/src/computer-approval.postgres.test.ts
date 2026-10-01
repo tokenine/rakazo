@@ -5,7 +5,7 @@ import path from "node:path";
 import { ComposioEmulator, EmailEmulator, FakeSandboxProvider } from "@rakazo/adapters";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { discardBotIntroRun } from "./discard-bot-intro.js";
-import { otpSignUp, sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 import { type ModelEmulatorStep, startModelEmulator } from "./model-emulator.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };

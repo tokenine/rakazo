@@ -15,10 +15,7 @@ export function WelcomePage() {
     >
       <style>{`[data-theme="dark"] .ai7-lockup-light{display:none}[data-theme="light"] .ai7-lockup-dark{display:none}`}</style>
       {/* warm brand glow — uses semantic muted/accent tokens for background tint */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-muted/30"
-      />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-muted/30" />
       <div className="app-drag relative flex gap-2 px-5 py-[18px]">
         <WindowChrome />
       </div>

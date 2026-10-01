@@ -1393,3 +1393,104 @@ model ClientBrowserSession {
 
   @@map("client_browser_sessions")
 }
+
+/// 004-code-mode: durable coding session. Bound to (workspaceId, engine) at
+/// creation; the engine never changes mid-session (continuation = new session,
+/// labelled). Loosely coupled to chat rows on purpose (CloudAgent precedent):
+/// the session and its workspace outlive the originating thread.
+model CodingSession {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  engine            String   @default("normal-pi")
+  spaceId           String
+  userId            String
+  botId             String
+  threadId          String?
+  title             String   @default("")
+  status            String   @default("active")
+  /// Recorded acceptance artifact (V2 precondition): outcome + verification commands.
+  acceptance        Json?
+  /// Explicit refusals counted while the gate blocks edits before acceptance.
+  refusals          Int      @default(0)
+  latestRunId       String?
+  /// Verification records (command, exit status, evidence artifact) for the web view.
+  verification      Json?
+  /// 004-code-mode S3 (T18): checkpointed secrets audit-chain head
+  /// {seq, hash, at} — the run-record side of the audit verify comparison.
+  secretsAuditHead  Json?
+  /// Continuation provenance (V15): prior session id, engine-change label, handoff text.
+  continuationOf    String?
+  engineChangeLabel String?
+  handoffSummary    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([userId, createdAt])
+  @@index([botId])
+  /// LOW-3 (fix round): the acceptance gate resolves coding sessions by run id
+  /// on every gated tool call (coding-acceptance-gate.ts).
+  @@index([latestRunId])
+  @@map("coding_sessions")
+}
+
+/// 004-code-mode S3 (T14, Q10 Option B): per-project (per coding workspace)
+/// encrypted secrets. Values are sealed with the deployment EncryptedSecretStore
+/// (the docs/bot-secrets.md facility's AES-256-GCM primitive) — the same
+/// at-rest encryption the bot_secrets table uses — but scoped per workspace,
+/// because BotSecret itself is (user, space, bot)-keyed and
+/// HTTP-destination-shaped and cannot hold project secrets. Plaintexts never
+/// leave the grant/injection path; rows carry ciphertext and metadata only.
+model CodingProjectSecret {
+  id          String   @id
+  workspaceId String
+  name        String
+  ciphertext  String
+  rotatedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("coding_project_secrets")
+}
+
+/// 004-code-mode S3 (T15, Q10): secret grants per (workspace, taskRun).
+/// A task config declares required secret NAMES before start (same gate
+/// family as the T4 acceptance gate: deny-by-default); only granted,
+/// unexpired, unrevoked, non-stale names resolve at injection. TTL and
+/// revocation must survive restarts, so grant state is durable here.
+model CodingSecretGrant {
+  id          String    @id
+  workspaceId String
+  taskRunId   String
+  secretName  String
+  secretRef   String
+  grantRef    String
+  grantedAt   DateTime
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, taskRunId, secretName])
+  @@index([workspaceId, taskRunId])
+  @@map("coding_secret_grants")
+}
+
+/// 004-code-mode: exclusive per-workspace lease. A second coding session
+/// cannot attach while the lease is held; expired leases are taken over with
+/// a bumped fence (never last-writer-wins on an active workspace).
+model CodingWorkspaceLease {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  sessionId   String
+  owner       String
+  fence       Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sessionId])
+  @@map("coding_workspace_leases")
+}

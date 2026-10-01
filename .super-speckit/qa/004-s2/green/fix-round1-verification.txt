@@ -1,0 +1,60 @@
+# 004-code-mode S2 fix round 1 — scoped verification (lane rakazo-004-s2-fix-r1)
+# UTC: 2026-10-01T08:47:26Z
+# HEAD after fold: c8f1d9100e7de786a4a3b0bd790e0f2fe76fe778 (branch tl/004-purpose-gate-r1; base was a8788440)
+
+[1] biome check — touched product + test files, exit 0 (0 errors, 0 warnings):
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm biome check \
+      packages/adapters/src/process-sandbox.ts packages/adapters/src/coding-doctor.ts \
+      packages/adapters/src/process-sandbox.test.ts packages/adapters/src/coding-doctor.test.ts
+    -> "Checked 4 files in 41ms. No fixes applied." exit code 0
+    (LOW-2 organizeImports error in coding-doctor.ts is gone.)
+
+[2] tsc --noEmit — touched package + consumer, both exit 0:
+    $ corepack pnpm exec tsc --noEmit -p packages/adapters/tsconfig.json  -> exit code 0
+    $ corepack pnpm exec tsc --noEmit -p apps/api/tsconfig.json           -> exit code 0
+
+[3] S2 scoped suites (V3 provider+seam+conformance, T10 collision matrix, V4 takeover
+    settle, V5 workspace store, V12 doctor) — all green:
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run \
+      packages/adapters/src/process-sandbox.test.ts \
+      packages/adapters/src/sandbox-factory.test.ts \
+      packages/adapters/src/sandbox-conformance.test.ts \
+      packages/adapters/src/process-collision-matrix.test.ts \
+      packages/adapters/src/executor-takeover-settle.test.ts \
+      packages/adapters/src/takeover-settle.test.ts \
+      packages/adapters/src/takeover-resume.test.ts \
+      packages/adapters/src/home-revisions.test.ts \
+      packages/adapters/src/home.test.ts \
+      packages/adapters/src/home-races.test.ts \
+      packages/adapters/src/coding-doctor.test.ts
+    Result: Test Files 11 passed (11); Tests 103 passed | 1 skipped (104)
+    ---- raw tail ----
+ ✓ packages/adapters/src/sandbox-factory.test.ts (5 tests) 61ms
+ ✓ packages/adapters/src/takeover-resume.test.ts (9 tests) 12ms
+ Test Files  11 passed (11)
+      Tests  103 passed | 1 skipped (104)
+   Start at  08:46:25
+   Duration  19.87s (transform 3.47s, setup 111ms, import 13.61s, tests 3.27s, environment 2ms)
+
+[4] S1 regression set (the 145-test slice-1 suite, 9 files) — no regression, identical
+    to the pre-fix S1 evidence (143 passed | 2 skipped of 145):
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run \
+      packages/adapters/src/coding-acceptance-gate.test.ts \
+      packages/adapters/src/coding-engine.test.ts \
+      packages/adapters/src/coding-pi-adapter.test.ts \
+      packages/adapters/src/coding-repo-to-pr.test.ts \
+      packages/adapters/src/coding-session-service.test.ts \
+      packages/adapters/src/coding-session.postgres.test.ts \
+      packages/adapters/src/executor-coding-gate.test.ts \
+      packages/db/src/coding-migration.test.ts \
+      packages/adapters/src/executor.test.ts
+    Result: Test Files 8 passed | 1 skipped (9); Tests 143 passed | 2 skipped (145)
+    ---- raw tail ----
+ ✓ packages/db/src/coding-migration.test.ts (6 tests) 29ms
+ ↓ packages/adapters/src/coding-session.postgres.test.ts (2 tests | 2 skipped)
+ Test Files  8 passed | 1 skipped (9)
+      Tests  143 passed | 2 skipped (145)
+   Start at  08:46:50
+   Duration  16.23s (transform 3.41s, setup 126ms, import 12.70s, tests 1.11s, environment 1ms)
+
+MED-1 red/green evidence: red/med1-suspend-orphans.txt -> green/med1-suspend-orphans.txt

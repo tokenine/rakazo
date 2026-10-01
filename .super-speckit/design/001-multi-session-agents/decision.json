@@ -1,0 +1,11 @@
+{
+  "feature": "001-multi-session-agents",
+  "status": "decided",
+  "prototype": "prototype.html",
+  "brief": "design-brief.md",
+  "design_system_sources": [],
+  "external_sources": [],
+  "decision_by": "coordinator (autonomous per execution policy)",
+  "decision_at": null,
+  "notes": "Session switcher inside existing bot chat view; route /{botId}/{threadId?}; primary-first then last-activity ordering; unread badges; new/rename/delete per grill deletion rules; ui-tokens via chat-ui; live updates via session.* events. Reversible: switcher could move to sidebar in S3 if e2e shows wayfinding friction."
+}

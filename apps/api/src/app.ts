@@ -553,10 +553,7 @@ export async function createApp(
       otp: Boolean(email),
     }),
   );
-  if (
-    (env.nodeEnv === "development" || env.nodeEnv === "test") &&
-    email instanceof EmailEmulator
-  ) {
+  if ((env.nodeEnv === "development" || env.nodeEnv === "test") && email instanceof EmailEmulator) {
     // Dev/test-only inbox for the emulator backing this app — including an injected
     // emulator (test harness), so OTP e2e signups can read codes offline.
     app.get(

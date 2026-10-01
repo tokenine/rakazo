@@ -245,7 +245,6 @@ import {
   RenameBotSectionDialog,
 } from "./shell/dialogs";
 import { ExpertCreatePanel } from "./shell/expert-create";
-import { SessionSwitcher } from "./shell/session-switcher";
 import {
   AppConnectCard,
   ArtifactImage,
@@ -253,6 +252,7 @@ import {
   ChoiceCard,
   McpApprovalCard,
 } from "./shell/message-cards";
+import { SessionSwitcher } from "./shell/session-switcher";
 import { WindowChrome } from "./WindowChrome";
 
 const BotContextMenu = lazy(() =>
@@ -1034,10 +1034,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
     const request = ++threadRefreshEpoch.current;
     // Apply threads.get as soon as it returns so stop/takeover status is not held behind
     // routines/skills/screen fetches (progress can advance the cursor meanwhile).
-    const snap = await rpc.threads.get(
-      threadTargetForBot(id),
-      signal ? { signal } : undefined,
-    );
+    const snap = await rpc.threads.get(threadTargetForBot(id), signal ? { signal } : undefined);
     markOnce("rk:renderer:thread-response");
     if (
       activeBotId.current !== id ||
@@ -1333,11 +1330,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
     }
   }
 
-  async function renameSessionAndView(
-    targetBotId: string,
-    sessionId: string,
-    name: string,
-  ) {
+  async function renameSessionAndView(targetBotId: string, sessionId: string, name: string) {
     try {
       await rpc.threads.renameSession({ sessionId, name });
       await refreshSessions(targetBotId);
@@ -1404,14 +1397,12 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
         const primed = bootstrappedThread.current;
         bootstrappedThread.current = null;
         // Pending search jumps load the around-page separately; avoid replacing it with latest.
-        return primed?.botId === active.id &&
-          (!threadId || primed.threadId === threadId)
+        return primed?.botId === active.id && (!threadId || primed.threadId === threadId)
           ? primed
           : pendingJump
-            ? rpc.threads.get(
-                threadTargetForBot(active.id),
-                { signal: threadSnapshotSignal(abort.signal) },
-              )
+            ? rpc.threads.get(threadTargetForBot(active.id), {
+                signal: threadSnapshotSignal(abort.signal),
+              })
             : refreshThread(active.id, threadSnapshotSignal(abort.signal));
       },
       loadHead: () =>
@@ -1502,7 +1493,14 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
     return () => {
       abort.abort();
     };
-  }, [active?.id, threadId, markBotReadIfVisible, notifyBrowserForEvent, refreshSessions, navigate]);
+  }, [
+    active?.id,
+    threadId,
+    markBotReadIfVisible,
+    notifyBrowserForEvent,
+    refreshSessions,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (!groupId || !activeGroup) return;
@@ -3618,7 +3616,9 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
                   const selectedPrimary = sessions.some(
                     (session) => session.id === sessionId && session.isPrimary,
                   );
-                  navigate(selectedPrimary ? `/app/${active.id}` : `/app/${active.id}/${sessionId}`);
+                  navigate(
+                    selectedPrimary ? `/app/${active.id}` : `/app/${active.id}/${sessionId}`,
+                  );
                 }}
                 onCreate={(session) => {
                   void createSessionAndView(active.id, session.name ?? "");

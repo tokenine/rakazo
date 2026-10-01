@@ -1,0 +1,11 @@
+{
+  "feature": "003-agent-marketplace",
+  "status": "decided",
+  "prototype": "prototype.html",
+  "brief": "design-brief.md",
+  "design_system_sources": [],
+  "external_sources": [],
+  "decision_by": "coordinator (autonomous per execution policy)",
+  "decision_at": null,
+  "notes": "Marketplace = browse grid + search + detail drawer + two-phase import review modal; monochrome tokens; provenance badges outline; hub-pattern route/guards. Reversible: drawer can become a page without contract changes."
+}
