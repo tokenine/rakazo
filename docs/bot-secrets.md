@@ -1,3 +1,17 @@
+<!-- 004-code-mode carve-out (T20, Q10 Option B) — ANNOTATION AT TOP, doc not rewritten. -->
+> **Scope note for 004-code-mode task runtimes ONLY:** the blanket refusal below —
+> "injecting credentials into arbitrary AI-controlled shell commands, files or
+> environment variables … is not exposed" — is **superseded for 004-code-mode task
+> runtimes** by the audited project-secrets subsystem: declared secret NAMES are
+> granted per (workspace, taskRun), values are injected at process spawn/bootstrap
+> env only through a capability-gated, audited channel, hashed-chain audited
+> (`audit verify`), TTL-bounded, revocable, and swept by a deny-list egress filter
+> (literal + base64/hex/URL). See
+> `.super-speckit/design/004-code-mode/decision.json` (Q10, Option B) and
+> `specs/004-code-mode/verification-matrix.md` (V8–V11). The **blanket refusal stands
+> everywhere else** — bots outside 004-code-mode task runtimes still have
+> no shell/file/env credential injection.
+
 # Reusable API credentials
 
 Ask a bot to connect an API using a key or password. It calls `request_secret` with a reference name and an HTTPS service origin. The protected card shows that origin before you save. Web, Electron and mobile use the same backend; the value is cleared from the input when submission starts and is omitted from messages, events and model input.
