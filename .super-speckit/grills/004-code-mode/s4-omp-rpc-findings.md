@@ -154,3 +154,35 @@ The T25 adapter must bridge the gap between Pi's tool-based approach and OMP's i
 ---
 
 **Next Steps**: Use these findings to implement the T25 OMP adapter with proper session management, tool handling, and error recovery mechanisms.
+
+---
+
+## Empirical findings from S4 implementation (2026-10-02)
+
+### What actually works with `omp --mode rpc`
+
+- `omp --mode rpc` launches an interactive session and sends a `{"type":"ready",...}` JSONL message to stdout on startup
+- JSON-RPC 2.0 request/response pairs work over stdin/stdout: send `{"jsonrpc":"2.0","id":1,"method":"...","params":{}}` on stdin
+- Unknown method names return `{"type":"response","success":false,"error":"Unknown command: ..."}`
+- The `extension_ui_request` messages arrive asynchronously on stdout during the session
+
+### What does NOT work
+
+- `protocolVersion`, `available_methods`, `session_info` — all return "Unknown command" because OMP is not a traditional RPC daemon
+- Plain text on stdin (must be JSON-RPC 2.0 framed)
+
+### What this means for T25
+
+- The OMP adapter is a **subprocess bridge**: spawns `omp --mode rpc` and maintains the JSONL stdio session
+- The adapter implements the Pi `CodingEngineAdapter` interface (`prompt/steer/stop/resume/inspect_changes/approvals`) by translating to/from OMP's JSONL protocol
+- `extension_ui_request` messages from OMP are surfaced as pending `approvals` in the adapter
+- The subprocess is spawned inside the task sandbox (same as normal Pi), via the existing sandbox `execute()` seam
+- Engine-internal OMP state (conversation context, tool history) lives in the subprocess and is NEVER translated to Pi state — it dies when the subprocess terminates
+- The T25 adapter lives in `packages/adapters/src/coding-omp-adapter.ts` — it is a real subprocess adapter, not a mock
+
+### T26 (V15) labelled continuation rules
+
+- `planContinuation` is already implemented in `coding-engine.ts`
+- Rules: original run must stop first; engine change requires `ENGINE_CHANGE_LABEL` + handoff summary; no silent switch
+- `continueCodingSession` in `coding-session-service.ts` provides the durable continuation path
+- V15 tests cover: same-engine continuation, labelled engine-change continuation, refusal without label/summary, same-workspace preserved

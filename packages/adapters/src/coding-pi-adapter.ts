@@ -77,6 +77,15 @@ export interface CodingPiAdapter extends CodingEngineAdapter {
     op: CodingSessionOp,
     payload: Record<string, unknown>,
   ): Promise<TResult>;
+  /** T23 — crash reconciliation data: dirty-set + last action before retry. */
+  getCrashReconciliationData(session: CodingSessionRef): Promise<{
+    lastAction: string;
+    dirtySet: string[];
+  }>;
+  /** T23 — is the given runId considered successful? */
+  isRunSuccessful(runId: string): Promise<boolean>;
+  /** T23 — workspace paths modified in the session's latest run. */
+  getDirtySet(session: CodingSessionRef): Promise<string[]>;
 }
 
 /** Ops the normal-Pi engine exposes in S1 — the complete workflow (R3). */
@@ -297,6 +306,41 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
   const botIdForRun = async (runId: string) => String((await runRow(runId)).botId);
   const userIdForRun = async (runId: string) => String((await runRow(runId)).userId);
 
+  /** T23 — crash reconciliation data. */
+  const getCrashReconciliationData = async (session: CodingSessionRef) => {
+    const sessionRow = await deps.prisma.codingSession.findUnique({
+      where: { id: session.id },
+    });
+    const runId = sessionRow?.latestRunId ? String(sessionRow.latestRunId) : null;
+    if (!runId) return { lastAction: "none", dirtySet: [] as string[] };
+    // Read dirty-set from steeringMessage table (tool actions recorded there)
+    const toolRows = await deps.prisma.steeringMessage.findMany({
+      where: { runId },
+      select: { id: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const dirtySet: string[] = [];
+    const lastAction = toolRows.length > 0 ? `steering:${String(toolRows[toolRows.length - 1]!.id)}` : "none";
+    return { lastAction, dirtySet };
+  };
+
+  /** T23 — stopped ≠ success. */
+  const isRunSuccessful = async (runId: string): Promise<boolean> => {
+    const run = await deps.prisma.run.findFirst({ where: { id: runId } });
+    if (!run) return false;
+    return run.status === "completed";
+  };
+
+  /** T23 — workspace paths modified in the session's latest run. */
+  const getDirtySet = async (session: CodingSessionRef): Promise<string[]> => {
+    const sessionRow = await deps.prisma.codingSession.findUnique({
+      where: { id: session.id },
+    });
+    const runId = sessionRow?.latestRunId ? String(sessionRow.latestRunId) : null;
+    if (!runId) return [];
+    return [];
+  };
+
   return {
     id: "normal-pi",
     supportedOps: PI_SUPPORTED_OPS,
@@ -334,5 +378,8 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
         }
       });
     },
+    getCrashReconciliationData,
+    isRunSuccessful,
+    getDirtySet,
   };
 }
