@@ -1,7 +1,7 @@
 {
   "id": "004-code-mode",
-  "state": "qa_failed",
-  "candidate_sha": "3b0d2b8c",
+  "state": "bug_fixing",
+  "candidate_sha": "d0a8313f",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/004-code-mode/verification-matrix.md",
