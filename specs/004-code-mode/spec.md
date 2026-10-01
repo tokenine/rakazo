@@ -59,7 +59,8 @@ unsupported environment requirements disclosed explicitly.
 4. **R4 — Project isolation and concurrency.** Concurrent coding tasks run in separate workspaces,
    branches, and execution state with no collisions in files, processes, service data, or ports.
    For verification, collision classes are enumerated: listening ports, process names,
-   database/service names, volumes/directories (fixture matrix in plan). Changes integrate
+   database/service names, volumes/directories (fixture matrix in plan; under the Q9-final
+   process runtime, realized as workspace/data directories). Changes integrate
    explicitly rather than via last-writer-wins. The isolation mechanism (separate computers vs
    in-computer namespacing) is decision Q9 — RESOLVED FINAL 2026-10-01: process-level
    isolation, trusted-code threat model (design-brief D-Q9).
@@ -190,3 +191,4 @@ unsupported environment requirements disclosed explicitly.
 - **V8 Secrets:** scoped injection; values absent from prompts, transcripts, checkpoints, and
   handoff summaries — asserted by literal AND transform sweep (base64/hex/URL-encoded forms of
   the secret) grepped over all artifact surfaces.
+- V9-V21 are expanded directly in `verification-matrix.md`.
