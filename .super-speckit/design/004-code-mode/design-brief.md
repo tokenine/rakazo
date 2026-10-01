@@ -105,6 +105,10 @@ silently rewritten (annotation is a plan task, S3).
    (not a fallback), so secrets are ENABLED under it: injection happens at spawn-env only
    (item 2). If spawn-env injection cannot be guaranteed on some future runtime, the secrets
    features fail CLOSED — disabled with an explicit disclosure, never silently degraded.
+   State disclosure (Chief tightening, 2026-10-01): runtime surfaces — `code-mode doctor`
+   and task start — explicitly print the CURRENT secrets state (ON or OFF) and WHY (driver
+   kind + injection guarantee), in BOTH directions. No silent degradation either way: an
+   unannounced OFF is as much a provenance problem as an unannounced ON.
    Confidentiality honesty: a task runs as the same OS user, so `/proc/<pid>/environ` is
    readable by same-UID processes — secret confidentiality is bounded by the trusted-code
    threat model (D-Q9). Scoping, the egress filter, the audit chain, and TTL/revoke limit

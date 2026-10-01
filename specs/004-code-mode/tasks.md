@@ -42,7 +42,8 @@ first supported journey (R1/R3), on a session that owns its workspace.
 revision without clobbering manual work.
 
 - [ ] T8 (P1) `code-mode doctor` preflight: spawn limits enforceable (ulimit/nice), per-task
-      tree creation + isolation, env scrub active; verdict + remediation text — V12
+      tree creation + isolation, env scrub active; secrets-state line (ON/OFF + reason)
+      always printed; verdict + remediation text — V12
 - [ ] T9 (P1) Per-task process-level runtime as a NEW sandbox provider behind the existing
       seam: dedicated workspace/data trees, spawn-time resource limits, env scrub; create at
       session start from setup definition; idle-suspend stops the task, retains the
