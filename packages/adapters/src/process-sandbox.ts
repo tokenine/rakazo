@@ -102,6 +102,13 @@ export interface AllocatedPort {
 
 const MAX_PORT_ALLOCATION_ATTEMPTS = 5;
 
+/**
+ * Bounded wait for a SIGKILLed process group to actually empty (MED-1):
+ * kill(-pgid, 0) is the emptiness check; the bound only elapses when a member
+ * refuses to die (e.g. D-state), in which case the pgid stays remembered.
+ */
+const PROCESS_GROUP_SETTLE_MS = 2_000;
+
 export function isValidTaskId(taskId: string): boolean {
   return (
     taskId.length > 0 &&
@@ -141,6 +148,16 @@ export function namespacedServiceName(taskId: string, name: string): string {
 export class ProcessSandboxProvider implements SandboxProvider {
   readonly tasks = new Map<string, ProcessTaskContext>();
   private readonly children = new Map<string, ChildProcess[]>();
+  /**
+   * Pgids remembered per task (MED-1): each detached wrapper LEADS its own
+   * process group (pgid = wrapper pid), and that group OUTLIVES the wrapper
+   * while any member — e.g. a daemon the command backgrounded — is still
+   * alive. The pgid is therefore remembered here even after execute() forgets
+   * the wrapper child; otherwise suspend() could only kill wrappers it still
+   * tracked and backgrounded daemons would survive stop/destroy. Stale
+   * (empty) pgids are pruned on sight in liveTaskCount/suspend.
+   */
+  private readonly taskPgids = new Map<string, Set<number>>();
 
   constructor(private readonly opts: { root?: string } = {}) {}
 
@@ -208,10 +225,29 @@ export class ProcessSandboxProvider implements SandboxProvider {
     return this.tasks.get(taskIdOf(computer));
   }
 
-  /** 1 while the task has a live process, else 0 (suspend/settle evidence). */
+  /**
+   * 1 while the task has a live process, else 0 (suspend/settle evidence).
+   * Counts tracked wrapper children AND remembered pgids (MED-1): a group
+   * whose wrapper already exited still holds live work (a backgrounded
+   * daemon). Stale pgids (empty groups) are pruned on sight.
+   */
   liveTaskCount(computer: ComputerRef): number {
-    const children = this.children.get(taskIdOf(computer)) ?? [];
-    return children.some((child) => child.exitCode === null && child.signalCode === null) ? 1 : 0;
+    const taskId = taskIdOf(computer);
+    const children = this.children.get(taskId) ?? [];
+    if (children.some((child) => child.exitCode === null && child.signalCode === null)) return 1;
+    const pgids = this.taskPgids.get(taskId);
+    if (pgids) {
+      for (const pgid of [...pgids]) {
+        try {
+          process.kill(-pgid, 0);
+          return 1; // group alive: at least one member still exists
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException)?.code === "EPERM") return 1;
+          pgids.delete(pgid); // ESRCH: group gone — prune the stale pgid
+        }
+      }
+    }
+    return 0;
   }
 
   /**
@@ -285,6 +321,10 @@ export class ProcessSandboxProvider implements SandboxProvider {
       stdio: ["ignore", "pipe", "pipe"],
     });
     this.trackChild(task.taskId, child);
+    // Detached spawn: the wrapper pid IS the task's process group; remember it
+    // so suspend/destroy can kill the group even after this wrapper exits
+    // (MED-1 — backgrounded daemons outlive the wrapper in the same pgid).
+    this.rememberTaskPgid(task.taskId, child.pid);
     let stdout = "";
     let stderr = "";
     const timeoutMs = boundedSandboxCommandTimeoutMs(request.timeoutMs);
@@ -349,7 +389,15 @@ export class ProcessSandboxProvider implements SandboxProvider {
     }
   }
 
-  /** Idle-suspend: stop the task's processes; trees are retained (D-Q9/R9). */
+  /**
+   * Idle-suspend: stop the task's processes; trees are retained (D-Q9/R9).
+   * Kills the tracked wrapper groups AND every remembered pgid (MED-1) —
+   * daemons backgrounded by wrappers that already exited live on in the
+   * task's group — then verifies each remembered group emptied (bounded):
+   * a kill(-pgid, 0) that still succeeds means a member survived, and that
+   * pgid stays remembered so liveTaskCount keeps reporting it and the next
+   * suspend/destroy retries.
+   */
   async suspend(computer: ComputerRef): Promise<void> {
     const task = this.requiredTask(computer);
     for (const child of this.children.get(task.taskId) ?? []) {
@@ -359,6 +407,12 @@ export class ProcessSandboxProvider implements SandboxProvider {
       } catch {
         child.kill("SIGKILL");
       }
+    }
+    for (const pgid of [...(this.taskPgids.get(task.taskId) ?? [])]) {
+      this.killRememberedPgid(task.taskId, pgid);
+    }
+    for (const pgid of [...(this.taskPgids.get(task.taskId) ?? [])]) {
+      await this.waitProcessGroupEmpty(task.taskId, pgid);
     }
     task.running = false;
   }
@@ -494,6 +548,7 @@ export class ProcessSandboxProvider implements SandboxProvider {
     const task = this.requiredTask(computer);
     await this.suspend(computer);
     this.children.delete(task.taskId);
+    this.taskPgids.delete(task.taskId);
     this.tasks.delete(task.taskId);
     // Workspace/data trees are NEVER deleted here: the versioned workspace
     // store owns history, and a destroyed runtime must not lose user work.
@@ -539,6 +594,47 @@ export class ProcessSandboxProvider implements SandboxProvider {
         lastError instanceof Error ? lastError.message : String(lastError)
       }`,
     );
+  }
+
+  /** Detached spawn ⇒ the wrapper pid is the task process group id (POSIX). */
+  private rememberTaskPgid(taskId: string, pid: number | undefined) {
+    if (pid === undefined || process.platform === "win32") return;
+    const pgids = this.taskPgids.get(taskId) ?? new Set<number>();
+    pgids.add(pid);
+    this.taskPgids.set(taskId, pgids);
+  }
+
+  /** Best-effort SIGKILL of a whole group; prunes the pgid when it is gone. */
+  private killRememberedPgid(taskId: string, pgid: number): boolean {
+    try {
+      process.kill(-pgid, "SIGKILL");
+      return true;
+    } catch {
+      this.taskPgids.get(taskId)?.delete(pgid); // ESRCH: nobody left in the group
+      return false;
+    }
+  }
+
+  /**
+   * Bounded verification that a process group emptied: kill(-pgid, 0)
+   * succeeding means a member is still alive (SIGKILL is not instantaneous —
+   * the kernel needs a scheduling point to reap the members). Returns true
+   * when the group is gone (the pgid is pruned); false keeps it remembered
+   * so the next suspend/destroy retries.
+   */
+  private async waitProcessGroupEmpty(taskId: string, pgid: number): Promise<boolean> {
+    const deadline = Date.now() + PROCESS_GROUP_SETTLE_MS;
+    while (Date.now() < deadline) {
+      try {
+        process.kill(-pgid, 0);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === "EPERM") return false;
+        this.taskPgids.get(taskId)?.delete(pgid);
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return false;
   }
 
   private trackChild(taskId: string, child: ChildProcess) {
