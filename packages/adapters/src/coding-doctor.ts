@@ -26,19 +26,18 @@ import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DEFAULT_LEASE_TTL_MS } from "./coding-session-service.js";
+import { DEFAULT_PROCESS_TASK_LIMITS } from "./process-sandbox.js";
 import { scrubProcessEnv } from "./process-env-scrub.js";
 
 /** The v1 isolation driver per D-Q9 FINAL r2 (option 3, process-level). */
 export const CODE_MODE_DRIVER_KIND = "process";
 
-/** Spawn-limits probe values: what the doctor proves enforceable at spawn. */
-export const DOCTOR_SPAWN_LIMITS = {
-  cpuSeconds: 600,
-  addressSpaceKb: 2_097_152,
-  maxProcesses: 512,
-  fileSizeBlocks: 131_072,
-  nice: 5,
-} as const;
+/**
+ * Spawn-limits probe values: what the doctor proves enforceable at spawn.
+ * Mirrors the driver's DEFAULT_PROCESS_TASK_LIMITS (imported) so the doctor
+ * always verifies exactly what the runtime applies.
+ */
+export const DOCTOR_SPAWN_LIMITS = DEFAULT_PROCESS_TASK_LIMITS;
 
 const CANARY_ENV_KEY = "CODE_MODE_DOCTOR_CANARY";
 const DECLARED_ENV_KEY = "CODE_MODE_DOCTOR_DECLARED";

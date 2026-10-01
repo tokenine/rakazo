@@ -58,10 +58,14 @@ export interface ProcessTaskLimits {
   nice: number;
 }
 
-export const DEFAULT_PROCESS_TASK_LIMITS: ProcessTaskLimits = {
+export const DEFAULT_PROCESS_TASK_LIMITS: Readonly<ProcessTaskLimits> = {
   cpuSeconds: 600,
   addressSpaceKb: 2_097_152,
-  maxProcesses: 512,
+  // RLIMIT_NPROC counts ALL same-UID processes on the box (desktop stack,
+  // other bots, build workers), so the default must leave shared headroom:
+  // 512 starved `fork` mid-run on the team box ("fork: retry: resource
+  // temporarily unavailable") and took unrelated tasks down with it.
+  maxProcesses: 4096,
   fileSizeBlocks: 131_072,
   nice: 5,
 };

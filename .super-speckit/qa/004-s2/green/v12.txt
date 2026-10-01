@@ -21,3 +21,12 @@ code-mode doctor — driver: process (trusted-code threat model, D-Q9)
   secrets state: ON — reason: driver 'process' owns the spawn boundary; injection happens at process spawn/bootstrap env only (D-Q10 §2), so the injection guarantee holds
   v1 constants: lease TTL default 10 minutes; default credential name github_token
 verdict: PASS
+# GREEN addendum — V12/V3 re-verified after the nproc-default fix (4096; 512 starved fork under shared-box load)
+# UTC: 2026-10-01T07:36:49Z
+code-mode doctor — driver: process (trusted-code threat model, D-Q9)
+  PASS Spawn limits enforceable (ulimit/nice) — ulimit -t/-v/-u/-f and nice -n 5 applied in a spawned shell (exit 0)
+  PASS Per-task tree creation + isolation — created and isolated cm-doctor-a-workspace and cm-doctor-b-workspace under rakazo-doctor-vDxqZU
+  PASS Env scrub active at spawn — canary absent, declared passed (allowlist-only child env)
+  secrets state: ON — reason: driver 'process' owns the spawn boundary; injection happens at process spawn/bootstrap env only (D-Q10 §2), so the injection guarantee holds
+  v1 constants: lease TTL default 10 minutes; default credential name github_token
+verdict: PASS
