@@ -1440,6 +1440,29 @@ model CodingProjectSecret {
   @@map("coding_project_secrets")
 }
 
+/// 004-code-mode S3 (T15, Q10): secret grants per (workspace, taskRun).
+/// A task config declares required secret NAMES before start (same gate
+/// family as the T4 acceptance gate: deny-by-default); only granted,
+/// unexpired, unrevoked, non-stale names resolve at injection. TTL and
+/// revocation must survive restarts, so grant state is durable here.
+model CodingSecretGrant {
+  id          String    @id
+  workspaceId String
+  taskRunId   String
+  secretName  String
+  secretRef   String
+  grantRef    String
+  grantedAt   DateTime
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, taskRunId, secretName])
+  @@index([workspaceId, taskRunId])
+  @@map("coding_secret_grants")
+}
+
 /// 004-code-mode: exclusive per-workspace lease. A second coding session
 /// cannot attach while the lease is held; expired leases are taken over with
 /// a bumped fence (never last-writer-wins on an active workspace).
