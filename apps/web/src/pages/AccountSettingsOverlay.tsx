@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { AvatarStyle } from "@rakazo/contracts";
-import { BotAvatar, Button, Switch, Toggle } from "@rakazo/ui-web";
+import type { AvatarStyle, WalletOverview } from "@rakazo/contracts";
+import { THAIIFI_WALLET_URL } from "@rakazo/contracts";
+import { BotAvatar, Button, Input, Label, Switch, Toggle } from "@rakazo/ui-web";
 import { ChevronDown } from "lucide-react";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -17,6 +18,11 @@ import { DesktopUpdateSection } from "../components/DesktopUpdates";
 import { SoftwareUpdateSection } from "../components/SoftwareUpdateSection";
 import { getActiveUiLocale, setUiLocale } from "../lib/i18n";
 import {
+  getResponseStreamingPreference,
+  setResponseStreamingPreference,
+} from "../lib/response-streaming";
+import { rpc } from "../lib/rpc";
+import {
   type AppearancePreference,
   getUiAppearancePreference,
   setUiAppearance,
@@ -26,6 +32,7 @@ import { UI_LOCALE_LABELS, UI_LOCALES, type UiLocale } from "../lib/ui-locale";
 export type SettingsGeneralProps = {
   email?: string | null;
   name: string;
+  onNameChange: (name: string) => Promise<void>;
   avatarStyle: AvatarStyle;
   onAvatarStyleChange: (style: AvatarStyle) => Promise<void>;
   messagingEnabled?: boolean;
@@ -39,6 +46,7 @@ export type SettingsGeneralProps = {
 export function GeneralSettingsPanels({
   email,
   name,
+  onNameChange,
   avatarStyle,
   onAvatarStyleChange,
   messagingEnabled = false,
@@ -53,10 +61,34 @@ export function GeneralSettingsPanels({
   const [appearance, setAppearance] = useState<AppearancePreference>(() =>
     getUiAppearancePreference(),
   );
+  const [streamReplies, setStreamReplies] = useState(
+    () => getResponseStreamingPreference() === "on",
+  );
+  const streamRepliesId = useId();
   const [avatarPending, setAvatarPending] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [browserPending, setBrowserPending] = useState(false);
   const [browserError, setBrowserError] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState(name);
+  const [editingName, setEditingName] = useState(false);
+  const [namePending, setNamePending] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  async function saveName(event: React.FormEvent) {
+    event.preventDefault();
+    const next = nameDraft.trim();
+    if (!next || namePending) return;
+    setNamePending(true);
+    setNameError(null);
+    try {
+      await onNameChange(next);
+      setEditingName(false);
+    } catch {
+      setNameError(t`Couldn't update your name`);
+    } finally {
+      setNamePending(false);
+    }
+  }
 
   async function chooseClientBrowser(value: boolean) {
     if (browserPending || !onClientBrowserPreferredChange) return;
@@ -100,8 +132,64 @@ export function GeneralSettingsPanels({
         <h3 className="text-[15px] font-medium text-foreground">
           <Trans>Account</Trans>
         </h3>
-        <p className="mt-3 text-[14px] text-foreground/75">{name}</p>
-        {email ? <p className="mt-1 text-[13px] text-muted-foreground/70">{email}</p> : null}
+        {editingName ? (
+          <form onSubmit={saveName} className="mt-3 flex flex-wrap items-center gap-2">
+            <Input
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              placeholder={t`Your name`}
+              autoFocus
+              autoComplete="name"
+              maxLength={64}
+              data-testid="account-name-input"
+              className="h-9 max-w-[240px] flex-1 rounded-lg"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="rounded-full"
+              disabled={namePending || !nameDraft.trim()}
+            >
+              <Trans>Save</Trans>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                setEditingName(false);
+                setNameDraft(name);
+                setNameError(null);
+              }}
+            >
+              <Trans>Cancel</Trans>
+            </Button>
+          </form>
+        ) : (
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[14px] text-foreground/75">{name || t`You`}</p>
+              {email ? <p className="mt-1 text-[13px] text-muted-foreground/70">{email}</p> : null}
+            </div>
+            <Button
+              variant="secondary"
+              className="rounded-full"
+              data-testid="account-name-edit"
+              onClick={() => {
+                setNameDraft(name);
+                setEditingName(true);
+              }}
+            >
+              <Trans>Edit</Trans>
+            </Button>
+          </div>
+        )}
+        {nameError ? (
+          <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+            {nameError}
+          </p>
+        ) : null}
       </section>
 
       {onClientBrowserPreferredChange ? (
@@ -226,9 +314,241 @@ export function GeneralSettingsPanels({
           </span>
         </summary>
         <div className="border-t border-border px-4 pb-5">
+          <div className="flex items-start gap-3 pt-5">
+            <Switch
+              id={streamRepliesId}
+              data-testid="response-streaming-toggle"
+              className="mt-0.5"
+              checked={streamReplies}
+              onCheckedChange={(checked) => {
+                setStreamReplies(checked);
+                setResponseStreamingPreference(checked ? "on" : "off");
+              }}
+            />
+            <Label htmlFor={streamRepliesId} className="text-[14px] font-normal text-foreground/75">
+              <Trans>Stream replies</Trans>
+            </Label>
+          </div>
           <ApprovalRulesSettings />
         </div>
       </details>
+    </div>
+  );
+}
+
+function shortAddress(address: string): string {
+  return address.length > 16 ? `${address.slice(0, 8)}…${address.slice(-6)}` : address;
+}
+
+interface PairingState {
+  pending: boolean;
+  pairingUrl: string | null;
+  error: string | null;
+}
+
+export function WalletSettingsPanel() {
+  const { t } = useLingui();
+  const [overview, setOverview] = useState<WalletOverview | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pairing, setPairing] = useState<Record<string, PairingState>>({});
+
+  async function refresh() {
+    setRefreshing(true);
+    setLoadError(null);
+    try {
+      setOverview(await rpc.wallet.get({}));
+    } catch {
+      setLoadError(t`Couldn't load wallet information`);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function startPairing(botId: string) {
+    if (pairing[botId]?.pending) return;
+    setPairing((current) => ({
+      ...current,
+      [botId]: { pending: true, pairingUrl: current[botId]?.pairingUrl ?? null, error: null },
+    }));
+    try {
+      const result = await rpc.wallet.pair({ botId });
+      setPairing((current) => ({
+        ...current,
+        [botId]: {
+          pending: false,
+          pairingUrl: result.pairingUrl,
+          error: result.pairingUrl
+            ? null
+            : t`The pairing link did not appear in time — try again or ask the bot in its chat.`,
+        },
+      }));
+    } catch (error) {
+      setPairing((current) => ({
+        ...current,
+        [botId]: {
+          pending: false,
+          pairingUrl: current[botId]?.pairingUrl ?? null,
+          error:
+            error instanceof Error && error.message
+              ? error.message
+              : t`Couldn't start the pairing on the bot's computer`,
+        },
+      }));
+    }
+  }
+
+  return (
+    <div className="space-y-5" data-testid="wallet-settings">
+      <section className="rounded-xl border border-border px-4 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-medium text-foreground">
+              <Trans>Agent wallets</Trans>
+            </h3>
+            <p className="mt-1 text-[12.5px] text-muted-foreground/80">
+              <Trans>Each bot keeps its own ThaiFi wallet on its computer.</Trans>
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0 rounded-full"
+            disabled={refreshing}
+            onClick={() => void refresh()}
+          >
+            <Trans>Refresh</Trans>
+          </Button>
+        </div>
+        {loadError ? (
+          <p role="alert" className="mt-3 text-[12.5px] text-destructive">
+            {loadError}
+          </p>
+        ) : !overview ? (
+          <p className="mt-3 text-[13px] text-muted-foreground/70">
+            <Trans>Loading…</Trans>
+          </p>
+        ) : overview.agentWallets.length === 0 ? (
+          <p className="mt-3 text-[13px] text-muted-foreground/70">
+            <Trans>Create a bot and start its computer to give it a wallet.</Trans>
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {overview.agentWallets.map((entry) => {
+              const pair = pairing[entry.botId];
+              const pairable = entry.state === "unpaired" || entry.state === "expired";
+              return (
+                <li key={entry.botId} className="rounded-lg border border-border/60 px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-[14px] font-medium text-foreground">
+                      {entry.botName}
+                    </span>
+                    {entry.state === "ready" ? (
+                      <a
+                        href={`${overview.explorerUrl}/address/${entry.address}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 font-mono text-[12.5px] text-muted-foreground underline-offset-2 hover:underline"
+                      >
+                        {shortAddress(entry.address)}
+                      </a>
+                    ) : entry.state === "unpaired" ? (
+                      <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                        <Trans>Not paired</Trans>
+                      </span>
+                    ) : entry.state === "expired" ? (
+                      <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                        <Trans>Key expired</Trans>
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[12.5px] text-muted-foreground">
+                        <Trans>Computer is off</Trans>
+                      </span>
+                    )}
+                  </div>
+                  {entry.state === "ready" ? (
+                    <>
+                      <dl className="mt-2 grid grid-cols-3 gap-2">
+                        {entry.balances.map((balance) => (
+                          <div key={balance.symbol}>
+                            <dt className="text-[11.5px] uppercase tracking-wide text-muted-foreground">
+                              {balance.symbol}
+                            </dt>
+                            <dd className="text-[14px] text-foreground">{balance.formatted}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {entry.error ? (
+                        <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+                          {entry.error}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : pairable ? (
+                    <div className="mt-2">
+                      {entry.state === "expired" ? (
+                        <p className="text-[12.5px] text-muted-foreground">
+                          <Trans>
+                            The wallet key expired — pair again to let this bot spend on-chain.
+                          </Trans>
+                        </p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="rounded-full"
+                          disabled={pair?.pending}
+                          onClick={() => void startPairing(entry.botId)}
+                        >
+                          {pair?.pending ? <Trans>Starting…</Trans> : <Trans>Start pairing</Trans>}
+                        </Button>
+                        <span className="text-[12.5px] text-muted-foreground">
+                          <Trans>
+                            or ask the bot in its chat to run thaifi login — the newest link wins.
+                          </Trans>
+                        </span>
+                      </div>
+                      {pair?.pairingUrl ? (
+                        <p className="mt-2 text-[12.5px]">
+                          <Trans>Approve with passkey/PIN:</Trans>{" "}
+                          <a
+                            href={pair.pairingUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="break-all font-medium text-foreground underline-offset-2 hover:underline"
+                          >
+                            {pair.pairingUrl}
+                          </a>
+                        </p>
+                      ) : null}
+                      {pair?.pairingUrl ? (
+                        <p className="mt-1 text-[12.5px] text-muted-foreground">
+                          <Trans>After approving, press Refresh to see the balance.</Trans>
+                        </p>
+                      ) : null}
+                      {pair?.error ? (
+                        <p role="alert" className="mt-2 text-[12.5px] text-destructive">
+                          {pair.error}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <p className="text-[12px] text-muted-foreground/70">
+        <Trans>ThaiFi chain · Chain ID 17</Trans>
+      </p>
     </div>
   );
 }

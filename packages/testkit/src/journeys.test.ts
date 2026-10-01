@@ -20,7 +20,9 @@ import {
 } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { createApp } from "../../../apps/api/src/app.ts";
-import { otpSignUp } from "./index.js";
+import type { BotIntroHarness } from "./discard-bot-intro.js";
+import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
+import { otpSignUp, sessionCookieHeader } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 process.env.WAKEUP_DRIVER = "memory";
@@ -29,6 +31,7 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeJourneys = hasDb ? describe : describe.skip;
+let botIntroHarness: BotIntroHarness | undefined;
 
 const emails = new EmailEmulator();
 
@@ -128,6 +131,7 @@ describeJourneys("required product journeys", () => {
     executor = handles.executor;
     jobs = handles.jobs;
     sandbox = handles.sandbox;
+    botIntroHarness = handles;
   });
 
   afterAll(async () => {
@@ -229,6 +233,139 @@ describeJourneys("required product journeys", () => {
       spy.mockRestore();
       destroyed.mockRestore();
     }
+  });
+
+  it("updating a computer the user has taken over hands control back first", async () => {
+    const cookie = await signup(app, `maintenance-control-${stamp}@rakazo.test`, "Maintenance");
+    const bot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Shell user",
+      title: "Shell user",
+      description: "Uses the shell",
+      instructions: "Help.",
+    });
+    await waitForDatabase(
+      async () =>
+        (await prisma.run.count({
+          where: { botId: bot.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
+        })) === 0,
+    );
+    await rpc(app, cookie, "computer/boot", { botId: bot.id });
+    // Opening the Shell tab holds a user takeover with no run waiting on it.
+    await rpc(app, cookie, "computer/takeover", { botId: bot.id });
+    const update = await rpc<{ id: string }>(app, cookie, "computer/update", { botId: bot.id });
+    await waitForDatabase(
+      async () =>
+        (await prisma.computerUpdate.findUniqueOrThrow({ where: { id: update.id } })).status ===
+        "completed",
+    );
+    const computer = await prisma.computer.findFirstOrThrow({
+      where: { bots: { some: { id: bot.id } } },
+    });
+    expect(computer.controlHolder).not.toBe("user");
+    expect(computer.controlLeaseId).toBeNull();
+  });
+
+  it("recovering a computer the user has taken over hands control back first", async () => {
+    const cookie = await signup(app, `maintenance-recover-${stamp}@rakazo.test`, "Maintenance");
+    const bot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Shell user",
+      title: "Shell user",
+      description: "Uses the shell",
+      instructions: "Help.",
+    });
+    await waitForDatabase(
+      async () =>
+        (await prisma.run.count({
+          where: { botId: bot.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
+        })) === 0,
+    );
+    await rpc(app, cookie, "computer/boot", { botId: bot.id });
+    await rpc(app, cookie, "computer/takeover", { botId: bot.id });
+    const update = await rpc<{ id: string }>(app, cookie, "computer/recover", { botId: bot.id });
+    await waitForDatabase(
+      async () =>
+        (await prisma.computerUpdate.findUniqueOrThrow({ where: { id: update.id } })).status ===
+        "completed",
+    );
+    const computer = await prisma.computer.findFirstOrThrow({
+      where: { bots: { some: { id: bot.id } } },
+    });
+    expect(computer.controlHolder).not.toBe("user");
+    expect(computer.controlLeaseId).toBeNull();
+  });
+
+  it("resetting a computer the user has taken over hands control back first", async () => {
+    const cookie = await signup(app, `maintenance-reset-${stamp}@rakazo.test`, "Maintenance");
+    const bot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Shell user",
+      title: "Shell user",
+      description: "Uses the shell",
+      instructions: "Help.",
+    });
+    await waitForDatabase(
+      async () =>
+        (await prisma.run.count({
+          where: { botId: bot.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
+        })) === 0,
+    );
+    await rpc(app, cookie, "computer/boot", { botId: bot.id });
+    await rpc(app, cookie, "computer/takeover", { botId: bot.id });
+    await rpc(app, cookie, "computer/reset", { botId: bot.id });
+    const computer = await prisma.computer.findFirstOrThrow({
+      where: { bots: { some: { id: bot.id } } },
+    });
+    expect(computer.controlHolder).not.toBe("user");
+    expect(computer.controlLeaseId).toBeNull();
+  });
+
+  it("maintenance leaves a run waiting on control", async () => {
+    const cookie = await signup(app, `maintenance-waiting-${stamp}@rakazo.test`, "Maintenance");
+    const bot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Chief",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+    });
+    await rpc(app, cookie, "threads/send", {
+      botId: bot.id,
+      text: "install the gsc cli and sign in",
+    });
+    const waiting = await waitFor(
+      app,
+      cookie,
+      bot.id,
+      (snap) => snap.run?.status === "waiting_takeover",
+    );
+    await rpc(app, cookie, "computer/boot", { botId: bot.id });
+    await rpc(app, cookie, "computer/takeover", { botId: bot.id });
+    const runId = waiting.run?.id;
+    if (!runId) throw new Error("waiting run missing");
+    await waitForDatabase(async () => {
+      const computer = await prisma.computer.findFirstOrThrow({
+        where: { bots: { some: { id: bot.id } } },
+      });
+      return computer.controlHolder === "user" && computer.controlRunId === runId;
+    });
+
+    for (const proc of ["computer/update", "computer/recover", "computer/reset"] as const) {
+      const response = await raw(app, cookie, proc, { botId: bot.id });
+      expect(response.status).toBe(409);
+    }
+
+    const run = await prisma.run.findUniqueOrThrow({ where: { id: runId } });
+    expect(run.status).toBe("waiting_takeover");
+    const computer = await prisma.computer.findFirstOrThrow({
+      where: { bots: { some: { id: bot.id } } },
+    });
+    expect(computer.controlHolder).toBe("user");
+    expect(computer.controlLeaseId).not.toBeNull();
+    expect(computer.controlRunId).toBe(runId);
+    expect(
+      await prisma.computerUpdate.count({
+        where: { botId: bot.id, status: { in: ["queued", "running", "completed"] } },
+      }),
+    ).toBe(0);
   });
 
   it("1+2: users are isolated and workspace bots share the Team Computer", async () => {
@@ -2676,6 +2813,33 @@ describeJourneys("required product journeys", () => {
       runAt: new Date(Date.now() + 180_000).toISOString(),
     });
     expect(afterFire.status).toBeGreaterThanOrEqual(400);
+
+    await prisma.routine.update({
+      where: { id: routine.id },
+      data: { active: false, nextRunAt: null, lastRunAt: null },
+    });
+    await rpc(app, cookie, "bots/archive", { botId: bot.id });
+    const whileArchived = await raw(app, cookie, "routines/update", {
+      routineId: routine.id,
+      active: true,
+      runAt: new Date(Date.now() + 180_000).toISOString(),
+    });
+    expect(whileArchived.status).toBe(404);
+    await expect(
+      prisma.routine.findUniqueOrThrow({ where: { id: routine.id } }),
+    ).resolves.toMatchObject({ active: false, nextRunAt: null });
+
+    // A routine that is somehow active on an archived bot is re-paused, not run.
+    const dueAt = new Date(Date.now() - 1_000);
+    await prisma.routine.update({
+      where: { id: routine.id },
+      data: { active: true, nextRunAt: dueAt },
+    });
+    await executor.wakeRoutine(routine.id, dueAt.toISOString());
+    await expect(
+      prisma.routine.findUniqueOrThrow({ where: { id: routine.id } }),
+    ).resolves.toMatchObject({ active: false, nextRunAt: null, lastRunAt: null });
+    await expect(prisma.run.count({ where: { routineId: routine.id } })).resolves.toBe(0);
   });
 
   it("24: chat creates a space only after explicit approval", async () => {
@@ -2798,7 +2962,7 @@ async function rpc<T>(app: App, cookie: string, proc: string, body: unknown = {}
   if (res.status >= 400 || parsed.error) {
     throw new Error(`${proc} ${res.status}: ${parsed.error?.message ?? text}`);
   }
-  return parsed.json as T;
+  return discardBotIntroFromCreate(botIntroHarness, cookie, proc, parsed.json as T);
 }
 
 async function answerPendingApproval(

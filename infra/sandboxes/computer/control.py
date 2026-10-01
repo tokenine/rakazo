@@ -24,6 +24,10 @@ KNOWN_LAUNCH = frozenset(
 )
 CONTROL_TIMEOUT_SEC = 10
 LAUNCH_SPAWN_POLL_SEC = 0.2
+# A live browser opens a URL in this process, then exits. rakazo-browser caps the
+# profile scan at 0.4s and that forward at 1.6s. This poll outlasts both, plus a
+# little shell, so a forward that fails after the scan is not reported as success.
+BROWSER_OPEN_POLL_SEC = 2.4
 NATIVE_CAPTURES = {}
 NATIVE_LOCK = threading.Lock()
 DISPLAY_LOCKS = {}
@@ -117,6 +121,15 @@ def _is_int_string(value):
     return value.isdigit()
 
 
+# Exact clipboard-paste pipeline emitted by supervisor clipboardPasteCommand()
+# for non-ASCII typing (xdotool XTEST cannot type Thai/emoji). The base64 body
+# is the only free-form part and it is restricted to the base64 alphabet.
+CONTROL_PASTE_SCRIPT = re.compile(
+    r"^printf %s [A-Za-z0-9+/=]+ \| base64 -d \| xclip -selection clipboard -input"
+    r" && sleep 0\.2 && xdotool key --clearmodifiers ctrl\+v$"
+)
+
+
 def allowed_xdotool_argv(argv):
     """Only xdotool forms emitted by containerActionStep / xdotoolCommand."""
     if len(argv) < 4 or argv[2] != "xdotool":
@@ -175,6 +188,12 @@ def allowed_control_argv(argv, display):
             return False
     if command == "xdotool":
         return allowed_xdotool_argv(argv)
+    if command == "sh":
+        return (
+            len(argv) == index + 3
+            and argv[index + 1] == "-c"
+            and bool(CONTROL_PASTE_SCRIPT.fullmatch(argv[index + 2]))
+        )
     if command == "xdg-open":
         return len(argv) == index + 2
     if "/" in command or command not in KNOWN_LAUNCH:
@@ -188,13 +207,20 @@ def is_long_lived_control(argv):
     return command == "xdg-open" or command in KNOWN_LAUNCH
 
 
+def launch_spawn_poll_sec(argv):
+    command = argv[control_command_index(argv)]
+    if command == "rakazo-browser":
+        return BROWSER_OPEN_POLL_SEC
+    return LAUNCH_SPAWN_POLL_SEC
+
+
 def run_control_argv(argv, display):
     """Run a fallback control command without holding the lock forever."""
     env = {**os.environ, "DISPLAY": display}
     if is_long_lived_control(argv):
         child = subprocess.Popen(argv, env=env, start_new_session=True)
         try:
-            code = child.wait(timeout=LAUNCH_SPAWN_POLL_SEC)
+            code = child.wait(timeout=launch_spawn_poll_sec(argv))
         except subprocess.TimeoutExpired:
             threading.Thread(target=child.wait, daemon=True).start()
             return

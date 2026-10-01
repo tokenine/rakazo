@@ -5,7 +5,7 @@
     "owner": "inbox-zero",
     "scheme": "rakazo",
     "version": "1.0.3",
-    "orientation": "portrait",
+    "orientation": "default",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "plugins": [
@@ -19,7 +19,20 @@
       ],
       "expo-router",
       "expo-secure-store",
-      ["expo-audio", { "enableBackgroundPlayback": false }],
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": false,
+          "microphonePermission": "Ai7 uses the microphone for voice calls with your bots."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "speechRecognitionPermission": "Ai7 turns your speech into messages during voice calls.",
+          "microphonePermission": "Ai7 uses the microphone for voice calls with your bots."
+        }
+      ],
       "expo-localization",
       "@react-native-vector-icons/ionicons",
       "@react-native-vector-icons/material-design-icons",

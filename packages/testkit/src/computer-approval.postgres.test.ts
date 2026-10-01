@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { ComposioEmulator, EmailEmulator, FakeSandboxProvider } from "@rakazo/adapters";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { otpSignUp } from "./index.js";
+import { discardBotIntroRun } from "./discard-bot-intro.js";
+import { otpSignUp, sessionCookieHeader } from "./index.js";
 import { type ModelEmulatorStep, startModelEmulator } from "./model-emulator.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
@@ -134,6 +135,7 @@ describe.skipIf(!databaseAvailable)("offline Pi computer approval", () => {
           instructions: "Complete the computer task.",
           notifyOnFinish: false,
         });
+        await discardBotIntroRun(handles, cookie, bot.id);
         await rpc(handles.app, cookie, "bots/update", {
           botId: bot.id,
           modelProvider: model.model.provider,

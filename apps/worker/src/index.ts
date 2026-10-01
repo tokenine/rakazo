@@ -6,6 +6,7 @@ loadRootEnv();
 
 import {
   ChatSdkMessagingSurface,
+  CodexCatalogCache,
   createBackgroundJobHandlers,
   createCloudAgentConnection,
   createConnectorStack,
@@ -93,7 +94,8 @@ async function main() {
     dataDir,
     prisma,
   });
-  const mcpOAuth = new McpOAuthBroker(prisma, secrets);
+  const allowPrivateEndpoint = process.env.MCP_ALLOW_PRIVATE_ENDPOINT === "true";
+  const mcpOAuth = new McpOAuthBroker(prisma, secrets, {}, allowPrivateEndpoint);
   const mcp = new McpConnector(
     prisma,
     secrets,
@@ -104,6 +106,7 @@ async function main() {
         .map((v) => v.trim())
         .filter(Boolean),
       events,
+      allowPrivateEndpoint,
     },
     mcpOAuth,
   );
@@ -149,7 +152,7 @@ async function main() {
     },
   );
   const stack = createConnectorStack(false, undefined, [
-    new InstalledConnectorProvider(prisma, secrets),
+    new InstalledConnectorProvider(prisma, secrets, {}, allowPrivateEndpoint),
     ...integrationSettings.providers(),
     mcp,
   ]);
@@ -171,6 +174,8 @@ async function main() {
   const executor = createRunExecutor({
     prisma,
     runtime,
+    // Live per-account Codex catalog; never refreshes or writes credentials.
+    codexCatalog: new CodexCatalogCache(),
     sandbox,
     memory: new MarkdownMemoryStore(prisma),
     memoryProviders,
@@ -196,6 +201,7 @@ async function main() {
       process.env.TYPESAFE_API_KEY ?? "",
     ].filter(Boolean),
     secretStore: secrets,
+    mcpAllowPrivateEndpoint: process.env.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
     deploymentModelKey,
     dataDir,
     notifications: new ExpoPushProvider(dataDir),

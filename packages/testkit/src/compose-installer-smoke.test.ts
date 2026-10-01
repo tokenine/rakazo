@@ -6,7 +6,10 @@ const describeFast = process.env.VERIFY_PROVIDERS ? describe.skip : describe;
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
 
 describeFast("compose installer smoke scripts", () => {
-  it("passes every infra/compose/*.smoke.sh", () => {
+  // The egress smoke spawns hundreds of short-lived bash/iptables-stub
+  // processes; process spawn cost on macOS dwarfs Linux, so the vitest
+  // default (5s) is not enough there.
+  it("passes every infra/compose/*.smoke.sh", { timeout: 60_000 }, () => {
     const runner = path.resolve(repoRoot, "infra/compose/run-smokes.sh");
     const output = execFileSync("bash", [runner], {
       encoding: "utf8",

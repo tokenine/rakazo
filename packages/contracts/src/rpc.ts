@@ -1,7 +1,12 @@
 import { eventIterator, oc } from "@orpc/contract";
 import * as z from "zod";
 import { AiConsentQuerySchema, AiConsentStatusSchema } from "./ai-consent.js";
-import { ATTACHMENT_MAX_BASE64_LENGTH, ATTACHMENT_MAX_COUNT } from "./attachments.js";
+import {
+  ARTIFACT_DESCRIPTION_MAX_LENGTH,
+  ARTIFACT_NAME_MAX_LENGTH,
+  ATTACHMENT_MAX_BASE64_LENGTH,
+  ATTACHMENT_MAX_COUNT,
+} from "./attachments.js";
 import { InspirationCaseSchema } from "./inspiration-catalog.js";
 import {
   ActionApprovalRuleSchema,
@@ -12,6 +17,7 @@ import {
   AgentSkillSchema,
   AppBootstrapSchema,
   ArtifactSchema,
+  ArtifactVersionSchema,
   ArtifactWithContentSchema,
   AvatarStyleSchema,
   BotMcpServerSchema,
@@ -87,7 +93,7 @@ import {
   VoiceInfoSchema,
   VoiceStatusSchema,
 } from "./domain.js";
-import { ProductEventSchema } from "./events.js";
+import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { Id, IsoDate } from "./ids.js";
 import {
   IntegrationProviderConfigSchema,
@@ -96,6 +102,7 @@ import {
 import { MessageReactionSchema } from "./reactions.js";
 import { RunsListOutputSchema } from "./runs.js";
 import { SearchQueryOutputSchema } from "./search.js";
+import { WalletOverviewSchema, WalletPairingSchema } from "./wallet.js";
 
 const botId = z.object({ botId: Id });
 const groupId = z.object({ groupId: Id });
@@ -178,6 +185,7 @@ export const appContract = {
     update: oc
       .input(
         z.object({
+          name: z.string().trim().min(1).max(64).optional(),
           avatarStyle: AvatarStyleSchema.optional(),
           clientBrowserPreferred: z.boolean().optional(),
         }),
@@ -351,7 +359,26 @@ export const appContract = {
       .output(z.object({ ok: z.literal(true) })),
     stop: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
     followUp: oc
-      .input(threadTarget.safeExtend({ text: z.string().min(1) }))
+      .input(
+        threadTarget.safeExtend({
+          text: z.string().min(1),
+          /** Carries the call id, so a turn taken mid-run stays in the call's card. */
+          clientNonce: z.string().min(1).max(200).optional(),
+        }),
+      )
+      .output(z.object({ ok: z.literal(true) })),
+    /** The client hung up: close the call card and let the bot finish what was asked on it. */
+    endCall: oc
+      // ":" separates the call id from the nonce suffix, so it can never appear inside one.
+      .input(
+        botId.safeExtend({
+          callId: z
+            .string()
+            .min(1)
+            .max(200)
+            .regex(/^[^:]+$/),
+        }),
+      )
       .output(z.object({ ok: z.literal(true) })),
     clear: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
     answer: oc
@@ -360,6 +387,8 @@ export const appContract = {
           runId: Id,
           messageId: Id,
           answer: z.string().min(1),
+          /** Only for a login card; `answer` carries its password. */
+          username: z.string().min(1).max(512).optional(),
         }),
       )
       .output(z.object({ ok: z.literal(true) })),
@@ -426,6 +455,22 @@ export const appContract = {
     readFile: oc
       .input(z.object({ botId: Id, path: z.string() }))
       .output(z.object({ path: z.string(), content: z.string() })),
+    downloadFile: oc
+      .input(z.object({ botId: Id, path: z.string().min(1) }))
+      .output(z.object({ path: z.string(), contentBase64: z.string() })),
+    uploadFile: oc
+      .input(
+        z.object({
+          botId: Id,
+          path: z.string().min(1),
+          contentBase64: z.string().max(ATTACHMENT_MAX_BASE64_LENGTH),
+        }),
+      )
+      .output(z.object({ ok: z.literal(true) })),
+    terminalUrl: oc.input(botId).output(z.object({ url: z.string().nullable() })),
+    commands: oc
+      .input(botId)
+      .output(z.array(ComputerCommandSchema.extend({ createdAt: z.string() }))),
     screenUrl: oc.input(botId).output(z.object({ url: z.string().nullable() })),
     heartbeat: oc.input(botId).output(z.object({ ok: z.literal(true) })),
   },
@@ -624,7 +669,12 @@ export const appContract = {
     assignments: {
       list: oc.input(botId).output(z.array(BotMcpServerSchema)),
       all: oc.output(z.array(BotMcpServerSchema)),
-      approve: oc.input(z.object({ botId: Id, serverId: Id })).output(BotMcpServerSchema),
+      approve: oc
+        .input(z.object({ botId: Id, serverId: Id, threadId: Id.optional() }))
+        .output(BotMcpServerSchema),
+      dismiss: oc
+        .input(z.object({ botId: Id, serverId: Id, threadId: Id.optional() }))
+        .output(z.object({ ok: z.literal(true) })),
       replace: oc
         .input(
           z.object({
@@ -825,11 +875,27 @@ export const appContract = {
   },
   artifacts: {
     list: oc.input(botId).output(z.array(ArtifactSchema)),
+    listSpace: oc
+      .input(
+        z.object({
+          botId: Id.optional(),
+          cursor: z.string().optional(),
+          limit: z.number().int().min(1).max(60).optional(),
+        }),
+      )
+      .output(
+        z.object({
+          items: z.array(ArtifactSchema.extend({ versionCount: z.number().int() })),
+          nextCursor: z.string().nullable(),
+        }),
+      ),
+    listVersions: oc.input(z.object({ familyId: Id })).output(z.array(ArtifactVersionSchema)),
     create: oc
       .input(
         threadTarget.and(
           z.object({
-            name: z.string().min(1).max(255),
+            name: z.string().min(1).max(ARTIFACT_NAME_MAX_LENGTH),
+            description: z.string().max(ARTIFACT_DESCRIPTION_MAX_LENGTH).optional(),
             mimeType: z.string().min(1),
             contentBase64: z.string().min(1).max(ATTACHMENT_MAX_BASE64_LENGTH),
           }),
@@ -837,6 +903,8 @@ export const appContract = {
       )
       .output(ArtifactSchema),
     get: oc.input(threadTarget.and(z.object({ artifactId: Id }))).output(ArtifactWithContentSchema),
+    getById: oc.input(z.object({ artifactId: Id })).output(ArtifactWithContentSchema),
+    remove: oc.input(z.object({ artifactId: Id })).output(z.object({ ok: z.literal(true) })),
   },
   usage: {
     list: oc.output(z.array(UsageRecordSchema)),
@@ -896,6 +964,7 @@ export const appContract = {
           provider: z.string(),
           apiKey: z.string().min(8),
           voiceId: z.string().max(120).optional(),
+          speechModel: z.string().max(64).optional(),
         }),
       )
       .output(VoiceCredentialSchema),
@@ -905,6 +974,9 @@ export const appContract = {
     setVoice: oc
       .input(z.object({ voiceId: z.string().min(1).max(120), provider: z.string().optional() }))
       .output(VoiceStatusSchema),
+    setSpeechModel: oc
+      .input(z.object({ provider: z.string().min(1), speechModel: z.string().max(64) }))
+      .output(VoiceCredentialSchema),
     voices: oc
       .input(z.object({ provider: z.string().optional() }))
       .output(z.array(VoiceInfoSchema)),
@@ -927,6 +999,10 @@ export const appContract = {
     list: oc.output(z.array(AgentSecretSchema)),
     put: oc.input(AgentSecretInputSchema).output(AgentSecretSchema),
     remove: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
+  },
+  wallet: {
+    get: oc.input(z.object({})).output(WalletOverviewSchema),
+    pair: oc.input(z.object({ botId: Id })).output(WalletPairingSchema),
   },
 };
 

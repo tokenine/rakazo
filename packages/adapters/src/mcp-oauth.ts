@@ -10,9 +10,12 @@ import type {
   OAuthClientMetadata,
   OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
-import { isLocalMcpHost } from "@rakazo/contracts";
+import { BRAND_NAME, isLocalMcpHost } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
+import { getLogger } from "@rakazo/logging";
+import { sanitizeConnectorError } from "./connector-safety.js";
 import { secureFetch, validateUrl, withEndpointOriginFallback } from "./mcp-transport.js";
+import { actorMayUsePrivateEndpoint } from "./private-endpoint.js";
 import type { RemoteTransportDependencies } from "./remote-mcp.js";
 import type { EncryptedSecretStore } from "./secrets.js";
 
@@ -204,7 +207,7 @@ export class StoredMcpOAuthProvider implements OAuthClientProvider {
     const applicationType = hostname === "localhost" || hostname === "127.0.0.1" ? "native" : "web";
     return {
       redirect_uris: [redirectUri],
-      client_name: "Rakazo",
+      client_name: BRAND_NAME,
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
       token_endpoint_auth_method: "none",
@@ -330,7 +333,13 @@ function oauthFetch(
   endpoint: string,
   network: RemoteTransportDependencies,
   material: OAuthMaterial = {},
-): { fetch: typeof fetch; close: () => Promise<void>; headers: Record<string, string> } {
+  allowPrivateEndpoint = false,
+): {
+  fetch: typeof fetch;
+  close: () => Promise<void>;
+  headers: Record<string, string>;
+  publicError: (error: unknown, message: string) => Error;
+} {
   const url = new URL(endpoint);
   const localHttp = url.protocol === "http:" && isLocalMcpHost(url.hostname);
   const headers = {
@@ -345,14 +354,38 @@ function oauthFetch(
   };
   const safeFetch = secureFetch(
     url,
-    { allowHttpLocalhost: localHttp, allowLocalHttpCredentials: localHttp },
+    {
+      allowHttpLocalhost: localHttp,
+      allowLocalHttpCredentials: localHttp,
+      allowPrivateEndpoint,
+    },
     { headers },
     network,
   );
+  const fallbackFetch = withEndpointOriginFallback(url.origin, safeFetch);
+  // Errors raised by this network layer (URL policy, redirects, unreachable
+  // hosts) carry only our own text. Anything else was built by the SDK from an
+  // upstream response and may quote its body, so the caller gets `message`.
+  const networkErrors = new WeakSet<Error>();
+  const recordingFetch: typeof fetch = async (input, init) => {
+    try {
+      return await fallbackFetch(input, init);
+    } catch (error) {
+      if (error instanceof Error) networkErrors.add(error);
+      throw error;
+    }
+  };
   return {
     headers,
-    fetch: withEndpointOriginFallback(url.origin, safeFetch),
+    fetch: recordingFetch,
     close: () => safeFetch.close(),
+    publicError: (error, message) => {
+      if (error instanceof Error && networkErrors.has(error)) return error;
+      getLogger().warn(
+        `${message}: ${sanitizeConnectorError(error, oauthMaterialSecrets(material))}`,
+      );
+      return new Error(message);
+    },
   };
 }
 
@@ -363,6 +396,7 @@ export class McpOAuthBroker {
     private readonly prisma: PrismaClient,
     private readonly secrets: EncryptedSecretStore,
     private readonly network: RemoteTransportDependencies = {},
+    private readonly allowPrivateEndpoint = false,
   ) {}
 
   async statusFor(
@@ -442,7 +476,12 @@ export class McpOAuthBroker {
     // cancelled popup), the server keeps its valid connection. The SDK itself
     // invalidates dead tokens when a refresh is rejected with invalid_grant.
     const endpoint = new URL(server.endpoint);
-    const networkFetch = oauthFetch(server.endpoint, this.network, loaded.material);
+    const networkFetch = oauthFetch(
+      server.endpoint,
+      this.network,
+      loaded.material,
+      await actorMayUsePrivateEndpoint(this.prisma, input.userId, this.allowPrivateEndpoint),
+    );
     const transport = new StreamableHTTPClientTransport(endpoint, {
       requestInit: { headers: networkFetch.headers },
       authProvider: provider,
@@ -453,7 +492,7 @@ export class McpOAuthBroker {
     try {
       await client.connect(transport, { signal, timeout: 15_000 });
     } catch (error) {
-      if (!authorizationUrl) throw error;
+      if (!authorizationUrl) throw networkFetch.publicError(error, "Could not start MCP OAuth");
     } finally {
       await client.close().catch(() => undefined);
       await networkFetch.close().catch(() => undefined);
@@ -575,13 +614,20 @@ export class McpOAuthBroker {
     });
     if (consumed.count !== 1) throw new Error("MCP OAuth session is invalid or expired");
     const endpoint = new URL(pending.endpoint);
-    const networkFetch = oauthFetch(pending.endpoint, this.network);
+    const networkFetch = oauthFetch(
+      pending.endpoint,
+      this.network,
+      {},
+      await actorMayUsePrivateEndpoint(this.prisma, pending.userId, this.allowPrivateEndpoint),
+    );
     const transport = new StreamableHTTPClientTransport(endpoint, {
       authProvider: pending.provider,
       fetch: networkFetch.fetch,
     });
     try {
       await transport.finishAuth(input.code);
+    } catch (error) {
+      throw networkFetch.publicError(error, "Could not complete MCP OAuth");
     } finally {
       await transport.close().catch(() => undefined);
       await networkFetch.close().catch(() => undefined);

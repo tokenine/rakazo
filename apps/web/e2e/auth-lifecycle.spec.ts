@@ -22,20 +22,21 @@ test("logout protects bot deep links and OTP sign-in restores the session", asyn
 }, testInfo) => {
   const stamp = Date.now();
   const email = `auth-lifecycle-${stamp}@rakazo.test`;
-  const userName = "Auth Lifecycle";
+  // Accounts are created passwordlessly on first verified OTP; the display
+  // name starts empty and shows as "You" until set in Settings → General.
+  const accountButtonName = "You";
 
-  await page.goto("/sign-up");
-  await expect(page.getByLabel("Name")).toHaveAttribute("autocomplete", "name");
+  await page.goto("/sign-in");
   await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
 
-  await signup(page, email, "unused-password12", userName);
+  await signup(page, email, "unused-password12");
   await completeOnboarding(page);
 
   await page.waitForURL(/\/app\/[^/]+$/);
   const protectedBotPath = new URL(page.url()).pathname;
   await expect(page.getByPlaceholder("Message Chief")).toBeVisible();
 
-  await page.getByRole("button", { name: new RegExp(userName, "i") }).click();
+  await page.getByRole("button", { name: accountButtonName, exact: true }).click();
   await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Usage", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
@@ -61,9 +62,9 @@ test("logout protects bot deep links and OTP sign-in restores the session", asyn
   await page.goto("/");
   await expect(page.locator('[data-rakazo-surface="welcome"]')).toBeVisible();
   await expect(page.getByText(/Your team of always-on agents/)).toBeVisible();
-  await page.getByRole("button", { name: /Sign up/ }).click();
-  await expect(page).toHaveURL(/\/sign-up$/);
-  await expect(page.getByRole("heading", { name: "Create your Ai7" })).toBeVisible();
+  await page.getByRole("button", { name: /Get started/ }).click();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByRole("heading", { name: "Sign in to Ai7" })).toBeVisible();
   await page.goto("/");
   await captureScreenshot(page, testInfo, "37-logged-out-welcome");
 
@@ -71,7 +72,7 @@ test("logout protects bot deep links and OTP sign-in restores the session", asyn
   await page.waitForURL((url) => url.pathname === "/sign-in");
   await expect(page.getByRole("heading", { name: "Sign in to Ai7" })).toBeVisible();
   await expect(page.getByText("Chief", { exact: true })).toHaveCount(0);
-  await expect(page.getByText(userName, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(accountButtonName, { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
   await captureScreenshot(page, testInfo, "38-protected-deep-link-sign-in");
 
@@ -95,7 +96,7 @@ test("logout protects bot deep links and OTP sign-in restores the session", asyn
   await expect(composer).toHaveAttribute("name", "chat-message");
   await expect(composer).toHaveAttribute("autocomplete", "off");
   await expect(composer).toHaveAttribute("aria-label", "Message Chief");
-  await expect(page.getByRole("button", { name: new RegExp(userName, "i") })).toBeVisible();
+  await expect(page.getByRole("button", { name: accountButtonName, exact: true })).toBeVisible();
 
   await composer.fill("line one");
   const heightBeforeNewline = await composer.evaluate((el) => el.getBoundingClientRect().height);

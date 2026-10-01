@@ -2,6 +2,12 @@ import { DEFAULT_MODEL_MAX_TOKENS } from "@rakazo/contracts";
 
 /** Hung completions must fail before the typical 5-minute run lease. */
 export const MODEL_STREAM_TIMEOUT_MS = 120_000;
+/**
+ * `timeoutMs` bounds only time-to-headers; the SSE body that follows is
+ * unbounded. A Codex stream silent this long is a dead connection — reasoning
+ * models emit thinking deltas continuously while generating.
+ */
+export const MODEL_STREAM_IDLE_TIMEOUT_MS = 180_000;
 /** One retry keeps a transient blip from killing the turn without outliving the lease. */
 export const MODEL_STREAM_MAX_RETRIES = 1;
 
@@ -45,19 +51,28 @@ export function clipToolResultContent<T>(
   return clipped;
 }
 
-/** Prompt tokens providers bill, including cache read/write rather than the uncached remainder. */
+/**
+ * Prompt tokens providers bill, including cache read/write rather than the uncached remainder.
+ * The cache halves are reported alongside so downstream views can show what a cache hit saved.
+ */
 export function billedPromptTokens(usage: {
   input?: number;
   output?: number;
   cacheRead?: number;
   cacheWrite?: number;
-}): { inputTokens: number; outputTokens: number } {
+}): {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+} {
+  const cacheReadTokens = nonNegativeCount(usage.cacheRead);
+  const cacheWriteTokens = nonNegativeCount(usage.cacheWrite);
   return {
-    inputTokens:
-      nonNegativeCount(usage.input) +
-      nonNegativeCount(usage.cacheRead) +
-      nonNegativeCount(usage.cacheWrite),
+    inputTokens: nonNegativeCount(usage.input) + cacheReadTokens + cacheWriteTokens,
     outputTokens: nonNegativeCount(usage.output),
+    cacheReadTokens,
+    cacheWriteTokens,
   };
 }
 

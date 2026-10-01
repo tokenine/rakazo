@@ -12,7 +12,6 @@ import {
   abortableDelay,
   buildFeaturedConnectorTiles,
   CONNECTION_CATALOG_PAGE_SIZE,
-  EMPTY_PLUGIN_CATALOG_MESSAGE,
   filterConnectionCatalogItems,
   humanizeToolName,
 } from "@rakazo/core";
@@ -832,7 +831,7 @@ export function PluginsOverlay({
                 <div className="mb-6" data-testid="featured-connectors">
                   {!loading && catalog.length === 0 ? (
                     <p className="text-[13.5px] leading-6 text-muted-foreground/80">
-                      {EMPTY_PLUGIN_CATALOG_MESSAGE}
+                      <Trans>Configure a plugin catalog on the server to connect apps.</Trans>
                     </p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">

@@ -29,6 +29,9 @@ const WelcomePage = lazy(() =>
 const HubPage = lazy(() =>
   import("./pages/HubPage").then((module) => ({ default: module.HubPage })),
 );
+const ArtifactsPage = lazy(() =>
+  import("./pages/Artifacts").then((module) => ({ default: module.ArtifactsPage })),
+);
 
 export function App() {
   if (window.location.pathname === LOCAL_SETTINGS_PAGE) return <LocalSettingsPage />;
@@ -75,14 +78,9 @@ function SessionApp() {
           <Route path="/" element={user ? <Navigate to="/app" replace /> : <WelcomePage />} />
           <Route
             path="/sign-in"
-            element={
-              user ? <Navigate to={signInDestination} replace /> : <AuthPage key="in" mode="in" />
-            }
+            element={user ? <Navigate to={signInDestination} replace /> : <AuthPage key="in" />}
           />
-          <Route
-            path="/sign-up"
-            element={user ? <Navigate to="/onboarding" replace /> : <AuthPage key="up" mode="up" />}
-          />
+          <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
           <Route
             path="/onboarding"
             element={user ? <OnboardingPage /> : <Navigate to="/sign-in" replace />}
@@ -109,6 +107,14 @@ function SessionApp() {
           <Route
             path="/app/g/:groupId"
             element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />}
+          />
+          <Route
+            path="/app/artifacts"
+            element={user ? <ArtifactsPage /> : <Navigate to="/sign-in" replace />}
+          />
+          <Route
+            path="/app/artifacts/:artifactId"
+            element={user ? <ArtifactsPage /> : <Navigate to="/sign-in" replace />}
           />
           <Route
             path="/app/:botId"
