@@ -25,6 +25,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { secretsRuntimeSupport } from "./coding-secret-grants.js";
 import { DEFAULT_LEASE_TTL_MS } from "./coding-session-service.js";
 import { scrubProcessEnv } from "./process-env-scrub.js";
 import { DEFAULT_PROCESS_TASK_LIMITS } from "./process-sandbox.js";
@@ -97,22 +98,17 @@ const DOCTOR_CHECK_LABELS: Record<CodeModeDoctorProbe, string> = {
 };
 
 /**
- * Secrets-state disclosure (D-Q10 item 6). ON only when the driver owns the
- * spawn boundary so injection can be guaranteed at process spawn/bootstrap
- * env; OFF with an explicit reason otherwise — fail closed, never silent.
+ * Secrets-state disclosure (D-Q10 item 6). DELEGATES to the SAME predicate
+ * the runtime grants gate uses (coding-secret-grants.ts
+ * secretsRuntimeSupport) so the doctor and the fail-closed runtime guard can
+ * never drift: ON only when the driver owns the spawn boundary so injection
+ * can be guaranteed at process spawn/bootstrap env; OFF with an explicit
+ * reason otherwise. The confidentiality-bounded-by-threat-model note rides
+ * the reason in BOTH directions — fail closed, never silent, either way.
  */
 export function codeModeSecretsState(driverKind: string): CodeModeSecretsState {
-  if (driverKind === CODE_MODE_DRIVER_KIND) {
-    return {
-      state: "ON",
-      reason:
-        "driver 'process' owns the spawn boundary; injection happens at process spawn/bootstrap env only (D-Q10 §2), so the injection guarantee holds",
-    };
-  }
-  return {
-    state: "OFF",
-    reason: `driver '${driverKind || "none"}' does not own the spawn boundary, so a spawn-env injection cannot be guaranteed; secrets features fail closed (D-Q10 §6)`,
-  };
+  const support = secretsRuntimeSupport(driverKind);
+  return { state: support.enabled ? "ON" : "OFF", reason: support.disclosure };
 }
 
 export async function runCodeModeDoctor(

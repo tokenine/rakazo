@@ -158,6 +158,8 @@ export interface SecretsGrantsService {
     workspaceId: string;
     taskRunId: string;
     botId?: string;
+    /** When present, expire/stale audits re-checkpoint the run-record head. */
+    sessionId?: string;
   }): Promise<{
     env: Record<string, string>;
     granted: string[];
@@ -183,12 +185,16 @@ export interface SecretsGrantsService {
     actor: string;
     force?: boolean;
     stopNow?: () => Promise<void>;
+    /** When present, the revoke audits re-checkpoint the run-record head. */
+    sessionId?: string;
   }): Promise<{ revoked: string[]; forced: boolean; disclosure: string }>;
   rotateSecret(input: {
     workspaceId: string;
     name: string;
     plaintext: string;
     botId?: string;
+    /** When present, the rotate audit re-checkpoints the run-record head. */
+    sessionId?: string;
   }): Promise<void>;
 }
 
@@ -327,6 +333,7 @@ export function createSecretsGrantsService(deps: {
       const granted: string[] = [];
       const refused: Array<{ name: string; reason: string }> = [];
       const at = now();
+      let head: SecretsAuditHead | null = null;
       for (const row of rows) {
         if (row.revokedAt) {
           refused.push({ name: row.secretName, reason: "revoked" });
@@ -334,7 +341,7 @@ export function createSecretsGrantsService(deps: {
         }
         if (row.expiresAt.getTime() <= at.getTime()) {
           refused.push({ name: row.secretName, reason: "expired" });
-          await auditedOnce(
+          head = await auditedOnce(
             {
               actor: "system:ttl",
               botId: input.botId ?? "",
@@ -353,7 +360,7 @@ export function createSecretsGrantsService(deps: {
         const rotatedAt = await deps.store.rotationOf(input.workspaceId, row.secretName);
         if (rotatedAt && rotatedAt.getTime() > row.grantedAt.getTime()) {
           refused.push({ name: row.secretName, reason: "stale" });
-          await auditedOnce(
+          head = await auditedOnce(
             {
               actor: "settings:rotation",
               botId: input.botId ?? "",
@@ -371,6 +378,13 @@ export function createSecretsGrantsService(deps: {
         }
         env[row.secretName] = await deps.store.getDecrypted(input.workspaceId, row.secretName);
         granted.push(row.secretName);
+      }
+      if (input.sessionId && head) {
+        await checkpointSecretsAuditHead({
+          prisma: deps.prisma as unknown as PrismaClient,
+          sessionId: input.sessionId,
+          head,
+        });
       }
       return { env, granted, refused };
     },
@@ -443,8 +457,9 @@ export function createSecretsGrantsService(deps: {
         where: { workspaceId: input.workspaceId, taskRunId: input.taskRunId, revokedAt: null },
         data: { revokedAt: at },
       });
+      let head: SecretsAuditHead | null = null;
       for (const row of active) {
-        await audit({
+        head = await audit({
           actor: input.actor,
           botId: input.botId,
           workspaceId: row.workspaceId,
@@ -454,6 +469,13 @@ export function createSecretsGrantsService(deps: {
           mechanism: force ? "revoke-force" : "revoke",
           ttl: SECRETS_GRANT_TTL_SECONDS,
           grantRef: row.grantRef,
+        });
+      }
+      if (input.sessionId && head) {
+        await checkpointSecretsAuditHead({
+          prisma: deps.prisma as unknown as PrismaClient,
+          sessionId: input.sessionId,
+          head,
         });
       }
       let forced = false;
@@ -474,7 +496,7 @@ export function createSecretsGrantsService(deps: {
       const support = secretsRuntimeSupport(deps.driverKind);
       if (!support.enabled) throw new SecretsDisabledError(deps.driverKind);
       const result = await deps.store.set(input);
-      await audit({
+      const head = await audit({
         actor: "settings:rotation",
         botId: input.botId ?? "",
         workspaceId: input.workspaceId,
@@ -485,6 +507,13 @@ export function createSecretsGrantsService(deps: {
         ttl: SECRETS_GRANT_TTL_SECONDS,
         grantRef: "n/a",
       });
+      if (input.sessionId) {
+        await checkpointSecretsAuditHead({
+          prisma: deps.prisma as unknown as PrismaClient,
+          sessionId: input.sessionId,
+          head,
+        });
+      }
     },
   };
   return service;

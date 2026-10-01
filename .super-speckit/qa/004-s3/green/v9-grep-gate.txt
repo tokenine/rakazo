@@ -1,0 +1,18 @@
+== V9 grep gate — 2026-10-01T09:45:07Z ==
+
+--- gate 1: runtime canary in REPO tree (expect 0) ---
+hits: 0
+
+--- gate 2: runtime canary in HOST tree, outside the repo (expect 0) ---
+hits: 0
+
+--- gate 3: workspace storage under the provider root (data/code-mode-tasks), if present (expect 0 or no dir) ---
+no workspace storage dir at /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/data/code-mode-tasks (flows used temp fixtures) — nothing persisted
+
+--- CONTROL (gate sensitivity): intentional test plant (expect hits ONLY in the egress test file) ---
+/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-secrets-egress.test.ts
+/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/.super-speckit/qa/004-s3/tools/v9-grep-gate.sh
+
+--- summary ---
+gate1_repo_hits=0 gate2_host_hits=0
+V9 GREP GATE: GREEN (zero secret values persisted by the injection path)
