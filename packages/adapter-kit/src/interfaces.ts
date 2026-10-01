@@ -77,6 +77,9 @@ import type {
   WebSearchCapabilities,
   WebSearchHit,
   WebSearchRequest,
+  WorkspaceDirtySet,
+  WorkspaceRestoreReport,
+  WorkspaceRevisionInfo,
 } from "./types.js";
 
 export interface SandboxProvider {
@@ -258,7 +261,17 @@ export interface AgentHomeStore {
   describe(): AdapterDescriptor<{ revisions: boolean }>;
   checkout(botId: string, dest: string, context: AdapterContext): Promise<string>;
   commit(botId: string, src: string, context: AdapterContext): Promise<string>;
-  restore(botId: string, revision: string, dest: string, context: AdapterContext): Promise<void>;
+  /** 004-code-mode T11: restores the SELECTED revision, protecting newer edits. */
+  restore(
+    botId: string,
+    revision: string,
+    dest: string,
+    context: AdapterContext,
+  ): Promise<WorkspaceRestoreReport>;
+  /** Append-only revision listing, oldest first. */
+  listRevisions(botId: string): Promise<WorkspaceRevisionInfo[]>;
+  /** Dirty-set: paths changed/added/removed relative to a revision. */
+  changesSince(botId: string, revision: string): Promise<WorkspaceDirtySet>;
   exportHome(botId: string, context: AdapterContext): AsyncIterable<PortableFile>;
   readFile(
     botId: string,

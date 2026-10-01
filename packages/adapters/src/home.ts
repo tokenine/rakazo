@@ -1,10 +1,12 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import {
   access,
+  copyFile,
   mkdir,
   open,
   readdir,
+  readFile,
   realpath,
   rename,
   rm,
@@ -12,7 +14,14 @@ import {
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
-import type { AdapterContext, AgentHomeStore, PortableFile } from "@rakazo/adapter-kit";
+import type {
+  AdapterContext,
+  AgentHomeStore,
+  PortableFile,
+  WorkspaceDirtySet,
+  WorkspaceRestoreReport,
+  WorkspaceRevisionInfo,
+} from "@rakazo/adapter-kit";
 import { fileHandlePath } from "./file-handle-path.js";
 
 export class LocalAgentHomeStore implements AgentHomeStore {
@@ -25,7 +34,9 @@ export class LocalAgentHomeStore implements AgentHomeStore {
       id: "local-fs",
       contractVersion: "1",
       adapterVersion: "0.1.0",
-      capabilities: { revisions: false },
+      // 004-code-mode T11: the archive is append-only; restore honors a
+      // selected revision and protects newer manual edits.
+      capabilities: { revisions: true },
     };
   }
 
@@ -50,6 +61,12 @@ export class LocalAgentHomeStore implements AgentHomeStore {
     return "working";
   }
 
+  /**
+   * 004-code-mode T11: every commit appends a revision to the archive — the
+   * incoming state becomes a new revision and the outgoing state (if any) is
+   * archived too. `.previous` remains only as the crash-recovery swap dir;
+   * history is never deleted (G2: no more latest-only + `.previous` rm).
+   */
   async commit(botId: string, src: string, _context: AdapterContext): Promise<string> {
     return this.withBotWrite(botId, async () => {
       await this.recoverInterruptedCommit(botId);
@@ -61,6 +78,10 @@ export class LocalAgentHomeStore implements AgentHomeStore {
       await mkdir(staging, { recursive: true });
       try {
         await copyDir(src, staging);
+        // Archive the OUTGOING state before the swap (append-only).
+        if (await pathExists(dest)) {
+          await this.archiveRevision(botId, dest);
+        }
         await rm(previous, { recursive: true, force: true });
         if (await pathExists(dest)) await rename(dest, previous);
         try {
@@ -72,7 +93,8 @@ export class LocalAgentHomeStore implements AgentHomeStore {
           throw error;
         }
         await rm(previous, { recursive: true, force: true });
-        return this.writeRevision(botId);
+        // Archive the INCOMING state as the newest revision.
+        return this.archiveRevision(botId, dest);
       } finally {
         await rm(staging, { recursive: true, force: true });
       }
@@ -80,16 +102,99 @@ export class LocalAgentHomeStore implements AgentHomeStore {
   }
 
   async revise(botId: string): Promise<string> {
-    return this.withBotWrite(botId, async () => this.writeRevision(botId));
+    return this.withBotWrite(botId, async () => {
+      const dest = this.botDir(botId);
+      if (await pathExists(dest)) return this.archiveRevision(botId, dest);
+      await this.writeLatestRevisionStamp(botId, "rev-empty");
+      return "rev-empty";
+    });
   }
 
+  /**
+   * Restores the SELECTED revision (V5). Newer live work is protected: paths
+   * whose current content differs from the selected revision — changed,
+   * added, or deleted after it — are kept as-is and reported, never clobbered
+   * (G2/R7: "later manual edits preserved").
+   */
   async restore(
     botId: string,
-    _revision: string,
+    revision: string,
     dest: string,
-    context: AdapterContext,
-  ): Promise<void> {
-    await this.checkout(botId, dest, context);
+    _context: AdapterContext,
+  ): Promise<WorkspaceRestoreReport> {
+    const manifest = await this.readManifest(botId, revision);
+    if (!manifest) throw new Error(`Unknown revision ${JSON.stringify(revision)} for this home`);
+    await mkdir(dest, { recursive: true });
+    const current = await scanTree(dest);
+    // A fresh (empty) target receives the full selected revision; a prepared
+    // tree keeps its newer state (post-revision manual edits are protected).
+    const freshTarget = Object.keys(current).length === 0;
+    const revisionPaths = new Set(Object.keys(manifest.files));
+    const restored: string[] = [];
+    const protectedPaths: string[] = [];
+    for (const [relative, info] of Object.entries(manifest.files)) {
+      const live = current[relative];
+      if (!freshTarget && live === undefined) {
+        // Deleted after the revision — protect the deletion.
+        protectedPaths.push(relative);
+        continue;
+      }
+      if (live !== undefined && (live.hash !== info.hash || live.mode !== info.mode)) {
+        protectedPaths.push(relative);
+        continue;
+      }
+      const source = path.join(this.revisionDir(botId, revision), relative);
+      const target = path.join(dest, relative);
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(source, target);
+      restored.push(relative);
+    }
+    for (const relative of Object.keys(current)) {
+      if (!revisionPaths.has(relative)) protectedPaths.push(relative);
+    }
+    return { restoredRevision: revision, restored, protected: protectedPaths };
+  }
+
+  /** Append-only revision listing, oldest first (T11). */
+  async listRevisions(botId: string): Promise<WorkspaceRevisionInfo[]> {
+    const dir = this.manifestDir(botId);
+    const entries = await readdir(dir).catch(() => [] as string[]);
+    const infos: WorkspaceRevisionInfo[] = [];
+    for (const entry of entries) {
+      if (!entry.endsWith(".json")) continue;
+      const manifest = await this.readManifest(botId, entry.slice(0, -".json".length));
+      if (manifest) {
+        infos.push({
+          id: manifest.id,
+          seq: manifest.seq,
+          createdAt: manifest.createdAt,
+          fileCount: Object.keys(manifest.files).length,
+          totalBytes: Object.values(manifest.files).reduce((sum, file) => sum + file.size, 0),
+        });
+      }
+    }
+    return infos.sort((a, b) => a.seq - b.seq);
+  }
+
+  /** Dirty-set query (T11/V5 + T12 pre-resume recheck input). */
+  async changesSince(botId: string, revision: string): Promise<WorkspaceDirtySet> {
+    const manifest = await this.readManifest(botId, revision);
+    if (!manifest) throw new Error(`Unknown revision ${JSON.stringify(revision)} for this home`);
+    const dest = this.botDir(botId);
+    await mkdir(dest, { recursive: true });
+    const current = await scanTree(dest);
+    const changed: string[] = [];
+    const added: string[] = [];
+    const removed: string[] = [];
+    for (const [relative, info] of Object.entries(manifest.files)) {
+      const live = current[relative];
+      if (live === undefined) removed.push(relative);
+      else if (live.hash !== info.hash) changed.push(relative);
+    }
+    for (const relative of Object.keys(current)) {
+      if (!(relative in manifest.files)) added.push(relative);
+    }
+    return { changed, added, removed };
   }
 
   async *exportHome(botId: string, _context: AdapterContext): AsyncIterable<PortableFile> {
@@ -168,12 +273,79 @@ export class LocalAgentHomeStore implements AgentHomeStore {
     return listed.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
   }
 
-  private async writeRevision(botId: string) {
-    const revision = `rev-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  // ---- 004-code-mode T11: append-only revision archive ----
+
+  private archiveRoot(botId: string) {
+    return path.join(this.root, "home-revisions", botId);
+  }
+
+  private revisionDir(botId: string, revision: string) {
+    return path.join(this.archiveRoot(botId), "revisions", revision);
+  }
+
+  private manifestDir(botId: string) {
+    return path.join(this.archiveRoot(botId), "manifests");
+  }
+
+  private async writeLatestRevisionStamp(botId: string, revision: string) {
     const directory = path.join(this.root, "home-revisions");
     await mkdir(directory, { recursive: true });
     await writeFile(path.join(directory, `${botId}.txt`), revision, "utf8");
+  }
+
+  /**
+   * Archives `dir` as a new revision (content + manifest). Deduplicates
+   * against the newest revision: an outgoing state identical to it is already
+   * history, so the happy path appends exactly one revision per commit while
+   * uncommitted live work still gets captured before an overwrite.
+   */
+  private async archiveRevision(botId: string, dir: string): Promise<string> {
+    const scan = await scanTree(dir);
+    const latest = await this.latestManifest(botId);
+    if (latest && manifestFilesEqual(latest.files, scan)) return latest.id;
+    const existing = await readdir(this.manifestDir(botId)).catch(() => [] as string[]);
+    const revision = `rev-${Date.now()}-${randomUUID().slice(0, 8)}`;
+    const contentDir = this.revisionDir(botId, revision);
+    await mkdir(contentDir, { recursive: true });
+    await copyDir(dir, contentDir);
+    const manifest: RevisionManifest = {
+      id: revision,
+      seq: existing.length + 1,
+      createdAt: new Date().toISOString(),
+      files: scan,
+    };
+    await mkdir(this.manifestDir(botId), { recursive: true });
+    await writeFile(
+      path.join(this.manifestDir(botId), `${revision}.json`),
+      JSON.stringify(manifest),
+      "utf8",
+    );
+    await this.writeLatestRevisionStamp(botId, revision);
     return revision;
+  }
+
+  private async readManifest(botId: string, revision: string): Promise<RevisionManifest | null> {
+    if (!/^[A-Za-z0-9._-]+$/.test(revision) || revision.includes("..")) return null;
+    try {
+      const raw = await readFile(path.join(this.manifestDir(botId), `${revision}.json`), "utf8");
+      const parsed = JSON.parse(raw) as RevisionManifest;
+      if (typeof parsed.id !== "string" || typeof parsed.files !== "object") return null;
+      return parsed;
+    } catch (error) {
+      if (isMissing(error)) return null;
+      throw error;
+    }
+  }
+
+  private async latestManifest(botId: string): Promise<RevisionManifest | null> {
+    const entries = await readdir(this.manifestDir(botId)).catch(() => [] as string[]);
+    let latest: RevisionManifest | null = null;
+    for (const entry of entries) {
+      if (!entry.endsWith(".json")) continue;
+      const manifest = await this.readManifest(botId, entry.slice(0, -".json".length));
+      if (manifest && (latest === null || manifest.seq > latest.seq)) latest = manifest;
+    }
+    return latest;
   }
 
   private async recoverInterruptedCommit(botId: string) {
@@ -277,6 +449,83 @@ function assertContained(root: string, candidate: string) {
 
 function isMissing(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
+// ---- 004-code-mode T11: revision manifest + tree scanning ----
+
+interface RevisionFileMeta {
+  hash: string;
+  mode: number;
+  size: number;
+}
+
+interface RevisionManifest {
+  id: string;
+  seq: number;
+  createdAt: string;
+  files: Record<string, RevisionFileMeta>;
+}
+
+/** Hash+mode+size scan of a home tree, used for manifests and dirty sets. */
+async function scanTree(
+  root: string,
+  current?: string,
+  relative = "",
+  visited = new Set<string>(),
+  into: Record<string, RevisionFileMeta> = {},
+): Promise<Record<string, RevisionFileMeta>> {
+  const absolute = current ?? (await realpath(root));
+  if (visited.has(absolute)) return into;
+  visited.add(absolute);
+  const entries = await readdir(absolute, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    const childRelative = relative ? `${relative}/${entry.name}` : entry.name;
+    const childPath = path.join(absolute, entry.name);
+    if (entry.isSymbolicLink()) {
+      // External/escaping links are excluded from manifests exactly as they
+      // are from exports (walkFiles hides them too).
+      const resolved = await traversalTarget(root, childPath).catch(() => null);
+      if (!resolved) continue;
+      const info = await stat(resolved);
+      if (info.isDirectory()) {
+        await scanTree(root, resolved, childRelative, visited, into);
+      } else if (info.isFile()) {
+        into[childRelative] = await fileMeta(resolved, info);
+      }
+      continue;
+    }
+    if (entry.isDirectory()) {
+      await scanTree(root, childPath, childRelative, visited, into);
+    } else if (entry.isFile()) {
+      into[childRelative] = await fileMeta(childPath, await stat(childPath));
+    }
+  }
+  return into;
+}
+
+async function fileMeta(absolute: string, info: { mode: number; size: number }) {
+  const bytes = await readFile(absolute);
+  return {
+    hash: createHash("sha256").update(bytes).digest("hex"),
+    mode: info.mode,
+    size: info.size,
+  };
+}
+
+function manifestFilesEqual(
+  a: Record<string, RevisionFileMeta>,
+  b: Record<string, RevisionFileMeta>,
+): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    const left = a[key];
+    const right = b[key];
+    if (left === undefined || right === undefined) return false;
+    if (left.hash !== right.hash || left.mode !== right.mode) return false;
+  }
+  return true;
 }
 
 async function pathExists(target: string) {

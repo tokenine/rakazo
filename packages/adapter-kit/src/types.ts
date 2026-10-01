@@ -168,6 +168,30 @@ export interface SnapshotRef {
   createdAt: string;
 }
 
+/** Report from AgentHomeStore.restore (004-code-mode T11 versioned store). */
+export interface WorkspaceRestoreReport {
+  restoredRevision: string;
+  /** Paths materialized from the selected revision. */
+  restored: string[];
+  /** Paths whose newer live state was protected (changed/added/deleted after the revision). */
+  protected: string[];
+}
+
+/** Dirty-set query result (files differing from a selected revision). */
+export interface WorkspaceDirtySet {
+  changed: string[];
+  added: string[];
+  removed: string[];
+}
+
+export interface WorkspaceRevisionInfo {
+  id: string;
+  seq: number;
+  createdAt: string;
+  fileCount: number;
+  totalBytes: number;
+}
+
 export interface SandboxCapabilities {
   graphical: boolean;
   pty: boolean;

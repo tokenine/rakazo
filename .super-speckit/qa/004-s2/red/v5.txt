@@ -1,0 +1,157 @@
+# RED evidence — matrix row V5 (T11 versioned workspace store; T13 policy portion appends below)
+# UTC: 2026-10-01T07:00:51Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/home-revisions.test.ts
+# UTC: 2026-10-01T07:00:51Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/home-revisions.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 149[2mms[22m[39m
+[31m     [31m×[31m admits it keeps revisions[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m every commit appends a revision; earlier revisions are never deleted[39m[32m 23[2mms[22m[39m
+[31m     [31m×[31m restore honors the SELECTED revision, including files deleted in later revisions[39m[32m 25[2mms[22m[39m
+[31m     [31m×[31m restore protects post-revision manual edits: changed and added files survive[39m[32m 20[2mms[22m[39m
+[31m     [31m×[31m dirty-set query: changesSince(revision) lists changed, added, and removed paths[39m[32m 21[2mms[22m[39m
+[31m     [31m×[31m changesSince against the CURRENT revision is empty (no phantom dirt)[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m revision archive lives OUTSIDE the bot home and never leaks into exports[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m checkout still returns the latest state (checkpoint flow unchanged)[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m restoring an unknown revision fails explicitly[39m[32m 11[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 9 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22madmits it keeps revisions
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m48:53[22m[39m
+    [90m 46|[39m   [34mit[39m([32m"admits it keeps revisions"[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m 47|[39m     [35mconst[39m { store } [33m=[39m [35mawait[39m [34mfixture[39m()[33m;[39m
+    [90m 48|[39m     [34mexpect[39m(store[33m.[39m[34mdescribe[39m()[33m.[39mcapabilities[33m.[39mrevisions)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   |[39m                                                     [31m^[39m
+    [90m 49|[39m   })[33m;[39m
+    [90m 50|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mevery commit appends a revision; earlier revisions are never deleted
+[31m[1mTypeError[22m: store.listRevisions is not a function[39m
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m58:35[22m[39m
+    [90m 56|[39m     [34mexpect[39m([35mnew[39m [33mSet[39m([r1[33m,[39m r2[33m,[39m r3])[33m.[39msize)[33m.[39m[34mtoBe[39m([34m3[39m)[33m;[39m
+    [90m 57|[39m
+    [90m 58|[39m     [35mconst[39m revisions [33m=[39m [35mawait[39m store[33m.[39m[34mlistRevisions[39m([32m"bot-1"[39m)[33m;[39m
+    [90m   |[39m                                   [31m^[39m
+    [90m 59|[39m     expect(revisions.map((revision) => revision.id)).toEqual([r1, r2, …
+    [90m 60|[39m     [90m// The archive is append-only: all three contents survive on disk.[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mrestore honors the SELECTED revision, including files deleted in later revisions
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'restoredRevision')[39m
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m86:19[22m[39m
+    [90m 84|[39m     dirs[33m.[39m[34mpush[39m(dest)[33m;[39m
+    [90m 85|[39m     [35mconst[39m report [33m=[39m [35mawait[39m store[33m.[39m[34mrestore[39m([32m"bot-1"[39m[33m,[39m r1[33m,[39m dest[33m,[39m context)[33m;[39m
+    [90m 86|[39m     [34mexpect[39m(report[33m.[39mrestoredRevision)[33m.[39m[34mtoBe[39m(r1)[33m;[39m
+    [90m   |[39m                   [31m^[39m
+    [90m 87|[39m     expect(report.restored.sort()).toEqual(["dropped-later.txt", "keep…
+    [90m 88|[39m     await expect(readFile(path.join(dest, "dropped-later.txt"), "utf8"…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mrestore protects post-revision manual edits: changed and added files survive
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'restoredRevision')[39m
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m117:19[22m[39m
+    [90m115|[39m     dirs[33m.[39m[34mpush[39m(dest)[33m;[39m
+    [90m116|[39m     [35mconst[39m report [33m=[39m [35mawait[39m store[33m.[39m[34mrestore[39m([32m"bot-1"[39m[33m,[39m r1[33m,[39m dest[33m,[39m context)[33m;[39m
+    [90m117|[39m     [34mexpect[39m(report[33m.[39mrestoredRevision)[33m.[39m[34mtoBe[39m(r1)[33m;[39m
+    [90m   |[39m                   [31m^[39m
+    [90m118|[39m     // b.txt did not change after r1 → restored from the selected revi…
+    [90m119|[39m     [34mexpect[39m(report[33m.[39mrestored)[33m.[39m[34mtoContain[39m([32m"sub/b.txt"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mdirty-set query: changesSince(revision) lists changed, added, and removed paths
+[31m[1mTypeError[22m: store.changesSince is not a function[39m
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m139:31[22m[39m
+    [90m137|[39m       context[33m,[39m
+    [90m138|[39m     )[33m;[39m
+    [90m139|[39m     [35mconst[39m dirty [33m=[39m [35mawait[39m store[33m.[39m[34mchangesSince[39m([32m"bot-1"[39m[33m,[39m r1)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m140|[39m     [34mexpect[39m(dirty[33m.[39mchanged[33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m"changed.txt"[39m])[33m;[39m
+    [90m141|[39m     [34mexpect[39m(dirty[33m.[39madded[33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m"added.txt"[39m])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mchangesSince against the CURRENT revision is empty (no phantom dirt)
+[31m[1mTypeError[22m: store.changesSince is not a function[39m
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m148:31[22m[39m
+    [90m146|[39m     [35mconst[39m { store } [33m=[39m [35mawait[39m [34mfixture[39m()[33m;[39m
+    [90m147|[39m     const r1 = await store.commit("bot-1", await stagingWith({ "a.txt"…
+    [90m148|[39m     [35mconst[39m dirty [33m=[39m [35mawait[39m store[33m.[39m[34mchangesSince[39m([32m"bot-1"[39m[33m,[39m r1)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m149|[39m     [34mexpect[39m(dirty)[33m.[39m[34mtoEqual[39m({ changed[33m:[39m [][33m,[39m added[33m:[39m [][33m,[39m removed[33m:[39m [] })[33m;[39m
+    [90m150|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mrevision archive lives OUTSIDE the bot home and never leaks into exports
+[31m[1mError[22m: ENOENT: no such file or directory, scandir '/tmp/rakazo-home-versions-Uti8VA/home-revisions/bot-1/revisions'[39m
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m163:22[22m[39m
+    [90m161|[39m     [90m// The archive lives under the store root, not inside homes/bot-1.[39m
+    [90m162|[39m     [35mconst[39m archiveRoot [33m=[39m path[33m.[39m[34mjoin[39m(root[33m,[39m [32m"home-revisions"[39m[33m,[39m [32m"bot-1"[39m)[33m;[39m
+    [90m163|[39m     const archived = await readdir(path.join(archiveRoot, "revisions")…
+    [90m   |[39m                      [31m^[39m
+    [90m164|[39m     [34mexpect[39m(archived[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m1[39m)[33m;[39m
+    [90m165|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mcheckout still returns the latest state (checkpoint flow unchanged)
+[31m[1mAssertionError[22m: expected 'working' to match /^rev-/[39m
+
+[32m- Expected:[39m
+/^rev-/
+
+[31m+ Received:[39m
+"working"
+
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m174:22[22m[39m
+    [90m172|[39m     dirs[33m.[39m[34mpush[39m(dest)[33m;[39m
+    [90m173|[39m     [35mconst[39m revision [33m=[39m [35mawait[39m store[33m.[39m[34mcheckout[39m([32m"bot-1"[39m[33m,[39m dest[33m,[39m context)[33m;[39m
+    [90m174|[39m     [34mexpect[39m(revision)[33m.[39m[34mtoMatch[39m([36m/^rev-/[39m)[33m;[39m
+    [90m   |[39m                      [31m^[39m
+    [90m175|[39m     await expect(readFile(path.join(dest, "a.txt"), "utf8")).resolves.…
+    [90m176|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/home-revisions.test.ts[2m > [22mversioned workspace store — append-only revision archive (V5/G2)[2m > [22mrestoring an unknown revision fails explicitly
+[31m[1mAssertionError[22m: promise resolved "undefined" instead of rejecting[39m
+
+[32m- Expected:[39m
+Error {
+  "message": "rejected promise",
+}
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m packages/adapters/src/home-revisions.test.ts:[2m183:78[22m[39m
+    [90m181|[39m     const dest = await mkdtemp(path.join(tmpdir(), "rakazo-home-unknow…
+    [90m182|[39m     dirs[33m.[39m[34mpush[39m(dest)[33m;[39m
+    [90m183|[39m     await expect(store.restore("bot-1", "rev-does-not-exist", dest, co…
+    [90m   |[39m                                                                              [31m^[39m
+    [90m184|[39m       [36m/unknown revision/i[39m[33m,[39m
+    [90m185|[39m     )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m9 failed[39m[22m[90m (9)[39m
+[2m   Start at [22m 07:00:52
+[2m   Duration [22m 527ms[2m (transform 125ms, setup 40ms, import 142ms, tests 149ms, environment 0ms)[22m
+
