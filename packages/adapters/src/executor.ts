@@ -303,13 +303,17 @@ import {
 } from "./skill-tools.js";
 import {
   continueRunClaimFence,
-  DESKTOP_HELD_FOR_TAKEOVER_MESSAGE,
   refreshTakeoverContinuePlan,
   TAKEOVER_RESUME_CHECKPOINTS,
   type TakeoverResumeCheckpoint,
   takeoverCheckpointOf,
   takeoverContinuePlan,
 } from "./takeover-resume.js";
+import {
+  DESKTOP_HELD_FOR_TAKEOVER_MESSAGE,
+  recheckWorkspaceAgainstTakeoverBaseline,
+  takeoverHeldToolMessage,
+} from "./takeover-settle.js";
 import { getActiveTeachingSession, parsePlaybook } from "./teaching-session.js";
 import {
   attachWorkspaceFileToThread,
@@ -1568,6 +1572,35 @@ export function createRunExecutor(deps: ExecutorDeps) {
               ));
           }
         }
+        // 004-code-mode T12 (V4): pre-resume workspace recheck vs the takeover
+        // baseline. Divergence (manual edits while the user held the screen) is
+        // reported as protected in the continuation prompt — never silently
+        // clobbered, never implied rolled back. Best-effort: a failed recheck
+        // must not fail run setup.
+        let takeoverWorkspaceRecheckNote: string | undefined;
+        if (
+          (heldForTakeover || takeoverResume) &&
+          storedComputer &&
+          deps.home &&
+          typeof (deps.home as { changesSince?: unknown }).changesSince === "function"
+        ) {
+          try {
+            const recheck = await recheckWorkspaceAgainstTakeoverBaseline(
+              deps.home as Parameters<typeof recheckWorkspaceAgainstTakeoverBaseline>[0],
+              {
+                homeKey: String((storedComputer as { homeKey?: unknown }).homeKey ?? ""),
+                homeRevision:
+                  ((storedComputer as { homeRevision?: unknown }).homeRevision as
+                    | string
+                    | null
+                    | undefined) ?? null,
+              },
+            );
+            if (recheck?.diverged) takeoverWorkspaceRecheckNote = recheck.note;
+          } catch {
+            // Unusable baseline: skip the recheck rather than guess.
+          }
+        }
         const graphicalToolsAllowed = graphical && acceptsImages && !heldForTakeover;
         // User-level "built-in browser" preference (desktop app setting): while
         // the user's desktop app is actually online (fresh heartbeat), deny the
@@ -2444,6 +2477,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
             }
           }
           if (name === "write_file") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold —
+            // the guard records an explicit exit instead of racing the user's work.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("write_file") });
+            }
             const filePath = String(args.path ?? "notes/result.txt");
             const content = textContentArg(args.content, "");
             workspaceCheckpoint.markDirty();
@@ -2588,6 +2626,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             }
           }
           if (name === "shell") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("shell") });
+            }
             const command = String(args.command ?? args.cmd ?? "");
             if (graphical && isProtectedComputerLifecycleCommand(command)) {
               return finish({
@@ -2781,6 +2823,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             return finish(removed);
           }
           if (name === "schedule_create") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("schedule_create") });
+            }
             const created = await createScheduleFromTool(deps, {
               spaceId: run.spaceId,
               botId: bot.id,
@@ -2885,6 +2931,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             );
           }
           if (name === "add_mcp_server") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("add_mcp_server") });
+            }
             const parsed = parseMcpServerToolArgs(args);
             if (!parsed) {
               return finish({
@@ -3638,7 +3688,13 @@ export function createRunExecutor(deps: ExecutorDeps) {
           { exposedToolNames: new Set(tools.map((tool) => tool.name)) },
         );
         const replyContext = await loadReplyContext(deps.prisma, thread.id, run.sourceMessageId);
-        const prompt = [replyContext, basePrompt, takeoverResume?.promptNote, approvalContinuation]
+        const prompt = [
+          replyContext,
+          basePrompt,
+          takeoverResume?.promptNote,
+          takeoverWorkspaceRecheckNote,
+          approvalContinuation,
+        ]
           .filter(Boolean)
           .join("\n\n");
         const historicalContext: AgentRunRequest["history"] = [];

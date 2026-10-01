@@ -5,9 +5,11 @@ export const TAKEOVER_RESUME_CHECKPOINTS: readonly TakeoverResumeCheckpoint[] = 
   "takeover-skipped",
 ];
 
-/** Shown when desktop tools are gated because the user still holds the screen. */
-export const DESKTOP_HELD_FOR_TAKEOVER_MESSAGE =
-  "The user has the screen. File and shell tools still work.";
+// Shown when desktop tools are gated because the user still holds the screen.
+// 004-code-mode T12: the wording (and ownership) moved to takeover-settle.ts —
+// the old "File and shell tools still work" claim is gone because the four
+// state-changing handlers are now held during an active takeover.
+export { DESKTOP_HELD_FOR_TAKEOVER_MESSAGE } from "./takeover-settle.js";
 
 export function takeoverCheckpointOf(
   checkpoint: string | null | undefined,

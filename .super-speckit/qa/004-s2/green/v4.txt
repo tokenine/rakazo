@@ -1,0 +1,16 @@
+# GREEN evidence — matrix row V4 (T12 takeover settle: four guarded handlers + settle mechanics + pre-resume recheck)
+# UTC: 2026-10-01T07:11:53Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/executor-takeover-settle.test.ts packages/adapters/src/takeover-settle.test.ts packages/adapters/src/takeover-resume.test.ts
+# UTC: 2026-10-01T07:11:53Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/takeover-settle.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 212[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-takeover-settle.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 137[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/takeover-resume.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m25 passed[39m[22m[90m (25)[39m
+[2m   Start at [22m 07:11:54
+[2m   Duration [22m 5.92s[2m (transform 2.15s, setup 50ms, import 4.96s, tests 360ms, environment 0ms)[22m
+
