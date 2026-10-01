@@ -2679,6 +2679,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
                 ? (deps.codingSecrets?.egressValuesForRun(runId) ?? [])
                 : [];
             if (codingEgressValues.length > 0) {
+              // S3 fix r2 (MED-1): the granted values ALSO ride runSecrets, so
+              // the existing literal redactors cover transcripts, progress,
+              // review payloads, and memory from this point on. TRANSFORM
+              // coverage (base64/hex/percent) stays scoped to coding shell
+              // results (below) and checkpoints (home egressFilter) until S5
+              // wires the full egress path — see the EVIDENCE S5 wiring item.
+              const additions = codingEgressValues.filter((value) => !runSecrets.includes(value));
+              if (additions.length > 0) {
+                runSecrets.push(...additions);
+                progressRedactor = createStreamingRedactor(runSecrets);
+              }
               const egress = new SecretEgressFilter([...runSecrets, ...codingEgressValues]);
               return finish(egress.filterCommandResult(result));
             }

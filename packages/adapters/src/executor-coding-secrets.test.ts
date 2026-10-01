@@ -46,7 +46,12 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function fixture(options: { trigger: string; mkdtempDir: string }) {
+async function fixture(options: {
+  trigger: string;
+  mkdtempDir: string;
+  /** Final done-text the runtime yields AFTER the shell call (transcript surface). */
+  finalText?: string;
+}) {
   dirs.push(options.mkdtempDir);
   const tool: ConnectorTool = {
     name: "shell",
@@ -55,6 +60,14 @@ async function fixture(options: { trigger: string; mkdtempDir: string }) {
     route: { connectorId: "demo", resourceId: "r", toolName: "shell" },
   };
   const results: unknown[] = [];
+  const events = {
+    append: vi.fn(async () => undefined),
+    pauseRunForInput: vi.fn(async () => {
+      run.status = "waiting_input";
+      return true;
+    }),
+    finalizeRun: vi.fn(async () => ({ continuationRunId: null })),
+  };
   const run = {
     id: "run-1",
     botId: "bot-1",
@@ -104,6 +117,7 @@ async function fixture(options: { trigger: string; mkdtempDir: string }) {
         defaultModelId: "scripted",
       })),
     },
+    computer: { updateMany: vi.fn(async () => ({ count: 1 })) },
     taughtSkill: { findMany: vi.fn(async () => []) },
     agentSecret: { findMany: vi.fn(async () => []) },
     agentSkill: { findMany: vi.fn(async () => []) },
@@ -129,7 +143,7 @@ async function fixture(options: { trigger: string; mkdtempDir: string }) {
   const runtimeRun = vi.fn(async function* (request: AgentRunRequest) {
     const result = await request.executeTool!("shell", { command: "printenv" }, "call-1");
     results.push(result);
-    yield { type: "done" as const, text: "Done" };
+    yield { type: "done" as const, text: options.finalText ?? "Done" };
   });
   const executor = createRunExecutor({
     prisma,
@@ -148,19 +162,13 @@ async function fixture(options: { trigger: string; mkdtempDir: string }) {
         yield { type: "stdout" as const, data: shellOutput };
         yield { type: "exit" as const, code: 0 };
       },
+      exportWorkspace: async function* () {},
       readFile: async () => new TextEncoder().encode("x"),
     },
     memory: { read: async () => ({ documents: [] }) },
     memoryProviders: { resolve: async () => null },
-    home: undefined,
-    events: {
-      append: vi.fn(async () => undefined),
-      pauseRunForInput: vi.fn(async () => {
-        run.status = "waiting_input";
-        return true;
-      }),
-      finalizeRun: vi.fn(async () => ({ continuationRunId: null })),
-    },
+    home: { commit: async () => "rev-mock-fixture" },
+    events,
     jobs: { enqueue: vi.fn(async () => undefined) },
     secrets: [],
     shutdownSignal: undefined,
@@ -177,6 +185,7 @@ async function fixture(options: { trigger: string; mkdtempDir: string }) {
   } as unknown as Parameters<typeof createRunExecutor>[0]);
   return {
     results,
+    events,
     async run() {
       await executor.continueRun(run.id, "worker-1");
     },
@@ -204,6 +213,24 @@ describe("coding-session shell results are transform-aware redacted (T17, V8)", 
     // not covered (documented baseline; the LITERAL form is also uncensored
     // here because the value was never a run secret for a non-coding run).
     expect(stdout).toContain(`b64:${Buffer.from(PLANTED).toString("base64")}`);
+  });
+
+  it("fix r2 MED-1: a granted value echoed into the transcript AFTER a coding shell call is redacted (runSecrets egress push)", async () => {
+    // The shell call happens first; the coding branch must push the granted
+    // values into runSecrets so the EXISTING literal redactors (transcript
+    // blocks, notification body, progress, review payloads, memory) cover
+    // them. Before the fix the value leaks onto the transcript verbatim.
+    const f = await fixture({
+      trigger: CODING_SESSION_TRIGGER,
+      mkdtempDir: await mkdtemp0(),
+      finalText: `transcript-echo:${PLANTED}`,
+    });
+    await f.run();
+    const surfaces = [
+      ...f.events.append.mock.calls.map((call) => JSON.stringify(call)),
+      ...f.events.finalizeRun.mock.calls.map((call) => JSON.stringify(call)),
+    ].join("\n");
+    expect(surfaces).not.toContain(PLANTED);
   });
 });
 

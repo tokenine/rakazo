@@ -1,0 +1,36 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/executor-coding-secrets.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 79[2mms[22m[39m
+     [32m✓[39m a coding-session command result carries NO literal or encoded form of a granted secret[32m 48[2mms[22m[39m
+     [32m✓[39m non-coding runs keep the legacy literal-only behavior (scoped replacement)[32m 9[2mms[22m[39m
+[31m     [31m×[31m fix r2 MED-1: a granted value echoed into the transcript AFTER a coding shell call is redacted (runSecrets egress push)[39m[32m 20[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-coding-secrets.test.ts[2m > [22mcoding-session shell results are transform-aware redacted (T17, V8)[2m > [22mfix r2 MED-1: a granted value echoed into the transcript AFTER a coding shell call is redacted (runSecrets egress push)
+[31m[1mAssertionError[22m: expected '[{"spaceId":"space-1","threadId":"thr…' not to contain 'ghp_t17plantedsecret42'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- ghp_t17plantedsecret42[39m
+[31m+ [{"spaceId":"space-1","threadId":"thread-1","botId":"bot-1","type":"run.started","runId":"run-1","payload":{"trigger":"coding_session"}}][39m
+[31m+ [{"spaceId":"space-1","threadId":"thread-1","botId":"bot-1","runId":"run-1","taskId":"task-1","attemptId":"attempt-1","leaseOwner":"worker-1","leaseFence":1,"outcome":"completed","blocks":[{"kind":"text","text":"transcript-echo:ghp_t17plantedsecret42"}],"markUnread":true}][39m
+
+[36m [2m❯[22m packages/adapters/src/executor-coding-secrets.test.ts:[2m233:26[22m[39m
+    [90m231|[39m       ...f.events.finalizeRun.mock.calls.map((call) => JSON.stringify(…
+    [90m232|[39m     ][33m.[39m[34mjoin[39m([32m"\n"[39m)[33m;[39m
+    [90m233|[39m     [34mexpect[39m(surfaces)[33m.[39mnot[33m.[39m[34mtoContain[39m([33mPLANTED[39m)[33m;[39m
+    [90m   |[39m                          [31m^[39m
+    [90m234|[39m   })[33m;[39m
+    [90m235|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 10:40:43
+[2m   Duration [22m 5.31s[2m (transform 2.17s, setup 35ms, import 5.00s, tests 79ms, environment 0ms)[22m
+
