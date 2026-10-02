@@ -998,6 +998,24 @@ export const appContract = {
     get: oc.input(z.object({})).output(WalletOverviewSchema),
     pair: oc.input(z.object({ botId: Id })).output(WalletPairingSchema),
   },
+  codingAcceptance: {
+    record: oc
+      .input(
+        z.object({
+          sessionId: Id,
+          outcome: z.string().min(1),
+          verificationCommands: z.array(z.string().min(1)).min(1),
+        }),
+      )
+      .output(z.object({ outcome: z.string(), verificationCommands: z.array(z.string()), recordedAt: z.string() })),
+    get: oc
+      .input(z.object({ sessionId: Id }))
+      .output(
+        z
+          .object({ outcome: z.string(), verificationCommands: z.array(z.string()), recordedAt: z.string() })
+          .nullable(),
+      ),
+  },
 };
 
 export type AppContract = typeof appContract;
