@@ -43,10 +43,15 @@ export interface CodingPiAdapterDeps {
   events: {
     append: (event: Parameters<ThreadEvents["append"]>[0]) => Promise<unknown>;
   };
-  machinery: CodingRunMachinery;
+  machinery: {
+    continueRun(sessionId: string): Promise<{ continued: boolean }>;
+    abortRun(runId: string): Promise<{ aborted: boolean }>;
+  };
   workerId: string;
   /** Workspace diff surface for inspect_changes (wired at integration time). */
-  inspectChanges: () => Promise<unknown>;
+  inspectChanges(sessionId: string): Promise<{
+    files: Array<{ path: string; status: string }>;
+  }>;
   now?: () => Date;
   /** Lease TTL for the session-activity revalidation/renewal (MED-2). Defaults to the service default. */
   leaseTtlMs?: number;
@@ -326,7 +331,7 @@ export function createCodingPiAdapter(deps: CodingPiAdapterDeps): CodingPiAdapte
           case "resume":
             return resume({ session }) as Promise<TResult>;
           case "inspect_changes":
-            return deps.inspectChanges() as Promise<TResult>;
+            return deps.inspectChanges(session.id) as Promise<TResult>;
           case "approvals":
             return approvals({ session }) as Promise<TResult>;
           default:

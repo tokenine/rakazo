@@ -21,8 +21,8 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { BotSecretName } from "@rakazo/contracts";
 import type { EncryptedSecretStore } from "./secrets.js";
+
 
 export const MAX_PROJECT_SECRETS_PER_WORKSPACE = 100;
 export const MAX_PROJECT_SECRET_LENGTH = 16_384;
@@ -79,8 +79,16 @@ export interface ProjectSecretsClient {
   };
 }
 
+/**
+ * Project-secret names reuse the 004 v1 grammar (constant 2 of S3 EVIDENCE.md):
+ * a strict subset of the mainline BotSecretName regex, with hyphens excluded so
+ * names remain valid POSIX process-environment identifiers. Preserves V9's
+ * "no wildcards, no dashes" pin against the mainline grammar that accepts
+ * hyphens for display-only bot secrets.
+ */
+const PROJECT_SECRET_NAME = /^[a-z][a-z0-9_]{0,63}$/;
 export function isValidProjectSecretName(name: string): boolean {
-  return BotSecretName.safeParse(name).success;
+  return PROJECT_SECRET_NAME.test(name);
 }
 
 /** A stable, value-free reference for audit entries and grant records. */

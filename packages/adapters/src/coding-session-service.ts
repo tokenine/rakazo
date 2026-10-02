@@ -90,6 +90,11 @@ export interface SessionServiceDeps extends SessionLeaseClock {
   prisma: PrismaClient;
   /** When present, continuation engine changes also require a registered adapter. */
   registry?: EngineRegistry;
+  /**
+   * Home store for computing the workspace dirty-set on crash reconciliation.
+   * When absent, reconcileCrash returns an empty dirty-set (offline/detached path).
+   */
+  homeStore?: import("@rakazo/adapter-kit").AgentHomeStore;
 }
 
 export function createSessionServiceDeps(input: {
@@ -97,12 +102,14 @@ export function createSessionServiceDeps(input: {
   registry?: EngineRegistry;
   now?: () => Date;
   leaseTtlMs?: number;
+  homeStore?: import("@rakazo/adapter-kit").AgentHomeStore;
 }): SessionServiceDeps {
   return {
     prisma: input.prisma,
     ...(input.registry ? { registry: input.registry } : {}),
     now: input.now ?? (() => new Date()),
     leaseTtlMs: input.leaseTtlMs ?? DEFAULT_LEASE_TTL_MS,
+    ...(input.homeStore ? { homeStore: input.homeStore } : {}),
   };
 }
 
@@ -514,4 +521,86 @@ export async function continueCodingSession(
     },
   );
   return createCodingSessionRef(created);
+}
+/**
+ * Crash reconciliation report (T23/V6).
+ *
+ * Produced after a session run terminates abnormally. The report carries:
+ * - lastAction: what the last run was doing when the session ended
+ * - dirtySet: workspace files that differ from the last checkpoint revision
+ * - stoppedNeverSuccess: a crashed/stopped run is never reported as success
+ *
+ * This function is REPORT-ONLY: it returns the report for the caller to act on.
+ * It never initiates a retry — that is the caller's decision.
+ *
+ * Architecture note: CodingSession records a latestRunId; the run row carries the
+ * status (running/cancelled/completed). The homeRevision lives on the Computer
+ * record, not the CodingSession — reconcileCrash accepts the botId so the caller
+ * can look up the Computer.homeRevision and pass it as homeRevision.
+ */
+export type ReconcileCrashResult = {
+  sessionId: string;
+  lastAction: "crashed" | "cancelled" | "completed" | "none";
+  /** True when lastAction is "crashed" — a stopped run is never success. */
+  stoppedNeverSuccess: boolean;
+  /** Dirty-set from the home store. Empty when homeStore is absent. */
+  dirtySet: import("@rakazo/adapter-kit").WorkspaceDirtySet;
+  latestRunId: string | null;
+};
+
+/**
+ * Build a crash reconciliation report for the given session.
+ *
+ * @param deps - SessionServiceDeps (prisma + optional homeStore)
+ * @param sessionId - the session to reconcile
+ * @param homeRevision - the Computer.homeRevision at the time of the last checkpoint.
+ *                       Required for dirty-set; omit for an offline/placeholder report.
+ */
+export async function reconcileCrash(
+  deps: SessionServiceDeps,
+  sessionId: string,
+  homeRevision?: string,
+): Promise<ReconcileCrashResult> {
+  const sessionRow = await deps.prisma.codingSession.findUnique({
+    where: { id: sessionId },
+  });
+  if (!sessionRow) {
+    throw new Error(`Coding session "${sessionId}" not found`);
+  }
+
+  const latestRunId = (sessionRow.latestRunId as string | null) ?? null;
+
+  // Derive lastAction from the run row status
+  let lastAction: ReconcileCrashResult["lastAction"] = "none";
+  if (latestRunId != null) {
+    const runRow = await deps.prisma.run.findFirst({
+      where: { id: latestRunId },
+    });
+    if (runRow) {
+      if (runRow.status === "running") lastAction = "crashed";
+      else if (runRow.status === "cancelled") lastAction = "cancelled";
+      else if (runRow.status === "completed") lastAction = "completed";
+    }
+  }
+
+  // stoppedNeverSuccess: a crashed (running when checked) or cancelled run is never success
+  const stoppedNeverSuccess = lastAction === "crashed" || lastAction === "cancelled";
+
+  // Dirty-set from the home store (optional — offline path gets empty set)
+  let dirtySet: import("@rakazo/adapter-kit").WorkspaceDirtySet = {
+    changed: [],
+    added: [],
+    removed: [],
+  };
+  if (deps.homeStore && homeRevision) {
+    dirtySet = await deps.homeStore.changesSince(sessionRow.botId as string, homeRevision);
+  }
+
+  return {
+    sessionId,
+    lastAction,
+    stoppedNeverSuccess,
+    dirtySet,
+    latestRunId,
+  };
 }
