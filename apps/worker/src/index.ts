@@ -235,10 +235,36 @@ async function main() {
         return { aborted: false };
       },
     },
-    inspectChanges: async (_sessionId: string) => {
-      // Stubbed until surfaces layer wires real diff provider. The OMP adapter
-      // uses this for inspect_changes; the normal-pi adapter uses workspace operations.
-      return { files: [] };
+    inspectChanges: async (sessionId: string) => {
+      // T36: derive botId from the session row, then call home.changesSince.
+      // This is the same sourcing pattern used in reconcileCrash.
+      const session = await prisma.codingSession.findUnique({
+        where: { id: sessionId },
+        select: { botId: true },
+      });
+      if (!session?.botId) return { files: [] };
+      const bot = await prisma.bot.findUnique({
+        where: { id: session.botId },
+        select: { computer: { select: { homeRevision: true } } },
+      });
+      if (!bot?.computer?.homeRevision) return { files: [] };
+      try {
+        const dirtySet = await home.changesSince(session.botId, bot.computer.homeRevision);
+        // WorkspaceDirtySet added/removed/changed are string[] (path names)
+        const ds = dirtySet as unknown as {
+          added?: string[];
+          removed?: string[];
+          changed?: string[];
+        };
+        const files = [
+          ...(ds.added ?? []).map((p) => ({ path: String(p), status: "added" })),
+          ...(ds.removed ?? []).map((p) => ({ path: String(p), status: "removed" })),
+          ...(ds.changed ?? []).map((p) => ({ path: String(p), status: "changed" })),
+        ];
+        return { files };
+      } catch {
+        return { files: [] };
+      }
     },
     spawnOmp: async () => {
       throw new Error("OMP spawn not available in worker — surfaces layer must provide");
