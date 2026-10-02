@@ -1,7 +1,7 @@
 {
   "id": "004-code-mode",
-  "state": "candidate_ready",
-  "candidate_sha": "c602232a",
+  "state": "merged",
+  "candidate_sha": "71666a9f",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/004-code-mode/verification-matrix.md",
@@ -44,7 +44,7 @@
     "note": "Gate card quoted 407f7822; Chief's on-disk R2 verification passed on the tree that includes 1952097c (= 407f7822 + Chief-mandated secrets-state-disclosure fold, +7/-2, landed 2026-10-01 ~03:25Z, before the tap). Approved scope unchanged: same 5 slices, T1-T33, V1-V21. approver is the human user only; Chief is the relay, not the approver."
   },
   "reassessment": {
-    "path": ".super-speckit/docs/slice-reassessment-004-s3.md",
+    "path": ".super-speckit/docs/slice-reassessment-004-s4.md",
     "decision": "keep"
   }
 }
