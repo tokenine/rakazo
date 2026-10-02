@@ -715,7 +715,7 @@ function takeoverQueue(
     computer,
     computerUpdate,
     run,
-    bot: { findFirst: vi.fn(async () => ({ thread: { id: "thread-1" } })) },
+    bot: { findFirst: vi.fn(async () => ({ threads: [{ id: "thread-1" }] })) },
   };
   const jobs = { enqueue: vi.fn(async () => {}), cancel: vi.fn(async () => {}) };
   const setScreenControl = vi.fn(async () => {});

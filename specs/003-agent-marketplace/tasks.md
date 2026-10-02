@@ -29,3 +29,27 @@ Red-green per seam; DB-gated suites use the isolated harness recipe (fresh conta
 ## Dependencies
 
 S1 → S2 → S3. T4 gates T3's import path. Security review (T11) may spawn bug loops before closure.
+
+## Phase 4: Convergence
+
+Note: this feature has no plan.md (spec + tasks + grill served as intent; recorded deviation).
+Converged 2026-10-02: Slice S1 (T1–T5) fully implemented and merged (squashed into d59c3587,
+ancestor of HEAD; 2,043-line regression suite; S1 security lane 7 retest rounds, 0
+crit/high/med). Slices S2 (T6–T10) and S3 closure (T11 final lane, T13) remain NOT STARTED
+and are already tracked as unchecked tasks T6–T13 above — not duplicated here. Recorded
+without tasks: V8 legacy-suite re-run is T12; BUG-003-S1-06 is a low finding with an open
+accept-or-fix decision (task below); state index says `state: "merged"` with
+`release.not_merged: true` and every checkbox unchecked while S2/S3 are pending — the
+bookkeeping task below reconciles this.
+
+- [ ] T14 Promote a minimal live-Postgres smoke of the import path into the mainline suite
+      (mainline V6 runs on a prisma double; live-DB probes exist only as QA artifacts under
+      .super-speckit/qa/003-s1-retest*/ — the S1 reassessment flagged mock-only V6 as a
+      load-bearing failure mode) per T5/V6 (partial)
+- [ ] T15 Decide and record accept-or-fix for open low finding BUG-003-S1-06
+      (.super-speckit/state/features/003-agent-marketplace.json security_review) per
+      T11/V4 (partial)
+- [ ] T16 Reconcile feature state bookkeeping with reality: tasks.md checkboxes for merged
+      S1 tasks (T1–T5), the `state: "merged"` + `release.not_merged: true` contradiction in
+      the state JSON, and the unresolvable candidate_sha da30d1ae (content squashed into
+      d59c3587) per T13 bookkeeping (contradicts)

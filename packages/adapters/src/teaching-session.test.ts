@@ -509,7 +509,7 @@ describe("recordTeachingInputEvent", () => {
 
   it("keeps protected input out of the generated playbook", async () => {
     const { deps, current, tx } = recordingDeps(skillRow());
-    const bot = { id: "bot-1", thread: { id: "thread-1" }, computer: null };
+    const bot = { id: "bot-1", threads: [{ id: "thread-1" }], computer: null };
     tx.bot.findUnique = vi.fn(async () => bot);
     deps.prisma.bot.findUnique = vi.fn().mockResolvedValue(bot);
     await recordTeachingInputEvent(

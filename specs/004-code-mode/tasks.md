@@ -137,3 +137,39 @@ T25. T20 is doc-only but ships with S3.
 
 No product code before the human approval gate on this plan + tasks bundle. maker ≠ checker
 (super-speckit.yml); merge requires human; nothing pushed; codex cloud delegation disabled.
+
+## Phase 6: Convergence
+
+Converged 2026-10-02. Slices 1–4 are merged as library-grade modules with strong offline
+test coverage: schema (CodingSession + workspace lease, engine field default "normal-pi"),
+process runtime + collision policy + doctor, versioned workspace store (production
+consumers), takeover settle across all four handlers (production consumers), secrets
+subsystem (store/grants/injection/egress/audit, docs carve-out, fail-closed doctor),
+continuity (reattach, reconcileCrash), OMP RPC adapter, labelled continuation. S5 items
+(T27–T33) are not started and stay tracked above — not duplicated here. The dominant
+finding: every coding-flow module has NO production entry point (registry, gate, repo-to-PR,
+secrets deps, reconcileCrash have zero production callers; surfaces can't reach OMP), which
+the S4 handoff explicitly deferred. Engine is effectively and safely fixed to Pi in
+production (fail-closed everywhere) — no silent-switch contradiction exists today. Recorded
+without tasks: T6's web UI gap is already tracked above; driver selection is env-global
+rather than per-task (noted for the surfaces slice).
+
+- [ ] T34 Wire engine dispatch into production: pass the composed registry
+      (buildEngineRegistry) into executor/worker dep assembly and CodingSession creation
+      (require deps.registry so an omp session cannot be created that no adapter can
+      serve), make executor dispatch engine-aware instead of trigger-only, and keep OMP
+      unreachable-until-selected (no silent switch) per R2/T2 (partial)
+- [ ] T35 Construct the acceptance gate in production executor deps and add the
+      acceptance-recording surface (no production code builds deps.codingGate or calls
+      gate.record; the fail-closed else-branch currently refuses all non-read-only tools
+      for coding runs) per R1/T4 (partial)
+- [ ] T36 Wire repo-to-PR into the run lifecycle: production caller for runRepoToPr, inject
+      inspectChanges into the Pi adapter ("wired at integration time" today), and expose
+      diff + verification views per R1/T5 (only-in-tests)
+- [ ] T37 Wire project secrets into production runs: resolve grants at task start, pass
+      codingSecrets/grants into executor deps (egress filter currently fed only by tests;
+      legacy literal-only redaction applies without it), preflight via doctor secrets-state
+      per R10/T15/T17/T21 (partial)
+- [ ] T38 Add the production crash-reconciliation caller: reconcileCrash exists with dirty-set
+      sourcing but only tests invoke it; reconcile before any retry on the coding run path
+      per R8/T23 (partial)

@@ -82,3 +82,29 @@ single-session behavior is bit-for-bit preserved; a second session can exist and
 
 S1 → S2 → S3/S4. T3+T4+T5 are one atomic compile-green move. T6 depends on T2 (primary exists).
 T13 requires design-first decision first (tsx paths in config `design.required_when_paths`).
+
+## Phase 5: Convergence
+
+Converged on behavior (2026-10-02): all production requirements R1–R5 verified implemented
+(schema+migration, primary pinning, sessions RPCs + deletion rules + owner scoping, feed
+events, web switcher + e2e, mobile session screen, sidebar aggregates, lease guard).
+Remaining findings are verification-completeness gaps only — no behavioral fixes required.
+Recorded without tasks: primary-thread helper exists as idioms (`repos.getBot` thread[0],
+`requireBotThread`, `PRIMARY_SESSION_ORDER`), not a named `getPrimaryThread` (spec-fidelity
+note only); session switcher lives in apps/web only, `packages/chat-ui` unused (fine).
+
+- [ ] T21 Wire the DB-gated lease-teardown guard (V17) into CI: sessions-lease-guard.postgres.test.ts
+      is describe.skip without VERIFY_DATABASE and no workflow sets it, so V17 never runs per
+      T18 (partial)
+- [ ] T22 DB-gated migration test for 20260928120000_multi_session_threads: pre-migrate bot
+      thread → migrate → isPrimary backfilled, messages intact, re-run idempotent per R6/V4
+      (missing)
+- [ ] T23 DB-gated invariant test: a second `isPrimary` row for one bot violates the partial
+      unique index `threads_botId_isPrimary_key` per R1/V11 (missing)
+- [ ] T24 Add one Telegram-transport DM fixture through createMessagingInboundHandler
+      asserting the primary-session lookup (existing primary-pin tests are all SMS/sendblue
+      fixtures) per R5/V5 (partial)
+- [ ] T25 Enforce the V10 grep gate in CI (unscoped `thread.findFirst({ botId })` in production
+      code) — it passes today but is only a manual check per R2 (partial)
+- [ ] T26 Direct router-level test: bots/duplicate on a multi-session bot clones exactly one
+      primary session per T17/accepted-v1 behavior (partial)
