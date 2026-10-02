@@ -577,4 +577,5 @@ describe("labelled continuation moves the workspace to the new session (V15 serv
     expect(store.sessions[0]!.handoffSummary).toBeUndefined();
     expect(store.leases).toHaveLength(0);
   });
+
 });
