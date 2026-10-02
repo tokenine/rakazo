@@ -29,7 +29,7 @@ function makeFakePrisma(
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => {
         return runs.find((r) => r.id === where.id) ?? null;
       }),
-    } as FakePrisma["run"],
+    } as unknown as FakePrisma["run"],
     codingSession: {
       findFirst: vi.fn(async ({ where }: { where: { latestRunId?: string } }) => {
         if (where?.latestRunId) {
@@ -37,14 +37,14 @@ function makeFakePrisma(
         }
         return null;
       }),
-    } as FakePrisma["codingSession"],
+    } as unknown as FakePrisma["codingSession"],
     bot: {
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => {
         const s = sessions.find((cs) => cs.botId === where.id);
         if (!s) return null;
         return { computer: { homeRevision: "rev-test-42" } };
       }),
-    } as FakePrisma["bot"],
+    } as unknown as FakePrisma["bot"],
   } as unknown as FakePrisma;
 }
 
