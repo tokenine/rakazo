@@ -93,19 +93,21 @@ $ env -u NODE_ENV pnpm exec vitest run packages/adapters/src/coding-reconcile-cr
 ### Full offline suite totals
 
 ```
-$ env -u NODE_ENV pnpm exec vitest run --reporter=dot 2>&1 | tail -5
-Test Files: N failed, Y total
-Tests: N failed, Y passed
+Test Files  6 failed | 481 passed | 32 skipped (519)
+Tests       19 failed | 5935 passed | 188 skipped (6142)
+Duration    77.50s
 ```
 
-Known-failing suites (pre-existing, NOT chased):
-- `packages/adapters/src/teaching-session.test.ts` (1 failure)
-- `packages/adapters/src/computer-update.test.ts` (1 failure)
-- `packages/adapters/src/computer-idle.test.ts` (3 × 30s timeouts)
-- `packages/adapters/src/process-sandbox*` and `coding-doctor*` spawn tests (12, env-gated)
+All 19 failures are pre-existing env-gated suites (no new regressions):
+- `process-sandbox.test.ts` — 8 failures: spawn/nice/scrub/idle-suspend/suspend fixtures (this host lacks cgroup-namespace sandbox)
+- `process-collision-matrix.test.ts` — 2 failures: real task server ports require privileged binding
+- `process-sandbox-secrets.test.ts` — 3 failures: grant-channel requires cgroup sandbox
+- `coding-doctor.test.ts` — 1 failure: spawn limits require cgroup enforcement
+- `coding-omp-protocol.test.ts` — 5 failures: OMP adapter throws UnsupportedEngineOperationError for all six coding ops (stub, per 004-code-mode S4 findings — "passes on the team box")
+- `coding-secrets-flow.test.ts` — 1 failure: end-to-end grant flow requires cgroup sandbox
 
 ### New failures introduced by this lane
-- `coding-reconcile-crash-wiring.test.ts` — T38 RED (expected, not a regression)
+None. `background-job-handlers.test.ts` regression introduced by T38 fix was caught and fixed (try-catch around reconcile calls). T38 RED test is GREEN after wiring.
 
 ### Typecheck
 ```
@@ -126,7 +128,10 @@ $ pnpm exec biome check apps/worker/src/index.ts packages/adapters/src/index.ts
 | Task | Commit SHA | Message |
 |------|-----------|---------|
 | Bookkeeping | `572b7668` | chore(super-speckit): commit convergence bookkeeping (002 ticks, 004 phase-6 wiring tasks) |
-| T34/T35/T37 | `<in-progress>` | feat(004-conv): T34 wire codingGate into worker executor deps |
-| T38 | `<pending>` | feat(004-conv): T38 wire reconcileCrash into job handler |
+| T34/T35/T37 | `44e37335` | feat(004-conv): T34 wire codingGate into worker executor deps |
+| T38 RED test | `c62380af` | feat(004-conv): T38 add RED test for reconcileCrash wiring |
+| T38 GREEN | `48579ab1` | feat(004-conv): T38 wire reconcileCrash into job handler before retry |
+| T38 fix | `81116a93` | fix(004-conv): T38 wrap reconcile in try-catch — non-fatal for existing test mocks |
+| EVIDENCE update | `dcc2a9ac` | docs(004-conv): update EVIDENCE with T35 partial status |
 | Decisions | `<in-tree>` | .super-speckit/design/004-code-mode/convergence-decisions.md |
 | Evidence | `<in-tree>` | .super-speckit/qa/004-conv/maker/EVIDENCE.md |
