@@ -222,6 +222,7 @@ import { checkpointRunComputerWorkspace } from "./computer-workspace.js";
 import { redactConnectorPayload, sanitizeConnectorError } from "./connector-safety.js";
 import { formatCurrentTimeInstruction } from "./current-time.js";
 import { resolveDeploymentModel } from "./deployment-model.js";
+import { finalizeRunSetupFailure, runSetupRetryDecision } from "./executor-setup-retry.js";
 import { handoffToGroupBot, loadGroupContext } from "./group-handoff.js";
 import {
   COMPACTION_BATCH_SIZE,
@@ -1522,42 +1523,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
         const runModelProvider = selected.provider ?? runtimeFallback?.provider;
         const runModelId = selected.id ?? runtimeFallback?.id;
         const failRunBeforeModel = async (message: string) => {
-          const failed = await deps.events.finalizeRun({
-            spaceId: run.spaceId,
-            threadId: thread.id,
-            botId: bot.id,
-            runId,
-            taskId: run.taskId,
-            attemptId: attempt.id,
-            leaseOwner: workerId,
-            leaseFence: fence,
-            outcome: "failed",
-            error: message,
-          });
-          if (!failed) return;
-          if (failed.continuationRunId) {
-            await deps.jobs
-              .enqueue(runContinueJob(failed.continuationRunId))
-              .catch((error) => getLogger().error("steering continuation enqueue", error));
-          }
-          if (run.trigger === "bot_message") {
-            await returnBotMessageOutcome(
-              deps,
-              { ...run, sourceMessageId: run.sourceMessageId },
-              { id: bot.id, name: bot.name },
-              `Could not complete the delegated request: ${message}`,
-              "status",
-            ).catch((error) => getLogger().error("bot message failure return", error));
-          }
-          if (!failed.continuationRunId) {
-            await notifyRun(deps, run, {
-              kind: "failure",
-              title: `${bot.name} failed`,
-              body: message,
-              botId: bot.id,
-              threadId: thread.id,
-            });
-          }
+          await finalizeRunSetupFailure(
+            deps,
+            {
+              run,
+              bot: { id: bot.id, name: bot.name },
+              attemptId: attempt.id,
+              workerId,
+              fence,
+            },
+            message,
+          );
         };
         if (!runModelProvider || !runModelId) {
           await failRunBeforeModel(MISSING_MODEL_MESSAGE);
@@ -4828,15 +4804,42 @@ export function createRunExecutor(deps: ExecutorDeps) {
             setupError instanceof Error && setupError.cause instanceof Error
               ? `: ${setupError.cause.message}`
               : "";
-          getLogger().error(
-            "run setup failed",
-            redactSecrets(
-              setupError instanceof Error
-                ? `${setupError.message}${causeMessage}`
-                : String(setupError),
-              runSecrets,
-            ),
+          const detail = redactSecrets(
+            setupError instanceof Error
+              ? `${setupError.message}${causeMessage}`
+              : String(setupError),
+            runSecrets,
           );
+          getLogger().error("run setup failed", detail);
+          if (
+            runSetupRetryDecision(
+              await deps.prisma.attempt.count({ where: { runId, status: "setup_failed" } }),
+              retryForever,
+            ) === "fail"
+          ) {
+            await deps.prisma.attempt
+              .update({
+                where: { id: attempt.id },
+                data: { status: "setup_failed", error: detail, finishedAt: new Date() },
+              })
+              .catch(() => undefined);
+            const bot = await deps.prisma.bot.findUniqueOrThrow({
+              where: { id: run.botId },
+              select: { id: true, name: true },
+            });
+            await finalizeRunSetupFailure(
+              deps,
+              {
+                run,
+                bot: { id: bot.id, name: bot.name },
+                attemptId: attempt.id,
+                workerId,
+                fence,
+              },
+              detail,
+            );
+            return;
+          }
         }
         const released = await writeComputerRunRequeue(
           deps,
@@ -4979,8 +4982,8 @@ export async function runNotificationsEnabled(
   return Boolean(source && (source.thread.groupId || source.bot.notifyOnFinish));
 }
 
-async function notifyRun(
-  deps: ExecutorDeps,
+export async function notifyRun(
+  deps: Pick<ExecutorDeps, "prisma" | "notifications">,
   run: { spaceId: string; userId: string; botId: string; threadId: string },
   message: NotificationMessage,
 ) {

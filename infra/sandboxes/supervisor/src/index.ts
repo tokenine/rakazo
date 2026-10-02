@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
@@ -18,6 +17,7 @@ import Docker from "dockerode";
 import { Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
+import { type DockerImageBuildClient, ensureComputerImageBuilt } from "./computer-image.js";
 import {
   assertVolumeSubpathSupport,
   COMPUTER_GID,
@@ -954,21 +954,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
 
 async function ensureComputerImage() {
   if (!imageReady) {
-    imageReady = (async () => {
-      try {
-        await docker.getImage(COMPUTER_IMAGE).inspect();
-        return;
-      } catch {
-        // build below
-      }
-      const dockerfile = path.join(computerContext, "Dockerfile");
-      if (!existsSync(dockerfile)) {
-        throw new Error(
-          `Missing ${COMPUTER_IMAGE}. Build it with: docker build -t ${COMPUTER_IMAGE} infra/sandboxes/computer`,
-        );
-      }
-      const stream = await docker.buildImage(
-        {
+    imageReady = ensureComputerImageBuilt(
+      docker as unknown as DockerImageBuildClient,
+      {
+        tag: COMPUTER_IMAGE,
+        dockerfile: path.join(computerContext, "Dockerfile"),
+        buildContext: {
           context: computerContext,
           src: [
             "Dockerfile",
@@ -986,13 +977,13 @@ async function ensureComputerImage() {
             "fluxbox.menu",
           ],
         },
-        { t: COMPUTER_IMAGE },
-      );
-      await new Promise<void>((resolve, reject) => {
-        docker.modem.followProgress(stream, (err) => (err ? reject(err) : resolve()));
-      });
-      await docker.getImage(COMPUTER_IMAGE).inspect();
-    })();
+      },
+      // A failed build must be retryable: keep the rejection only for callers
+      // already awaiting it, then clear the memo so the next provision rebuilds.
+    ).catch((error: unknown) => {
+      imageReady = undefined;
+      throw error;
+    });
   }
   await imageReady;
 }
