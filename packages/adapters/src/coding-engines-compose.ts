@@ -36,6 +36,8 @@ export { CODING_ENGINE_IDS };
  * @param deps.prisma - Database client
  * @param deps.jobs - Job publisher for enqueuing run Continue jobs
  * @param deps.events - Thread events surface for session lifecycle events
+ * @param deps.machinery - ContinueRun and abortRun callbacks for the pi adapter
+ * @param deps.inspectChanges - Diff surface for the pi adapter's inspect_changes op
  * @param deps.spawnOmp - Factory for the OMP RPC child process
  * @param deps.approveTool - Approval resolution for OMP builtin tool selects
  * @param deps.now - Clock for lease TTL calculations (defaults to Date.now)
@@ -47,6 +49,14 @@ export function buildEngineRegistry(deps: {
   events: {
     append: (event: Parameters<ThreadEvents["append"]>[0]) => Promise<unknown>;
   };
+  machinery: {
+    continueRun(sessionId: string): Promise<{ continued: boolean }>;
+    abortRun(runId: string): Promise<{ aborted: boolean }>;
+  };
+  inspectChanges(sessionId: string): Promise<{
+    messages: unknown[];
+    toolResults: Array<{ toolCallId: string; toolName: string; isError: boolean; result: unknown }>;
+  }>;
   spawnOmp(): Promise<ChildProcess>;
   approveTool(toolId: string, approval: "Approve" | "Deny"): Promise<void>;
   now?: () => Date;
@@ -57,20 +67,12 @@ export function buildEngineRegistry(deps: {
     prisma: deps.prisma,
     jobs: deps.jobs,
     events: deps.events,
-    machinery: {
-      continueRun: async () => {
-        throw new Error("continueRun should be driven by the jobs queue, not called directly");
-      },
-      abortRun: async () => {
-        throw new Error("abortRun should be driven by the stop path, not called directly");
-      },
-    },
+    machinery: deps.machinery,
+    inspectChanges: deps.inspectChanges,
     workerId: "coding-engine-registry",
-    inspectChanges: async () => ({ messages: [], toolResults: [] }),
     now: deps.now,
     leaseTtlMs: deps.leaseTtlMs,
   });
-
   // omp adapter — implements CodingEngineAdapter
   const ompAdapter: CodingOmpAdapter = createCodingOmpAdapter({
     sessionFactory: (innerDeps, sessionId) => new OmpRpcSession(innerDeps, sessionId),

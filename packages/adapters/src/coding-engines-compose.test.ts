@@ -10,9 +10,18 @@
  * exercised by coding-engine.test.ts using the same EngineRegistry API.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { EngineMismatchError } from "./coding-engine.js";
 import { buildEngineRegistry, CODING_ENGINE_IDS } from "./coding-engines-compose.js";
+
+const mockMachinery = {
+  continueRun: async () => ({ continued: false }),
+  abortRun: async () => ({ aborted: false }),
+};
+const mockInspectChanges = async () => ({
+  messages: [],
+  toolResults: [] as Array<{ toolCallId: string; toolName: string; isError: boolean; result: unknown }>,
+});
 
 describe("buildEngineRegistry — F3 routing correctness", () => {
   it("exposes exactly the two supported engine ids", () => {
@@ -24,6 +33,8 @@ describe("buildEngineRegistry — F3 routing correctness", () => {
       prisma: {} as never,
       jobs: { enqueue: async () => {} },
       events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
       spawnOmp: async () => { throw new Error("not reached"); },
       approveTool: async () => {},
     });
@@ -35,6 +46,8 @@ describe("buildEngineRegistry — F3 routing correctness", () => {
       prisma: {} as never,
       jobs: { enqueue: async () => {} },
       events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
       spawnOmp: async () => { throw new Error("not reached"); },
       approveTool: async () => {},
     });
@@ -49,6 +62,8 @@ describe("buildEngineRegistry — F3 routing correctness", () => {
       prisma: {} as never,
       jobs: { enqueue: async () => {} },
       events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
       spawnOmp: async () => { throw new Error("not reached"); },
       approveTool: async () => {},
     });
@@ -60,6 +75,8 @@ describe("buildEngineRegistry — F3 routing correctness", () => {
       prisma: {} as never,
       jobs: { enqueue: async () => {} },
       events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
       spawnOmp: async () => { throw new Error("not reached"); },
       approveTool: async () => {},
     });
@@ -76,6 +93,8 @@ describe("buildEngineRegistry — F3 routing correctness", () => {
       prisma: {} as never,
       jobs: { enqueue: async () => {} },
       events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
       spawnOmp: async () => { throw new Error("not reached"); },
       approveTool: async () => {},
     });
@@ -85,5 +104,33 @@ describe("buildEngineRegistry — F3 routing correctness", () => {
     expect(ompAdapter.supportedOps.has("resume")).toBe(true);
     expect(ompAdapter.supportedOps.has("inspect_changes")).toBe(true);
     expect(ompAdapter.supportedOps.has("approvals")).toBe(true);
+  });
+
+  it("routes engine:normal-pi dispatch to the pi adapter", async () => {
+    const registry = buildEngineRegistry({
+      prisma: {} as never,
+      jobs: { enqueue: async () => {} },
+      events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
+      spawnOmp: async () => { throw new Error("not reached"); },
+      approveTool: async () => {},
+    });
+    const piAdapter = registry.require("normal-pi");
+    expect(piAdapter.id).toBe("normal-pi");
+  });
+
+  it("routes engine:omp dispatch to the omp adapter", async () => {
+    const registry = buildEngineRegistry({
+      prisma: {} as never,
+      jobs: { enqueue: async () => {} },
+      events: { append: async () => {} },
+      machinery: mockMachinery,
+      inspectChanges: mockInspectChanges,
+      spawnOmp: async () => { throw new Error("not reached"); },
+      approveTool: async () => {},
+    });
+    const ompAdapter = registry.require("omp");
+    expect(ompAdapter.id).toBe("omp");
   });
 });

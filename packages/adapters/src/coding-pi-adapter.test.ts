@@ -2,7 +2,7 @@ import { runContinueJob } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it } from "vitest";
 import { EngineMismatchError } from "./coding-engine.js";
-import { type CodingRunMachinery, createCodingPiAdapter } from "./coding-pi-adapter.js";
+import { createCodingPiAdapter } from "./coding-pi-adapter.js";
 import { LeaseLostError } from "./coding-session-service.js";
 
 interface RunRow {
@@ -121,16 +121,19 @@ function fakePrisma() {
 }
 
 function fakeMachinery() {
-  const machinery: CodingRunMachinery & { continued: string[]; aborted: string[] } = {
-    // The executor's continueRun entry point (lease/fence claim) — coding runs ride it.
-    continueRun: async (runId) => {
-      machinery.continued.push(runId);
+  const continued: string[] = [];
+  const aborted: string[] = [];
+  const machinery = {
+    continueRun: async (runId: string) => {
+      continued.push(runId);
+      return { continued: true };
     },
-    abortRun: async (runId) => {
-      machinery.aborted.push(runId);
+    abortRun: async (runId: string) => {
+      aborted.push(runId);
+      return { aborted: true };
     },
-    continued: [],
-    aborted: [],
+    continued,
+    aborted,
   };
   return machinery;
 }
@@ -195,7 +198,7 @@ async function wired() {
     events,
     machinery,
     workerId: "worker-1",
-    inspectChanges: async () => ({ files: [{ path: "src/a.ts", status: "modified" }] }),
+    inspectChanges: async () => ({ messages: [], toolResults: [] }),
   });
   return { adapter, store, machinery, enqueued, appended, prisma };
 }

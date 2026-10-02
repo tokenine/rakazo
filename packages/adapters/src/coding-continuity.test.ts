@@ -248,19 +248,24 @@ function makeFakePrismaWithTransaction(): {
 // T22: disconnect/reconnect — no duplicate run
 // ---------------------------------------------------------------------------
 
-
 describe("T22 — disconnect/reconnect: server-owned run continues, reconnect idempotent (V6)", () => {
   /**
    * Fake run machinery for the normal-pi adapter.
    */
   function makeFakeMachinery() {
-   const continued: string[] = [];
-   const aborted: string[] = [];
-   const machinery = {
-     continueRun: async (runId: string) => { continued.push(runId); },
-     abortRun: async (runId: string) => { aborted.push(runId); },
-   };
-   return { machinery, continued, aborted };
+    const continued: string[] = [];
+    const aborted: string[] = [];
+    const machinery = {
+      continueRun: async (runId: string) => {
+        continued.push(runId);
+        return { continued: true };
+      },
+      abortRun: async (runId: string) => {
+        aborted.push(runId);
+        return { aborted: true };
+      },
+    };
+    return { machinery, continued, aborted };
   }
 
   it("reconnect prompt returns same runId with steered:true — no second run created", async () => {
@@ -289,7 +294,10 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
         },
       },
       events: { append: async () => {} },
-      machinery: { continueRun: async () => {}, abortRun: async () => {} },
+      machinery: {
+        continueRun: async () => ({ continued: true }),
+        abortRun: async () => ({ aborted: true }),
+      },
       workerId: "worker-1",
       inspectChanges: async () => ({ messages: [], toolResults: [] }),
       now: () => new Date("2026-10-01T00:00:00Z"),
@@ -297,16 +305,16 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
     });
 
     // First prompt — creates a new run
-    const r1 = await adapter.dispatch(session, "prompt", {
+    const r1 = (await adapter.dispatch(session, "prompt", {
       text: "hello",
       messageId: "msg-1",
-    }) as { runId: string; steered: boolean };
+    })) as { runId: string; steered: boolean };
 
     // Second prompt on the same session — reconnects to the existing active run
-    const r2 = await adapter.dispatch(session, "prompt", {
+    const r2 = (await adapter.dispatch(session, "prompt", {
       text: "hello again",
       messageId: "msg-2",
-    }) as { runId: string; steered: boolean };
+    })) as { runId: string; steered: boolean };
 
     // Same runId, and it was a steer not a new run
     expect(r2.runId).toBe(r1.runId);
@@ -346,7 +354,7 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
     await adapter.dispatch(session, "prompt", { text: "hello", messageId: "msg-1" });
 
     // Approvals op succeeds (even if empty)
-    const approvals = await adapter.dispatch(session, "approvals", {}) as { pending: unknown[] };
+    const approvals = (await adapter.dispatch(session, "approvals", {})) as { pending: unknown[] };
     expect(Array.isArray(approvals.pending)).toBe(true);
   });
 
@@ -368,7 +376,10 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
       prisma: prisma as unknown as PrismaClient,
       jobs: { enqueue: async () => {} },
       events: { append: async () => {} },
-      machinery: { continueRun: async () => {}, abortRun: async () => {} },
+      machinery: {
+        continueRun: async () => ({ continued: true }),
+        abortRun: async () => ({ aborted: true }),
+      },
       workerId: "worker-1",
       inspectChanges: async () => ({ messages: [], toolResults: [] }),
       now: () => new Date("2026-10-01T00:00:00Z"),
@@ -376,20 +387,20 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
     });
 
     // Create the run
-    const r1 = await adapter.dispatch(session, "prompt", {
+    const r1 = (await adapter.dispatch(session, "prompt", {
       text: "hello",
       messageId: "msg-1",
-    }) as { runId: string; steered: boolean };
+    })) as { runId: string; steered: boolean };
 
     // Stop the session
-    const stopped = await adapter.dispatch(session, "stop", {}) as { stopped: boolean };
+    const stopped = (await adapter.dispatch(session, "stop", {})) as { stopped: boolean };
     expect(stopped.stopped).toBe(true);
 
     // Session is now stopped — reconnect prompt creates a new run
-    const r2 = await adapter.dispatch(session, "prompt", {
+    const r2 = (await adapter.dispatch(session, "prompt", {
       text: "hello after stop",
       messageId: "msg-2",
-    }) as { runId: string; steered: boolean };
+    })) as { runId: string; steered: boolean };
 
     expect(r2.steered).toBe(false);
     expect(r2.runId).not.toBe(r1.runId);
@@ -558,7 +569,6 @@ describe("T23 — crash reconciliation: dirty-set + last action before retry (V6
     expect(result.dirtySet).toEqual({ changed: ["src/index.ts"], added: [], removed: [] });
     expect(result.lastAction).toBe("crashed");
   });
-
 
   it("returns empty dirtySet when homeStore is absent", async () => {
     const { prisma, addRunToSession } = makeFakePrismaWithTransaction();
