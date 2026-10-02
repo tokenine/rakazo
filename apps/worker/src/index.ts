@@ -7,6 +7,7 @@ loadRootEnv();
 import {
   ChatSdkMessagingSurface,
   CodexCatalogCache,
+  createAcceptanceGateService,
   createBackgroundJobHandlers,
   createCloudAgentConnection,
   createConnectorStack,
@@ -210,6 +211,8 @@ async function main() {
     messaging: messaging ? createMessagingContextLoader(prisma) : undefined,
     web: createWebProvider(),
     cloudAgent,
+    // T34: acceptance gate for coding sessions — fail-closed until acceptance recorded
+    codingGate: createAcceptanceGateService({ prisma }),
   });
 
   const jobHandlers = createBackgroundJobHandlers({
