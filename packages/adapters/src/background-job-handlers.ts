@@ -11,6 +11,8 @@ import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import type { CloudAgentConnection } from "./cloud-agent-factory.js";
 import { pollCloudAgent } from "./cloud-agent-poll.js";
+import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
+import { createSessionServiceDeps, reconcileCrash } from "./coding-session-service.js";
 import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
@@ -61,6 +63,34 @@ export function createBackgroundJobHandlers(deps: {
 
   return {
     "run.continue": async (payload) => {
+      // T38: reconcile crash state before retry for coding sessions.
+      // Look up the run to check if it's a crashed coding_session.
+      const run = await deps.prisma.run.findUnique({
+        where: { id: payload.runId },
+        select: { trigger: true, status: true },
+      });
+      if (run?.trigger === CODING_SESSION_TRIGGER && run.status === "crashed") {
+        // Find the coding session for this run to get the sessionId and botId.
+        const session = await deps.prisma.codingSession.findFirst({
+          where: { latestRunId: payload.runId },
+          select: { id: true, botId: true },
+        });
+        if (session?.botId) {
+          // Get homeRevision from the bot's computer for dirty-set.
+          const bot = await deps.prisma.bot.findUnique({
+            where: { id: session.botId },
+            select: { computer: { select: { homeRevision: true } } },
+          });
+          const homeRevision = bot?.computer?.homeRevision ?? undefined;
+          const codingDeps = createSessionServiceDeps({
+            prisma: deps.prisma,
+            homeStore: deps.home,
+          });
+          // T38: reconcileCrash is called before retry to capture dirty state.
+          // The result (dirty set + lastAction) can inform retry strategy.
+          await reconcileCrash(codingDeps, session.id, homeRevision);
+        }
+      }
       await deps.executor.continueRun(payload.runId, deps.workerId);
       // Automatic messaging mirror: once the run's bot messages are durable,
       // copy them into the outbox. Never let mirror failures fail the run.
