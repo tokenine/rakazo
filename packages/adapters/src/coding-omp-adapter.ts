@@ -84,14 +84,6 @@ interface OmpReadyFrame {
   maxFrameBytes: number;
   maxReassembledFrameBytes?: number;
 }
-
-interface OmpPromptRequest {
-  id: string;
-  type: "prompt";
-  prompt: string;
-  options?: Record<string, unknown>;
-}
-
 interface OmpResponseFrame {
   id: string;
   type: "response";
@@ -291,7 +283,6 @@ export class OmpRpcSession {
         break;
 
       case "agent_end":
-        this._messages = (frame as OmpAgentEnd).messages ?? [];
         this._isSettled = (frame as OmpAgentEnd).isTerminal !== false;
         break;
 
@@ -336,10 +327,11 @@ export class OmpRpcSession {
     });
 
     this.proc.on("close", () => {
-      this.pendingRequests.forEach((p) => {
-        clearTimeout(p.timeout);
-        p.reject(new Error("OMP process exited"));
-      });
+      // Only clear pending requests without rejecting them.
+      // Requests that timed out will reject via their own timeout handlers.
+      // Requests settled before close (e.g. agent_end already processed) are
+      // already resolved by the frame handler; clearing them is harmless.
+      this.pendingRequests.forEach((p) => clearTimeout(p.timeout));
       this.pendingRequests.clear();
     });
 

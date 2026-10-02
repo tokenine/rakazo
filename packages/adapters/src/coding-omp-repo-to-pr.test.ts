@@ -4,7 +4,9 @@
 
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { PrismaClient } from "@rakazo/db";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LocalArtifactStore } from "./artifacts.js";
 import {
   createFakeForge,
   createProcessCommandRunner,
@@ -15,10 +17,12 @@ import { EncryptedSecretStore } from "./secrets.js";
 
 describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
   let repoDir: string;
+  let artifactRoot: string;
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
     const tmp = await mkdtemp("/tmp/rakazo-v2omp-");
+    artifactRoot = await mkdtemp("/tmp/rakazo-v2omp-artifacts-");
     const srcDir = join(tmp, "src");
     await mkdir(srcDir, { recursive: true });
     await writeFile(
@@ -30,6 +34,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
     repoDir = tmp;
     cleanup = async () => {
       await rm(tmp, { recursive: true, force: true });
+      await rm(artifactRoot, { recursive: true, force: true });
     };
   });
 
@@ -45,16 +50,19 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
       recordedAt: "2026-10-01T12:00:00Z",
     };
 
-    const session = {
-      id: sessionId,
-      workspaceId: "ws-1",
-      engine: "omp",
-      status: "active",
-      acceptance,
-      userId: "user-1",
-      spaceId: "space-1",
-      botId: "bot-1",
-    };
+    const sessions: Array<Record<string, unknown>> = [
+      {
+        id: sessionId,
+        hash: `hash-${sessionId}`,
+        workspaceId: "ws-1",
+        engine: "omp",
+        status: "active",
+        acceptance,
+        userId: "user-1",
+        spaceId: "space-1",
+        botId: "bot-1",
+      },
+    ];
 
     const loadMock = vi.fn().mockReturnValue("ghp_fake_token_123");
     const secretStore = Object.assign(new EncryptedSecretStore("test-only-encryption-key"), {
@@ -63,11 +71,11 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
 
     const prisma = {
       codingSession: {
-        findUnique: async () => session,
-        update: async ({ data }: { data: { verification?: unknown } }) => ({
-          ...session,
-          verification: data.verification,
-        }),
+        findUnique: async ({ where }: { where: { id: string } }) =>
+          sessions.find((row) => row.id === where.id) ?? null,
+        update: async ({ where, data }: { where: { id: string }; data: unknown }) => {
+          Object.assign(sessions.find((row) => row.id === where.id)!, data);
+        },
       },
       botSecret: {
         findFirst: async ({ where }: { where?: { name?: string } }) => {
@@ -75,9 +83,11 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
           return { id: "github-token-key", name: "github_token", ciphertext: "v1:fake" };
         },
       },
-    };
+    } as unknown as PrismaClient;
 
-    return { secretStore, prisma };
+    const diff = createWorkspaceDiffProvider(repoDir);
+
+    return { prisma, secretStore, diff };
   }
 
   it("runRepoToPr requires an acceptance artifact before implement() — refusal is explicit", async () => {
@@ -88,6 +98,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
       sessionId: "s-no-acceptance",
       acceptance: null,
     });
+    const artifacts = new LocalArtifactStore(artifactRoot);
 
     await expect(
       runRepoToPr(
@@ -95,7 +106,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
           prisma,
           secretStore,
           diff,
-          artifacts: { put: async () => ({ id: "a1" }) },
+          artifacts,
           commandRunner: runner,
           forge,
         },
@@ -115,13 +126,14 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
     const diff = createWorkspaceDiffProvider(repoDir);
     const runner = createProcessCommandRunner();
     const { prisma, secretStore } = makeTestDeps({ sessionId: "s-v2omp" });
+    const artifacts = new LocalArtifactStore(artifactRoot);
 
     const result = await runRepoToPr(
       {
         prisma,
         secretStore,
         diff,
-        artifacts: { put: async () => ({ id: "a1" }) },
+        artifacts,
         commandRunner: runner,
         forge,
       },
@@ -154,6 +166,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
         recordedAt: "2026-10-01T12:00:00Z",
       },
     });
+    const artifacts = new LocalArtifactStore(artifactRoot);
 
     await expect(
       runRepoToPr(
@@ -161,7 +174,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
           prisma,
           secretStore,
           diff,
-          artifacts: { put: async () => ({ id: "a1" }) },
+          artifacts,
           commandRunner: runner,
           forge,
         },
@@ -188,6 +201,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
         recordedAt: "2026-10-01T12:00:00Z",
       },
     });
+    const artifacts = new LocalArtifactStore(artifactRoot);
 
     await writeFile(join(repoDir, "src", "feature.js"), "module.exports = {}\n", "utf8");
 
@@ -196,7 +210,7 @@ describe("V2(omp) — OMP adapter wires to repo-to-PR flow", () => {
         prisma,
         secretStore,
         diff,
-        artifacts: { put: async () => ({ id: "a1" }) },
+        artifacts,
         commandRunner: runner,
         forge,
       },
