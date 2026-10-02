@@ -17,12 +17,17 @@ import { createAcceptanceGateService } from "./coding-acceptance-gate.js";
 import type { EngineRegistry } from "./coding-engine.js";
 import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
 import type { ForgeClient } from "./coding-repo-to-pr.js";
-import { createProcessCommandRunner, createWorkspaceDiffProvider } from "./coding-repo-to-pr.js";
+import {
+  createProcessCommandRunner,
+  createWorkspaceDiffProvider,
+  runRepoToPr,
+} from "./coding-repo-to-pr.js";
 import { createSessionServiceDeps, reconcileCrash } from "./coding-session-service.js";
 import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
 import { compactHistory } from "./history-compaction.js";
+import { resolveAgentHomePath } from "./home.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
 import type { EncryptedSecretStore } from "./secrets.js";
@@ -85,10 +90,6 @@ export function createBackgroundJobHandlers(deps: {
    * Wired from composeCodingSecrets(cache) in the composition root.
    */
   codingSecrets?: { egressValuesForRun(runId: string): string[] };
-  /**
-   * 004 T36: data dir for artifact store (artifacts used by runRepoToPr).
-   */
-  dataDir?: string;
   /**
    * 004 T36: ForgeClient for opening GitHub PRs.
    * Boundary declaration: GitHub credentials live in the surfaces/CLI layer
@@ -239,7 +240,7 @@ export function createBackgroundJobHandlers(deps: {
         });
         return;
       }
-      const workspaceDir = deps.home.resolveAgentHomePath(bot.computer.homeKey, deps.dataDir);
+      const workspaceDir = resolveAgentHomePath(deps.home, bot.computer.homeKey, deps.dataDir);
       const diff = createWorkspaceDiffProvider(workspaceDir);
       const commandRunner = createProcessCommandRunner();
       const artifacts = new LocalArtifactStore(deps.dataDir);
