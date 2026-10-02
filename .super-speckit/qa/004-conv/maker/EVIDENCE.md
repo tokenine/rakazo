@@ -141,9 +141,36 @@ $ pnpm --filter @rakazo/api run check        ✓
 
 ---
 
+## Typecheck Fix (post-commit a10227dd)
+
+Three errors caught by retest gate after `a10227dd` and `93adf716`:
+
+1. **TS2300 duplicate `dataDir`** in deps interface: `dataDir?: string` declared twice (first from T38 round,
+   second from T36 round). Fixed: removed duplicate, kept single declaration.
+2. **TS2339 `resolveAgentHomePath` not on `AgentHomeStore`**: called as `deps.home.resolveAgentHomePath(...)`
+   but the method is a free function in `home.ts` (not on the interface). Fixed: added
+   `import { resolveAgentHomePath } from "./home.js"` and called it as
+   `resolveAgentHomePath(deps.home, bot.computer.homeKey, deps.dataDir)`.
+3. **TS2304 `runRepoToPr` not imported**: called in handler but only `createProcessCommandRunner`
+   and `createWorkspaceDiffProvider` were imported from `./coding-repo-to-pr.js`. Fixed:
+   added `runRepoToPr` to the named import.
+4. **Bonus (found during worker typecheck)**: `composeCodingSecrets` was not exported from
+   `@rakazo/adapters` index. Fixed: added `export * from "./coding-secret-grants.js"` to
+   `packages/adapters/src/index.ts`.
+
+**Adapters typecheck**: `pnpm --filter @rakazo/adapters run check` → 0 errors  
+**Worker typecheck**: `pnpm --filter @rakazo/worker run check` → 0 errors  
+**API typecheck**: `pnpm --filter @rakazo/api run check` → 0 errors  
+**Targeted suites**: 4 files, 16 tests, all pass  
+**Biome**: `--write` applied to `background-job-handlers.ts` and `index.ts`; 0 remaining errors  
+**Full suite**: 19 failures — all pre-existing known set; 0 new failures introduced
+
+---
+
 ## Commits
 
 ```
+a15867c7 fix(004-code-mode): T36 — typecheck errors in run.completed wiring
 93adf716 style(004-code-mode): fix lint — unused context params, biome import sort
 a10227dd feat(004-code-mode): T37 — wire composed secrets into worker
 ```
