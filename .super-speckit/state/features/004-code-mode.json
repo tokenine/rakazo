@@ -1,7 +1,7 @@
 {
   "id": "004-code-mode",
   "state": "candidate_ready",
-  "candidate_sha": "b01a75e0",
+  "candidate_sha": "c602232a",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/004-code-mode/verification-matrix.md",
