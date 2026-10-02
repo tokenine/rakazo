@@ -39,15 +39,11 @@ $ env -u NODE_ENV pnpm exec vitest run packages/adapters/src/executor-coding-gat
 
 ### T35: Construct acceptance gate in production deps + recording surface
 
-**RED**: N/A — gate interface already exists; recording surface is `gate.record(sessionId, outcome, verificationCommands)` which writes to `codingSession.acceptance` column
+**Status**: PARTIAL — gate is constructed in worker deps (T34), but acceptance recording (`gate.record()`) is NOT wired in production. Per the spec: "no production code...calls gate.record". The recording surface requires the session/acceptance artifact entry point that surfaces slice (S5) will provide.
 
-**Implementation**: Same as T34 — `createAcceptanceGateService({ prisma })` in worker is the production gate factory. Recording happens when the session create/accept path calls `gate.record()`.
+**Evidence of partial**: `grep -r "gate\.record" apps/ | grep -v test` → no results.
 
-**GREEN evidence**: Same executor-coding-gate test suite (5/5 pass — proves gate is consulted for coding_session runs)
-
-**Files touched**: `apps/worker/src/index.ts` (+2 lines), `packages/adapters/src/index.ts` (+1 export)
-
-**Commit**: same as T34 (`feat(004-conv): T34 wire codingGate into worker executor deps`)
+**GREEN**: Requires surfaces slice (S5) to add the `gate.record()` call in the session create/accept path when an acceptance artifact is received.
 
 ---
 
