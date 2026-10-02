@@ -54,3 +54,45 @@ Q3 session entity (inferred), Q4 settle semantics (gap proven, policy unknown), 
 contents (gap proven, contents unknown), Q6 budgets/suspend (inferred gap), Q7 secrets boundary
 (proven conflict → G5/Q10), Q8 setup format (unknown) + mobile scope (inferred → Q8). absorbed
 into the table and spec open-questions Q1–Q10.
+
+## Addendum — T24 OMP RPC experiment (2026-10-02, settles Q1/G10 + Q2/G11)
+
+Live probe of the installed `omp` 18.4.2 in `--mode rpc` under a scrubbed env in an isolated
+temp workspace; full frame logs + driver at `.super-speckit/qa/004-s4/experiment/omp-rpc/`.
+
+**G10/Q1 transport — CONFIRMED (was: inferred strong).** First stdout frame is
+`ready` {protocolVersion: 1, supportedProtocolVersions: [1, 2], maxFrameBytes: 1048576,
+maxReassembledFrameBytes present}. One JSON object per line on stdin; responses correlate by
+`id`; a model turn acks with `response{command:"prompt",success:true}` and completes at
+`agent_end` with `isTerminal != false`. `get_state`, `get_available_models`,
+`get_messages_page` (snapshot paging), and `get_session_stats` behaved exactly as documented.
+stdout is protocol-only; stderr stayed empty in all runs. Continuity vocabulary for T22 exists
+(`switch_session`, `handoff`, paged history). Node-side subprocess embedding is viable as
+inferred; the SDK/Bun constraint is bypassed exactly as planned.
+
+**Q2/G11 builtin approvals — SETTLED (was: unknown). Refines the docs reading:**
+- Non-yolo modes DO surface builtin tool approvals in RPC — as `extension_ui_request`
+  `{method: "select", title: "Allow tool: bash\nCommand: <cmd>", options: ["Approve","Deny"]}`,
+  answered with `extension_ui_response {id, value: "Approve" | "Deny"}`. The host implements
+  the approval UI. Ignoring the request deadlocks the turn (verified: first write-mode run hung
+  until timeout with the select pending).
+- Approve → tool executes (`tool_execution_end`, isError false, captured stdout).
+  Deny → `tool_execution_end` isError true, "Tool call denied by user: bash"; the run
+  continues. Yolo (this deployment's default) → zero approval frames; exec-tier tools run
+  immediately; only fire-and-forget `setWidget` frames appeared.
+- **Integrity finding for V2(omp):** in the denied run the assistant's final TEXT still claimed
+  the command output ("omp-rpc-probe-ok") even though the tool call had failed. Verification
+  records and egress sweeps must source `tool_execution_end` results / `get_messages_page`
+  toolResults — never assistant prose.
+- Provider safety checks were not exercised (none triggered on trivial calls); per docs they
+  fail closed headless. Fire-and-forget UI requests (setWidget/notify) need no reply; unknown
+  request methods should be cancelled, not ignored.
+
+**Adapter consequences (T25 brief):** spawn per session with `--mode rpc --no-session` (or
+named session under the task data tree); declare `HOME` explicitly in the sandbox task config
+(omp reads its config/auth from `$HOME/.omp`; probe ran on scrubbed env with only
+PATH/HOME/TERM/LANG); unattended runs use yolo + `tools.approval` deny-map
+(computer/browser/eval deny) per the documented unattended guidance; interactive coding
+sessions use a non-yolo overlay and route Allow-tool selects to the product approval gate
+(the T22 pending-approvals UI). Host-side egress filter (V8) must cover tool results and paged
+history; the omp-internal session store is outside host control.
