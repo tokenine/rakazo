@@ -21,3 +21,35 @@ Red-green per repo/resolve seams; e2e last. Single slice (route: normal).
 ## Out of scope (recorded)
 
 - Mobile hub/gallery (V4 degradation) · remote catalog refresh · points/credits · connector auto-authorization · modelless guard (known v1 behavior)
+
+## Phase 2: Convergence
+
+Note: this feature has no plan.md (spec + tasks + grill served as intent; recorded deviation).
+Converged on function (2026-10-02): catalog, RPC, routes, HubPage zones, make-similar, e2e
+(3/3 at QA candidate 697a638f, ancestor of HEAD) all implemented. Findings are constitution
+token violations (a later merge regressed the Welcome cleanup and the tdd-log's "0 hex
+matches" claim is inaccurate on the current tree) plus test-completeness gaps. Recorded
+without tasks: tasks.md T5 says `experts.create` but code/contracts use
+`bots.createFromExpert` (implementation matches spec R3 intent; stale task wording, not
+rewritten per append-only contract).
+
+- [x] T11 Reapply semantic-token cleanup to Welcome.tsx: hex gradient #FB923C/#F97316/#EF4444,
+      text-white, shadow-orange-500/30, hardcoded rgba shadows — the 247e77e9 cleanup was
+      wiped by the 3406a70d sign-in merge per R4/V3 (contradicts)
+- [x] T12 Replace HubPage.tsx hardcoded `#6B7280` bot-color fallback with a semantic token,
+      and make the V3 grep gate repeatable (script/CI step) — tdd-log's recorded "0 matches"
+      is inaccurate on the current tree per R4/V3/T9 (contradicts)
+- [x] T13 Add filesystem assertion that every catalog visualAssetPath exists under
+      packages/contracts/assets/inspiration/ (today only the .svg suffix is regex-checked)
+      per V5/T7 (partial)
+- [x] T14 Fix catalog copy: case notion-knowledge title "จัด知识库" mixes Chinese into
+      Thai-first copy per R4 (contradicts)
+- [x] T15 Decide and record: fully-empty /app redirects to /onboarding (QA-blessed) instead of
+      the literal "render HubPage when space empty" task text — accept onboarding as the
+      guided path or render HubPage per T3/R2 (partial)
+- [x] T16 Derive the Shell fallback Personal space's hasContent from bots/groups instead of
+      hardcoding true, so first-actions cannot be silently hidden if the API returns zero
+      spaces per R2 (partial)
+- [x] T17 Add an RPC-level test for inspiration.list payload/schema per T2 (missing)
+- [x] T18 Stabilize hub.spec.ts make-similar test: replace page.evaluate JS click +
+      fixed 300ms timeout with proper locator/wait per T8 (partial)

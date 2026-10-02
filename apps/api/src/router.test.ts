@@ -6,7 +6,7 @@ import {
   screenLeaseIdForRun,
 } from "@rakazo/adapters";
 import type { Actor, Bot } from "@rakazo/contracts";
-import { REPLY_QUOTE_MAX_LENGTH } from "@rakazo/contracts";
+import { INSPIRATION_CATALOG, REPLY_QUOTE_MAX_LENGTH } from "@rakazo/contracts";
 import { openScreenCapability } from "@rakazo/core/node/screen-capability";
 import type { PrismaClient } from "@rakazo/db";
 import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
@@ -1041,7 +1041,7 @@ describe("computer terminal and file transfer", () => {
         findFirst: vi.fn().mockResolvedValue({
           id: "bot-1",
           screenGeneration: 2,
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
           computer: {
             id: "computer-1",
             screenGeneration: 3,
@@ -2583,7 +2583,7 @@ describe("bot model auth on save", () => {
       teamChatRules: "",
       webhookSecretId: null,
       spawnKey: null,
-      thread: { id: "thread-1", unread: false, messages: [] },
+      threads: [{ id: "thread-1", unread: false, messages: [] }],
       computer: null,
       runs: [],
     };
@@ -2765,6 +2765,7 @@ describe("bot restore computer quota", () => {
           id: "bot-archived",
           computerId: "computer-archived",
           computer: { id: "computer-archived" },
+          threads: [{ id: "thread-1" }],
           userId: "user-1",
         }
       : null;
@@ -2884,7 +2885,7 @@ describe("routines.update", () => {
       },
       bot: {
         findFirst: vi.fn(async () =>
-          botArchived ? null : { id: "bot-1", thread: { id: "thread-1" }, computer: null },
+          botArchived ? null : { id: "bot-1", threads: [{ id: "thread-1" }], computer: null },
         ),
       },
     };
@@ -2973,7 +2974,7 @@ describe("threads.endCall", () => {
       bot: {
         findFirst: vi
           .fn()
-          .mockResolvedValue({ id: "bot-1", thread: { id: "thread-1" }, computer: null }),
+          .mockResolvedValue({ id: "bot-1", threads: [{ id: "thread-1" }], computer: null }),
       },
       taughtSkill: { findFirst: vi.fn().mockResolvedValue(null) },
       $transaction: vi.fn(async (run: (client: typeof tx) => unknown) => run(tx)),
@@ -3240,13 +3241,7 @@ describe("threads session lifecycle rpc (V12/V13/V14)", () => {
           return { ...created };
         }),
         update: vi.fn(
-          async ({
-            where,
-            data,
-          }: {
-            where: { id: string };
-            data: Record<string, unknown>;
-          }) => {
+          async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
             if ("nextEventSeq" in data) {
               const seq = nextEventSeq.get(where.id) ?? 0;
               nextEventSeq.set(where.id, seq + 1);
@@ -3392,5 +3387,54 @@ describe("threads session lifecycle rpc (V12/V13/V14)", () => {
       expect(response.status).toBeGreaterThanOrEqual(400);
     }
     expect(harness.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("inspiration catalog RPC", () => {
+  it("returns the bundled catalog over the RPC boundary (002 T17)", async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const prisma = {
+      user: {
+        update,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          email: "user@rakazo.test",
+          name: "Test User",
+          avatarStyle: "plain",
+          clientBrowserPreferred: false,
+        }),
+      },
+      spaceModelPreference: { findFirst: vi.fn().mockResolvedValue(null) },
+      deploymentSettings: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      env: {
+        defaultProvider: "fake",
+        defaultModel: "fake-model",
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "fake",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const actor = {
+      spaceId: "workspace-1",
+      userId: "user-1",
+      email: "user@rakazo.test",
+      isDeploymentOwner: true,
+    } satisfies Actor;
+    const handler = new RPCHandler(createRouter(deps));
+    const { response } = await handler.handle(
+      new Request("http://127.0.0.1/rpc/inspiration/list", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ json: {} }),
+      }),
+      { prefix: "/rpc", context: { actor } },
+    );
+    expect(response?.status).toBe(200);
+    const body = (await response?.json()) as { json: unknown };
+    expect(Array.isArray(body.json)).toBe(true);
+    expect(body.json).toEqual(INSPIRATION_CATALOG);
   });
 });

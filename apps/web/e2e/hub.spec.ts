@@ -1,10 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  captureScreenshot,
-  completeOnboarding,
-  signup,
-  signupOnly,
-} from "./helpers";
+import { captureScreenshot, completeOnboarding, signup, signupOnly } from "./helpers";
 
 test.describe("hub", () => {
   // V1: empty deployment → guided first actions
@@ -75,22 +70,15 @@ test.describe("hub", () => {
     await page.goto("/app/hub");
     await page.waitForURL(/\/app\/hub/);
 
-    // Find the first inspiration card and click "Make similar"
-    // Wait for the gallery rail to stabilize (React may remount cards during
-    // scroll-into-view animations).
-    await expect(page.locator("[data-testid^='inspiration-card-']").first()).toBeVisible();
-    await page.waitForTimeout(300);
-
-    // Use JS click to bypass Playwright's DOM-attachment checks when the button
-    // may detach due to React re-renders mid-action.
-    await page.evaluate(() => {
-      const card = document.querySelector("[data-testid^='inspiration-card-']");
-      // Find the "Make similar" button specifically
-      const btn = [...(card?.querySelectorAll("button") ?? [])].find((b) =>
-        /make similar/i.test(b.textContent ?? ""),
-      );
-      if (btn instanceof HTMLElement) btn.click();
-    });
+    // The first inspiration card's "Make similar" button, resolved through the
+    // accessibility tree so React remounts mid-animation are retried by the
+    // locator instead of needing a fixed sleep and a JS bypass click.
+    const makeSimilar = page
+      .locator("[data-testid^='inspiration-card-']")
+      .first()
+      .getByRole("button", { name: /make similar/i });
+    await expect(makeSimilar).toBeVisible();
+    await makeSimilar.click({ delay: 50 });
 
     // Wait for navigation — the Make similar action creates a new bot and
     // navigates to /app/:botId/:threadId (bot.threadId is now populated).

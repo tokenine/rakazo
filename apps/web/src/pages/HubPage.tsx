@@ -1,13 +1,11 @@
 import { Trans } from "@lingui/react/macro";
-import { useNavigate } from "react-router-dom";
 import type { InspirationCase } from "@rakazo/contracts";
 import { Button } from "@rakazo/ui-web";
-import { Bot, Cpu, MessageSquare, Zap } from "lucide-react";
+import { Bot, Cpu, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { rpc } from "../lib/rpc";
 
-/** Zone titles — enforced 2-word copy budget */
-const ZONE_GREETING = "ยินดีต้อนรับ"; // per design brief greeting copy
 const ZONE_ACTIVITY = "Activity"; // zone title 2 words
 const ZONE_GALLERY = "Gallery"; // zone title 2 words
 const ZONE_FIRST_ACTIONS = "Start"; // zone title 2 words
@@ -62,11 +60,7 @@ export function HubPage({ hasContent, bots = [] }: HubPageProps) {
       {/* Greeting header — 1 line per copy budget */}
       <div className="border-b border-border px-6 py-5">
         <p className="text-[15px] font-medium text-foreground">
-          {hasContent ? (
-            <Trans>Welcome back</Trans>
-          ) : (
-            <Trans>Welcome — let's get started</Trans>
-          )}
+          {hasContent ? <Trans>Welcome back</Trans> : <Trans>Welcome — let's get started</Trans>}
         </p>
       </div>
 
@@ -86,14 +80,14 @@ export function HubPage({ hasContent, bots = [] }: HubPageProps) {
                   className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-start transition-colors hover:bg-accent"
                 >
                   <span
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
-                    style={{ backgroundColor: bot.color ?? "#6B7280" }}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${
+                      bot.color ? "text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}
+                    style={bot.color ? { backgroundColor: bot.color } : undefined}
                   >
                     {bot.name.charAt(0).toUpperCase()}
                   </span>
-                  <span className="min-w-0 truncate text-[13.5px] text-foreground">
-                    {bot.name}
-                  </span>
+                  <span className="min-w-0 truncate text-[13.5px] text-foreground">{bot.name}</span>
                 </button>
               ))}
             </div>
@@ -112,10 +106,7 @@ export function HubPage({ hasContent, bots = [] }: HubPageProps) {
           {loading ? (
             <div className="flex gap-3 overflow-x-auto pb-1">
               {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="h-36 w-56 shrink-0 animate-pulse rounded-xl bg-muted"
-                />
+                <div key={i} className="h-36 w-56 shrink-0 animate-pulse rounded-xl bg-muted" />
               ))}
             </div>
           ) : (
@@ -181,9 +172,7 @@ function GalleryCard({ case_ }: { case_: InspirationCase }) {
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div>
           <p className="text-[14px] font-medium text-foreground">{case_.title}</p>
-          <p className="text-[12px] text-muted-foreground line-clamp-1">
-            {case_.description}
-          </p>
+          <p className="text-[12px] text-muted-foreground line-clamp-1">{case_.description}</p>
         </div>
         <Button
           size="sm"
@@ -192,11 +181,7 @@ function GalleryCard({ case_ }: { case_: InspirationCase }) {
           disabled={creating}
           className="mt-auto w-full"
         >
-          {creating ? (
-            <Trans>Creating…</Trans>
-          ) : (
-            <Trans>Make similar</Trans>
-          )}
+          {creating ? <Trans>Creating…</Trans> : <Trans>Make similar</Trans>}
         </Button>
       </div>
     </div>

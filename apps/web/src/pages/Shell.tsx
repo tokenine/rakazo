@@ -1608,7 +1608,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
                 id: bootstrapMe.spaceId,
                 name: "Personal",
                 isDefault: true,
-                hasContent: true,
+                hasContent: bots.length > 0 || groups.length > 0,
                 canDelete: false,
                 bots,
                 groups,

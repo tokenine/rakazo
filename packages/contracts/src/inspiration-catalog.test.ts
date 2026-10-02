@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { EXPERT_CATALOG } from "./experts.js";
 import {
@@ -46,6 +48,13 @@ describe("inspiration-catalog", () => {
     }
   });
 
+  it("every visualAssetPath resolves to a bundled asset file (V5)", () => {
+    const assetsDir = path.join(import.meta.dirname, "../assets/inspiration");
+    for (const c of INSPIRATION_CATALOG) {
+      expect(existsSync(path.join(assetsDir, c.visualAssetPath))).toBe(true);
+    }
+  });
+
   it("every case has at least one tag", () => {
     for (const c of INSPIRATION_CATALOG) {
       expect(c.tags.length).toBeGreaterThan(0);
@@ -54,7 +63,14 @@ describe("inspiration-catalog", () => {
 
   it("rejects a malformed case at the schema boundary", () => {
     expect(() =>
-      InspirationCaseSchema.parse({ key: 1, title: "x", description: "y", expertKey: "z", visualAssetPath: "a.svg", tags: [] }),
+      InspirationCaseSchema.parse({
+        key: 1,
+        title: "x",
+        description: "y",
+        expertKey: "z",
+        visualAssetPath: "a.svg",
+        tags: [],
+      }),
     ).toThrow();
   });
 });

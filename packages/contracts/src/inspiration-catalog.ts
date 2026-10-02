@@ -11,7 +11,6 @@
 
 import { z } from "zod";
 import type { ExpertDefinition } from "./experts.js";
-import { findExpert } from "./experts.js";
 
 /** A single inspiration case shown as a gallery card. */
 export const InspirationCaseSchema = z.object({
@@ -66,7 +65,7 @@ export const INSPIRATION_CATALOG: InspirationCase[] = [
   },
   {
     key: "notion-knowledge",
-    title: "จัด知识库",
+    title: "จัดการความรู้",
     description: "สร้างและอัปเดตฐานความรู้ใน Notion",
     expertKey: "chief",
     visualAssetPath: "notion-knowledge.svg",
@@ -94,9 +93,7 @@ export const INSPIRATION_CATALOG: InspirationCase[] = [
  * Validate every case's expertKey resolves to a real Expert.
  * Returns an array of error messages; empty array means valid.
  */
-export function validateInspirationCatalog(
-  experts: readonly ExpertDefinition[],
-): string[] {
+export function validateInspirationCatalog(experts: readonly ExpertDefinition[]): string[] {
   const errors: string[] = [];
   for (const c of INSPIRATION_CATALOG) {
     const expert = experts.find((e) => e.key === c.expertKey);
