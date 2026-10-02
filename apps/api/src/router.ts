@@ -39,7 +39,6 @@ import {
   buildModelConnectPlaintext,
   CHATGPT_OAUTH_PROVIDER,
   CodexCatalogCache,
-  createAcceptanceGateService,
   ComputerBusyError,
   cancelComputerRunWork,
   checkpointAndRecordComputerWorkspace,
@@ -49,6 +48,7 @@ import {
   computerSupportsTerminal,
   computerSupportsUpdate,
   computerUpdateView,
+  createAcceptanceGateService,
   createUserTelegramPlatform,
   createVoiceProvider,
   defaultCatalogModelId,
@@ -5578,14 +5578,14 @@ export function createRouter(deps: RouterDeps) {
       ),
     },
     codingAcceptance: {
-      record: authed.codingAcceptance.record.handler(async ({ context, input }) => {
+      record: authed.codingAcceptance.record.handler(async ({ input }) => {
         return codingAcceptanceGate.record({
           sessionId: input.sessionId,
           outcome: input.outcome,
           verificationCommands: input.verificationCommands,
         });
       }),
-      get: authed.codingAcceptance.get.handler(async ({ context, input }) => {
+      get: authed.codingAcceptance.get.handler(async ({ input }) => {
         return codingAcceptanceGate.get(input.sessionId);
       }),
     },
