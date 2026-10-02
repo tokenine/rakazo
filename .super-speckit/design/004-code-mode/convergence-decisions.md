@@ -12,6 +12,8 @@
 
 3. **Ratified matrix rows**: T34–T38 complete already-ratified matrix rows (V1/V2/V6/V13/V15 + V8/V9 production feeding) without any new product surface questions. The wiring is purely mechanical: connect existing exports to existing call-sites.
 
+   **Correction (fold)**: "purely mechanical" understates the round — the slice added a production RPC route (codingAcceptance), a run.completed lifecycle handler, and the composed secrets accessor; recorded for accuracy.
+
 ### Alternatives rejected
 
 - **S5-first**: Would require human decision before any wiring could start, blocking productive work unnecessarily.
