@@ -299,7 +299,7 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
         abortRun: async () => ({ aborted: true }),
       },
       workerId: "worker-1",
-      inspectChanges: async () => ({ messages: [], toolResults: [] }),
+      inspectChanges: async () => ({ files: [] }),
       now: () => new Date("2026-10-01T00:00:00Z"),
       leaseTtlMs: 600_000,
     });
@@ -345,7 +345,7 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
       events: { append: async () => {} },
       machinery,
       workerId: "worker-1",
-      inspectChanges: async () => ({ messages: [], toolResults: [] }),
+      inspectChanges: async () => ({ files: [] }),
       now: () => new Date("2026-10-01T00:00:00Z"),
       leaseTtlMs: 600_000,
     });
@@ -381,7 +381,7 @@ describe("T22 — disconnect/reconnect: server-owned run continues, reconnect id
         abortRun: async () => ({ aborted: true }),
       },
       workerId: "worker-1",
-      inspectChanges: async () => ({ messages: [], toolResults: [] }),
+      inspectChanges: async () => ({ files: [] }),
       now: () => new Date("2026-10-01T00:00:00Z"),
       leaseTtlMs: 600_000,
     });

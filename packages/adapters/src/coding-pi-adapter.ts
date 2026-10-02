@@ -50,8 +50,7 @@ export interface CodingPiAdapterDeps {
   workerId: string;
   /** Workspace diff surface for inspect_changes (wired at integration time). */
   inspectChanges(sessionId: string): Promise<{
-    messages: unknown[];
-    toolResults: Array<{ toolCallId: string; toolName: string; isError: boolean; result: unknown }>;
+    files: Array<{ path: string; status: string }>;
   }>;
   now?: () => Date;
   /** Lease TTL for the session-activity revalidation/renewal (MED-2). Defaults to the service default. */

@@ -15,19 +15,24 @@
  * registry that the executor and session service use.
  */
 
+import type { ChildProcess } from "node:child_process";
 import type { JobPublisher } from "@rakazo/adapter-kit";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import type { ChildProcess } from "node:child_process";
 
 import { createEngineRegistry, type EngineRegistry } from "./coding-engine.js";
-import { createCodingOmpAdapter, OmpRpcSession, type CodingOmpAdapter } from "./coding-omp-adapter.js";
-import { createCodingPiAdapter, type CodingPiAdapter } from "./coding-pi-adapter.js";
+import {
+  type CodingOmpAdapter,
+  createCodingOmpAdapter,
+  OmpRpcSession,
+} from "./coding-omp-adapter.js";
+import { type CodingPiAdapter, createCodingPiAdapter } from "./coding-pi-adapter.js";
 
 // ---------------------------------------------------------------------------
 // Shared engine registry — the complete set of supported coding engines
 // ---------------------------------------------------------------------------
 
 const CODING_ENGINE_IDS = ["normal-pi", "omp"] as const;
+
 export { CODING_ENGINE_IDS };
 
 /**
@@ -54,8 +59,7 @@ export function buildEngineRegistry(deps: {
     abortRun(runId: string): Promise<{ aborted: boolean }>;
   };
   inspectChanges(sessionId: string): Promise<{
-    messages: unknown[];
-    toolResults: Array<{ toolCallId: string; toolName: string; isError: boolean; result: unknown }>;
+    files: Array<{ path: string; status: string }>;
   }>;
   spawnOmp(): Promise<ChildProcess>;
   approveTool(toolId: string, approval: "Approve" | "Deny"): Promise<void>;

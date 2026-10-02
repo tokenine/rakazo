@@ -164,3 +164,70 @@ Created `coding-engines-compose.ts` with `buildEngineRegistry(deps)` registering
 ## Candidate SHA (r2)
 
 **`eea62630`** (s4-fix: FIX ROUND r2)
+
+---
+
+## r2 (orchestrator fold) — R2-2 closure after MakerS4r2 repair-cap exhaustion
+
+**Author:** orchestrator (MakerS4r2 reached its repair cap with thrashing edits that
+left the file unparseable; cancellable with no output; orchestrator folded the remaining
+real defects to close R2-2).
+
+**MakerS4r2 contributions retained:** protocol-test authoring (coding-omp-protocol.test.ts
+with three scenarios), the writeFile fix in makeDeps, sync sendFrame hardening of the
+mock child, R2-1 type-error fixes, R2-3 injectable-deps rework.
+
+### Root causes found and fixed by the orchestrator
+
+1. **Wildcard-waiter deadlock in `handleIncomingFrame` (production).** `prompt()` /
+   `steer()` register their waiter under `"__any__"`. The dispatcher resolved waiters
+   only by `frame.type` (e.g. `"agent_end"`). `"__any__" !== "agent_end"`, so on
+   `agent_end` the loop flag flipped but the waiter never resolved and the turn hung
+   until the 30s waitForFrame timeout — racing vitest's own 30s test timeout.
+   Fixed by resolving BOTH the type-keyed waiter AND the `"__any__"` waiter in the
+   dispatcher tail. (coding-omp-adapter.ts:285-300.)
+
+2. **`waitForFrame` timeout-callback key bug (production).** The timeout handler
+   unconditionally deleted `"__any__"` even when the entry was keyed under a type
+   (e.g. `"ready"`), so a real timeout on a type-keyed entry could leak. Fixed by
+   computing `key = type ?? "__any__"` once and using it for both `set` and
+   delete. Also explicitly noted: executor form retained because repo `lib` is
+   ES2023 (no `Promise.withResolvers`). (coding-omp-adapter.ts:191-201.)
+
+3. **`prompt`/`steer` protocol field name (production).** The adapter sent
+   `{ type: "prompt", prompt: text }`; the live-verified protocol (T24 probe, omp
+   18.4.2) uses `message`. The mock child was tolerant; QA against the real omp would
+   have failed. Fixed. (coding-omp-adapter.ts:345, 362.)
+
+4. **Mock child scripts never handled `abort` (test).** All three scenarios answered
+   `prompt` and `get_messages_page` only. `session.stop()` awaits an abort response
+   via `sendRequest` (60s timeout), so the test waited 30s in `stop()` after the
+   protocol exchange had already completed — misattributed by MakerS4r2 as
+   "vitest worker stdin incompatibility". Diagnosis: full frame trace via temporary
+   `console.error` instrumentation showed ready → response → message_update →
+   tool_execution_end → agent_end → get_messages_page all flowing correctly; the
+   hang was the 30s abort wait inside `stop()`. Fixed by teaching all three scenarios
+   to reply `response{command:"abort"}` (protocol-faithful — real omp answers
+   abort). (coding-omp-protocol.test.ts scenarios A/B/C.)
+
+5. **R2 r1's wiring return type wrongly copy-pasted the OMP shape** (`{messages,
+   toolResults}`) into `CodingPiAdapterDeps.inspectChanges`. The doc comment at the
+   type definition still says "Workspace diff surface" — only the return shape was
+   changed in r1/r2. Pi has no message/tool-result surface; the correct shape is
+   `{files: [...]}`. Reverted the shape (keeping the r1 sessionId parameter).
+   Cascaded: compose module type, three continuity test factories, one pi-adapter
+   test factory, and the compose-test `mockInspectChanges`. (coding-pi-adapter.ts:52,
+   coding-engines-compose.ts:57, coding-pi-adapter.test.ts:201,
+   coding-continuity.test.ts:302/348/384,
+   coding-engines-compose.test.ts:21.)
+
+### Final verification (orchestrator, post-fold)
+
+- `env -u NODE_ENV pnpm --filter @rakazo/adapters run check` → 0 errors.
+- `env -u NODE_ENV pnpm exec vitest run` over the 8 touched suites → **93 passed
+  / 93 (0 failed)** in 1.7s. Includes 5 protocol-fidelity tests that previously hung
+  at 30s each and now run in 1.2s combined.
+- `env -u NODE_ENV pnpm exec biome check` on touched files → clean.
+### Honestly retained shortcomings
+- Runtime consumption of `buildEngineRegistry` (which engine wiring the composed
+  registry into the executor path / `executor.ts` CODING_SESSION_TRIGGER consumer)

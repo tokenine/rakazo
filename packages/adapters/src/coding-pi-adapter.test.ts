@@ -198,7 +198,7 @@ async function wired() {
     events,
     machinery,
     workerId: "worker-1",
-    inspectChanges: async () => ({ messages: [], toolResults: [] }),
+    inspectChanges: async () => ({ files: [{ path: "src/a.ts", status: "modified" }] }),
   });
   return { adapter, store, machinery, enqueued, appended, prisma };
 }

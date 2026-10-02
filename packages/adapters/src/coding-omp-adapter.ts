@@ -189,22 +189,14 @@ export class OmpRpcSession {
   }
 
   private waitForFrame(type?: string): Promise<OmpFrame> {
+    const key = type ?? "__any__";
+    // Executor form: repo lib is ES2023 (no Promise.withResolvers).
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        this.pendingRequests.delete("__any__");
+        this.pendingRequests.delete(key);
         reject(new Error(`Timeout waiting for ${type ?? "any"} frame`));
       }, 30_000);
-
-      const handler = (frame: OmpFrame) => {
-        clearTimeout(timeout);
-        resolve(frame);
-      };
-
-      if (type) {
-        this.pendingRequests.set(type, { resolve: handler, reject, timeout });
-      } else {
-        this.pendingRequests.set("__any__", { resolve: handler, reject, timeout });
-      }
+      this.pendingRequests.set(key, { resolve, reject, timeout });
     });
   }
 
@@ -291,12 +283,20 @@ export class OmpRpcSession {
         break;
     }
 
-    // Resolve any-wildcard waiters for this frame type
-    const p = this.pendingRequests.get(frame.type);
-    if (p) {
-      clearTimeout(p.timeout);
+    // Resolve type-keyed waiters, then the any-wildcard waiter. Both keys
+    // must be resolved on every frame: prompt()/steer() wait on "__any__",
+    // so an agent_end that only resolves "agent_end" deadlocks the turn.
+    const typed = this.pendingRequests.get(frame.type);
+    if (typed) {
+      clearTimeout(typed.timeout);
       this.pendingRequests.delete(frame.type);
-      p.resolve(frame);
+      typed.resolve(frame);
+    }
+    const any = this.pendingRequests.get("__any__");
+    if (any) {
+      clearTimeout(any.timeout);
+      this.pendingRequests.delete("__any__");
+      any.resolve(frame);
     }
   }
 
@@ -327,11 +327,9 @@ export class OmpRpcSession {
     });
 
     this.proc.on("close", () => {
-      // Only clear pending requests without rejecting them.
-      // Requests that timed out will reject via their own timeout handlers.
-      // Requests settled before close (e.g. agent_end already processed) are
-      // already resolved by the frame handler; clearing them is harmless.
-      this.pendingRequests.forEach((p) => clearTimeout(p.timeout));
+      this.pendingRequests.forEach((p) => {
+        clearTimeout(p.timeout);
+      });
       this.pendingRequests.clear();
     });
 
@@ -343,7 +341,7 @@ export class OmpRpcSession {
   ): Promise<{ sessionId: string; runId?: string; steered?: boolean; isTerminal: boolean }> {
     await this.waitForReady();
     const id = this.makeId();
-    await this.sendRequest(id, { type: "prompt", prompt: text });
+    await this.sendRequest(id, { type: "prompt", message: text });
     let agentEnd: OmpAgentEnd | null = null;
     while (!this._isSettled) {
       const frame = await this.waitForFrame();
@@ -360,7 +358,7 @@ export class OmpRpcSession {
   async steer(text: string): Promise<{ runId: string; steered: boolean }> {
     await this.waitForReady();
     const id = this.makeId();
-    await this.sendRequest(id, { type: "prompt", prompt: text });
+    await this.sendRequest(id, { type: "prompt", message: text });
     let _agentEnd: OmpAgentEnd | null = null;
     while (!this._isSettled) {
       const frame = await this.waitForFrame();

@@ -4,15 +4,14 @@
  * Spawns REAL child processes that emit genuine OMP protocol frames and
  * verifies OmpRpcSession parses and correlates them correctly.
  *
- * Child processes use synchronous rl.on('line') handlers so they stay alive
- * indefinitely after sending agent_end. Parent calls session.stop() which kills
- * the child; the safe proc.on('close') handler clears pending requests
- * without rejecting them.
+ * Child processes use synchronous sendFrame() (no await) so frames are
+ * flushed immediately. Parent calls session.stop() which kills the child
+ * after receiving agent_end.
  */
 
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 import { type CodingOmpAdapterDeps, OmpRpcSession } from "./coding-omp-adapter.js";
@@ -25,21 +24,15 @@ const NODE_PATH = "/opt/node-22.23.3/bin/node";
 
 /**
  * Scenario A: ready → prompt → response + text_delta + tool_execution_end(isError=false) + agent_end(isTerminal=true).
- * Uses synchronous rl.on('line') so the script stays alive after agent_end.
+ * Uses synchronous sendFrame (no await) so all frames are flushed immediately.
  */
 function scenarioA(): string {
   return `
 // @ts-nocheck
 import { createInterface } from 'node:readline/promises';
-
 const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-
-function sendFrame(obj) {
-  process.stdout.write(JSON.stringify(obj) + '\\n');
-}
-
+function sendFrame(obj) { process.stdout.write(JSON.stringify(obj) + '\\n'); }
 sendFrame({ type: 'ready', protocolVersion: 1, supportedProtocolVersions: [1, 2], maxFrameBytes: 1048576 });
-
 rl.on('line', (line) => {
   if (!line.trim()) return;
   let msg;
@@ -54,6 +47,9 @@ rl.on('line', (line) => {
   if (msg.type === 'get_messages_page') {
     sendFrame({ type: 'response', id, command: 'get_messages_page', success: true, data: { messages: [] } });
   }
+  if (msg.type === 'abort') {
+    sendFrame({ type: 'response', id, command: 'abort', success: true, data: {} });
+  }
 });
 `;
 }
@@ -65,15 +61,9 @@ function scenarioB(): string {
   return `
 // @ts-nocheck
 import { createInterface } from 'node:readline/promises';
-
 const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-
-function sendFrame(obj) {
-  process.stdout.write(JSON.stringify(obj) + '\\n');
-}
-
+function sendFrame(obj) { process.stdout.write(JSON.stringify(obj) + '\\n'); }
 sendFrame({ type: 'ready', protocolVersion: 1, supportedProtocolVersions: [1, 2], maxFrameBytes: 1048576 });
-
 rl.on('line', (line) => {
   if (!line.trim()) return;
   let msg;
@@ -88,6 +78,9 @@ rl.on('line', (line) => {
   if (msg.type === 'get_messages_page') {
     sendFrame({ type: 'response', id, command: 'get_messages_page', success: true, data: { messages: [] } });
   }
+  if (msg.type === 'abort') {
+    sendFrame({ type: 'response', id, command: 'abort', success: true, data: {} });
+  }
 });
 `;
 }
@@ -99,15 +92,9 @@ function scenarioC(): string {
   return `
 // @ts-nocheck
 import { createInterface } from 'node:readline/promises';
-
 const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-
-function sendFrame(obj) {
-  process.stdout.write(JSON.stringify(obj) + '\\n');
-}
-
+function sendFrame(obj) { process.stdout.write(JSON.stringify(obj) + '\\n'); }
 sendFrame({ type: 'ready', protocolVersion: 1, supportedProtocolVersions: [1, 2], maxFrameBytes: 1048576 });
-
 rl.on('line', (line) => {
   if (!line.trim()) return;
   let msg;
@@ -121,6 +108,9 @@ rl.on('line', (line) => {
   if (msg.type === 'get_messages_page') {
     sendFrame({ type: 'response', id, command: 'get_messages_page', success: true, data: { messages: [] } });
   }
+  if (msg.type === 'abort') {
+    sendFrame({ type: 'response', id, command: 'abort', success: true, data: {} });
+  }
 });
 `;
 }
@@ -129,12 +119,13 @@ rl.on('line', (line) => {
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/** Writes a mock script and returns a deps object wired to spawn it. */
+/** Writes a mock script file and returns a deps object wired to spawn it. */
 async function makeDeps(
-  _scriptContent: string,
+  scriptContent: string,
 ): Promise<{ tmp: string; deps: CodingOmpAdapterDeps }> {
   const tmp = await mkdtemp(`${tmpdir()}/omp-protocol-test-`);
   const scriptPath = `${tmp}/mock-omp.mjs`;
+  await writeFile(scriptPath, scriptContent, "utf8");
 
   const stdioOptions: ["pipe", "pipe", "inherit"] = ["pipe", "pipe", "inherit"];
   const innerSpawn = async (): Promise<ChildProcess> =>
