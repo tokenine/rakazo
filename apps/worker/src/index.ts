@@ -8,6 +8,7 @@ import {
   ChatSdkMessagingSurface,
   CodexCatalogCache,
   createAcceptanceGateService,
+  buildEngineRegistry,
   createBackgroundJobHandlers,
   createCloudAgentConnection,
   createConnectorStack,
@@ -172,11 +173,16 @@ async function main() {
     });
   // One provider instance so emulator launches and polls share the same Map.
   const cloudAgent = createCloudAgentConnection();
+
+  // T37: granted-secret egress values for coding sessions (surfaces layer writes grant)
+  const codingSecrets: { egressValuesForRun: (runId: string) => string[] } = {
+    egressValuesForRun: (_runId: string) => [],
+  };
+
+  // T34: create the executor first (needed by the registry's machinery.continueRun)
   const executor = createRunExecutor({
     prisma,
     runtime,
-    // Live per-account Codex catalog; never refreshes or writes credentials.
-    codexCatalog: new CodexCatalogCache(),
     sandbox,
     memory: new MarkdownMemoryStore(prisma),
     memoryProviders,
@@ -184,17 +190,6 @@ async function main() {
     artifacts,
     connector: stack.connector,
     connectors: stack.connector,
-    listConnectedPluginSlugs: async (userId) => {
-      const provider = await integrationSettings.resolve("composio");
-      if (!provider) return [];
-      return provider.listConnectedExternalIds({
-        userId,
-        spaceId: "",
-        operationId: "connections.sync",
-        traceId: "connections.sync",
-        signal: AbortSignal.timeout(15_000),
-      });
-    },
     secrets: [
       deploymentModelKey ?? "",
       process.env.COMPOSIO_API_KEY ?? "",
@@ -213,6 +208,44 @@ async function main() {
     cloudAgent,
     // T34: acceptance gate for coding sessions — fail-closed until acceptance recorded
     codingGate: createAcceptanceGateService({ prisma }),
+    // T37: granted-secret egress values for coding sessions
+    codingSecrets,
+  });
+
+  // T34: build the coding engine registry so session ops dispatch to the correct adapter.
+  // Stub OMP spawn until surfaces layer provides a real factory.
+  const registry = buildEngineRegistry({
+    prisma,
+    jobs,
+    events,
+    machinery: {
+      async continueRun(sessionId: string) {
+        const session = await prisma.codingSession.findUnique({
+          where: { id: sessionId },
+          select: { latestRunId: true },
+        });
+        if (session?.latestRunId) {
+          await executor.continueRun(session.latestRunId, process.pid.toString());
+          return { continued: true };
+        }
+        return { continued: false };
+      },
+      async abortRun(_runId: string) {
+        // Stubbed until surfaces layer wires real abort.
+        return { aborted: false };
+      },
+    },
+    inspectChanges: async (_sessionId: string) => {
+      // Stubbed until surfaces layer wires real diff provider. The OMP adapter
+      // uses this for inspect_changes; the normal-pi adapter uses workspace operations.
+      return { files: [] };
+    },
+    spawnOmp: async () => {
+      throw new Error("OMP spawn not available in worker — surfaces layer must provide");
+    },
+    approveTool: async () => {
+      throw new Error("Tool approval not available in worker composition");
+    },
   });
 
   const jobHandlers = createBackgroundJobHandlers({
@@ -230,6 +263,8 @@ async function main() {
     deploymentModelKey,
     messaging,
     cloudAgent,
+    // T34: engine registry for coding session dispatch
+    registry,
   });
   // graphile-worker run() connects through the shared pool. createPool already
   // retries connect() on 53300 a finite number of times. Keep retrying start

@@ -12,19 +12,50 @@ import { getLogger } from "@rakazo/logging";
 import type { CloudAgentConnection } from "./cloud-agent-factory.js";
 import { pollCloudAgent } from "./cloud-agent-poll.js";
 import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
+import type { EngineRegistry } from "./coding-engine.js";
+import { createAcceptanceGateService } from "./coding-acceptance-gate.js";
 import { createSessionServiceDeps, reconcileCrash } from "./coding-session-service.js";
+import { createProcessCommandRunner } from "./coding-repo-to-pr.js";
 import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
-import type { createRunExecutor } from "./executor.js";
 import { compactHistory } from "./history-compaction.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
 import type { EncryptedSecretStore } from "./secrets.js";
 import { expireTaughtSkillTeaching } from "./teaching-session.js";
 
+/** The subset of the executor that background-job-handlers consumes. */
+interface BackgroundJobExecutor {
+  continueRun(runId: string, workerId: string): Promise<void>;
+  wakeRoutine(routineId: string, scheduledFor: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Production service functions for T35/T36 — callable from the API layer
+// ---------------------------------------------------------------------------
+
+/**
+ * T35 production: record an acceptance artifact for a coding session.
+ * Called by the API layer when the user agrees to the outcome and verification
+ * commands. The gate stays fail-closed until this is called.
+ */
+export async function recordCodingSessionAcceptance(
+  deps: {
+    prisma: PrismaClient;
+  },
+  input: {
+    sessionId: string;
+    outcome: string;
+    verificationCommands: string[];
+  },
+): Promise<void> {
+  const gate = createAcceptanceGateService({ prisma: deps.prisma });
+  await gate.record(input);
+}
+
 export function createBackgroundJobHandlers(deps: {
-  executor: ReturnType<typeof createRunExecutor>;
+  executor: BackgroundJobExecutor;
   prisma: PrismaClient;
   sandbox: SandboxProvider;
   home: AgentHomeStore;
@@ -38,6 +69,19 @@ export function createBackgroundJobHandlers(deps: {
   dataDir?: string;
   messaging?: MessagingSurface;
   cloudAgent?: CloudAgentConnection | null;
+  /** 004 T34: engine registry for coding session creation and dispatch. */
+  registry?: EngineRegistry;
+  /**
+   * 004 T35: acceptance gate service for recording acceptance artifacts.
+   * Wired from createAcceptanceGateService({ prisma }) in the composition root.
+   */
+  codingGate?: ReturnType<typeof createAcceptanceGateService>;
+  /**
+   * 004 T37: granted-secret egress values for coding sessions.
+   * { egressValuesForRun(runId): string[] }
+   * Wired from SecretsGrantsService in the composition root.
+   */
+  codingSecrets?: { egressValuesForRun(runId: string): string[] };
 }): BackgroundJobHandlers {
   const deliverMessaging = async (runId?: string) => {
     if (!deps.messaging) return;
@@ -83,6 +127,7 @@ export function createBackgroundJobHandlers(deps: {
             const homeRevision = bot?.computer?.homeRevision ?? undefined;
             const codingDeps = createSessionServiceDeps({
               prisma: deps.prisma,
+              registry: deps.registry,
               homeStore: deps.home,
             });
             await reconcileCrash(codingDeps, session.id, homeRevision);
@@ -151,7 +196,6 @@ export function createBackgroundJobHandlers(deps: {
           jobs: deps.jobs,
           memoryProviders: deps.memoryProviders,
           deploymentModelKey: deps.deploymentModelKey,
-          ...(deps.executor.resolveModel ? { resolveModel: deps.executor.resolveModel } : {}),
         },
         payload.threadId,
       );

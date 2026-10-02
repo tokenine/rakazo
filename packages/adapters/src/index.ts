@@ -9,6 +9,7 @@ export * from "./bot-avatar.js";
 export * from "./bot-messages.js";
 export * from "./box-emulator.js";
 export * from "./coding-acceptance-gate.js";
+export * from "./coding-engines-compose.js";
 export * from "./box-sandbox.js";
 export * from "./browser-emulator.js";
 export * from "./browser-provider-factory.js";

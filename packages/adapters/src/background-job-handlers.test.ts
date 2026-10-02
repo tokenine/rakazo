@@ -69,9 +69,8 @@ describe("createBackgroundJobHandlers", () => {
     const jobs = {} as unknown as JobPublisher;
     const secretStore = {} as unknown as EncryptedSecretStore;
     const memoryProviders = { resolve: vi.fn(async () => null) };
-    const resolveModel = vi.fn();
     const handlers = createBackgroundJobHandlers({
-      executor: { resolveModel } as unknown as ReturnType<typeof createRunExecutor>,
+      executor: { continueRun: vi.fn(), wakeRoutine: vi.fn() },
       prisma,
       sandbox: {} as unknown as SandboxProvider,
       home: {} as unknown as AgentHomeStore,
@@ -93,7 +92,6 @@ describe("createBackgroundJobHandlers", () => {
         jobs,
         memoryProviders,
         deploymentModelKey: "openrouter-key",
-        resolveModel,
       },
       "thread-1",
     );

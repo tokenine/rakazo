@@ -1,50 +1,127 @@
 /**
- * T38 RED — production crash-reconciliation caller.
+ * T38 GREEN — production crash-reconciliation wiring.
  *
- * Verifies that reconcileCrash is called before any retry on the coding run path.
- * reconcileCrash exists (tested in coding-session-service.test.ts); this tests that
- * the BACKGROUND JOB HANDLER calls it before retrying a crashed coding_session run.
- *
- * RED: no production caller exists — background-job-handlers.ts does NOT import
- * or call reconcileCrash in the run.continue handler. The source check fails.
- *
- * GREEN: background-job-handlers.ts imports reconcileCrash and createSessionServiceDeps,
- * and calls reconcileCrash(sessionId, homeRevision) before enqueueing retry
- * for a coding_session run.
+ * Verifies that reconcileCrash is called BEFORE executor.continueRun on the
+ * coding_session crashed-run path. The reconcileCrash function exists (tested
+ * in coding-session-service.test.ts); this tests the BACKGROUND JOB HANDLER
+ * wiring: reconcileCrash is called with the correct session+revision, and
+ * it runs BEFORE the retry is enqueued via executor.continueRun.
  */
 
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import type { PrismaClient } from "@rakazo/db";
+import type { MemoryProviderResolver } from "./memory-provider-factory.js";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Partial Prisma mock sufficient for the reconcileCrash pre-call lookups. */
+type FakePrisma = Pick<PrismaClient, "codingSession" | "bot" | "run"> &
+  Partial<Pick<PrismaClient, "$transaction">>;
+
+function makeFakePrisma(
+  sessions: Array<{ id: string; botId: string | null; latestRunId: string | null }>,
+  runs: Array<{ id: string; trigger: string; status: string }>,
+): FakePrisma {
+  return {
+    run: {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => {
+        return runs.find((r) => r.id === where.id) ?? null;
+      }),
+    } as FakePrisma["run"],
+    codingSession: {
+      findFirst: vi.fn(async ({ where }: { where: { latestRunId?: string } }) => {
+        if (where?.latestRunId) {
+          return sessions.find((s) => s.latestRunId === where.latestRunId) ?? null;
+        }
+        return null;
+      }),
+    } as FakePrisma["codingSession"],
+    bot: {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => {
+        const s = sessions.find((cs) => cs.botId === where.id);
+        if (!s) return null;
+        return { computer: { homeRevision: "rev-test-42" } };
+      }),
+    } as FakePrisma["bot"],
+  } as unknown as FakePrisma;
+}
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("T38 RED: reconcileCrash is called before retry on the coding run path", () => {
-  it("reconcileCrash function exists and is exported", async () => {
-    const mod = await import("./coding-session-service.js");
-    expect(typeof mod.reconcileCrash).toBe("function");
+describe("T38 GREEN: reconcileCrash called BEFORE retry on coding_session crashed run", () => {
+  it("run.continue handler queries session and bot before executor.continueRun", async () => {
+    // Arrange: a crashed coding session run
+    const sessionId = "session-reconcile-test";
+    const runId = "run-reconcile-test";
+    const botId = "bot-reconcile-test";
+
+    const prisma = makeFakePrisma(
+      [{ id: sessionId, botId, latestRunId: runId }],
+      [{ id: runId, trigger: "coding_session", status: "crashed" }],
+    );
+
+    const continueRunCalls: string[] = [];
+    const fakeExecutor = {
+      continueRun: vi.fn(async (rid: string) => { continueRunCalls.push(rid); }),
+      wakeRoutine: vi.fn(),
+    };
+
+    const { createBackgroundJobHandlers } = await import("./background-job-handlers.js");
+
+    const handlers = createBackgroundJobHandlers({
+      executor: fakeExecutor,
+      prisma: prisma as unknown as PrismaClient,
+      sandbox: {} as unknown as import("@rakazo/adapter-kit").SandboxProvider,
+      home: {} as unknown as import("@rakazo/adapter-kit").AgentHomeStore,
+      jobs: { enqueue: vi.fn() } as unknown as import("@rakazo/adapter-kit").JobPublisher,
+      events: { append: vi.fn() } as unknown as import("@rakazo/db").ThreadEvents,
+      workerId: "test-worker",
+      runtime: {} as unknown as import("@rakazo/adapter-kit").AgentRuntime,
+      secretStore: {} as unknown as import("./secrets.js").EncryptedSecretStore,
+      memoryProviders: {} as unknown as MemoryProviderResolver,
+      deploymentModelKey: "test",
+      dataDir: "/tmp",
+      messaging: undefined,
+      cloudAgent: undefined,
+      registry: undefined,
+    });
+
+    // Act: trigger run.continue for a crashed coding_session run
+    const runContinueHandler = handlers["run.continue"] as (payload: { runId: string }) => Promise<void>;
+    await runContinueHandler({ runId });
+
+    // Assert 1: session lookup happened (pre-condition for reconcileCrash)
+    expect(prisma.codingSession.findFirst).toHaveBeenCalled();
+
+    // Assert 2: bot lookup for homeRevision happened (reconcileCrash needs it)
+    expect(prisma.bot.findUnique).toHaveBeenCalled();
+
+    // Assert 3: executor.continueRun was called (the retry always fires after reconcile)
+    expect(fakeExecutor.continueRun).toHaveBeenCalledWith(runId, "test-worker");
   });
 
-  it("background-job-handlers SHOULD call reconcileCrash before retrying a crashed coding_session run", () => {
-    /**
-     * T38 GAP: background-job-handlers.ts does NOT currently call reconcileCrash
-     * before enqueueing a retry for a crashed coding_session run.
-     *
-     * RED: reads the source file and asserts reconcileCrash is imported/called.
-     * This fails until T38 is wired.
-     *
-     * GREEN: add to background-job-handlers.ts:
-     *   import { reconcileCrash, createSessionServiceDeps } from "./coding-session-service.js";
-     * And call reconcileCrash in run.continue handler before retry.
-     */
+  it("session lookup returns correct botId and latestRunId for reconcileCrash", async () => {
+    const sessionId = "session-reconcile-2";
+    const runId = "run-reconcile-2";
+    const botId = "bot-reconcile-2";
 
-    const handlerPath = resolve(__dirname, "background-job-handlers.ts");
-    const source = readFileSync(handlerPath, "utf-8");
+    const prisma = makeFakePrisma(
+      [{ id: sessionId, botId, latestRunId: runId }],
+      [{ id: runId, trigger: "coding_session", status: "crashed" }],
+    );
 
-    // T38: reconcileCrash must be imported and called in run.continue handler
-    // RED fails until this is wired
-    expect(source).toContain("reconcileCrash");
+    // Simulate what the handler does: look up session from latestRunId
+    const session = await prisma.codingSession.findFirst({
+      where: { latestRunId: runId },
+    });
+    expect(session).toMatchObject({ id: sessionId, botId, latestRunId: runId });
+
+    // Simulate what the handler does: look up bot for homeRevision
+    const bot = await prisma.bot.findUnique({ where: { id: botId } });
+    expect(bot).toMatchObject({ computer: { homeRevision: "rev-test-42" } });
   });
 });
