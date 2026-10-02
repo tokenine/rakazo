@@ -8,6 +8,7 @@ import type {
 
 const payloadSchemas = {
   "run.continue": z.object({ runId: z.string().min(1) }),
+  "run.completed": z.object({ runId: z.string().min(1) }),
   "routine.wakeup": z.object({
     routineId: z.string().min(1),
     scheduledFor: z.string().datetime({ offset: true }),
@@ -68,6 +69,14 @@ export function runContinueJob(runId: string): BackgroundJob {
     name: "run.continue",
     payload: { runId },
     replaceKey: runJobKey(runId),
+  };
+}
+
+/** Fires after a coding run reaches a terminal completed state — surfaces layer PR hook. */
+export function runCompletedJob(runId: string): BackgroundJob {
+  return {
+    name: "run.completed",
+    payload: { runId },
   };
 }
 

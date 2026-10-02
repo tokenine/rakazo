@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 
 function handlers(overrides: Partial<BackgroundJobHandlers> = {}): BackgroundJobHandlers {
-  return {
+  const base: BackgroundJobHandlers = {
     "run.continue": vi.fn(async () => undefined),
     "routine.wakeup": vi.fn(async () => undefined),
     "computer.update": vi.fn(async () => undefined),
@@ -27,9 +27,12 @@ function handlers(overrides: Partial<BackgroundJobHandlers> = {}): BackgroundJob
     "skill.teaching-expire": vi.fn(async () => undefined),
     "history.compact": vi.fn(async () => undefined),
     "messaging.deliver": vi.fn(async () => undefined),
+    "run.completed": vi.fn(async () => undefined),
     "cloud_agent.poll": vi.fn(async () => undefined),
-    ...overrides,
   };
+  // Always include run.completed from base; spread overrides last so callers can
+  // replace individual handlers without removing required ones.
+  return { ...base, ...overrides } as BackgroundJobHandlers;
 }
 
 function deferred() {

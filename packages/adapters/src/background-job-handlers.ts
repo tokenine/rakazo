@@ -177,6 +177,30 @@ export function createBackgroundJobHandlers(deps: {
     "skill.teaching-expire": async (payload) => {
       await expireTaughtSkillTeaching(deps, payload.skillId);
     },
+    // T36: fires when a coding run reaches terminal completed state.
+    // Triggers repo-to-PR if workspace credential + acceptance artifact present.
+    // Surfaces layer enqueues this after recording the acceptance.
+    "run.completed": async (payload) => {
+      const run = await deps.prisma.run.findUnique({
+        where: { id: payload.runId },
+        select: { trigger: true, status: true, botId: true },
+      });
+      if (run?.trigger !== CODING_SESSION_TRIGGER) return;
+      const session = await deps.prisma.codingSession.findFirst({
+        where: { latestRunId: payload.runId },
+        select: { id: true, acceptance: true },
+      });
+      if (!session) return;
+      // Only trigger PR flow when acceptance has been recorded
+      if (!session.acceptance) return;
+      // runRepoToPr is deferred to the surfaces layer (T31 CLI) which has
+      // the ForgeClient (GitHub credentials). Log intent here; the surfaces
+      // layer owns the actual PR creation.
+      getLogger().info("T36 run.completed: acceptance recorded, surfaces layer should call runRepoToPr", {
+        sessionId: session.id,
+        runId: payload.runId,
+      });
+    },
     "cloud_agent.poll": async (payload) => {
       await pollCloudAgent(
         {
