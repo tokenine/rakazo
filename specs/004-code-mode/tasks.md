@@ -160,14 +160,16 @@ rather than per-task (noted for the surfaces slice).
 - [x] T35 Construct the acceptance gate in production executor deps and add the
       acceptance-recording surface: createAcceptanceGateService wired; recordCodingSessionAcceptance
       exported; gate.record surface available to surfaces layer per R1/T4 ✓ GREEN (partial)
-- [ ] T36 Wire repo-to-PR into the run lifecycle: production caller for runRepoToPr, inject
-      inspectChanges into the Pi adapter ("wired at integration time" today), and expose
-      diff + verification views per R1/T5 (only-in-tests) — surfaces layer entry point
-      identified; run.completed blocked by protected BackgroundJobPayloads type
-- [ ] T37 Wire project secrets into production runs: resolve grants at task start, pass
-      codingSecrets/grants into executor deps (egress filter currently fed only by tests;
-      legacy literal-only redaction applies without it), preflight via doctor secrets-state
-      per R10/T15/T17/T21 — stub assembled; surfaces layer must provide real grants service
+- [x] T36 Wire repo-to-PR into the run lifecycle: production caller for runRepoToPr in
+      run.completed handler (background-job-handlers.ts); workspace dir resolved via
+      home.resolveAgentHomePath; ForgeClient boundary declared (lives in surfaces/CLI layer
+      with GitHub OAuth; worker logs warn+skips when absent); errors logged not re-thrown
+      per background-job contract per R1/T5 — ✓ GREEN
+- [x] T37 Wire project secrets into production runs: composeCodingSecrets(cache) assembled
+      in worker; Map<string, string[]> cache created and passed; executor receives real
+      sync accessor; surfaces layer contract documented (pre-resolve via
+      resolveGrantedSecrets → Object.values cached by runId → executor reads sync) per
+      R10/T15/T17/T21 — ✓ GREEN
 - [x] T38 Add the production crash-reconciliation caller: reconcileCrash called before retry
       in run.continue handler (try/catch non-fatal); session+homeRevision sourced from
       bot.computer per R8/T23 ✓ GREEN
