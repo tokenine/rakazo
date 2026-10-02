@@ -5,10 +5,10 @@ import { loadRootEnv } from "@rakazo/core/node/load-root-env";
 loadRootEnv();
 
 import {
-  ChatSdkMessagingSurface,
-  CodexCatalogCache,
-  createAcceptanceGateService,
   buildEngineRegistry,
+  ChatSdkMessagingSurface,
+  composeCodingSecrets,
+  createAcceptanceGateService,
   createBackgroundJobHandlers,
   createCloudAgentConnection,
   createConnectorStack,
@@ -174,10 +174,12 @@ async function main() {
   // One provider instance so emulator launches and polls share the same Map.
   const cloudAgent = createCloudAgentConnection();
 
-  // T37: granted-secret egress values for coding sessions (surfaces layer writes grant)
-  const codingSecrets: { egressValuesForRun: (runId: string) => string[] } = {
-    egressValuesForRun: (_runId: string) => [],
-  };
+  // T37: granted-secret egress values for coding sessions.
+  // The shared cache is populated by the surfaces layer (resolveGrantedSecrets →
+  // Object.values(result.env) stored keyed by runId). The executor reads
+  // synchronously from this cache via composeCodingSecrets.
+  const codingSecretsCache = new Map<string, string[]>();
+  const codingSecrets = composeCodingSecrets(codingSecretsCache);
 
   // T34: create the executor first (needed by the registry's machinery.continueRun)
   const executor = createRunExecutor({
@@ -291,6 +293,7 @@ async function main() {
     cloudAgent,
     // T34: engine registry for coding session dispatch
     registry,
+    // T36: no ForgeClient in worker — GitHub credentials boundary lives in surfaces layer
   });
   // graphile-worker run() connects through the shared pool. createPool already
   // retries connect() on 53300 a finite number of times. Keep retrying start

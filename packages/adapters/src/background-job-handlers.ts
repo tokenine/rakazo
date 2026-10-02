@@ -9,13 +9,16 @@ import type {
 import { messagingDeliverJob } from "@rakazo/adapter-kit";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { LocalArtifactStore } from "./artifacts.js";
 import type { CloudAgentConnection } from "./cloud-agent-factory.js";
 import { pollCloudAgent } from "./cloud-agent-poll.js";
-import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
-import type { EngineRegistry } from "./coding-engine.js";
+import type { AcceptanceGateService } from "./coding-acceptance-gate.js";
 import { createAcceptanceGateService } from "./coding-acceptance-gate.js";
+import type { EngineRegistry } from "./coding-engine.js";
+import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
+import type { ForgeClient } from "./coding-repo-to-pr.js";
+import { createProcessCommandRunner, createWorkspaceDiffProvider } from "./coding-repo-to-pr.js";
 import { createSessionServiceDeps, reconcileCrash } from "./coding-session-service.js";
-import { createProcessCommandRunner } from "./coding-repo-to-pr.js";
 import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
@@ -75,13 +78,24 @@ export function createBackgroundJobHandlers(deps: {
    * 004 T35: acceptance gate service for recording acceptance artifacts.
    * Wired from createAcceptanceGateService({ prisma }) in the composition root.
    */
-  codingGate?: ReturnType<typeof createAcceptanceGateService>;
+  codingGate?: AcceptanceGateService;
   /**
    * 004 T37: granted-secret egress values for coding sessions.
    * { egressValuesForRun(runId): string[] }
-   * Wired from SecretsGrantsService in the composition root.
+   * Wired from composeCodingSecrets(cache) in the composition root.
    */
   codingSecrets?: { egressValuesForRun(runId: string): string[] };
+  /**
+   * 004 T36: data dir for artifact store (artifacts used by runRepoToPr).
+   */
+  dataDir?: string;
+  /**
+   * 004 T36: ForgeClient for opening GitHub PRs.
+   * Boundary declaration: GitHub credentials live in the surfaces/CLI layer
+   * (GitHub OAuth). Worker composition does not have a ForgeClient — the
+   * run.completed handler guards on its presence and skips if absent.
+   */
+  forge?: ForgeClient;
 }): BackgroundJobHandlers {
   const deliverMessaging = async (runId?: string) => {
     if (!deps.messaging) return;
@@ -188,18 +202,81 @@ export function createBackgroundJobHandlers(deps: {
       if (run?.trigger !== CODING_SESSION_TRIGGER) return;
       const session = await deps.prisma.codingSession.findFirst({
         where: { latestRunId: payload.runId },
-        select: { id: true, acceptance: true },
+        select: { id: true, acceptance: true, botId: true, workspaceId: true },
       });
       if (!session) return;
       // Only trigger PR flow when acceptance has been recorded
       if (!session.acceptance) return;
-      // runRepoToPr is deferred to the surfaces layer (T31 CLI) which has
-      // the ForgeClient (GitHub credentials). Log intent here; the surfaces
-      // layer owns the actual PR creation.
-      getLogger().info("T36 run.completed: acceptance recorded, surfaces layer should call runRepoToPr", {
-        sessionId: session.id,
-        runId: payload.runId,
+      // runRepoToPr requires ForgeClient (GitHub credentials) which is a
+      // hard boundary: it lives in the surfaces/CLI layer that owns the
+      // GitHub OAuth flow. Declare the boundary here per Change 2 protocol.
+      if (!deps.forge) {
+        getLogger().warn("T36 run.completed: no ForgeClient — GitHub credentials boundary", {
+          sessionId: session.id,
+          runId: payload.runId,
+        });
+        return;
+      }
+      // Resolve the workspace directory from the home store.
+      if (!deps.home || !deps.dataDir) {
+        getLogger().error(
+          "T36 run.completed: missing home store or dataDir for workspace resolution",
+          {
+            sessionId: session.id,
+            runId: payload.runId,
+          },
+        );
+        return;
+      }
+      const bot = await deps.prisma.bot.findUnique({
+        where: { id: session.botId },
+        select: { computer: { select: { homeKey: true } } },
       });
+      if (!bot?.computer?.homeKey) {
+        getLogger().error("T36 run.completed: bot has no homeKey", {
+          sessionId: session.id,
+          runId: payload.runId,
+        });
+        return;
+      }
+      const workspaceDir = deps.home.resolveAgentHomePath(bot.computer.homeKey, deps.dataDir);
+      const diff = createWorkspaceDiffProvider(workspaceDir);
+      const commandRunner = createProcessCommandRunner();
+      const artifacts = new LocalArtifactStore(deps.dataDir);
+      try {
+        const outcome = await runRepoToPr(
+          {
+            prisma: deps.prisma,
+            secretStore: deps.secretStore,
+            diff,
+            artifacts,
+            commandRunner,
+            forge: deps.forge,
+          },
+          {
+            sessionId: session.id,
+            repoDir: workspaceDir,
+            implement: async () => {
+              // The run has already completed — implement is a no-op.
+              // The diff is captured relative to the snapshot taken before completion.
+            },
+          },
+        );
+        getLogger().info("T36 runRepoToPr completed", {
+          sessionId: session.id,
+          runId: payload.runId,
+          prUrl: outcome.pr.url,
+          diffFiles: outcome.diff.files.length,
+          verificationRecords: outcome.verification.length,
+        });
+      } catch (err) {
+        // Never re-throw from a background job handler — it would crash the runner.
+        // Log the failure and let the session row hold the last known state.
+        getLogger().error("T36 runRepoToPr failed", err, {
+          sessionId: session.id,
+          runId: payload.runId,
+        });
+      }
     },
     "cloud_agent.poll": async (payload) => {
       await pollCloudAgent(
