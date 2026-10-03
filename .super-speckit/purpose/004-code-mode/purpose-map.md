@@ -55,6 +55,9 @@ pull request within granted permissions.
 - This draft record selects no runtime migration and authorizes no implementation; architecture
   decisions are recorded only after their tradeoffs are resolved.
 
+## S5 Addendum 2026-10-03
+Q6/Q7/Q8 resolved by the user — see `.super-speckit/design/004-code-mode/decision-s5-defaults.md`.
+
 ## Human purpose gate
 
 This map is a draft. A human confirms that this is the intended purpose, or corrects it. Technical
