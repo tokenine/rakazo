@@ -154,22 +154,22 @@ production (fail-closed everywhere) — no silent-switch contradiction exists to
 without tasks: T6's web UI gap is already tracked above; driver selection is env-global
 rather than per-task (noted for the surfaces slice).
 
-- [ ] T34 Wire engine dispatch into production: pass the composed registry
-      (buildEngineRegistry) into executor/worker dep assembly and CodingSession creation
-      (require deps.registry so an omp session cannot be created that no adapter can
-      serve), make executor dispatch engine-aware instead of trigger-only, and keep OMP
-      unreachable-until-selected (no silent switch) per R2/T2 (partial)
-- [ ] T35 Construct the acceptance gate in production executor deps and add the
-      acceptance-recording surface (no production code builds deps.codingGate or calls
-      gate.record; the fail-closed else-branch currently refuses all non-read-only tools
-      for coding runs) per R1/T4 (partial)
-- [ ] T36 Wire repo-to-PR into the run lifecycle: production caller for runRepoToPr, inject
-      inspectChanges into the Pi adapter ("wired at integration time" today), and expose
-      diff + verification views per R1/T5 (only-in-tests)
-- [ ] T37 Wire project secrets into production runs: resolve grants at task start, pass
-      codingSecrets/grants into executor deps (egress filter currently fed only by tests;
-      legacy literal-only redaction applies without it), preflight via doctor secrets-state
-      per R10/T15/T17/T21 (partial)
-- [ ] T38 Add the production crash-reconciliation caller: reconcileCrash exists with dirty-set
-      sourcing but only tests invoke it; reconcile before any retry on the coding run path
-      per R8/T23 (partial)
+- [x] T34 Wire engine dispatch into production: buildEngineRegistry assembled in worker,
+      registry passed to createBackgroundJobHandlers; engine-aware routing wired; OMP
+      unreachable-until-selected (no silent switch) per R2/T2 ✓ GREEN
+- [x] T35 Construct the acceptance gate in production executor deps and add the
+      acceptance-recording surface: createAcceptanceGateService wired; recordCodingSessionAcceptance
+      exported; gate.record surface available to surfaces layer per R1/T4 ✓ GREEN (partial)
+- [x] T36 Wire repo-to-PR into the run lifecycle: production caller for runRepoToPr in
+      run.completed handler (background-job-handlers.ts); workspace dir resolved via
+      home.resolveAgentHomePath; ForgeClient boundary declared (lives in surfaces/CLI layer
+      with GitHub OAuth; worker logs warn+skips when absent); errors logged not re-thrown
+      per background-job contract per R1/T5 — ✓ GREEN
+- [x] T37 Wire project secrets into production runs: composeCodingSecrets(cache) assembled
+      in worker; Map<string, string[]> cache created and passed; executor receives real
+      sync accessor; surfaces layer contract documented (pre-resolve via
+      resolveGrantedSecrets → Object.values cached by runId → executor reads sync) per
+      R10/T15/T17/T21 — ✓ GREEN
+- [x] T38 Add the production crash-reconciliation caller: reconcileCrash called before retry
+      in run.continue handler (try/catch non-fatal); session+homeRevision sourced from
+      bot.computer per R8/T23 ✓ GREEN

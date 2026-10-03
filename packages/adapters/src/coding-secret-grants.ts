@@ -530,3 +530,28 @@ export function createSecretsGrantsService(deps: {
   };
   return service;
 }
+
+/**
+ * T37 (004-code-mode) — assembles the `codingSecrets` seam for the executor.
+ *
+ * The executor's `egressValuesForRun(runId)` is called synchronously (type:
+ * `(runId: string) => string[]`) inside the run loop. Since `resolveGrantedSecrets`
+ * is async, the values are pre-resolved by the surfaces layer and stored in a
+ * shared in-memory `Map<runId, string[]>`. This function returns the sync
+ * accessor that reads from that cache.
+ *
+ * Production seam: the surfaces layer calls `resolveGrantedSecrets(...)` when
+ * a coding session's first run starts and stores `Object.values(result.env)` in
+ * `cache` keyed by runId. The executor reads from `cache` synchronously.
+ *
+ * @param cache - Shared `Map<runId, string[]>` pre-populated by surfaces layer.
+ *                 The Map itself is owned by the process that also runs the
+ *                 executor (same worker process); no IPC needed.
+ */
+export function composeCodingSecrets(cache: Map<string, string[]>): { egressValuesForRun(runId: string): string[] } {
+  return {
+    egressValuesForRun(runId: string): string[] {
+      return cache.get(runId) ?? [];
+    },
+  };
+}

@@ -48,6 +48,7 @@ import {
   computerSupportsTerminal,
   computerSupportsUpdate,
   computerUpdateView,
+  createAcceptanceGateService,
   createUserTelegramPlatform,
   createVoiceProvider,
   defaultCatalogModelId,
@@ -887,6 +888,7 @@ export function createRouter(deps: RouterDeps) {
     dataDir: deps.dataDir,
   });
   const agentSkills = createAgentSkillsService(deps.prisma);
+  const codingAcceptanceGate = createAcceptanceGateService({ prisma: deps.prisma });
 
   const authed = os.use(async ({ context, next }) => {
     if (!context.actor) throw new ORPCError("UNAUTHORIZED");
@@ -5574,6 +5576,18 @@ export function createRouter(deps: RouterDeps) {
           input.botId,
         ),
       ),
+    },
+    codingAcceptance: {
+      record: authed.codingAcceptance.record.handler(async ({ input }) => {
+        return codingAcceptanceGate.record({
+          sessionId: input.sessionId,
+          outcome: input.outcome,
+          verificationCommands: input.verificationCommands,
+        });
+      }),
+      get: authed.codingAcceptance.get.handler(async ({ input }) => {
+        return codingAcceptanceGate.get(input.sessionId);
+      }),
     },
     clientBrowser: {
       heartbeat: authed.clientBrowser.heartbeat.handler(async ({ context, input }) => {
