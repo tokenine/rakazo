@@ -122,6 +122,8 @@ import {
   ATTACHMENT_MAX_BYTES,
   appContract,
   BUNDLED_CATALOG,
+  createMarketplaceCatalog,
+  createOperatorCatalogSource,
   ComputerCommandSchema,
   EXPERT_AVATARS,
   EXPERT_CATALOG,
@@ -664,6 +666,7 @@ export interface RouterDeps {
     telegramWebhookSecret?: string;
     messagingPublicOrigin?: string;
     marketplaceImportSecret?: string;
+    marketplaceOperatorUrls?: string[];
     mcpAllowPrivateEndpoint?: boolean;
   };
 }
@@ -1225,9 +1228,20 @@ export function createRouter(deps: RouterDeps) {
     },
     marketplace: {
       list: authed.marketplace.list.handler(async () => {
-        // Operator URL sources come from server config (future iteration).
-        // For now, only the bundled source is active and always returns entries.
-        const entries = await (BUNDLED_CATALOG.list() as Promise<CatalogEntry[]>);
+        // Build the source list: bundled always active; operator URLs come from env
+        // (RANKTODO: operator sources should be stored per-space, not global env).
+        const sources = [BUNDLED_CATALOG];
+        if (deps.env.marketplaceOperatorUrls) {
+          for (const url of deps.env.marketplaceOperatorUrls) {
+            try {
+              sources.push(createOperatorCatalogSource(url));
+            } catch {
+              // Invalid URL in env — skip this source; the merge is graceful.
+            }
+          }
+        }
+        const catalog = createMarketplaceCatalog(sources);
+        const entries = await (catalog.list() as Promise<CatalogEntry[]>);
         return { entries, version: MARKETPLACE_CATALOG_VERSION };
       }),
     },
