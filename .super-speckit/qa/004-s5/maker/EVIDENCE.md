@@ -1,7 +1,7 @@
 # S5 Maker EVIDENCE — 004-code-mode Slice 5 (Environments + surfaces + closure)
 
 **Branch:** `ss/feature/004-s5`
-**HEAD after repair:** `819d0d74`
+**HEAD after repair:** `f14a6842` (repair cycle 2 fixes committed)
 **Decision:** Q6/Q7/Q8 approved by Poom5741 2026-10-03 ("all your recommended")
 
 ---
@@ -234,14 +234,17 @@ deadline refuses resume (T30) — 2 tests
 ```
 packages/db/prisma/migrations/20261003080100_add_coding_session_budget_fields/migration.sql
 
-ALTER TABLE "coding_sessions"
-  ADD COLUMN "idleThresholdMinutes" INTEGER NOT NULL DEFAULT 30,
-  ADD COLUMN "budgetMinutes"        INTEGER NOT NULL DEFAULT 120,
-  ADD COLUMN "deadlineAt"           TIMESTAMP(3),
-  ADD COLUMN "activeRunMinutes"      INTEGER NOT NULL DEFAULT 0,
-  ADD COLUMN "lastActivityAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+-- Columns are nullable because the additive migration gate rejects NOT NULL DEFAULT
+-- on ALTER ADD COLUMN. Defaults are enforced at the application level:
+-- idleThresholdMinutes ?? 30, budgetMinutes ?? 120, activeRunMinutes ?? 0.
+
+ALTER TABLE "coding_sessions" ADD COLUMN "idleThresholdMinutes" INTEGER;
+ALTER TABLE "coding_sessions" ADD COLUMN "budgetMinutes" INTEGER;
+ALTER TABLE "coding_sessions" ADD COLUMN "deadlineAt" TIMESTAMP(3);
+ALTER TABLE "coding_sessions" ADD COLUMN "activeRunMinutes" INTEGER;
+ALTER TABLE "coding_sessions" ADD COLUMN "lastActivityAt" TIMESTAMP(3);
 ```
-**Commit:** `c611a131`
+**Commit:** `c611a131` (migration), `f14a6842` (nullable-column fix)
 
 ---
 
@@ -285,11 +288,11 @@ statuses)
 
 ---
 
-## Full Offline Suite — `ss/feature/004-s5` HEAD after repair
+## Full Offline Suite — `ss/feature/004-s5` HEAD after repair cycle 2
 
 ```
-Test Files  7 failed | 488 passed | 32 skipped (528)
-Tests       19 failed | 5956 passed | 188 skipped (6163)
+Test Files  6 failed | 487 passed | 32 skipped (525)
+Tests       19 failed | 5975 passed | 188 skipped (6182)
 ```
 
 ### Failing files and classification
