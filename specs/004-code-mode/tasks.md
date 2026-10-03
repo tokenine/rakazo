@@ -117,14 +117,14 @@ else (R10 as decided under Option B).
       replace + truthful needs-restart report (service liveness vs definition) — V17 ✓ GREEN
 - [x] T28 (P2) Reconnectable terminals: adapter-kit pty extension (session identity, resize/
       replay, attach — interfaces.ts:102-106, types.ts:73-76 today are fire-once) — V18 ✓ GREEN
-- [ ] T29 (P2) Authenticated previews: private by default; explicit revocable sharing;
-      sharing ≠ deploy — V7
-- [ ] T30 (P3) Budgets/idle (Q6): proposed defaults (idle threshold, budget units, deadlines)
-      presented to user at slice review before hardcoding — V19
-- [ ] T31 (P3) CLI package (new; apps/ has none today) — attach to server-owned session — V20
+- [x] T29 (P2) Authenticated previews: private by default; explicit revocable sharing;
+      sharing ≠ deploy — V7 ✓ GREEN
+- [x] T30 (P3) Budgets/idle (Q6): proposed defaults (idle threshold, budget units, deadlines)
+      presented to user at slice review before hardcoding — V19 ✓ GREEN
+- [x] T31 (P3) CLI package (new; apps/ has none today) — attach to server-owned session — V20 ✓ GREEN
 - [x] T32 (P3) Mobile workflow enumeration (Q8): fixed list in this task before mobile work — V21
-- [ ] T33 (P1) Matrix closure + release summary: every row verified/not-verified/
-      not-applicable with evidence path; milestone reassessment (super-speckit.reassess) — all
+- [x] T33 (P1) Matrix closure + release summary: every row verified/not-verified/
+      not-applicable with evidence path; milestone reassessment (super-speckit.reassess) — all ✓ GREEN
 
 ## Dependencies
 
