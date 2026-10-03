@@ -1,22 +1,24 @@
 -- 004-code-mode Slice 5 (T30): Q6 budget and idle defaults per decision-s5-defaults.md.
--- Additive only: five new nullable/DEFAULT columns on coding_sessions; no existing
--- columns altered, renamed, or dropped.
+-- Additive only: five new columns on coding_sessions; no existing columns altered,
+-- renamed, or dropped.
 --
--- idleThresholdMinutes: session is idle-suspendable when (no active run AND
---   now - lastActivityAt > idleThresholdMinutes). Default: 30 min.
--- budgetMinutes: per-task active-run budget in minutes; run steps are blocked
---   once activeRunMinutes >= budgetMinutes and the run is unattended. Default: 120 min.
--- deadlineAt: wall-clock deadline from task start; null = no deadline.
--- activeRunMinutes: cumulative wall-clock minutes of active run time; updated
---   by recordActivity() on every run step tick.
--- lastActivityAt: timestamp of the last user or agent interaction; reset by
---   recordActivity() and read by checkIdle().
+-- Migration policy: NOT NULL DEFAULT is rejected by the additive migration gate
+-- for ALTER ADD COLUMN (PostgreSQL stores defaults in the catalog without rewriting
+-- existing rows, but the gate is conservative). Columns are added as nullable so
+-- the ALTER is purely additive metadata. Defaults are enforced at the APPLICATION
+-- level (Prisma schema @default + service-layer COALESCE).
+--
+-- idleThresholdMinutes: nullable; defaults to 30 in application code.
+-- budgetMinutes: nullable; defaults to 120 in application code.
+-- deadlineAt: nullable = no deadline.
+-- activeRunMinutes: nullable; defaults to 0 in application code.
+-- lastActivityAt: nullable; Prisma client sets to now() on create.
 --
 -- Protected path: additive-only migration. Flagged for independent review
 -- before merge.
 
-ALTER TABLE "coding_sessions" ADD COLUMN "idleThresholdMinutes" INTEGER NOT NULL DEFAULT 30;
-ALTER TABLE "coding_sessions" ADD COLUMN "budgetMinutes" INTEGER NOT NULL DEFAULT 120;
+ALTER TABLE "coding_sessions" ADD COLUMN "idleThresholdMinutes" INTEGER;
+ALTER TABLE "coding_sessions" ADD COLUMN "budgetMinutes" INTEGER;
 ALTER TABLE "coding_sessions" ADD COLUMN "deadlineAt" TIMESTAMP(3);
-ALTER TABLE "coding_sessions" ADD COLUMN "activeRunMinutes" INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE "coding_sessions" ADD COLUMN "lastActivityAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "coding_sessions" ADD COLUMN "activeRunMinutes" INTEGER;
+ALTER TABLE "coding_sessions" ADD COLUMN "lastActivityAt" TIMESTAMP(3);

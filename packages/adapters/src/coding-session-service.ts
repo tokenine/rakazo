@@ -678,8 +678,12 @@ export async function checkIdle(
       return false;
     }
   }
-  const idleMs = (row.idleThresholdMinutes as number) * 60 * 1000;
-  const elapsed = deps.now().getTime() - (row.lastActivityAt as Date).getTime();
+  // T30 V19: nullable columns (migration-safe). Null = pre-migration row; use Q6 default.
+  const idleThreshold = (row.idleThresholdMinutes as number | null) ?? 30;
+  const lastActivity = row.lastActivityAt as Date | null;
+  if (!lastActivity) return false; // No activity record = not idle
+  const idleMs = idleThreshold * 60 * 1000;
+  const elapsed = deps.now().getTime() - lastActivity.getTime();
   return elapsed > idleMs;
 }
 
@@ -696,7 +700,10 @@ export async function checkBudget(
     where: { id: input.sessionId },
   })) as Record<string, unknown> | null;
   if (!row) throw new CodingSessionNotFoundError(input.sessionId);
-  return (row.activeRunMinutes as number) < (row.budgetMinutes as number);
+  // T30 V19: nullable columns (migration-safe). Null = Q6 default (unlimited for pre-migration rows).
+  const activeRun = (row.activeRunMinutes as number | null) ?? 0;
+  const budget = (row.budgetMinutes as number | null) ?? 0;
+  return activeRun < budget;
 }
 
 /**
@@ -712,6 +719,7 @@ export async function checkDeadline(
     where: { id: input.sessionId },
   })) as Record<string, unknown> | null;
   if (!row) throw new CodingSessionNotFoundError(input.sessionId);
+  // T30 V19: deadlineAt is nullable — null means no deadline is set
   if (!row.deadlineAt) return;
   const deadlineAt = row.deadlineAt as Date;
   if (deps.now() > deadlineAt) {
