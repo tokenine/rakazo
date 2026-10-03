@@ -2,7 +2,7 @@
 
 **Decision: KEEP**
 **Branch point:** `ss/feature/004-s5` branched from `integration/001-multi-session-agents` tip `0af562c0`
-**Final HEAD:** `5ae6d8c7`
+**Final HEAD:** `8b55445d`
 
 Slice 5 (Environments + surfaces + closure, R5/R6/R9/R11) builds on the
 Phase-6 convergence wiring from T34–T38 with: environment definition (T27),
@@ -84,7 +84,7 @@ Evidence base: `.super-speckit/qa/004-s1/green/`, `.super-speckit/qa/004-s2/gree
 
 ## Full Suite Failure Classification
 
-**ss/feature/004-s5 HEAD `5ae6d8c7`**
+**ss/feature/004-s5 HEAD `8b55445d`**
 
 ```
 Test Files: 7 failed | 488 passed | 32 skipped (527)
