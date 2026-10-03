@@ -12,6 +12,10 @@ import {
   type SessionServiceStore,
   touchCodingSessionLease,
   WorkspaceBusyError,
+  checkBudget,
+  checkDeadline,
+  checkIdle,
+  recordActivity,
 } from "./coding-session-service.js";
 
 /**
@@ -56,6 +60,11 @@ function fakePrisma(
           refusals: 0,
           latestRunId: null,
           status: "active",
+          // T30 V19 Q6 defaults
+          idleThresholdMinutes: 30,
+          budgetMinutes: 120,
+          activeRunMinutes: 0,
+          lastActivityAt: new Date(),
           ...data,
           // Real prisma mints a cuid when no id is provided.
           id: (data.id as string | undefined) ?? `session-${store.sessions.length + 1}`,
@@ -576,5 +585,82 @@ describe("labelled continuation moves the workspace to the new session (V15 serv
     expect(store.sessions[0]!.engineChangeLabel).toBeUndefined();
     expect(store.sessions[0]!.handoffSummary).toBeUndefined();
     expect(store.leases).toHaveLength(0);
+  });
+});
+
+// T30 V19: Budgets + idle per Q6 defaults (S5 decision)
+describe("idle suspend fires when no active run and no interaction for idleThreshold (T30)", () => {
+  it("recordActivity updates lastActivityAt and activeRunMinutes", async () => {
+    const { prisma, store } = fakePrisma();
+    const deps = createSessionServiceDeps({ prisma, now: () => T0 });
+    const session = await createCodingSession(deps, baseInput);
+
+    await recordActivity(deps, { sessionId: session.id });
+
+    const row = store.sessions.find((r) => r.id === session.id);
+    expect(row?.lastActivityAt).toEqual(T0);
+    expect(row?.activeRunMinutes).toBe(0);
+  });
+
+  it("checkIdle returns true when lastActivityAt exceeds idleThresholdMinutes", async () => {
+    const { prisma, store } = fakePrisma();
+    const deps = createSessionServiceDeps({ prisma, now: () => T0 });
+    const session = await createCodingSession(deps, baseInput);
+
+    const row = store.sessions.find((r) => r.id === session.id);
+    expect(row).toBeDefined();
+    // Simulate 31 minutes ago activity
+    row!.lastActivityAt = new Date(T0.getTime() - 31 * 60 * 1000);
+    row!.idleThresholdMinutes = 30;
+
+    const isIdle = await checkIdle(deps, { sessionId: session.id });
+    expect(isIdle).toBe(true);
+  });
+});
+
+describe("budget exhaustion blocks with truthful blocker (T30)", () => {
+  it("checkBudget returns false when activeRunMinutes >= budgetMinutes", async () => {
+    const { prisma, store } = fakePrisma();
+    const deps = createSessionServiceDeps({ prisma, now: () => T0 });
+    const session = await createCodingSession(deps, baseInput);
+
+    // Exhausted budget: 120 minutes (0 < 120 → ok at creation)
+    const budgetOk = await checkBudget(deps, { sessionId: session.id });
+    expect(budgetOk).toBe(true); // 0 < 120
+
+    // Simulate 121 minutes of active run time
+    const row = store.sessions.find((r) => r.id === session.id);
+    expect(row).toBeDefined();
+    row!.activeRunMinutes = 121;
+    row!.budgetMinutes = 120;
+
+    const budgetOkAfter = await checkBudget(deps, { sessionId: session.id });
+    expect(budgetOkAfter).toBe(false);
+  });
+});
+
+describe("deadline refuses resume (T30)", () => {
+  it("checkDeadline throws DeadlinePassedError when deadlineAt is in the past", async () => {
+    const { prisma, store } = fakePrisma();
+    const deps = createSessionServiceDeps({ prisma, now: () => T0 });
+    const session = await createCodingSession(deps, baseInput);
+
+    const row = store.sessions.find((r) => r.id === session.id);
+    expect(row).toBeDefined();
+    row!.deadlineAt = new Date(T0.getTime() - 1); // 1ms in the past
+
+    await expect(checkDeadline(deps, { sessionId: session.id })).rejects.toThrow("deadline");
+  });
+
+  it("checkDeadline resolves when deadlineAt is still in the future", async () => {
+    const { prisma, store } = fakePrisma();
+    const deps = createSessionServiceDeps({ prisma, now: () => T0 });
+    const session = await createCodingSession(deps, baseInput);
+
+    const row = store.sessions.find((r) => r.id === session.id);
+    expect(row).toBeDefined();
+    row!.deadlineAt = new Date(T0.getTime() + 24 * 60 * 60 * 1000); // 24h
+
+    await expect(checkDeadline(deps, { sessionId: session.id })).resolves.toBeUndefined();
   });
 });
