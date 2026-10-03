@@ -276,6 +276,7 @@ const McpServersOverlay = lazy(() =>
   import("./McpServersOverlay").then((module) => ({ default: module.McpServersOverlay })),
 );
 const HubPage = lazy(() => import("./HubPage").then((module) => ({ default: module.HubPage })));
+const MarketplacePage = lazy(() => import("./MarketplacePage").then((module) => ({ default: module.MarketplacePage })));
 
 type Panel =
   | "computer"
@@ -406,7 +407,7 @@ function readCollapsedRosterParents(userId: string | null | undefined): Set<stri
   return readCollapsedIdSet(collapsedRosterParentsStorageKey(userId));
 }
 
-export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
+export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; marketplaceEntry?: boolean }) {
   const { t } = useLingui();
   const { botId, groupId, threadId } = useParams();
   const navigate = useNavigate();
@@ -955,6 +956,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
         if (
           includeArchived &&
           !hubEntry &&
+          !marketplaceEntry &&
           list.length === 0 &&
           archived?.length === 0 &&
           groupList.length === 0 &&
@@ -1194,6 +1196,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
         if (!applyBotLists) return;
         if (
           !hubEntry &&
+          !marketplaceEntry &&
           bootstrap.bots.length === 0 &&
           bootstrap.archivedBots.length === 0 &&
           groupList.length === 0 &&
@@ -1210,7 +1213,7 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
           return;
         }
         const selectedBotId = bootstrap.thread?.botId ?? bootstrap.bots[0]?.id;
-        if (selectedBotId && selectedBotId !== botId && !hubEntry) {
+        if (selectedBotId && selectedBotId !== botId && !hubEntry && !marketplaceEntry) {
           navigate(`/app/${selectedBotId}`, { replace: true });
         }
       })
@@ -3666,7 +3669,11 @@ export function ShellPage({ hubEntry }: { hubEntry?: boolean }) {
             ) : null}
           </div>
         </div>
-        {hubEntry || (!active && !activeGroup && initialBotsLoaded) ? (
+        {marketplaceEntry ? (
+          <Suspense>
+            <MarketplacePage />
+          </Suspense>
+        ) : hubEntry || (!active && !activeGroup && initialBotsLoaded) ? (
           <Suspense>
             <HubPage hasContent={spaces.some((s) => s.hasContent)} bots={bots} />
           </Suspense>
