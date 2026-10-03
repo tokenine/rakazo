@@ -1016,6 +1016,22 @@ export const appContract = {
           .nullable(),
       ),
   },
+  preview: {
+    get: oc.input(z.object({ previewId: Id })).output(
+      z.object({
+        id: Id,
+        workspaceId: z.string(),
+        createdAt: z.string(),
+        expiresAt: z.string().nullable(),
+      }),
+    ),
+    create: oc
+      .input(z.object({ expiresAt: z.string().optional() }))
+      .output(z.object({ previewId: Id, token: z.string() })),
+    revoke: oc
+      .input(z.object({ previewId: Id, userId: z.string().min(1) }))
+      .output(z.object({ ok: z.literal(true) })),
+  },
 };
 
 export type AppContract = typeof appContract;
