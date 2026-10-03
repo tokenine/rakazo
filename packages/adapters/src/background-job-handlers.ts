@@ -22,7 +22,14 @@ import {
   createWorkspaceDiffProvider,
   runRepoToPr,
 } from "./coding-repo-to-pr.js";
-import { createSessionServiceDeps, reconcileCrash } from "./coding-session-service.js";
+import {
+  DeadlinePassedError,
+  checkDeadline,
+  checkBudget,
+  createSessionServiceDeps,
+  reconcileCrash,
+  recordActivity,
+} from "./coding-session-service.js";
 import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
@@ -124,6 +131,7 @@ export function createBackgroundJobHandlers(deps: {
     "run.continue": async (payload) => {
       // T38: reconcile crash state before retry for coding sessions.
       // Errors here are non-fatal — reconciliation is best-effort.
+      let codingSessionId: string | null = null;
       try {
         const run = await deps.prisma.run.findUnique({
           where: { id: payload.runId },
@@ -135,6 +143,7 @@ export function createBackgroundJobHandlers(deps: {
             select: { id: true, botId: true },
           });
           if (session?.botId) {
+            codingSessionId = session.id;
             const bot = await deps.prisma.bot.findUnique({
               where: { id: session.botId },
               select: { computer: { select: { homeRevision: true } } },
@@ -151,6 +160,38 @@ export function createBackgroundJobHandlers(deps: {
       } catch (err) {
         getLogger().error("T38 reconcileCrash failed", err);
       }
+
+      // T30 V19: gate budget and deadline BEFORE the run continues.
+      // Also record activity on each run step so idle-suspend fires.
+      if (codingSessionId) {
+        const codingDeps = createSessionServiceDeps({
+          prisma: deps.prisma,
+          registry: deps.registry,
+          homeStore: deps.home,
+        });
+        try {
+          await checkDeadline(codingDeps, { sessionId: codingSessionId });
+        } catch (err) {
+          if (err instanceof DeadlinePassedError) {
+            getLogger().warn("T30 deadline passed, refusing run continuation", {
+              sessionId: codingSessionId,
+              deadlineAt: err.deadlineAt,
+            });
+            return; // Do NOT call continueRun — session is done
+          }
+          throw err;
+        }
+        const budgetOk = await checkBudget(codingDeps, { sessionId: codingSessionId });
+        if (!budgetOk) {
+          getLogger().warn("T30 budget exhausted, refusing run continuation", {
+            sessionId: codingSessionId,
+          });
+          return; // Do NOT call continueRun — session is done
+        }
+        // Budget and deadline OK — record activity for idle tracking
+        await recordActivity(codingDeps, { sessionId: codingSessionId });
+      }
+
       await deps.executor.continueRun(payload.runId, deps.workerId);
       // Automatic messaging mirror: once the run's bot messages are durable,
       // copy them into the outbox. Never let mirror failures fail the run.
