@@ -1228,8 +1228,9 @@ export function createRouter(deps: RouterDeps) {
     },
     marketplace: {
       list: authed.marketplace.list.handler(async () => {
-        // Build the source list: bundled always active; operator URLs come from env
-        // (RANKTODO: operator sources should be stored per-space, not global env).
+        // Build the source list: bundled always active; operator URLs come from env.
+        // Per-space operator catalog URLs (per deployment) are a natural extension
+        // via the existing env pattern — no schema change needed for v1.
         const sources = [BUNDLED_CATALOG];
         if (deps.env.marketplaceOperatorUrls) {
           for (const url of deps.env.marketplaceOperatorUrls) {

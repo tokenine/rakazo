@@ -235,7 +235,7 @@ function ImportReviewModal({
           </div>
         ) : state.phase === "success" ? (
           <div className="flex flex-col items-center gap-2 py-4">
-            <CheckCircle size={32} className="text-green-600" />
+            <CheckCircle size={32} className="text-success" />
             <p className="font-medium text-sm">
               <Trans>Agent installed successfully</Trans>
             </p>
@@ -293,7 +293,7 @@ function ImportReviewModal({
 
                 {state.preview.secretFlaggedFields &&
                   state.preview.secretFlaggedFields.length > 0 && (
-                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                    <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-2 text-xs text-warning">
                       <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                       <span>
                         <Trans>Some fields were flagged during security review:</Trans>{" "}
