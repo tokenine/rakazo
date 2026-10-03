@@ -193,3 +193,160 @@ describe("catalog merge: failed source never blocks bundled results", () => {
     expect(result.map((e) => e.id).sort()).toEqual(["a1", "b1"]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T10 V5 seam: bundled-only, operator double-merge, invalid source degradation
+// ---------------------------------------------------------------------------
+
+describe("V5 seam: bundled-only works zero-config", () => {
+  it("returns bundled entries with no operator sources", async () => {
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG]);
+    const entries = await catalog.list();
+    expect(entries.length).toBeGreaterThan(0);
+    expect(entries.every((e) => e.provenance === "bundled")).toBe(true);
+  });
+});
+
+describe("V5 seam: operator double-merge alongside bundled", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("merges bundled + operator sources without blocking", async () => {
+    const operatorSource = createOperatorCatalogSource(
+      "https://operator.example.com/marketplace-catalog.json",
+    );
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        entries: [
+          {
+            id: "op-agent-1",
+            name: "Operator Alpha",
+            title: "Operator Alpha",
+            description: "An operator agent",
+            kind: "agent",
+            provenance: "operator",
+            avatarKey: null,
+          },
+        ],
+      }),
+    });
+
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG, operatorSource]);
+    const entries = await catalog.list();
+
+    expect(entries.some((e) => e.provenance === "bundled")).toBe(true);
+    expect(entries.some((e) => e.id === "op-agent-1")).toBe(true);
+  });
+
+  it("operator entries coexist with bundled entries in result", async () => {
+    const operatorSource = createOperatorCatalogSource(
+      "https://operator2.example.com/marketplace.json",
+    );
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        entries: [
+          {
+            id: "op-skill-1",
+            name: "Operator Skill",
+            title: "Operator Skill",
+            description: "A skill from operator",
+            kind: "skill",
+            provenance: "operator",
+            avatarKey: null,
+          },
+        ],
+      }),
+    });
+
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG, operatorSource]);
+    const entries = await catalog.list();
+
+    const operatorEntries = entries.filter((e) => e.provenance === "operator");
+    const bundledEntries = entries.filter((e) => e.provenance === "bundled");
+    expect(operatorEntries.length).toBe(1);
+    expect(bundledEntries.length).toBeGreaterThan(0);
+  });
+});
+
+describe("V5 seam: invalid operator source degrades to inconclusive skip", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("network error yields inconclusive — bundled still returned", async () => {
+    const failingSource: CatalogSource = {
+      id: "timeout-source",
+      list: async () => {
+        throw new Error("Connection timed out");
+      },
+    };
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG, failingSource]);
+    const entries = await catalog.list();
+    expect(entries.some((e) => e.provenance === "bundled")).toBe(true);
+  });
+
+  it("HTTP 500 from operator yields inconclusive — bundled still returned", async () => {
+    const serverErrorSource = createOperatorCatalogSource(
+      "https://failing-operator.example.com/catalog.json",
+    );
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG, serverErrorSource]);
+    const entries = await catalog.list();
+    expect(entries.some((e) => e.provenance === "bundled")).toBe(true);
+  });
+
+  it("malformed JSON yields inconclusive — bundled still returned", async () => {
+    const badSource = createOperatorCatalogSource(
+      "https://bad-operator.example.com/catalog.json",
+    );
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new Error("JSON parse error");
+      },
+    });
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG, badSource]);
+    const entries = await catalog.list();
+    expect(entries.some((e) => e.provenance === "bundled")).toBe(true);
+  });
+
+  it("multiple failing sources degrade gracefully — bundled always present", async () => {
+    const fail1: CatalogSource = {
+      id: "fail-1",
+      list: async () => {
+        throw new Error("Source 1 down");
+      },
+    };
+    const fail2: CatalogSource = {
+      id: "fail-2",
+      list: async () => ({
+        id: "fail-2",
+        inconclusive: true,
+        reason: "Source 2 returned inconclusive",
+      }),
+    };
+    const catalog = createMarketplaceCatalog([BUNDLED_CATALOG, fail1, fail2]);
+    const entries = await catalog.list();
+    expect(entries.filter((e) => e.provenance === "bundled").length).toBeGreaterThan(0);
+  });
+});
