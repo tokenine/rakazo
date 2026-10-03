@@ -1422,6 +1422,18 @@ model CodingSession {
   continuationOf    String?
   engineChangeLabel String?
   handoffSummary    String?
+  /// T30 V19 (Q6 defaults): idle threshold in minutes — session is idle-suspendable
+  /// when (no active run AND now - lastActivityAt > idleThresholdMinutes).
+  idleThresholdMinutes Int      @default(30)
+  /// T30 V19 (Q6 defaults): per-task active-run budget in minutes — run steps are
+  /// blocked once activeRunMinutes >= budgetMinutes and the run is unattended.
+  budgetMinutes       Int      @default(120)
+  /// T30 V19 (Q6 defaults): wall-clock deadline from task start; null = no deadline.
+  deadlineAt          DateTime?
+  /// T30 V19 (Q6 defaults): cumulative wall-clock minutes of active run time.
+  activeRunMinutes    Int      @default(0)
+  /// T30 V19 (Q6 defaults): timestamp of the last user or agent interaction.
+  lastActivityAt      DateTime @default(now())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1481,6 +1493,25 @@ model CodingSecretGrant {
 /// 004-code-mode: exclusive per-workspace lease. A second coding session
 /// cannot attach while the lease is held; expired leases are taken over with
 /// a bumped fence (never last-writer-wins on an active workspace).
+model Preview {
+  id          String    @id @default(cuid())
+  workspaceId String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+
+  @@map("previews")
+}
+
+model PreviewAccess {
+  id        String   @id @default(cuid())
+  previewId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([previewId, userId])
+  @@map("preview_accesses")
+}
+
 model CodingWorkspaceLease {
   id          String   @id @default(cuid())
   workspaceId String   @unique

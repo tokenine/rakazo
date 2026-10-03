@@ -270,6 +270,7 @@ import {
   voiceContext,
 } from "./voice.js";
 import { startWalletPairing, walletOverview } from "./wallet-overview.js";
+import { createPreviewService } from "./previews.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -6405,6 +6406,28 @@ export function createRouter(deps: RouterDeps) {
       list: authed.runs.list.handler(async ({ context, input }) => ({
         runs: await listSpaceRuns(deps.prisma, context.actor, input.filter),
       })),
+    },
+    preview: {
+      get: authed.preview.get.handler(async ({ context, input }) => {
+        const service = createPreviewService(deps.prisma);
+        const result = await service.getPreview(input.previewId, context.actor);
+        if (!result) throw new ORPCError("NOT_FOUND");
+        return {
+          id: result.id,
+          workspaceId: result.workspaceId,
+          createdAt: result.createdAt.toISOString(),
+          expiresAt: result.expiresAt ? result.expiresAt.toISOString() : null,
+        };
+      }),
+      create: authed.preview.create.handler(async ({ context, input }) => {
+        const service = createPreviewService(deps.prisma);
+        return service.create(context.actor, { expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined });
+      }),
+      revoke: authed.preview.revoke.handler(async ({ context, input }) => {
+        const service = createPreviewService(deps.prisma);
+        await service.revokeAccess(input.previewId, input.userId);
+        return { ok: true as const };
+      }),
     },
     voice: {
       catalog: authed.voice.catalog.handler(async () => listVoiceCatalog()),
