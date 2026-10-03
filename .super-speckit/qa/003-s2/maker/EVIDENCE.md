@@ -14,7 +14,7 @@ Design-first decision already existed at `.super-speckit/design/003-agent-market
 | **GREEN** | 11/11 `marketplace-catalog.test.ts` |
 | **Seam tests** | Bundled provider (no network, correct fields, valid kinds); Operator URL (HTTPS gate, valid URL fetch, network error → inconclusive, 404 → inconclusive, invalid payload → inconclusive); catalog merge (failed source never blocks bundled) |
 | **Files** | `packages/contracts/src/marketplace-catalog.ts`, `packages/contracts/src/index.ts`, `packages/contracts/src/rpc.ts`, `apps/api/src/marketplace-catalog.test.ts`, `apps/api/src/router.ts` |
-| **Commit** | `799686f1` — `feat(003-s2): T6 catalog seam — CatalogSource interface, bundled/operator providers, marketplace.list RPC` |
+| **Commit** | `799686f1` + `0503dc5f` — handler now wires `createMarketplaceCatalog(sources)` where sources=[BUNDLED_CATALOG] + optional `createOperatorCatalogSource(url)` per `deps.env.marketplaceOperatorUrls` entry. Operator sources degrade gracefully on failure. `marketplaceOperatorUrls?: string[]` added to RouterDeps env interface. |
 
 ### T7 — /app/marketplace route + ShellPage marketplaceEntry + 3 hijack guards + card grid UI
 
