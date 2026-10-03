@@ -1,0 +1,22 @@
+{
+  "name": "@rakazo/cli",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@orpc/client": "1.15.0",
+    "@rakazo/contracts": "workspace:*",
+    "zod": "3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.2",
+    "tsx": "4.19.4",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}
