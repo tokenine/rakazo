@@ -1,0 +1,15 @@
+{
+  "name": "@rakazo/coding-definitions",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./environment": "./src/environment/index.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@rakazo/adapter-kit": "workspace:*",
+    "zod": "4.6.2"
+  }
+}
