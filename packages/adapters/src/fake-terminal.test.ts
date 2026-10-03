@@ -13,7 +13,8 @@ async function connect(
   lease = "lease-1",
 ) {
   if (!gateways.includes(gateway)) gateways.push(gateway);
-  const page = new URL(await gateway.open("computer-1", lease, cwd));
+  const result = await gateway.open("computer-1", lease, cwd);
+  const page = new URL(result.url);
   const target = new URL(page.searchParams.get("path")!, page);
   target.protocol = "ws:";
   const socket = new WebSocket(target, ["binary"]);

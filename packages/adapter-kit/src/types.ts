@@ -108,6 +108,36 @@ export interface TerminalRequest {
   controlToken: string;
   /** Workspace-relative starting directory. */
   cwd?: string;
+  /**
+   * Reconnect to an existing session by its id.
+   * When absent, a new session is created.
+   * When provided, the server replays scrollback from the existing session.
+   */
+  sessionId?: string;
+}
+
+/**
+ * PTY session returned by SandboxProvider.connectTerminal.
+ * Provides a persistent session that survives reconnection — the same sessionId
+ * can be re-connected to retrieve scrollback history and continue input.
+ */
+export interface PtySession {
+  /** Unique id for this PTY session. Use sessionId in TerminalRequest to reconnect. */
+  sessionId: string;
+  /** WebSocket or VNC URL for the terminal UI. */
+  url: string;
+  /**
+   * Scrollback buffer replay on reconnect.
+   * Array of output lines emitted before this connection.
+   */
+  scrollback: string[];
+  /** Resize the terminal dimensions. */
+  resize(dim: { cols: number; rows: number }): Promise<void>;
+  /** Send text input to the PTY. */
+  sendInput(input: { kind: "text"; text: string }): Promise<void>;
+  /** Current terminal dimensions. */
+  cols: number;
+  rows: number;
 }
 
 export interface ScreenSession {

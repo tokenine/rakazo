@@ -6,7 +6,22 @@ import { TERMINAL_INPUT, TERMINAL_RESIZE } from "@rakazo/contracts";
 
 const WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-type Session = { owner: string; lease: string; cwd: string };
+type Session = {
+  owner: string;
+  lease: string;
+  cwd: string;
+  cols: number;
+  rows: number;
+  scrollback: string[];
+};
+
+export interface TerminalOpenResult {
+  sessionId: string;
+  url: string;
+  cols: number;
+  rows: number;
+  scrollback: string[];
+}
 
 /**
  * Loopback stand-in for the computer's terminal gateway. It speaks the same websocket and
@@ -17,16 +32,69 @@ type Session = { owner: string; lease: string; cwd: string };
 export class FakeTerminalGateway {
   private server: http.Server | null = null;
   private listening: Promise<number> | null = null;
-  private readonly sessions = new Map<string, Session>();
+  readonly sessions = new Map<string, Session>();
   private readonly connections = new Map<Duplex, Session>();
 
-  /** Open a session for `owner` (a computer) under a control lease; `revoke` ends it. */
-  async open(owner: string, lease: string, cwd: string): Promise<string> {
+  /** Open a new PTY session for `owner` under a control lease. */
+  async open(owner: string, lease: string, cwd: string): Promise<TerminalOpenResult> {
     const port = await this.start();
-    const token = randomUUID();
-    this.sessions.set(token, { owner, lease, cwd });
-    const socketPath = `websockify?token=${token}`;
-    return `http://127.0.0.1:${port}/vnc.html?path=${encodeURIComponent(socketPath)}`;
+    const sessionId = randomUUID();
+    this.sessions.set(sessionId, { owner, lease, cwd, cols: 80, rows: 24, scrollback: [] });
+    const socketPath = `websockify?token=${sessionId}`;
+    const url = `http://127.0.0.1:${port}/vnc.html?path=${encodeURIComponent(socketPath)}`;
+    return { sessionId, url, cols: 80, rows: 24, scrollback: [] };
+  }
+
+  /** Start the internal HTTP server if not already running. Public so FakeSandboxProvider can use it. */
+  start(): Promise<number> {
+    this.listening ??= new Promise<number>((resolve, reject) => {
+      const server = http.createServer((_req, res) => {
+        res.writeHead(404).end();
+      });
+      server.on("upgrade", (req, socket) => this.upgrade(req, socket));
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => {
+        server.unref();
+        resolve((server.address() as AddressInfo).port);
+      });
+      this.server = server;
+    });
+    return this.listening;
+  }
+
+  /**
+   * Reconnect to an existing session by id.
+   * Returns null if the session does not exist.
+   * The caller receives accumulated scrollback.
+   */
+  attach(sessionId: string): TerminalOpenResult | null {
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
+    return {
+      sessionId,
+      url: "",
+      cols: session.cols,
+      rows: session.rows,
+      scrollback: session.scrollback.map((v) => (typeof v === "string" ? v : new TextDecoder().decode(v))),
+    };
+  }
+
+  /** Store scrollback output on a session. */
+  recordScrollback(sessionId: string, text: string | Buffer) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      const line = typeof text === "string" ? text : new TextDecoder().decode(text);
+      session.scrollback.push(line);
+    }
+  }
+
+  /** Update terminal dimensions on a session. */
+  resize(sessionId: string, cols: number, rows: number) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.cols = cols;
+      session.rows = rows;
+    }
   }
 
   /**
@@ -53,25 +121,10 @@ export class FakeTerminalGateway {
     this.sessions.clear();
   }
 
-  private start() {
-    this.listening ??= new Promise<number>((resolve, reject) => {
-      const server = http.createServer((_req, res) => {
-        res.writeHead(404).end();
-      });
-      server.on("upgrade", (req, socket) => this.upgrade(req, socket));
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", () => {
-        server.unref();
-        resolve((server.address() as AddressInfo).port);
-      });
-      this.server = server;
-    });
-    return this.listening;
-  }
-
   private upgrade(req: http.IncomingMessage, socket: Duplex) {
     const url = new URL(req.url ?? "/", "http://fake-terminal.invalid");
-    const session = this.sessions.get(url.searchParams.get("token") ?? "");
+    const sessionId = url.searchParams.get("token") ?? "";
+    const session = this.sessions.get(sessionId);
     const key = req.headers["sec-websocket-key"];
     if (url.pathname !== "/websockify" || !session || typeof key !== "string") {
       socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
@@ -96,10 +149,17 @@ export class FakeTerminalGateway {
     );
     this.connections.set(socket, session);
     socket.on("close", () => this.connections.delete(socket));
+
+    const gw = this;
     const shell = new FakeShell(
       session.cwd,
-      (text) => socket.write(encodeFrame(0x2, text)),
+      (text) => {
+        socket.write(encodeFrame(0x2, text));
+        // Record scrollback so reconnecting clients see it
+        gw.recordScrollback(sessionId, text);
+      },
       () => socket.end(encodeFrame(0x8, Buffer.alloc(0))),
+      (cols, rows) => gw.resize(sessionId, cols, rows),
     );
     let pending = Buffer.alloc(0);
     socket.on("data", (chunk: Buffer) => {
@@ -132,6 +192,7 @@ class FakeShell {
     private readonly cwd: string,
     private readonly write: (text: Buffer) => void,
     private readonly exit: () => void,
+    private readonly onResize?: (cols: number, rows: number) => void,
   ) {}
 
   start() {
@@ -149,6 +210,7 @@ class FakeShell {
       if (kind === TERMINAL_RESIZE && payload.length === 4) {
         this.cols = payload.readUInt16BE(0);
         this.rows = payload.readUInt16BE(2);
+        this.onResize?.(this.cols, this.rows);
       } else if (kind === TERMINAL_INPUT) {
         for (const char of payload.toString("utf8")) this.type(char);
       }

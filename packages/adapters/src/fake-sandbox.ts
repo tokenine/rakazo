@@ -8,6 +8,7 @@ import type {
   ControlLeaseRef,
   PortableFile,
   ProcessEvent,
+  PtySession,
   SandboxProvider,
   ScreenRequest,
   ScreenSession,
@@ -22,7 +23,10 @@ import {
   placeholderObservation,
   workspacePath,
 } from "./computer-support.js";
-import { FakeTerminalGateway } from "./fake-terminal.js";
+import {
+  FakeTerminalGateway,
+  type TerminalOpenResult,
+} from "./fake-terminal.js";
 
 export interface FakeBox {
   ref: ComputerRef;
@@ -132,15 +136,90 @@ export class FakeSandboxProvider implements SandboxProvider {
     };
   }
 
-  async connectTerminal(computer: ComputerRef, request: TerminalRequest, _context: AdapterContext) {
+  async connectTerminal(
+    computer: ComputerRef,
+    request: TerminalRequest,
+    _context: AdapterContext,
+  ): Promise<PtySession> {
     this.requiredBox(computer);
     if (!request.controlToken) throw new Error("terminal requires screen control");
+
+    const cwd = workspacePath("/home/rakazo", request.cwd ?? "");
+    const sessionId = request.sessionId;
+
+    // Reconnect to existing session if sessionId is provided and found
+    if (sessionId) {
+      const existing = this.terminals.attach(sessionId);
+      if (existing) return this.buildPtySession(existing);
+      // Unknown sessionId → create a new session using that id
+      const result = await this.openTerminalWithId(computer.id, request.controlToken, cwd, sessionId);
+      return this.buildPtySession(result);
+    }
+
+    const result = await this.terminals.open(computer.id, request.controlToken, cwd);
+    return this.buildPtySession(result);
+  }
+
+  /** Open a terminal using a specific sessionId rather than generating a new UUID. */
+  private async openTerminalWithId(
+    owner: string,
+    lease: string,
+    cwd: string,
+    sessionId: string,
+  ): Promise<TerminalOpenResult> {
+    const port = await this.terminals.start();
+    this.terminals.sessions.set(sessionId, {
+      owner,
+      lease,
+      cwd,
+      cols: 80,
+      rows: 24,
+      scrollback: [],
+    });
+    const socketPath = `websockify?token=${sessionId}`;
+    const url = `http://127.0.0.1:${port}/vnc.html?path=${encodeURIComponent(socketPath)}`;
+    return { sessionId, url, cols: 80, rows: 24, scrollback: [] };
+  }
+
+  private buildPtySession(result: TerminalOpenResult): PtySession {
+    const sessionId = result.sessionId;
+    const terminals = this.terminals;
+
+    // cols/rows are live references into the session state so that resize()
+    // is reflected immediately in the returned object
+    let cols = result.cols;
+    let rows = result.rows;
+
     return {
-      url: await this.terminals.open(
-        computer.id,
-        request.controlToken,
-        workspacePath("/home/rakazo", request.cwd ?? ""),
-      ),
+      get sessionId() {
+        return sessionId;
+      },
+      url: result.url,
+      get cols() {
+        const s = terminals.sessions.get(sessionId);
+        return s ? s.cols : cols;
+      },
+      set cols(v: number) {
+        cols = v;
+      },
+      get rows() {
+        const s = terminals.sessions.get(sessionId);
+        return s ? s.rows : rows;
+      },
+      set rows(v: number) {
+        rows = v;
+      },
+      scrollback: result.scrollback,
+      async resize(dim: { cols: number; rows: number }) {
+        terminals.resize(sessionId, dim.cols, dim.rows);
+        cols = dim.cols;
+        rows = dim.rows;
+      },
+      async sendInput(_input: { kind: "text"; text: string }) {
+        // In-process input injection into a fake terminal is a no-op.
+        // The fake terminal only speaks WebSocket, not a named-pipe API.
+        // A real provider would write to the PTY master fd.
+      },
     };
   }
 
