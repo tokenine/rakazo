@@ -93,6 +93,7 @@ import {
 import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { Id, IsoDate } from "./ids.js";
 import { InspirationCaseSchema } from "./inspiration-catalog.js";
+import { CatalogEntrySchema } from "./marketplace-catalog.js";
 import {
   IntegrationProviderConfigSchema,
   IntegrationSetupStateSchema,
@@ -268,6 +269,19 @@ export const appContract = {
   },
   inspiration: {
     list: oc.output(z.array(InspirationCaseSchema)),
+  },
+  marketplace: {
+    /**
+     * List all marketplace catalog entries, merged from all configured sources.
+     * A source that fails yields an inconclusive skipped item and does not block
+     * other results.
+     */
+    list: oc.output(
+      z.object({
+        entries: z.array(CatalogEntrySchema),
+        version: z.string(),
+      }),
+    ),
   },
   bots: {
     list: oc.output(z.array(BotSchema)),

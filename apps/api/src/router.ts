@@ -109,6 +109,7 @@ import type {
   Actor,
   AgentBundle,
   Bot,
+  CatalogEntry,
   ComputerReleaseReason,
   ComputerStatus,
   McpServer,
@@ -120,6 +121,7 @@ import {
   AgentBundleSchema,
   ATTACHMENT_MAX_BYTES,
   appContract,
+  BUNDLED_CATALOG,
   ComputerCommandSchema,
   EXPERT_AVATARS,
   EXPERT_CATALOG,
@@ -129,6 +131,7 @@ import {
   foldComputerCommands,
   INSPIRATION_CATALOG,
   IntegrationProviderIdSchema,
+  MARKETPLACE_CATALOG_VERSION,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,
 } from "@rakazo/contracts";
@@ -1219,6 +1222,14 @@ export function createRouter(deps: RouterDeps) {
     },
     inspiration: {
       list: authed.inspiration.list.handler(async () => INSPIRATION_CATALOG),
+    },
+    marketplace: {
+      list: authed.marketplace.list.handler(async () => {
+        // Operator URL sources come from server config (future iteration).
+        // For now, only the bundled source is active and always returns entries.
+        const entries = await (BUNDLED_CATALOG.list() as Promise<CatalogEntry[]>);
+        return { entries, version: MARKETPLACE_CATALOG_VERSION };
+      }),
     },
     models: {
       list: authed.models.list.handler(async ({ context }) => {
