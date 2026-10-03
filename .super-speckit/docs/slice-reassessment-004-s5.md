@@ -121,6 +121,8 @@ Prior run variance (process-sandbox at 5, coding-project-secrets at 1, infra/com
 | `819d0d74` | T28+T30 | T28 ProcessSandboxProvider TCB (real PTY state machine) + T30 wired into `run.continue` |
 | `c611a131` | T29+T30 | Migration files for Preview tables + CodingSession budget fields |
 | `5ae6d8c7` | docs | Update EVIDENCE.md — provenance, T28/T30 repair, NOT-WIRED declarations |
+| `f14a6842` | fix | Repair cycle 2: migration gate fixes (nullable columns, NEW_TABLES), T30 null-safety, reconcile mock |
+| `86cf8305` | docs | Update EVIDENCE.md — HEAD f14a6842, nullable migration note, correct suite counts |
 
 ---
 
