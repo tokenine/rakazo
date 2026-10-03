@@ -71,6 +71,21 @@ export class LeaseLostError extends Error {
   }
 }
 
+/** T30 V19: raised by checkDeadline when deadlineAt is in the past. */
+export class DeadlinePassedError extends Error {
+  readonly sessionId: string;
+  readonly deadlineAt: Date;
+
+  constructor(sessionId: string, deadlineAt: Date) {
+    super(
+      `Coding session "${sessionId}" deadline passed at ${deadlineAt.toISOString()}; needs-restart on resume`,
+    );
+    this.name = "DeadlinePassedError";
+    this.sessionId = sessionId;
+    this.deadlineAt = deadlineAt;
+  }
+}
+
 /** The prisma surface this service uses (also the fake-double contract). */
 export interface SessionServiceStore {
   sessions: Array<Record<string, unknown>>;
@@ -214,6 +229,11 @@ async function createCodingSessionInTx(
       ...(input.threadId ? { threadId: input.threadId } : {}),
       ...(input.title ? { title: input.title } : {}),
       status: "active",
+      // T30 V19 Q6 defaults
+      idleThresholdMinutes: 30,
+      budgetMinutes: 120,
+      activeRunMinutes: 0,
+      lastActivityAt: now,
     },
   });
   await tx.codingWorkspaceLease.updateMany({
@@ -603,4 +623,98 @@ export async function reconcileCrash(
     dirtySet,
     latestRunId,
   };
+}
+
+// ---------------------------------------------------------------------------
+// T30 V19: Budget + idle enforcement (Q6 defaults: 30 min idle, 120 min budget)
+// ---------------------------------------------------------------------------
+
+/**
+ * Bump lastActivityAt to now and (optionally) accumulate activeRunMinutes.
+ * Called on every user/agent interaction touchpoint (prompt, steer, stop, resume).
+ */
+export async function recordActivity(
+  deps: SessionServiceDeps,
+  input: { sessionId: string; addRunMinutes?: number },
+): Promise<void> {
+  const now = deps.now();
+  await deps.prisma.codingSession.update({
+    where: { id: input.sessionId },
+    data: {
+      lastActivityAt: now,
+      ...(input.addRunMinutes
+        ? { activeRunMinutes: { increment: input.addRunMinutes } }
+        : {}),
+    },
+  });
+}
+
+/**
+ * T30 V19: true when the session is idle-suspendable — no active run and
+ * (now - lastActivityAt) > idleThresholdMinutes.
+ * Reuses the existing sleepComputerIfIdle contract from computer-idle.ts;
+ * this function only makes the per-session idle determination.
+ */
+export async function checkIdle(
+  deps: SessionServiceDeps,
+  input: { sessionId: string },
+): Promise<boolean> {
+  const row = (await deps.prisma.codingSession.findUnique({
+    where: { id: input.sessionId },
+  })) as Record<string, unknown> | null;
+  if (!row) throw new CodingSessionNotFoundError(input.sessionId);
+  if (row.status !== "active") return false;
+  // A running or waiting_takeover run means the session is not idle.
+  if (row.latestRunId) {
+    const run = await deps.prisma.run.findFirst({
+      where: { id: row.latestRunId as string },
+    });
+    if (
+      run &&
+      run.status !== "cancelled" &&
+      run.status !== "completed" &&
+      run.status !== "failed"
+    ) {
+      return false;
+    }
+  }
+  const idleMs = (row.idleThresholdMinutes as number) * 60 * 1000;
+  const elapsed = deps.now().getTime() - (row.lastActivityAt as Date).getTime();
+  return elapsed > idleMs;
+}
+
+/**
+ * T30 V19: returns true when the session still has budget headroom.
+ * When false, the caller should block with a truthful message indicating
+ * the session has exhausted its per-task active-run budget and needs-restart.
+ */
+export async function checkBudget(
+  deps: SessionServiceDeps,
+  input: { sessionId: string },
+): Promise<boolean> {
+  const row = (await deps.prisma.codingSession.findUnique({
+    where: { id: input.sessionId },
+  })) as Record<string, unknown> | null;
+  if (!row) throw new CodingSessionNotFoundError(input.sessionId);
+  return (row.activeRunMinutes as number) < (row.budgetMinutes as number);
+}
+
+/**
+ * T30 V19: throws DeadlinePassedError when deadlineAt is in the past.
+ * Called at run start and on resume; a truthful needs-restart error is returned
+ * so callers can surface it and offer to create a fresh session.
+ */
+export async function checkDeadline(
+  deps: SessionServiceDeps,
+  input: { sessionId: string },
+): Promise<void> {
+  const row = (await deps.prisma.codingSession.findUnique({
+    where: { id: input.sessionId },
+  })) as Record<string, unknown> | null;
+  if (!row) throw new CodingSessionNotFoundError(input.sessionId);
+  if (!row.deadlineAt) return;
+  const deadlineAt = row.deadlineAt as Date;
+  if (deps.now() > deadlineAt) {
+    throw new DeadlinePassedError(input.sessionId, deadlineAt);
+  }
 }
