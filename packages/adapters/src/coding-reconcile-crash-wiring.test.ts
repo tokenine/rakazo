@@ -21,7 +21,16 @@ type FakePrisma = Pick<PrismaClient, "codingSession" | "bot" | "run"> &
   Partial<Pick<PrismaClient, "$transaction">>;
 
 function makeFakePrisma(
-  sessions: Array<{ id: string; botId: string | null; latestRunId: string | null }>,
+  sessions: Array<{
+    id: string;
+    botId: string | null;
+    latestRunId: string | null;
+    deadlineAt?: Date | null;
+    idleThresholdMinutes?: number;
+    budgetMinutes?: number;
+    activeRunMinutes?: number;
+    lastActivityAt?: Date;
+  }>,
   runs: Array<{ id: string; trigger: string; status: string }>,
 ): FakePrisma {
   return {
@@ -34,6 +43,19 @@ function makeFakePrisma(
       findFirst: vi.fn(async ({ where }: { where: { latestRunId?: string } }) => {
         if (where?.latestRunId) {
           return sessions.find((s) => s.latestRunId === where.latestRunId) ?? null;
+        }
+        return null;
+      }),
+      // T30 V19: checkDeadline and checkBudget call findUnique.
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => {
+        return sessions.find((s) => s.id === where.id) ?? null;
+      }),
+      // T30 V19: recordActivity calls update.
+      update: vi.fn(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+        const idx = sessions.findIndex((s) => s.id === where.id);
+        if (idx >= 0) {
+          Object.assign(sessions[idx]!, data);
+          return sessions[idx];
         }
         return null;
       }),
@@ -59,8 +81,10 @@ describe("T38 GREEN: reconcileCrash called BEFORE retry on coding_session crashe
     const runId = "run-reconcile-test";
     const botId = "bot-reconcile-test";
 
+    // T30 V19: budget/idle fields must be set so checkBudget doesn't use null defaults (0).
+    // With budgetMinutes=1000 and activeRunMinutes=0, the session has plenty of budget.
     const prisma = makeFakePrisma(
-      [{ id: sessionId, botId, latestRunId: runId }],
+      [{ id: sessionId, botId, latestRunId: runId, budgetMinutes: 1000, activeRunMinutes: 0, idleThresholdMinutes: 30 }],
       [{ id: runId, trigger: "coding_session", status: "crashed" }],
     );
 

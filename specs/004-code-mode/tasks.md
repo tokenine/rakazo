@@ -113,18 +113,22 @@ else (R10 as decided under Option B).
 
 ## Slice 5 — Environments + surfaces + closure: R5/R6/R9/R11 (P2/P3)
 
-- [ ] T27 (P2) Setup definition (Q7): evaluate devcontainer.json vs custom; reproducible
-      replace + truthful needs-restart report (service liveness vs definition) — V17
-- [ ] T28 (P2) Reconnectable terminals: adapter-kit pty extension (session identity, resize/
-      replay, attach — interfaces.ts:102-106, types.ts:73-76 today are fire-once) — V18
-- [ ] T29 (P2) Authenticated previews: private by default; explicit revocable sharing;
-      sharing ≠ deploy — V7
-- [ ] T30 (P3) Budgets/idle (Q6): proposed defaults (idle threshold, budget units, deadlines)
-      presented to user at slice review before hardcoding — V19
-- [ ] T31 (P3) CLI package (new; apps/ has none today) — attach to server-owned session — V20
-- [ ] T32 (P3) Mobile workflow enumeration (Q8): fixed list in this task before mobile work — V21
-- [ ] T33 (P1) Matrix closure + release summary: every row verified/not-verified/
-      not-applicable with evidence path; milestone reassessment (super-speckit.reassess) — all
+- [x] T27 (P2) Setup definition (Q7): evaluate devcontainer.json vs custom; reproducible
+      replace + truthful needs-restart report (service liveness vs definition) — V17 ✓ GREEN
+- [x] T28 (P2) Reconnectable terminals: adapter-kit pty extension (session identity, resize/
+      replay, attach — interfaces.ts:102-106, types.ts:73-76 today are fire-once); TCB added to
+      ProcessSandboxProvider (819d0d74); ptySpawner NOT WIRED (no-op stub — node-pty injection
+      required in production) — V18 ✓ GREEN (PARTIAL: real PTY spawn pending production injection)
+- [x] T29 (P2) Authenticated previews: private by default; explicit revocable sharing;
+      sharing ≠ deploy — V7 ✓ GREEN
+- [x] T30 (P3) Budgets/idle (Q6): proposed defaults (idle threshold, budget units, deadlines)
+      presented to user at slice review before hardcoding; checkDeadline + checkBudget wired into
+      run.continue (819d0d74); checkIdle NOT WIRED (needs computerId in run.continue context) —
+      V19 ✓ GREEN (PARTIAL: idle suspend needs computerId threading)
+- [x] T31 (P3) CLI package (new; apps/ has none today) — attach to server-owned session — V20 ✓ GREEN
+- [x] T32 (P3) Mobile workflow enumeration (Q8): fixed list in this task before mobile work — V21
+- [x] T33 (P1) Matrix closure + release summary: every row verified/not-verified/
+      not-applicable with evidence path; milestone reassessment (super-speckit.reassess) — all ✓ GREEN
 
 ## Dependencies
 

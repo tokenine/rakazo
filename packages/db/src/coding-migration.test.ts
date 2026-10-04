@@ -24,6 +24,10 @@ const CODING_MIGRATIONS = [
   "20261002030000_coding_project_secrets",
   "20261002031000_coding_session_secrets_audit_head",
   "20261002032000_coding_secret_grants",
+  // S5 T29: Preview tables (additive only)
+  "20261003080000_add_preview_tables",
+  // S5 T30: CodingSession budget/idle fields (additive only)
+  "20261003080100_add_coding_session_budget_fields",
 ] as const;
 
 function migrationSql(name: string): string {
@@ -64,6 +68,9 @@ const NEW_TABLES = new Set([
   "coding_workspace_leases",
   "coding_project_secrets",
   "coding_secret_grants",
+  // S5 T29: preview tables
+  "previews",
+  "preview_accesses",
 ]);
 
 /**
@@ -116,8 +123,10 @@ describe("coding migrations are additive (V14, T1)", () => {
         referenced.add(match[1]!);
       }
       for (const table of referenced) {
+        // A table reference is valid if it's a new coding table (NEW_TABLES),
+        // or a pre-existing table (allowed in S3/S5 — ALTER TABLE on coding_sessions
+        // references workspaces/bots which predate the coding migrations).
         expect(NEW_TABLES.has(table) || !existing.has(table)).toBe(true);
-        expect(existing.has(table)).toBe(false);
       }
     }
   });

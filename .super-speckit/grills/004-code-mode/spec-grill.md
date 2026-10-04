@@ -96,3 +96,6 @@ PATH/HOME/TERM/LANG); unattended runs use yolo + `tools.approval` deny-map
 sessions use a non-yolo overlay and route Allow-tool selects to the product approval gate
 (the T22 pending-approvals UI). Host-side egress filter (V8) must cover tool results and paged
 history; the omp-internal session store is outside host control.
+
+## S5 Addendum 2026-10-03
+Q6/Q7/Q8 resolved by the user — see `.super-speckit/design/004-code-mode/decision-s5-defaults.md`.
