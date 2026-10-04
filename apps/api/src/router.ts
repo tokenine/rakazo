@@ -109,6 +109,7 @@ import type {
   Actor,
   AgentBundle,
   Bot,
+  CatalogEntry,
   ComputerReleaseReason,
   ComputerStatus,
   McpServer,
@@ -120,6 +121,9 @@ import {
   AgentBundleSchema,
   ATTACHMENT_MAX_BYTES,
   appContract,
+  BUNDLED_CATALOG,
+  createMarketplaceCatalog,
+  createOperatorCatalogSource,
   ComputerCommandSchema,
   EXPERT_AVATARS,
   EXPERT_CATALOG,
@@ -129,6 +133,7 @@ import {
   foldComputerCommands,
   INSPIRATION_CATALOG,
   IntegrationProviderIdSchema,
+  MARKETPLACE_CATALOG_VERSION,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,
 } from "@rakazo/contracts";
@@ -662,6 +667,7 @@ export interface RouterDeps {
     telegramWebhookSecret?: string;
     messagingPublicOrigin?: string;
     marketplaceImportSecret?: string;
+    marketplaceOperatorUrls?: string[];
     mcpAllowPrivateEndpoint?: boolean;
   };
 }
@@ -1220,6 +1226,26 @@ export function createRouter(deps: RouterDeps) {
     },
     inspiration: {
       list: authed.inspiration.list.handler(async () => INSPIRATION_CATALOG),
+    },
+    marketplace: {
+      list: authed.marketplace.list.handler(async () => {
+        // Build the source list: bundled always active; operator URLs come from env.
+        // Per-space operator catalog URLs (per deployment) are a natural extension
+        // via the existing env pattern — no schema change needed for v1.
+        const sources = [BUNDLED_CATALOG];
+        if (deps.env.marketplaceOperatorUrls) {
+          for (const url of deps.env.marketplaceOperatorUrls) {
+            try {
+              sources.push(createOperatorCatalogSource(url));
+            } catch {
+              // Invalid URL in env — skip this source; the merge is graceful.
+            }
+          }
+        }
+        const catalog = createMarketplaceCatalog(sources);
+        const entries = await (catalog.list() as Promise<CatalogEntry[]>);
+        return { entries, version: MARKETPLACE_CATALOG_VERSION };
+      }),
     },
     models: {
       list: authed.models.list.handler(async ({ context }) => {

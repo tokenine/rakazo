@@ -102,6 +102,10 @@ function SessionApp() {
             element={user ? <ShellPage hubEntry /> : <Navigate to="/sign-in" replace />}
           />
           <Route
+            path="/app/marketplace"
+            element={user ? <ShellPage marketplaceEntry /> : <Navigate to="/sign-in" replace />}
+          />
+          <Route
             path="/app/g/:groupId"
             element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />}
           />

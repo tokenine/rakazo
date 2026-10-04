@@ -12,7 +12,7 @@ import { expect, it } from "vitest";
  * runtime data (bot.color), never as literals in these files.
  */
 
-const SURFACES = ["HubPage.tsx", "Welcome.tsx"].map((name) => path.join(import.meta.dirname, name));
+const SURFACES = ["HubPage.tsx", "MarketplacePage.tsx", "Welcome.tsx"].map((name) => path.join(import.meta.dirname, name));
 
 const HARDCODED_COLOR =
   /#[0-9a-fA-F]{3,8}\b|rgba?\(|\b(?:text|bg|border|shadow)-(?:white|black|(?:orange|amber|rose|red|green|emerald|sky|blue|indigo|violet|purple|fuchsia|pink|slate|gray|zinc|neutral|stone|yellow|lime|teal|cyan)-[0-9]{2,3})\b|\[var\(--/;
