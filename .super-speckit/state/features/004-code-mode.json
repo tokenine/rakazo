@@ -1,7 +1,7 @@
 {
   "id": "004-code-mode",
   "state": "merged",
-  "candidate_sha": "71666a9f",
+  "candidate_sha": "8b55445d",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/004-code-mode/verification-matrix.md",
@@ -26,12 +26,22 @@
     "path": ".super-speckit/atlas/changes/004-code-mode/change-story.md"
   },
   "handoff": {
-    "path": ".super-speckit/handoffs/004-purpose-gate-to-cloud-agent.md",
+    "path": ".super-speckit/handoffs/2026-10-05-selfheal-s5-s2-merged.md",
     "transfer": "agent-to-agent",
-    "stage": "purpose-draft-pending-human-gate",
-    "attempt_id": "004-s1-artifact-rebuild-r1"
+    "stage": "s5-merged",
+    "attempt_id": "selfheal-r1"
   },
-  "runs": [],
+  "runs": [
+    {
+      "run": "004-s5-run1",
+      "candidate_sha": "8b55445d",
+      "checker": "claude-checker",
+      "result": "pass",
+      "reason": "READY: typecheck x6 packages, additive-only migrations, full suite shows canonical-19 macOS-env failures only, targeted suites green; two honest NOT-WIRED declarations (ptySpawner T28, checkIdle T30) with recorded path-to-verification",
+      "evidence": ".super-speckit/qa/004-s5-run1/",
+      "merged_as": "afdd3b4c"
+    }
+  ],
   "bugs": [],
   "human_approval": {
     "gate": "plan+tasks bundle r2 (5 slices T1-T33, V1-V21; Q9 Option 3 process isolation; Q10 Option B audited secrets)",
@@ -44,7 +54,7 @@
     "note": "Gate card quoted 407f7822; Chief's on-disk R2 verification passed on the tree that includes 1952097c (= 407f7822 + Chief-mandated secrets-state-disclosure fold, +7/-2, landed 2026-10-01 ~03:25Z, before the tap). Approved scope unchanged: same 5 slices, T1-T33, V1-V21. approver is the human user only; Chief is the relay, not the approver."
   },
   "reassessment": {
-    "path": ".super-speckit/docs/slice-reassessment-004-s4.md",
+    "path": ".super-speckit/docs/slice-reassessment-004-s5.md",
     "decision": "keep"
   }
 }

@@ -1,7 +1,7 @@
 {
   "id": "003-agent-marketplace",
   "state": "merged",
-  "candidate_sha": "da30d1ae5aa9e64d5ddfec05f0391981f436ba75",
+  "candidate_sha": "32e0da96",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/003-agent-marketplace/spec.md",
@@ -26,10 +26,10 @@
     "path": ".super-speckit/atlas/changes/003-agent-marketplace/change-story.md"
   },
   "handoff": {
-    "path": ".super-speckit/handoffs/003-s1-complete-pending-merge-decision.md",
-    "transfer": "same-environment",
-    "stage": "S1 complete; merge decision pending owner",
-    "attempt_id": "003-s1-retest11"
+    "path": ".super-speckit/handoffs/2026-10-05-selfheal-s5-s2-merged.md",
+    "transfer": "agent-to-agent",
+    "stage": "s2-merged",
+    "attempt_id": "selfheal-r1"
   },
   "runs": [
     {
@@ -140,6 +140,15 @@
       "result": "pass",
       "reason": "SEC-21 residual fixed: GitHub/AWS/HuggingFace patterns end in a lookahead rather than \\b, so a token followed by an underscore now matches; 478/478 api, 59/59 contracts, tsc clean",
       "evidence": ".super-speckit/qa/003-s1-retest11/"
+    },
+    {
+      "run": "003-s2-run1",
+      "candidate_sha": "32e0da96",
+      "checker": "claude-checker",
+      "result": "pass",
+      "reason": "READY after cbaf16a8 closed run1 HIGH token-gate violation (7 hardcoded palette classes -> semantic text-success/text-warning); marketplace-catalog 18 tests + design-token surface tests green, typecheck contracts/api/web pass, no new suite failures",
+      "evidence": ".super-speckit/qa/003-s2-run1/",
+      "merged_as": "0be441b2"
     }
   ],
   "bugs": [
@@ -163,7 +172,7 @@
       "found_by": "independent security-reviewer static lane at tip + checker runtime proof against real Postgres",
       "root_cause": "collision guard compared only slug+transport+endpoint and never read secretId, so a bundle matching an existing server's slug AND endpoint reused that row including its operator-managed credential, then received the bundle's declaredTools",
       "fix_sha": "61154e37",
-      "control": "Option B \u2014 reuse an existing MCP server only when it carries no credential (secretId IS NULL); refuse otherwise, before any write",
+      "control": "Option B — reuse an existing MCP server only when it carries no credential (secretId IS NULL); refuse otherwise, before any write",
       "regression_test": "apps/api/src/agent-bundle.test.ts (3 cases) + real-Postgres qa-retest3-credinherit.test.ts",
       "retest_run": "003-s1-retest4",
       "closed": "red 1/1 at 16c261cf (HTTP 200, bundle tools persisted onto a credentialed server) -> green 5/5 at 61154e37"
@@ -176,7 +185,7 @@
       "found_in": "003-s1-run2 security lane (AGENT-BUNDLE-008)",
       "root_cause": "importPreviewCache was keyed on bundleHash alone, so two actors previewing identical bytes shared one entry and the first actor's pending import failed",
       "fix_sha": "16c261cffdab84d31f553dcdf42f3ade27832eea",
-      "regression_test": "apps/api/src/agent-bundle.test.ts \u2014 cross-actor preview independence",
+      "regression_test": "apps/api/src/agent-bundle.test.ts — cross-actor preview independence",
       "retest_run": "003-s1-retest3",
       "closed": "red 1/48 at 6783f681 -> green 48/48; real-DB cross-actor probe green"
     },
@@ -188,7 +197,7 @@
       "found_in": "800eb1e4",
       "found_by": "checker probe qa-retest5-mediumcontrols.test.ts + direct assertSafeRemoteUrl reachability probe",
       "root_cause": "the endpoint refine applies isLocalMcpHost() only inside the http: branch, so https://localhost and https://127.0.0.1 pass schema validation even though the comment claims loopback is rejected at parse time",
-      "impact": "none reachable \u2014 assertSafeRemoteUrl (packages/adapters/src/remote-mcp.ts:127-145) blocks private hostnames for any protocol before a socket opens, verified with an injected resolver",
+      "impact": "none reachable — assertSafeRemoteUrl (packages/adapters/src/remote-mcp.ts:127-145) blocks private hostnames for any protocol before a socket opens, verified with an injected resolver",
       "blocks": "nothing; needs an explicit accept-or-fix decision"
     },
     {
