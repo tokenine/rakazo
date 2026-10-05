@@ -1,7 +1,7 @@
 {
   "id": "004-code-mode",
-  "state": "merged",
-  "candidate_sha": "8b55445d",
+  "state": "blocked",
+  "candidate_sha": null,
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/004-code-mode/verification-matrix.md",
@@ -56,5 +56,10 @@
   "reassessment": {
     "path": ".super-speckit/docs/slice-reassessment-004-s5.md",
     "decision": "keep"
-  }
+  },
+  "migration_reason": "Legacy evidence must be revalidated",
+  "schema_version": 2,
+  "candidates": [],
+  "legacy_candidate_sha": "8b55445d603287cd8541c822ad28417dab89eeeb",
+  "revision": 1
 }

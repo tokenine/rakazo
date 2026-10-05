@@ -1,7 +1,7 @@
 {
   "id": "002-inspiration-hub",
-  "state": "merged",
-  "candidate_sha": "697a638f",
+  "state": "blocked",
+  "candidate_sha": null,
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/002-inspiration-hub/spec.md",
@@ -29,5 +29,10 @@
     "path": null
   },
   "runs": [],
-  "bugs": []
+  "bugs": [],
+  "migration_reason": "Legacy evidence must be revalidated",
+  "schema_version": 2,
+  "candidates": [],
+  "legacy_candidate_sha": "697a638f81d4f0e579bc67b3beec95b87392cd10",
+  "revision": 1
 }

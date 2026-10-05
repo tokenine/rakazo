@@ -1,7 +1,7 @@
 {
   "id": "001-multi-session-agents",
-  "state": "merged",
-  "candidate_sha": "730d717a",
+  "state": "blocked",
+  "candidate_sha": null,
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/001-multi-session-agents/spec.md",
@@ -36,5 +36,10 @@
   "reassessment": {
     "path": ".super-speckit/qa/release-summary-001.md",
     "decision": "keep"
-  }
+  },
+  "migration_reason": "Legacy evidence must be revalidated",
+  "schema_version": 2,
+  "candidates": [],
+  "legacy_candidate_sha": "730d717a3d9ecad66b51942b0ec5564168f6aa28",
+  "revision": 1
 }

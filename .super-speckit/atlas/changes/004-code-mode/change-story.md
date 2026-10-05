@@ -55,3 +55,45 @@ flowchart LR
 | OMP RPC transport + builtin approvals | unknown | Q1/G10 experiment (S4 T24) before adapter work |
 | Session/lease schema shape | inferred | S1 T1 investigation + migration review |
 | Setup format (Q7), budgets (Q6) | unknown | S5 tasks propose reversible defaults for user sign-off |
+
+---
+
+# Slice S6 — Production wiring of the two declared NOT-WIRED gaps (T28 ptySpawner, T30 checkIdle)
+
+**Status**: approved — maintainer go recorded 2026-10-06 ("do it all" covering the recommended
+sequence: state repair → 004 wiring → 001 S3/S4 → 003 closure → bookkeeping → push).
+**Purpose source**: purpose-map 004-code-mode (already confirmed); this slice closes the two
+honest PARTIAL declarations from S5 (handoff 2026-10-05-selfheal-s5-s2-merged.md).
+
+## What will change
+
+1. **T28 — real PTY spawner injected at the production construction site.**
+   `packages/adapters/src/sandbox-factory.ts:99` constructs `new ProcessSandboxProvider({
+   root: opts.dataDir })` with no `ptySpawner`, so the S5 TCB state machine runs on the no-op
+   stub. Change: add a node-pty-based `PtySpawner` (native dep added to the adapters package)
+   and inject it in the factory; the no-op default stays for tests (offline determinism).
+   Known limitation stays declared: `ptySessions` remains in-memory, session identity is not
+   preserved across provider restarts (S5 finding; persistence is explicitly out of scope).
+
+2. **T30 — checkIdle gets a production caller with the session→computer mapping.**
+   Today `checkIdle` (coding-session-service.ts:658) is a unit-tested predicate with zero
+   production callers. Change: an idle sweep in `job-reconciler.ts` (the existing periodic
+   `setInterval` sweep) enumerates active CodingSessions, calls `checkIdle`, and for idle
+   sessions resolves computer via `session.botId → bot.computer` (the same mapping T38 uses)
+   and invokes the existing `sleepComputerIfIdle` contract. run.continue's existing
+   deadline/budget/activity gating is untouched.
+
+## What stays protected
+
+- No migration files touched (protected path unchanged); no schema change.
+- Offline test determinism: node-pty only loads in the production factory path; tests keep
+  the fake/no-op spawner.
+- Non-coding session and lease semantics unchanged; checkIdle only ever suspends a session
+  whose own threshold elapsed and that has no active run.
+
+## Verification
+
+- Red-green: a failing test that the factory injects a real spawner in production mode; a
+  failing test that the reconciler sweep calls sleepComputerIfIdle for an idle session with
+  a computer, and does nothing for an idle session without one.
+- Existing suites must stay green (canonical macOS-env failures excepted, per recorded set).
