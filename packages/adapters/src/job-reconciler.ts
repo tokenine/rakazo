@@ -1,15 +1,13 @@
-import {
-  type JobPublisher,
-  messagingDeliverJob,
-  routineWakeupJob,
-  runContinueJob,
-} from "@rakazo/adapter-kit";
+import { type JobPublisher, messagingDeliverJob, routineWakeupJob, runContinueJob } from "@rakazo/adapter-kit";
+import type { AgentHomeStore, SandboxProvider } from "@rakazo/adapter-kit";
 import type { MessageBlock } from "@rakazo/contracts";
 import type { Pool, PrismaClient, ThreadEvents } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import type { PoolClient } from "pg";
 import { returnBotMessageOutcome } from "./bot-messages.js";
+import { checkIdle, createSessionServiceDeps } from "./coding-session-service.js";
 import { scheduleComputerControlExpiry } from "./computer-control.js";
+import { sleepComputerIfIdle } from "./computer-idle.js";
 import { isUserProgressClientNonce } from "./user-progress.js";
 
 const DEFAULT_INTERVAL_MS = 30_000;
@@ -106,6 +104,8 @@ export function createJobReconciler(
     leadership?: ReconciliationLeadership;
     reconcileComputerUpdates?: () => Promise<void>;
     reconcileCloudAgents?: () => Promise<void>;
+    /** S6 T30: sweeps idle coding sessions into the computer sleep contract. */
+    reconcileIdleCodingSessions?: () => Promise<void>;
   },
   options: { intervalMs?: number; batchSize?: number } = {},
 ) {
@@ -124,9 +124,11 @@ export function createJobReconciler(
       if (deps.leadership && !(await deps.leadership.tryAcquire())) return;
 
       const auxiliary = await Promise.allSettled(
-        [deps.reconcileCloudAgents, deps.reconcileComputerUpdates].map(async (reconcile) =>
-          reconcile?.(),
-        ),
+        [
+          deps.reconcileCloudAgents,
+          deps.reconcileComputerUpdates,
+          deps.reconcileIdleCodingSessions,
+        ].map(async (reconcile) => reconcile?.()),
       );
       for (const result of auxiliary) {
         if (result.status === "rejected")
@@ -365,6 +367,44 @@ export function createJobReconciler(
       await deps.leadership?.release();
     },
   };
+}
+
+/**
+ * S6 T30 — production caller for the coding-session idle gate (checkIdle had
+ * none). Enumerates active coding sessions, keeps the ones checkIdle marks
+ * idle (sessions with an active run or no recorded activity never pass), and
+ * routes each idle session's computer through the existing
+ * sleepComputerIfIdle contract — resolved via the same session.botId →
+ * bot.computer mapping the T38 reconcileCrash path uses. A session whose bot
+ * has no computer is skipped explicitly. Per-session failures are logged and
+ * non-fatal: the sweep continues.
+ */
+export async function reconcileIdleCodingSessions(deps: {
+  prisma: PrismaClient;
+  sandbox: SandboxProvider;
+  home: AgentHomeStore;
+  jobs: JobPublisher;
+  events: ThreadEvents;
+}): Promise<void> {
+  const sessions = await deps.prisma.codingSession.findMany({
+    where: { status: "active" },
+    select: { id: true, botId: true },
+  });
+  const codingDeps = createSessionServiceDeps({ prisma: deps.prisma });
+  for (const session of sessions) {
+    try {
+      if (!(await checkIdle(codingDeps, { sessionId: session.id }))) continue;
+      if (!session.botId) continue;
+      const bot = await deps.prisma.bot.findUnique({
+        where: { id: session.botId },
+        select: { computerId: true },
+      });
+      if (!bot?.computerId) continue;
+      await sleepComputerIfIdle(deps, bot.computerId);
+    } catch (error) {
+      getLogger().error("idle coding-session sweep", error);
+    }
+  }
 }
 
 /** Prefer the full bot transcript for a run so interim progress is not mistaken for the sole result. */
