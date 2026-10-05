@@ -806,6 +806,12 @@ model AgentSkill {
   content     String
   /// user | builtin | plugin — only user skills are writable via API/tools.
   source      String   @default("user")
+  /// Skill Store category (store installs only).
+  category    String?
+  /// Disabled rows stay listed in the UI but are hidden from prompts and skill_read.
+  enabled     Boolean  @default(true)
+  /// Skill Store slug (store installs only); set ⇒ uninstallable from the store page.
+  storeKey    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

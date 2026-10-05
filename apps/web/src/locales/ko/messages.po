@@ -97,6 +97,10 @@ msgstr "{days}일 전"
 msgid "{hours}h ago"
 msgstr "{hours}시간 전"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "{installedCount, plural, one {# my skill} other {# my skills}}"
+msgstr ""
+
 #: src/lib/relative-time.ts
 #: src/pages/ActivityList.tsx
 msgid "{minutes}m ago"
@@ -340,6 +344,10 @@ msgstr ""
 msgid "Agents:"
 msgstr "사용 Bot:"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "All"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr ""
@@ -546,6 +554,7 @@ msgstr "인증 시간이 만료되었습니다. 다시 시도해 주세요."
 
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Authorize"
 msgstr "인증하기"
 
@@ -581,6 +590,7 @@ msgstr "아바타"
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/client-browser-panel.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Back"
 msgstr "뒤로"
 
@@ -661,6 +671,10 @@ msgstr ""
 msgid "Brain label"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Browse all integrations"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Browse MCP servers"
 msgstr ""
@@ -695,6 +709,7 @@ msgstr "서버에 연결할 수 없습니다."
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Cancel"
 msgstr "취소"
 
@@ -952,6 +967,7 @@ msgid "Computers are off. Set SANDBOX_PROVIDER=docker with SANDBOX_SUPERVISOR_TO
 msgstr "컴퓨터가 꺼져 있습니다. SANDBOX_PROVIDER=docker와 SANDBOX_SUPERVISOR_TOKEN을 설정하거나, SANDBOX_PROVIDER를 e2b, daytona, box 중 하나로 두고 해당 API 키를 넣으세요. .env 변경 후 스택을 다시 만드세요."
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Configure a plugin catalog on the server to connect apps."
 msgstr ""
 
@@ -988,6 +1004,10 @@ msgstr "API 키 연결"
 msgid "Connect Executor"
 msgstr "Executor 연결"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connect external apps for a smoother workflow"
+msgstr ""
+
 #: src/pages/shell/message-cards.tsx
 msgid "Connect MCP server “{name}”"
 msgstr "MCP 서버 ‘{name}’ 연결"
@@ -1010,6 +1030,7 @@ msgstr "Treg 연결"
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected"
 msgstr "연결됨"
@@ -1023,6 +1044,10 @@ msgstr "연결됨 · {0}"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "{0}에 연결했습니다."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connected <0>{connectedCount}</0>"
+msgstr ""
 
 #. placeholder {0}: selected.label
 #. placeholder {0}: selectedLabelRef.current ?? "this model"
@@ -1049,11 +1074,17 @@ msgid "Connecting…"
 msgstr "연결 중…"
 
 #. placeholder {0}: item.name
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connection to {0} is still pending. Check again in a moment."
+msgstr ""
+
+#. placeholder {0}: item.name
 #: src/pages/PluginsOverlay.tsx
 msgid "Connection to {0} is still pending. You can close this and check again."
 msgstr "{0} 연결이 아직 진행 중입니다. 이 창을 닫고 나중에 다시 확인할 수 있습니다."
 
 #: src/pages/shell/expert-create.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Connectors"
 msgstr ""
 
@@ -1090,6 +1121,10 @@ msgstr "복사"
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not add"
 msgstr "추가하지 못했습니다."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not add connector"
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not add MCP server"
@@ -1129,6 +1164,7 @@ msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not connect"
 msgstr "연결하지 못했습니다."
 
@@ -1164,6 +1200,10 @@ msgstr "그룹을 만들지 못했습니다."
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create section"
 msgstr "섹션을 만들지 못했습니다."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not create skill"
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create space"
@@ -1242,6 +1282,10 @@ msgstr ""
 msgid "Could not install connector"
 msgstr "도구 연결을 추가하지 못했습니다."
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not install skill"
+msgstr ""
+
 #: src/components/computer/FilesApp.tsx
 msgid "Could not list files"
 msgstr ""
@@ -1266,6 +1310,10 @@ msgstr ""
 msgid "Could not load commands"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not load connectors"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not load integrations"
@@ -1286,6 +1334,10 @@ msgstr ""
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load skill"
 msgstr "스킬을 불러오지 못했습니다"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not load skills"
+msgstr ""
 
 #: src/pages/shell/client-browser-panel.tsx
 msgid "Could not load that address."
@@ -1352,6 +1404,10 @@ msgstr "그룹을 삭제하지 못했습니다."
 msgid "Could not remove rule"
 msgstr "확인 규칙을 삭제하지 못했습니다."
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not remove skill"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not rename connection"
 msgstr ""
@@ -1365,6 +1421,7 @@ msgid "Could not render chart"
 msgstr "차트를 만들지 못했습니다."
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not revoke connection"
 msgstr "연결을 해제하지 못했습니다."
 
@@ -1466,6 +1523,10 @@ msgstr "컴퓨터를 업데이트할 수 없습니다"
 msgid "Could not update reaction"
 msgstr "반응을 업데이트할 수 없습니다"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not update skill"
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Could not update the default memory scope"
 msgstr "기본 기억 범위를 변경하지 못했습니다."
@@ -1562,6 +1623,10 @@ msgstr "새 스페이스 만들기"
 msgid "Create Routine"
 msgstr "자동 실행 만들기"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Create skill"
+msgstr ""
+
 #: src/components/AskCard.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Create space"
@@ -1570,6 +1635,10 @@ msgstr "스페이스 만들기"
 #: src/components/AskCard.tsx
 msgid "Created"
 msgstr "생성됨"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Created by me"
+msgstr ""
 
 #: src/pages/GroupPanel.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1598,6 +1667,10 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx
 msgid "Cron expression"
 msgstr "Cron 표현식"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Curated, ready-to-use skills. Install one and every assistant can load it when a request matches."
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "Customer support"
@@ -1704,11 +1777,16 @@ msgstr "거부"
 msgid "Deployment default"
 msgstr "서버 기본값"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Describe a repeatable recipe. Agents see it in their skill catalog and can load it with skill_read."
+msgstr ""
+
 #: src/pages/shell/bot-panel.tsx
 msgid "Describe what this bot does"
 msgstr "이 Bot이 하는 일을 짧게 설명하세요"
 
 #: src/pages/shell/bot-panel.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Description"
 msgstr "설명"
 
@@ -1811,6 +1889,10 @@ msgstr "복제"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "예: Hivenet Agent, Presales, 근무표 봇"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "e.g. Weekly report"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Each bot keeps its own ThaiFi wallet on its computer."
 msgstr ""
@@ -1892,6 +1974,10 @@ msgstr "매월"
 #: src/pages/RoutineSchedule.tsx
 msgid "Every week"
 msgstr "매주"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Everything installed for your account. Disable a skill to hide it from your agents without uninstalling."
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Executor token"
@@ -2171,6 +2257,10 @@ msgstr "인스턴스 API 키"
 msgid "Instruction"
 msgstr "실행할 내용"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Instructions"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Integration domain"
 msgstr ""
@@ -2180,7 +2270,6 @@ msgid "Integration options"
 msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
-#: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "앱·도구 연동"
 
@@ -2277,6 +2366,10 @@ msgstr "Linear 이슈"
 msgid "Link a chat app"
 msgstr "채팅 앱 연결"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Link the services your agents are allowed to touch. Connections are shared across all your assistants."
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "List view"
 msgstr ""
@@ -2371,10 +2464,12 @@ msgid "Make sure nothing is still running on this computer."
 msgstr "이 컴퓨터에서 실행 중인 작업이 없는지 확인하세요."
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Manage"
 msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Manage MCP servers"
 msgstr "MCP 서버 관리"
 
@@ -2592,12 +2687,17 @@ msgstr "섹션으로 이동"
 msgid "Mute"
 msgstr "음소거"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "My skills <0>{installedCount}</0>"
+msgstr ""
+
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 #: src/pages/shell/expert-create.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Name"
 msgstr "이름"
 
@@ -2651,8 +2751,13 @@ msgid "New section"
 msgstr "새 섹션"
 
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "New skill"
 msgstr "새 스킬"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "New Skill"
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "New space"
@@ -2693,6 +2798,10 @@ msgstr ""
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No chat apps linked yet."
 msgstr "아직 연결된 채팅 앱이 없습니다."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "No connectors match."
+msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
 msgid "No exceptions. Actions run automatically."
@@ -2750,6 +2859,10 @@ msgstr "검색 결과가 없습니다"
 #: src/pages/RoutineEditor.tsx
 msgid "No runs yet"
 msgstr "아직 실행 기록이 없습니다"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "No skills match."
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
 msgid "No skills yet"
@@ -3132,6 +3245,10 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Refresh connectors"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"
 msgstr "화면 새로고침"
@@ -3444,6 +3561,10 @@ msgstr ""
 msgid "Search by domain"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Search connectors"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Search integrations.sh"
 msgstr ""
@@ -3459,6 +3580,10 @@ msgstr ""
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Search providers"
 msgstr "AI 서비스 검색"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Search skills"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
@@ -3602,9 +3727,18 @@ msgstr ""
 msgid "Skill {0}"
 msgstr "작업 기술 {0}"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Skill Store"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Skills"
 msgstr "스킬"
+
+#: src/pages/Shell.tsx
+msgid "Skills & Connectors"
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/Shell.tsx
@@ -3687,6 +3821,10 @@ msgstr "시작하는 중…"
 msgid "Steps"
 msgstr "실행 단계"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Steps the agent should follow…"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Stop"
 msgstr "중지"
@@ -3750,6 +3888,10 @@ msgstr "시스템"
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Teach a task"
 msgstr "작업 가르치기"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Teach your agents new skills"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Teaching in progress. Stop teaching before sending a new message."
@@ -4133,6 +4275,10 @@ msgstr "웹훅이 실행될 때"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "When off, only existing accounts can sign in."
+msgstr ""
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "When should agents use this skill?"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx

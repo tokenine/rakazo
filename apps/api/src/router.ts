@@ -3405,6 +3405,18 @@ export function createRouter(deps: RouterDeps) {
       remove: authed.agentSkills.remove.handler(async ({ context, input }) =>
         agentSkills.remove(context.actor, input.skillId),
       ),
+      catalog: authed.agentSkills.catalog.handler(async ({ context }) =>
+        agentSkills.catalog(context.actor),
+      ),
+      install: authed.agentSkills.install.handler(async ({ context, input }) =>
+        agentSkills.install(context.actor, input),
+      ),
+      uninstall: authed.agentSkills.uninstall.handler(async ({ context, input }) =>
+        agentSkills.uninstall(context.actor, input.skillId),
+      ),
+      setEnabled: authed.agentSkills.setEnabled.handler(async ({ context, input }) =>
+        agentSkills.setEnabled(context.actor, input),
+      ),
     },
     capabilities: {
       list: authed.capabilities.list.handler(async ({ context }) => {

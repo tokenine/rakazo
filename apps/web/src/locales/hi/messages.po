@@ -97,6 +97,10 @@ msgstr "{days} दिन पहले"
 msgid "{hours}h ago"
 msgstr "{hours} घंटे पहले"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "{installedCount, plural, one {# my skill} other {# my skills}}"
+msgstr ""
+
 #: src/lib/relative-time.ts
 #: src/pages/ActivityList.tsx
 msgid "{minutes}m ago"
@@ -340,6 +344,10 @@ msgstr ""
 msgid "Agents:"
 msgstr "एजेंट:"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "All"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr ""
@@ -546,6 +554,7 @@ msgstr "ऑथराइज़ेशन का समय समाप्त ह�
 
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Authorize"
 msgstr "ऑथराइज़ करें"
 
@@ -581,6 +590,7 @@ msgstr ""
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/client-browser-panel.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Back"
 msgstr ""
 
@@ -661,6 +671,10 @@ msgstr ""
 msgid "Brain label"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Browse all integrations"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Browse MCP servers"
 msgstr ""
@@ -695,6 +709,7 @@ msgstr "सर्वर तक नहीं पहुंचा जा सका�
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Cancel"
 msgstr "रद्द करें"
 
@@ -952,6 +967,7 @@ msgid "Computers are off. Set SANDBOX_PROVIDER=docker with SANDBOX_SUPERVISOR_TO
 msgstr "कंप्यूटर बंद हैं। SANDBOX_PROVIDER=docker और SANDBOX_SUPERVISOR_TOKEN सेट करें, या SANDBOX_PROVIDER को e2b, daytona, या box पर सेट कर उसका API key दें। .env बदलने के बाद स्टैक फिर बनाएँ।"
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Configure a plugin catalog on the server to connect apps."
 msgstr ""
 
@@ -988,6 +1004,10 @@ msgstr "API कुंजी कनेक्ट करें"
 msgid "Connect Executor"
 msgstr "Executor कनेक्ट करें"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connect external apps for a smoother workflow"
+msgstr ""
+
 #: src/pages/shell/message-cards.tsx
 msgid "Connect MCP server “{name}”"
 msgstr "MCP सर्वर “{name}” कनेक्ट करें"
@@ -1010,6 +1030,7 @@ msgstr "Treg कनेक्ट करें"
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected"
 msgstr "कनेक्टेड"
@@ -1023,6 +1044,10 @@ msgstr "कनेक्टेड · {0}"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "{0} कनेक्ट किया गया।"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connected <0>{connectedCount}</0>"
+msgstr ""
 
 #. placeholder {0}: selected.label
 #. placeholder {0}: selectedLabelRef.current ?? "this model"
@@ -1049,11 +1074,17 @@ msgid "Connecting…"
 msgstr "कनेक्ट हो रहा है…"
 
 #. placeholder {0}: item.name
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connection to {0} is still pending. Check again in a moment."
+msgstr ""
+
+#. placeholder {0}: item.name
 #: src/pages/PluginsOverlay.tsx
 msgid "Connection to {0} is still pending. You can close this and check again."
 msgstr "{0} से कनेक्शन अभी लंबित है। आप इसे बंद करके बाद में जांच सकते हैं।"
 
 #: src/pages/shell/expert-create.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Connectors"
 msgstr ""
 
@@ -1090,6 +1121,10 @@ msgstr "कॉपी करें"
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not add"
 msgstr "जोड़ा नहीं जा सका"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not add connector"
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not add MCP server"
@@ -1129,6 +1164,7 @@ msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not connect"
 msgstr "कनेक्ट नहीं हो सका"
 
@@ -1164,6 +1200,10 @@ msgstr "समूह नहीं बनाया जा सका"
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create section"
 msgstr "सेक्शन नहीं बनाया जा सका"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not create skill"
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create space"
@@ -1242,6 +1282,10 @@ msgstr ""
 msgid "Could not install connector"
 msgstr "कनेक्टर इंस्टॉल नहीं हो सका"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not install skill"
+msgstr ""
+
 #: src/components/computer/FilesApp.tsx
 msgid "Could not list files"
 msgstr ""
@@ -1266,6 +1310,10 @@ msgstr ""
 msgid "Could not load commands"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not load connectors"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not load integrations"
@@ -1286,6 +1334,10 @@ msgstr ""
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load skill"
 msgstr "स्किल लोड नहीं हो सकी"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not load skills"
+msgstr ""
 
 #: src/pages/shell/client-browser-panel.tsx
 msgid "Could not load that address."
@@ -1352,6 +1404,10 @@ msgstr "समूह हटाया नहीं जा सका"
 msgid "Could not remove rule"
 msgstr "नियम हटाया नहीं जा सका"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not remove skill"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not rename connection"
 msgstr ""
@@ -1365,6 +1421,7 @@ msgid "Could not render chart"
 msgstr "चार्ट रेंडर नहीं हो सका"
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not revoke connection"
 msgstr "कनेक्शन रद्द नहीं किया जा सका"
 
@@ -1466,6 +1523,10 @@ msgstr "कंप्यूटर अपडेट नहीं हो सका"
 msgid "Could not update reaction"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not update skill"
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Could not update the default memory scope"
 msgstr "डिफ़ॉल्ट मेमोरी स्कोप अपडेट नहीं हो सका"
@@ -1562,6 +1623,10 @@ msgstr "नया स्पेस बनाएं"
 msgid "Create Routine"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Create skill"
+msgstr ""
+
 #: src/components/AskCard.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Create space"
@@ -1569,6 +1634,10 @@ msgstr ""
 
 #: src/components/AskCard.tsx
 msgid "Created"
+msgstr ""
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Created by me"
 msgstr ""
 
 #: src/pages/GroupPanel.tsx
@@ -1598,6 +1667,10 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx
 msgid "Cron expression"
 msgstr "Cron एक्सप्रेशन"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Curated, ready-to-use skills. Install one and every assistant can load it when a request matches."
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "Customer support"
@@ -1704,11 +1777,16 @@ msgstr "अस्वीकार करें"
 msgid "Deployment default"
 msgstr "डिप्लॉयमेंट डिफ़ॉल्ट"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Describe a repeatable recipe. Agents see it in their skill catalog and can load it with skill_read."
+msgstr ""
+
 #: src/pages/shell/bot-panel.tsx
 msgid "Describe what this bot does"
 msgstr "बताएं कि यह बॉट क्या करता है"
 
 #: src/pages/shell/bot-panel.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Description"
 msgstr "विवरण"
 
@@ -1811,6 +1889,10 @@ msgstr "डुप्लिकेट"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "उदा. Hivenet Agent, Presales, टाइमशीट बॉट"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "e.g. Weekly report"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Each bot keeps its own ThaiFi wallet on its computer."
 msgstr ""
@@ -1892,6 +1974,10 @@ msgstr "हर महीने"
 #: src/pages/RoutineSchedule.tsx
 msgid "Every week"
 msgstr "हर सप्ताह"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Everything installed for your account. Disable a skill to hide it from your agents without uninstalling."
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Executor token"
@@ -2171,6 +2257,10 @@ msgstr "इंस्टेंस API कुंजी"
 msgid "Instruction"
 msgstr "निर्देश"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Instructions"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Integration domain"
 msgstr ""
@@ -2180,7 +2270,6 @@ msgid "Integration options"
 msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
-#: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "इंटीग्रेशन"
 
@@ -2277,6 +2366,10 @@ msgstr ""
 msgid "Link a chat app"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Link the services your agents are allowed to touch. Connections are shared across all your assistants."
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "List view"
 msgstr ""
@@ -2371,10 +2464,12 @@ msgid "Make sure nothing is still running on this computer."
 msgstr "सुनिश्चित करें कि इस कंप्यूटर पर कुछ भी चल नहीं रहा है।"
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Manage"
 msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Manage MCP servers"
 msgstr "MCP सर्वर प्रबंधित करें"
 
@@ -2592,12 +2687,17 @@ msgstr "यहां ले जाएं"
 msgid "Mute"
 msgstr "म्यूट करें"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "My skills <0>{installedCount}</0>"
+msgstr ""
+
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 #: src/pages/shell/expert-create.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Name"
 msgstr "नाम"
 
@@ -2651,8 +2751,13 @@ msgid "New section"
 msgstr "नया सेक्शन"
 
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "New skill"
 msgstr "नई स्किल"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "New Skill"
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "New space"
@@ -2692,6 +2797,10 @@ msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No chat apps linked yet."
+msgstr ""
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "No connectors match."
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
@@ -2749,6 +2858,10 @@ msgstr "कोई परिणाम नहीं"
 
 #: src/pages/RoutineEditor.tsx
 msgid "No runs yet"
+msgstr ""
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "No skills match."
 msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
@@ -3132,6 +3245,10 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Refresh connectors"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"
 msgstr ""
@@ -3444,6 +3561,10 @@ msgstr ""
 msgid "Search by domain"
 msgstr ""
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Search connectors"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Search integrations.sh"
 msgstr ""
@@ -3459,6 +3580,10 @@ msgstr ""
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Search providers"
 msgstr "प्रोवाइडर्स खोजें"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Search skills"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
@@ -3602,9 +3727,18 @@ msgstr ""
 msgid "Skill {0}"
 msgstr "स्किल {0}"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Skill Store"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Skills"
 msgstr "स्किल्स"
+
+#: src/pages/Shell.tsx
+msgid "Skills & Connectors"
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/Shell.tsx
@@ -3687,6 +3821,10 @@ msgstr "शुरू हो रहा है…"
 msgid "Steps"
 msgstr "चरण"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Steps the agent should follow…"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Stop"
 msgstr "रोकें"
@@ -3750,6 +3888,10 @@ msgstr "सिस्टम"
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Teach a task"
 msgstr "कोई कार्य सिखाएं"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Teach your agents new skills"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Teaching in progress. Stop teaching before sending a new message."
@@ -4133,6 +4275,10 @@ msgstr ""
 
 #: src/pages/SettingsOverlay.tsx
 msgid "When off, only existing accounts can sign in."
+msgstr ""
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "When should agents use this skill?"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx

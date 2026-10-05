@@ -545,6 +545,12 @@ export const AgentSkillSchema = z.object({
   content: z.string(),
   source: AgentSkillSourceSchema,
   readOnly: z.boolean(),
+  /// Skill Store category (store installs only).
+  category: z.string().nullable(),
+  /// Disabled skills stay listed in the UI but are hidden from prompts and skill_read.
+  enabled: z.boolean(),
+  /// Skill Store slug (store installs only); set ⇒ uninstallable from the store page.
+  storeKey: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -556,8 +562,21 @@ export const AgentSkillCatalogEntrySchema = AgentSkillSchema.pick({
   description: true,
   source: true,
   readOnly: true,
+  category: true,
+  enabled: true,
+  storeKey: true,
 });
 export type AgentSkillCatalogEntry = z.infer<typeof AgentSkillCatalogEntrySchema>;
+
+/** One bundled Skill Store entry as offered on the Skills & Connectors page. */
+export const SkillStoreCatalogEntrySchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category: z.string(),
+  installed: z.boolean(),
+});
+export type SkillStoreCatalogEntry = z.infer<typeof SkillStoreCatalogEntrySchema>;
 
 export const CreateAgentSkillInput = z
   .object({

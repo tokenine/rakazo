@@ -97,6 +97,10 @@ msgstr "{days}d ago"
 msgid "{hours}h ago"
 msgstr "{hours}h ago"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "{installedCount, plural, one {# my skill} other {# my skills}}"
+msgstr "{installedCount, plural, one {# my skill} other {# my skills}}"
+
 #: src/lib/relative-time.ts
 #: src/pages/ActivityList.tsx
 msgid "{minutes}m ago"
@@ -340,6 +344,10 @@ msgstr "Agent wallets"
 msgid "Agents:"
 msgstr "Agents:"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "All"
+msgstr "All"
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr "All bots"
@@ -546,6 +554,7 @@ msgstr "Authorization timed out. Please try again."
 
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Authorize"
 msgstr "Authorize"
 
@@ -581,6 +590,7 @@ msgstr "Avatars"
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/client-browser-panel.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Back"
 msgstr "Back"
 
@@ -661,6 +671,10 @@ msgstr "Bots work in this app's Browser pane with your own logins (TikTok, Faceb
 msgid "Brain label"
 msgstr "Brain label"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Browse all integrations"
+msgstr "Browse all integrations"
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Browse MCP servers"
 msgstr "Browse MCP servers"
@@ -695,6 +709,7 @@ msgstr "Can't reach the server."
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -952,6 +967,7 @@ msgid "Computers are off. Set SANDBOX_PROVIDER=docker with SANDBOX_SUPERVISOR_TO
 msgstr "Computers are off. Set SANDBOX_PROVIDER=docker with SANDBOX_SUPERVISOR_TOKEN, or set SANDBOX_PROVIDER to e2b, daytona, or box with its API key. Recreate the stack after changing .env."
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Configure a plugin catalog on the server to connect apps."
 msgstr "Configure a plugin catalog on the server to connect apps."
 
@@ -988,6 +1004,10 @@ msgstr "Connect API key"
 msgid "Connect Executor"
 msgstr "Connect Executor"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connect external apps for a smoother workflow"
+msgstr "Connect external apps for a smoother workflow"
+
 #: src/pages/shell/message-cards.tsx
 msgid "Connect MCP server “{name}”"
 msgstr "Connect MCP server “{name}”"
@@ -1010,6 +1030,7 @@ msgstr "Connect Treg"
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/message-cards.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected"
 msgstr "Connected"
@@ -1023,6 +1044,10 @@ msgstr "Connected · {0}"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "Connected {0}."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connected <0>{connectedCount}</0>"
+msgstr "Connected <0>{connectedCount}</0>"
 
 #. placeholder {0}: selected.label
 #. placeholder {0}: selectedLabelRef.current ?? "this model"
@@ -1049,11 +1074,17 @@ msgid "Connecting…"
 msgstr "Connecting…"
 
 #. placeholder {0}: item.name
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Connection to {0} is still pending. Check again in a moment."
+msgstr "Connection to {0} is still pending. Check again in a moment."
+
+#. placeholder {0}: item.name
 #: src/pages/PluginsOverlay.tsx
 msgid "Connection to {0} is still pending. You can close this and check again."
 msgstr "Connection to {0} is still pending. You can close this and check again."
 
 #: src/pages/shell/expert-create.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Connectors"
 msgstr "Connectors"
 
@@ -1090,6 +1121,10 @@ msgstr "Copy"
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not add"
 msgstr "Could not add"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not add connector"
+msgstr "Could not add connector"
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not add MCP server"
@@ -1129,6 +1164,7 @@ msgstr "Could not complete the update. Try again."
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not connect"
 msgstr "Could not connect"
 
@@ -1164,6 +1200,10 @@ msgstr "Could not create group"
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create section"
 msgstr "Could not create section"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not create skill"
+msgstr "Could not create skill"
 
 #: src/pages/shell/dialogs.tsx
 msgid "Could not create space"
@@ -1242,6 +1282,10 @@ msgstr "Could not download file"
 msgid "Could not install connector"
 msgstr "Could not install connector"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not install skill"
+msgstr "Could not install skill"
+
 #: src/components/computer/FilesApp.tsx
 msgid "Could not list files"
 msgstr "Could not list files"
@@ -1266,6 +1310,10 @@ msgstr "Could not load bots. Reload to try again."
 msgid "Could not load commands"
 msgstr "Could not load commands"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not load connectors"
+msgstr "Could not load connectors"
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not load integrations"
@@ -1286,6 +1334,10 @@ msgstr "Could not load sign-up settings"
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load skill"
 msgstr "Could not load skill"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not load skills"
+msgstr "Could not load skills"
 
 #: src/pages/shell/client-browser-panel.tsx
 msgid "Could not load that address."
@@ -1352,6 +1404,10 @@ msgstr "Could not remove group"
 msgid "Could not remove rule"
 msgstr "Could not remove rule"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not remove skill"
+msgstr "Could not remove skill"
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not rename connection"
 msgstr "Could not rename connection"
@@ -1365,6 +1421,7 @@ msgid "Could not render chart"
 msgstr "Could not render chart"
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not revoke connection"
 msgstr "Could not revoke connection"
 
@@ -1466,6 +1523,10 @@ msgstr "Could not update computer"
 msgid "Could not update reaction"
 msgstr "Could not update reaction"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Could not update skill"
+msgstr "Could not update skill"
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Could not update the default memory scope"
 msgstr "Could not update the default memory scope"
@@ -1562,6 +1623,10 @@ msgstr "Create new Space"
 msgid "Create Routine"
 msgstr "Create Routine"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Create skill"
+msgstr "Create skill"
+
 #: src/components/AskCard.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Create space"
@@ -1570,6 +1635,10 @@ msgstr "Create space"
 #: src/components/AskCard.tsx
 msgid "Created"
 msgstr "Created"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Created by me"
+msgstr "Created by me"
 
 #: src/pages/GroupPanel.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1598,6 +1667,10 @@ msgstr "Cron"
 #: src/pages/RoutineSchedule.tsx
 msgid "Cron expression"
 msgstr "Cron expression"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Curated, ready-to-use skills. Install one and every assistant can load it when a request matches."
+msgstr "Curated, ready-to-use skills. Install one and every assistant can load it when a request matches."
 
 #: src/pages/shell/dialogs.tsx
 msgid "Customer support"
@@ -1704,11 +1777,16 @@ msgstr "Deny"
 msgid "Deployment default"
 msgstr "Deployment default"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Describe a repeatable recipe. Agents see it in their skill catalog and can load it with skill_read."
+msgstr "Describe a repeatable recipe. Agents see it in their skill catalog and can load it with skill_read."
+
 #: src/pages/shell/bot-panel.tsx
 msgid "Describe what this bot does"
 msgstr "Describe what this bot does"
 
 #: src/pages/shell/bot-panel.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Description"
 msgstr "Description"
 
@@ -1811,6 +1889,10 @@ msgstr "Duplicate"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "e.g. Hivenet Agent, Presales, Timesheets bot"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "e.g. Weekly report"
+msgstr "e.g. Weekly report"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Each bot keeps its own ThaiFi wallet on its computer."
 msgstr "Each bot keeps its own ThaiFi wallet on its computer."
@@ -1892,6 +1974,10 @@ msgstr "Every month"
 #: src/pages/RoutineSchedule.tsx
 msgid "Every week"
 msgstr "Every week"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Everything installed for your account. Disable a skill to hide it from your agents without uninstalling."
+msgstr "Everything installed for your account. Disable a skill to hide it from your agents without uninstalling."
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Executor token"
@@ -2171,6 +2257,10 @@ msgstr "Instance API key"
 msgid "Instruction"
 msgstr "Instruction"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Instructions"
+msgstr "Instructions"
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Integration domain"
 msgstr "Integration domain"
@@ -2180,7 +2270,6 @@ msgid "Integration options"
 msgstr "Integration options"
 
 #: src/pages/PluginsOverlay.tsx
-#: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "Integrations"
 
@@ -2277,6 +2366,10 @@ msgstr "Linear issue"
 msgid "Link a chat app"
 msgstr "Link a chat app"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Link the services your agents are allowed to touch. Connections are shared across all your assistants."
+msgstr "Link the services your agents are allowed to touch. Connections are shared across all your assistants."
+
 #: src/pages/Artifacts.tsx
 msgid "List view"
 msgstr "List view"
@@ -2371,10 +2464,12 @@ msgid "Make sure nothing is still running on this computer."
 msgstr "Make sure nothing is still running on this computer."
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Manage"
 msgstr "Manage"
 
 #: src/pages/PluginsOverlay.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Manage MCP servers"
 msgstr "Manage MCP servers"
 
@@ -2592,12 +2687,17 @@ msgstr "Move to"
 msgid "Mute"
 msgstr "Mute"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "My skills <0>{installedCount}</0>"
+msgstr "My skills <0>{installedCount}</0>"
+
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/GroupPanel.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 #: src/pages/shell/expert-create.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Name"
 msgstr "Name"
 
@@ -2651,8 +2751,13 @@ msgid "New section"
 msgstr "New section"
 
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "New skill"
 msgstr "New skill"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "New Skill"
+msgstr "New Skill"
 
 #: src/pages/shell/dialogs.tsx
 msgid "New space"
@@ -2693,6 +2798,10 @@ msgstr "No bots match"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No chat apps linked yet."
 msgstr "No chat apps linked yet."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "No connectors match."
+msgstr "No connectors match."
 
 #: src/components/ApprovalRulesSettings.tsx
 msgid "No exceptions. Actions run automatically."
@@ -2750,6 +2859,10 @@ msgstr "No results"
 #: src/pages/RoutineEditor.tsx
 msgid "No runs yet"
 msgstr "No runs yet"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "No skills match."
+msgstr "No skills match."
 
 #: src/pages/KnowledgeSection.tsx
 msgid "No skills yet"
@@ -3132,6 +3245,10 @@ msgstr "Recreating the computer"
 msgid "Refresh"
 msgstr "Refresh"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Refresh connectors"
+msgstr "Refresh connectors"
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"
 msgstr "Refresh view"
@@ -3444,6 +3561,10 @@ msgstr "Search bots and switch conversations"
 msgid "Search by domain"
 msgstr "Search by domain"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Search connectors"
+msgstr "Search connectors"
+
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Search integrations.sh"
 msgstr "Search integrations.sh"
@@ -3459,6 +3580,10 @@ msgstr "Search or type a URL"
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Search providers"
 msgstr "Search providers"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Search skills"
+msgstr "Search skills"
 
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
@@ -3602,9 +3727,18 @@ msgstr "Sign-ups"
 msgid "Skill {0}"
 msgstr "Skill {0}"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Skill Store"
+msgstr "Skill Store"
+
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Skills"
 msgstr "Skills"
+
+#: src/pages/Shell.tsx
+msgid "Skills & Connectors"
+msgstr "Skills & Connectors"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/Shell.tsx
@@ -3687,6 +3821,10 @@ msgstr "Starting…"
 msgid "Steps"
 msgstr "Steps"
 
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Steps the agent should follow…"
+msgstr "Steps the agent should follow…"
+
 #: src/pages/Shell.tsx
 msgid "Stop"
 msgstr "Stop"
@@ -3750,6 +3888,10 @@ msgstr "System"
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Teach a task"
 msgstr "Teach a task"
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "Teach your agents new skills"
+msgstr "Teach your agents new skills"
 
 #: src/pages/Shell.tsx
 msgid "Teaching in progress. Stop teaching before sending a new message."
@@ -4134,6 +4276,10 @@ msgstr "When a webhook fires"
 #: src/pages/SettingsOverlay.tsx
 msgid "When off, only existing accounts can sign in."
 msgstr "When off, only existing accounts can sign in."
+
+#: src/pages/SkillsConnectorsOverlay.tsx
+msgid "When should agents use this skill?"
+msgstr "When should agents use this skill?"
 
 #: src/pages/RoutineEditor.tsx
 msgid "When to run"

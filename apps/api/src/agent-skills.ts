@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { BUILTIN_AGENT_SKILLS } from "@rakazo/adapters";
 import type { Actor, AgentSkill, AgentSkillSource } from "@rakazo/contracts";
+import { findSkillStoreEntry, SKILL_STORE } from "@rakazo/contracts";
 import {
   buildSkillMd,
   findSkillByName,
@@ -17,6 +18,9 @@ type AgentSkillRow = {
   description: string;
   content: string;
   source: string;
+  category: string | null;
+  enabled: boolean;
+  storeKey: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -35,6 +39,9 @@ export function mapAgentSkill(row: AgentSkillRow): AgentSkill {
     content: row.content,
     source,
     readOnly: isSkillReadOnly(source as SkillSource),
+    category: row.category,
+    enabled: row.enabled,
+    storeKey: row.storeKey,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -48,6 +55,9 @@ function builtinCatalog(): AgentSkill[] {
     content: skill.content,
     source: "builtin" as const,
     readOnly: true,
+    category: null,
+    enabled: true,
+    storeKey: null,
     createdAt: new Date(0).toISOString(),
     updatedAt: new Date(0).toISOString(),
   }));
@@ -142,9 +152,10 @@ export function createAgentSkillsService(prisma: PrismaClient) {
       );
     },
 
+    /** Run feed: disabled rows stay out of prompts (the UI list keeps them). */
     async listWithContent(actor: Actor): Promise<AgentSkill[]> {
       const rows = await prisma.agentSkill.findMany({
-        where: { spaceId: actor.spaceId, userId: actor.userId },
+        where: { spaceId: actor.spaceId, userId: actor.userId, enabled: true },
         orderBy: [{ name: "asc" }, { id: "asc" }],
       });
       return mergeBuiltinSkills(builtinCatalog(), rows.map(mapAgentSkill));
@@ -300,6 +311,100 @@ export function createAgentSkillsService(prisma: PrismaClient) {
       });
       if (deleted.count !== 1) throw new IsolationError();
       return { ok: true };
+    },
+
+    /** Skill Store entries installed per user as read-only builtin rows. */
+    async catalog(actor: Actor) {
+      const rows = await prisma.agentSkill.findMany({
+        where: { spaceId: actor.spaceId, userId: actor.userId, storeKey: { not: null } },
+        select: { storeKey: true },
+      });
+      const installed = new Set(rows.map((row) => row.storeKey));
+      return SKILL_STORE.map((entry) => ({
+        key: entry.key,
+        name: entry.name,
+        description: entry.description,
+        category: entry.category,
+        installed: installed.has(entry.key),
+      }));
+    },
+
+    async install(actor: Actor, input: { key: string }): Promise<AgentSkill> {
+      const entry = findSkillStoreEntry(input.key);
+      if (!entry) {
+        throw new ORPCError("NOT_FOUND", { message: "Unknown skill in the store." });
+      }
+      const clash =
+        (await prisma.agentSkill.findFirst({
+          where: {
+            spaceId: actor.spaceId,
+            userId: actor.userId,
+            name: { equals: entry.name, mode: "insensitive" },
+          },
+        })) ??
+        builtinCatalog().find((skill) => skill.name.toLowerCase() === entry.name.toLowerCase());
+      if (clash) {
+        throw new ORPCError("CONFLICT", { message: "A skill with that name already exists." });
+      }
+      try {
+        const row = await prisma.agentSkill.create({
+          data: {
+            spaceId: actor.spaceId,
+            userId: actor.userId,
+            name: entry.name,
+            description: entry.description,
+            content: entry.content,
+            source: "builtin",
+            category: entry.category,
+            enabled: true,
+            storeKey: entry.key,
+          },
+        });
+        return mapAgentSkill(row);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          "code" in error &&
+          (error as { code?: string }).code === "P2002"
+        ) {
+          throw new ORPCError("CONFLICT", { message: "A skill with that name already exists." });
+        }
+        throw error;
+      }
+    },
+
+    async uninstall(actor: Actor, skillId: string): Promise<{ ok: true }> {
+      const existing = await owned(actor, skillId);
+      if (!existing.storeKey) {
+        throw new ORPCError("BAD_REQUEST", { message: "Only store skills can be uninstalled." });
+      }
+      const deleted = await prisma.agentSkill.deleteMany({
+        where: {
+          id: existing.id,
+          spaceId: actor.spaceId,
+          userId: actor.userId,
+          storeKey: { not: null },
+        },
+      });
+      if (deleted.count !== 1) throw new IsolationError();
+      return { ok: true };
+    },
+
+    async setEnabled(
+      actor: Actor,
+      input: { skillId: string; enabled: boolean },
+    ): Promise<AgentSkill> {
+      const existing = await owned(actor, input.skillId);
+      const updated = await prisma.agentSkill.updateMany({
+        where: {
+          id: existing.id,
+          spaceId: actor.spaceId,
+          userId: actor.userId,
+        },
+        data: { enabled: input.enabled },
+      });
+      if (updated.count !== 1) throw new IsolationError();
+      return mapAgentSkill({ ...existing, enabled: input.enabled, updatedAt: new Date() });
     },
   };
 }

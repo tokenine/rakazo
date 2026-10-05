@@ -93,7 +93,6 @@ import {
   FolderOpen,
   Gauge,
   Globe,
-  LayoutGrid,
   Lock,
   LogOut,
   Maximize2,
@@ -110,6 +109,7 @@ import {
   Reply,
   Search,
   Settings,
+  Shapes,
   Smile,
   Square,
   TextQuote,
@@ -269,6 +269,11 @@ const PeerMessagesOverlay = lazy(() =>
 );
 const PluginsOverlay = lazy(() =>
   import("./PluginsOverlay").then((module) => ({ default: module.PluginsOverlay })),
+);
+const SkillsConnectorsOverlay = lazy(() =>
+  import("./SkillsConnectorsOverlay").then((module) => ({
+    default: module.SkillsConnectorsOverlay,
+  })),
 );
 const McpServersOverlay = lazy(() =>
   import("./McpServersOverlay").then((module) => ({ default: module.McpServersOverlay })),
@@ -538,6 +543,7 @@ export function ShellPage() {
     commitSnapshot(update(snapshotRef.current));
   }
   const [pluginsOpen, setPluginsOpen] = useState(false);
+  const [skillsConnectorsOpen, setSkillsConnectorsOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
@@ -3291,14 +3297,15 @@ export function ShellPage() {
         </div>
         <button
           type="button"
-          onClick={() => setPluginsOpen(true)}
+          onClick={() => setSkillsConnectorsOpen(true)}
+          data-testid="skills-connectors-trigger"
           className="mx-3 mb-1 flex items-center gap-3 rounded-xl px-2.5 py-2 hover:bg-sidebar-accent"
         >
           <span className="grid h-[30px] w-[30px] place-items-center rounded-lg bg-accent text-foreground/80">
-            <LayoutGrid size={15} strokeWidth={1.8} />
+            <Shapes size={15} strokeWidth={1.8} />
           </span>
           <span className="text-[14px] font-medium text-foreground/90">
-            <Trans>Integrations</Trans>
+            <Trans>Skills & Connectors</Trans>
           </span>
         </button>
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
@@ -4391,6 +4398,20 @@ export function ShellPage() {
           />
         ) : null}
 
+        {skillsConnectorsOpen ? (
+          <SkillsConnectorsOverlay
+            activeBotId={activeBotId.current}
+            onClose={() => setSkillsConnectorsOpen(false)}
+            onOpenMcp={() => {
+              setSkillsConnectorsOpen(false);
+              setMcpOpen(true);
+            }}
+            onOpenIntegrations={() => {
+              setSkillsConnectorsOpen(false);
+              setPluginsOpen(true);
+            }}
+          />
+        ) : null}
         {pluginsOpen ? (
           <PluginsOverlay
             activeBotId={activeBotId.current}

@@ -1,6 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { AvatarStyle, WalletOverview } from "@rakazo/contracts";
-import { THAIIFI_WALLET_URL } from "@rakazo/contracts";
 import { BotAvatar, Button, Input, Label, Switch, Toggle } from "@rakazo/ui-web";
 import { ChevronDown } from "lucide-react";
 import {

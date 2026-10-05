@@ -66,6 +66,7 @@ import {
   ServerUpdateRunSchema,
   ServerUpdateStatusSchema,
   SkillPlaybookSchema,
+  SkillStoreCatalogEntrySchema,
   SpaceMemoryConfigSchema,
   SpaceNavigationSchema,
   SpaceSchema,
@@ -586,6 +587,12 @@ export const appContract = {
     create: oc.input(CreateAgentSkillInput).output(AgentSkillSchema),
     update: oc.input(UpdateAgentSkillInput).output(AgentSkillSchema),
     remove: oc.input(z.object({ skillId: Id })).output(z.object({ ok: z.literal(true) })),
+    /** Bundled Skill Store entries with per-user installed flags. */
+    catalog: oc.output(z.array(SkillStoreCatalogEntrySchema)),
+    install: oc.input(z.object({ key: z.string().min(1).max(80) })).output(AgentSkillSchema),
+    /** Store installs only (rows with a storeKey); user skills use remove. */
+    uninstall: oc.input(z.object({ skillId: Id })).output(z.object({ ok: z.literal(true) })),
+    setEnabled: oc.input(z.object({ skillId: Id, enabled: z.boolean() })).output(AgentSkillSchema),
   },
   capabilities: {
     list: oc.output(z.array(CapabilityInstallSchema)),
