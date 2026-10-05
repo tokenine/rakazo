@@ -217,6 +217,15 @@ export function taskDataDirName(taskId: string): string {
   return `cm-${taskId}-data`;
 }
 
+/**
+ * The task-tree root for a configured root (or the shared default). One
+ * source of truth for the provider AND the production PTY spawner so both
+ * resolve the same workspace path for a task.
+ */
+export function processTaskRootDir(root?: string): string {
+  return root ?? path.join(process.cwd(), "data", "code-mode-tasks");
+}
+
 /** Service/db-name namespace helper (V3 class: service/db names). */
 export function namespacedServiceName(taskId: string, name: string): string {
   const sanitize = (value: string) =>
@@ -294,14 +303,29 @@ export function resizePtySession(
   return { ...record, cols: dim.cols, rows: dim.rows };
 }
 
+/**
+ * A live PTY handle returned by a PtySpawner (S6 T28). `dispose` is required;
+ * the wiring members are optional so the no-op test stub stays a valid
+ * spawner. `onData` receives COMPLETE output lines (chunk splitting is the
+ * spawner's job) and the handle must buffer anything emitted before the
+ * listener attaches — the provider registers it right after the spawn await.
+ */
+export interface PtyHandle {
+  dispose: () => void;
+  /** Write user input into the PTY. */
+  write?: (data: string) => void;
+  /** Resize the PTY. */
+  resize?: (dim: { cols: number; rows: number }) => void;
+  /** Register the scrollback listener; flushes buffered lines on attach. */
+  onData?: (listener: (line: string) => void) => void;
+}
+
 /** Thin interface so TCB can be tested with a spy/fake PTY. */
 export type PtySpawner = (
   taskId: string,
   cols: number,
   rows: number,
-) => Promise<{
-  dispose: () => void;
-}>;
+) => Promise<PtyHandle>;
 
 export class ProcessSandboxProvider implements SandboxProvider {
   readonly tasks = new Map<string, ProcessTaskContext>();
@@ -322,6 +346,12 @@ export class ProcessSandboxProvider implements SandboxProvider {
    * Node-pty or equivalent spawn is delegated via this.ptySpawner (default: noop).
    */
   private readonly ptySessions = new Map<string, PtySessionRecord>();
+  /**
+   * S6 T28: live PTY handles per session — output feeds the session's
+   * scrollback, input writes and resize reach the PTY, and destroy disposes
+   * the handle. Sessions created with the no-op stub have no handle.
+   */
+  private readonly ptyHandles = new Map<string, PtyHandle>();
   /**
    * T28 V18: PTY spawner injected at construction.
    * Defaults to a no-op stub — replace with a real node-pty spawner in production.
@@ -352,9 +382,11 @@ export class ProcessSandboxProvider implements SandboxProvider {
    * - No sessionId → creates a new session record and starts the PTY spawner.
    * - sessionId present → reconnects to existing session and replays scrollback.
    *
-   * The actual PTY (node-pty or equivalent) is managed by this.ptySpawner.
-   * When no spawner is configured, the session record is created but no PTY runs
-   * (useful for unit-testing the TCB state machine without a real PTY).
+   * With the no-op stub the session record is created but no PTY runs
+   * (unit-testing the TCB state machine without a real PTY). S6 T28: a real
+   * spawner's handle is kept per session — its output lines land in the
+   * scrollback via recordScrollbackLine, and input writes, resize, and
+   * dispose reach the live PTY.
    *
    * Throws if the task does not exist.
    */
@@ -363,69 +395,78 @@ export class ProcessSandboxProvider implements SandboxProvider {
     request: TerminalRequest,
     _context: AdapterContext,
   ): Promise<PtySession> {
-    const task = this.tasks.get(computer.id);
+    const task = this.tasks.get(taskIdOf(computer));
     if (!task) {
       throw new Error(`connectTerminal: no task for computer ${computer.id}`);
     }
 
-    // Reconnect to existing session — replay scrollback
+    let record: PtySessionRecord;
     if (request.sessionId) {
+      // Reconnect to an existing session — never re-spawns the PTY.
       const existing = this.ptySessions.get(request.sessionId);
       if (!existing || existing.taskId !== task.taskId) {
         throw new Error(
           `connectTerminal: session ${request.sessionId} not found for task ${task.taskId}`,
         );
       }
-      return {
-        sessionId: existing.sessionId,
-        url: `ws://localhost/pty/${existing.sessionId}`,
-        scrollback: [...existing.scrollback],
-        cols: existing.cols,
-        rows: existing.rows,
-        resize: async (dim) => {
-          const updated = resizePtySession(existing, dim);
-          this.ptySessions.set(updated.sessionId, updated);
-        },
-        sendInput: async (input) => {
-          // TCB records input echo in scrollback; real PTY I/O goes through
-          // the injected spawner (to be wired in production). This placeholder
-          // ensures the TCB scrollback path is exercised in unit tests.
-          if (input.kind === "text") {
-            const rec = this.ptySessions.get(existing.sessionId);
-            if (rec) recordScrollbackLine(rec, `$ ${input.text}`);
-          }
-        },
-      };
+      record = existing;
+    } else {
+      record = createPtySessionRecord(task.taskId);
+      this.ptySessions.set(record.sessionId, record);
+      // Start the PTY process if a spawner is configured (node-pty or
+      // equivalent). A failed spawn leaves no half-registered session behind.
+      try {
+        const handle = await this.opts.ptySpawner?.(task.taskId, record.cols, record.rows);
+        if (handle) this.attachPtyHandle(record.sessionId, handle);
+      } catch (error) {
+        this.ptySessions.delete(record.sessionId);
+        throw error;
+      }
     }
+    return this.terminalSession(record);
+  }
 
-    // New session
-    const record = createPtySessionRecord(task.taskId);
-    this.ptySessions.set(record.sessionId, record);
+  /** Wire a live PTY handle's output into the session scrollback (S6 T28). */
+  private attachPtyHandle(sessionId: string, handle: PtyHandle): void {
+    this.ptyHandles.set(sessionId, handle);
+    handle.onData?.((line) => {
+      // Re-read on every line: resizePtySession replaces the map's record.
+      const rec = this.ptySessions.get(sessionId);
+      if (rec) recordScrollbackLine(rec, line);
+    });
+  }
 
-    // Start the PTY process if a spawner is configured (node-pty or equivalent)
-    await this.opts.ptySpawner?.(task.taskId, record.cols, record.rows);
-
+  /** Build the PtySession view of a record, wired to its live handle if any. */
+  private terminalSession(record: PtySessionRecord): PtySession {
+    const handle = this.ptyHandles.get(record.sessionId);
     return {
       sessionId: record.sessionId,
       url: `ws://localhost/pty/${record.sessionId}`,
-      scrollback: [],
+      scrollback: [...record.scrollback],
       cols: record.cols,
       rows: record.rows,
       resize: async (dim) => {
-        const updated = resizePtySession(record, dim);
+        const updated = resizePtySession(this.ptySessions.get(record.sessionId) ?? record, dim);
         this.ptySessions.set(updated.sessionId, updated);
+        handle?.resize?.(dim);
       },
       sendInput: async (input) => {
-        if (input.kind === "text") {
-          const rec = this.ptySessions.get(record.sessionId);
-          if (rec) recordScrollbackLine(rec, `$ ${input.text}`);
+        if (input.kind !== "text") return;
+        if (handle?.write) {
+          // A live PTY echoes input itself; recording here would double it.
+          handle.write(input.text);
+          return;
         }
+        // No live PTY wired (no-op stub): keep the TCB placeholder echo so
+        // the scrollback path stays exercised in unit tests.
+        const rec = this.ptySessions.get(record.sessionId);
+        if (rec) recordScrollbackLine(rec, `$ ${input.text}`);
       },
     };
   }
 
   private rootDir(): string {
-    return this.opts.root ?? path.join(process.cwd(), "data", "code-mode-tasks");
+    return processTaskRootDir(this.opts.root);
   }
 
   /**
@@ -902,9 +943,12 @@ export class ProcessSandboxProvider implements SandboxProvider {
     await this.suspend(computer);
     this.children.delete(task.taskId);
     this.taskPgids.delete(task.taskId);
-    // T28 V18: clean up PTY sessions for this task on destroy
+    // T28 V18: clean up PTY sessions for this task on destroy; a live handle
+    // (S6 T28) is disposed so the real PTY process dies with the session.
     for (const [sessionId, session] of this.ptySessions) {
       if (session.taskId === task.taskId) {
+        this.ptyHandles.get(sessionId)?.dispose();
+        this.ptyHandles.delete(sessionId);
         this.ptySessions.delete(sessionId);
       }
     }
