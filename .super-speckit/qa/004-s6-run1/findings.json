@@ -1,0 +1,149 @@
+{
+  "run": "004-s6-run1",
+  "feature": "004-code-mode",
+  "checker": "independent checker run1 (previous attempt lost evidence; this file was written incrementally during the run)",
+  "worktree": "/Users/poom-work/.super-speckit-worktrees/004-s6-run1",
+  "branch": "ss/qa/004-s6-run1",
+  "candidateHead": "924da3ba45a4ec4c4e74586f68b8a6fd24bccb78",
+  "status": "COMPLETE",
+  "startedAt": "2026-10-06",
+  "verdict": "READY",
+  "gates": {
+    "install_frozen_lockfile": {
+      "command": "corepack pnpm install --frozen-lockfile",
+      "exitCode": 0,
+      "output": "Scope: all 24 workspace projects; Lockfile is up to date; Already up to date. Done in 1.1s",
+      "lockfileImporterCheck": "node-pty complete in pnpm-lock.yaml: importer packages/adapters (specifier + version 1.2.0-beta.15, line ~658), package metadata with integrity (line ~7868), snapshot (line ~18363). Diff vs base adds exactly node-pty@1.2.0-beta.15 + node-addon-api@7.1.1 in all three sections. No truncation.",
+      "result": "PASS"
+    },
+    "db_generate_setup": {
+      "command": "corepack pnpm --filter @rakazo/db generate",
+      "exitCode": 0,
+      "output": "Generated Prisma Client (7.10.0) to ./src/generated/prisma",
+      "result": "PASS"
+    },
+    "typecheck": {
+      "command": "corepack pnpm check (turbo)",
+      "exitCode": 0,
+      "note": "Initial run 24/24 successful (22 cache-replayed; replay logs referenced the maker worktree path, normal for turbo). Forced uncached re-run: turbo run check --force -> exit 0, 24 successful / 24 total, 0 cached, 14.655s.",
+      "result": "PASS"
+    },
+    "three_new_test_files": {
+      "command": "corepack pnpm exec vitest run --root . packages/adapters/src/process-pty-wiring.test.ts packages/adapters/src/node-pty-spawner.test.ts packages/adapters/src/coding-idle-sweep.test.ts (from worktree root; vitest root config is at repo root)",
+      "exitCode": 0,
+      "numbers": "3 files passed, 17/17 tests passed, 0 skipped: process-pty-wiring 7/7, coding-idle-sweep 6/6, node-pty-spawner 4/4",
+      "realPtyRuntimeRow": "node-pty-spawner.test.ts ran its 4 real-PTY tests on this darwin host (344ms, real bash PTY via node-pty 1.2.0-beta.15 prebuild). The win32-only skip at node-pty-spawner.test.ts:21 did not trigger. Real-PTY runtime row for T28 satisfied locally.",
+      "result": "PASS"
+    },
+    "adapters_full_suite": {
+      "command": "corepack pnpm exec vitest run --root . packages/adapters",
+      "exitCode": 1,
+      "candidateSummary": "Test Files 6 failed | 194 passed | 5 skipped (205); Tests 19 failed | 2724 passed | 27 skipped (2770)",
+      "baselineRunAtBase": {
+        "commit": "0a39f8aca67f324a4db436ff63300166083c8656 (detached in this QA worktree, same install/db-generate/vitest invocation)",
+        "summary": "Test Files 6 failed | 191 passed | 5 skipped (202); Tests 19 failed | 2707 passed | 27 skipped (2753)"
+      },
+      "failSetDiff": "git-style diff of the 19 FAIL lines base vs candidate: EMPTY (identical sets). Delta between runs: +3 passed files (the 3 new files), +17 passed tests, 0 new failures.",
+      "makerCountDiscrepancy": "Maker recorded 18 failed / 2 skipped; I measured 19 failed / 27 skipped at BOTH base and candidate. The one-test difference is fully explained by the maker's own flakiness note (process-sandbox T12 settle test, timing-sensitive: passed in their full-suite run, failed in mine, at both commits). Skip-count difference is invocation/env-dependent, identical base vs candidate. Substance of the claim (zero new failures) VERIFIED by direct base-run adjudication.",
+      "failedFiles": {
+        "coding-omp-protocol.test.ts": 5,
+        "process-sandbox-secrets.test.ts": 3,
+        "coding-secrets-flow.test.ts": 1,
+        "coding-doctor.test.ts": 1,
+        "process-collision-matrix.test.ts": 2,
+        "process-sandbox.test.ts": 7
+      },
+      "result": "PASS (exit 1 expected from the pre-existing environmental failures; zero new failures proven against a directly measured base run)"
+    },
+    "api_suite": {
+      "command": "corepack pnpm exec vitest run --root . apps/api (package @rakazo/api lives at apps/api; 'packages/api' filter finds no test files)",
+      "exitCode": 0,
+      "numbers": "Test Files 39 passed | 1 skipped (40); Tests 611 passed | 1 skipped (612)",
+      "result": "PASS"
+    }
+  },
+  "claims": {
+    "claim1_sandbox_factory_and_lazy_import": {
+      "status": "VERIFIED",
+      "evidence": [
+        "packages/adapters/src/sandbox-factory.ts:104-107 — SANDBOX_PROVIDER=process branch returns ProcessSandboxProvider({ root: opts.dataDir, ptySpawner: createNodePtySpawner({ root: opts.dataDir }) })",
+        "Tests construct ProcessSandboxProvider directly; constructor default opts = {} = no-op spawner (packages/adapters/src/process-sandbox.ts:360), so test default unchanged",
+        "Grep over packages/ apps/ for node-pty: only import type { IPty } (node-pty-spawner.ts:19, type-only, erased) and await import(\"node-pty\") (node-pty-spawner.ts:32, inside the spawner closure). No static import of node-pty anywhere.",
+        "packages/adapters/package.json pins node-pty 1.2.0-beta.15 exact; lockfile importer/snapshot complete (see gate install_frozen_lockfile)"
+      ]
+    },
+    "claim2_t28_behavior": {
+      "status": "VERIFIED",
+      "evidence": [
+        "connectTerminal captures the spawner handle: process-sandbox.ts:419-420 (handle = await this.opts.ptySpawner?.(task.taskId, record.cols, record.rows); attachPtyHandle)",
+        "Output to scrollback: attachPtyHandle (process-sandbox.ts:430-437) registers handle.onData and re-reads the record from the map per line (resizePtySession replaces map entries), feeding recordScrollbackLine",
+        "write/resize/dispose wired: terminalSession (process-sandbox.ts:440-466) — sendInput -> handle.write (skipping the placeholder echo only when a live write exists), resize -> handle.resize + record update, destroy -> handle.dispose() + handle/record cleanup (process-sandbox.ts:948-952)",
+        "Failed spawn: process-sandbox.ts:418-424 — record deleted before rethrow (no half-registered session); taskIdOf resolution at :398 fixes the task lookup (base used computer.id, base line 366)",
+        "Test coverage: process-pty-wiring.test.ts (7, fake handle, behavioral) + node-pty-spawner.test.ts (4, real PTY, win32-skip only) — 11/11 green in my run"
+      ],
+      "minorNote": "The failed-spawn test asserts refusal + provider operability but not directly that the failed sessionId is absent from ptySessions (the id is never returned to the caller, so the leak would be memory-only). Source-level deletion confirmed at process-sandbox.ts:422. Non-blocking."
+    },
+    "claim3_t30_idle_sweep": {
+      "status": "VERIFIED",
+      "evidence": [
+        "reconcileIdleCodingSessions: packages/adapters/src/job-reconciler.ts:382-408 — enumerates codingSession.findMany({ status: \"active\" }), per-session checkIdle via createSessionServiceDeps, computer via session.botId -> bot.findUnique(computerId), then sleepComputerIfIdle(deps, bot.computerId)",
+        "Skip paths: checkIdle false (:396), !session.botId (:397), !bot?.computerId (:402); checkIdle's own guards at coding-session-service.ts:666 (not active), 668-680 (active run via latestRunId -> run.findFirst status not cancelled/completed/failed), 684 (no lastActivityAt)",
+        "Per-session failures logged and non-fatal: job-reconciler.ts:404-406 (getLogger().error(\"idle coding-session sweep\", error), loop continues)",
+        "Aux block: job-reconciler.ts:126-136 — reconcileIdleCodingSessions runs in the existing Promise.allSettled with reconcileCloudAgents/reconcileComputerUpdates; optional dep declared at :108; rejections logged at :133-136",
+        "Composition roots wired: apps/worker/src/index.ts:43 + 326-327; apps/api/src/app.ts:62 + 471-472 — both pass { prisma, sandbox, home, jobs, events }",
+        "run.continue gating UNCHANGED: git diff 0a39f8ac..HEAD -- packages/adapters/src/background-job-handlers.ts is EMPTY (deadline/budget/activity gating untouched)",
+        "T38 mapping parity: background-job-handlers.ts:225-226 calls sleepComputerIfIdle(deps, payload.computerId) — identical shape; sleepComputerIfIdle additionally guards state===\"running\" (computer-idle.ts:197)"
+      ]
+    },
+    "claim4_test_evidence": {
+      "status": "VERIFIED_WITH_CORRECTION",
+      "correction": "Maker's recorded counts (18 failed / 2 skipped) do not match my measured counts (19 failed / 27 skipped), but I ran the BASE myself under identical conditions: the failing set is identical base vs candidate (19 tests; diff empty). The one-test delta vs the maker's count is their own documented flaky T12 settle test; the 27-vs-2 skip delta is invocation-dependent and identical at both commits. Substantive claim (17 new tests pass, zero new failures) holds.",
+      "numbers": "Candidate: 19 failed | 2724 passed | 27 skipped (2770). Base: 19 failed | 2707 passed | 27 skipped (2753). +17 passed, 0 new failures. apps/api: 611 passed | 1 skipped (612), exit 0 — matches maker exactly."
+    },
+    "claim5_diff_scope": {
+      "status": "VERIFIED",
+      "evidence": "git diff 0a39f8ac..HEAD --stat: 14 files — .super-speckit/qa/004-s6-wiring/maker/{EVIDENCE.md,tdd-log.md}, apps/api/src/app.ts (+4), apps/worker/src/index.ts (+4), packages/adapters/package.json (+1), packages/adapters/src/{coding-idle-sweep,node-pty-spawner,process-pty-wiring}.test.ts (new), job-reconciler.ts (+58/-?), node-pty-spawner.ts (new), process-sandbox.ts, sandbox-factory.ts, pnpm-lock.yaml (+15), specs/004-code-mode/tasks.md. Scoped diff for '**/schema.prisma migrations infra .github auth': EMPTY. Only files the maker listed."
+    },
+    "claim6_honest_declarations": {
+      "inMemorySessions": {
+        "status": "VERIFIED",
+        "evidence": "ptySessions and ptyHandles are plain in-memory Maps (process-sandbox.ts:348, 354); no persistence layer touches them; spec update states 'sessions stay in-memory' (specs/004-code-mode/tasks.md T28 entry). describe() capabilities claim pty: true and persistentHome: true (home, not sessions) — no code pretends restart persistence."
+      },
+      "preExistingGap": {
+        "status": "VERIFIED_AT_BASE",
+        "evidence": [
+          "Base connectTerminal resolved tasks with this.tasks.get(computer.id) (git show 0a39f8ac:packages/adapters/src/process-sandbox.ts line 366); candidate uses taskIdOf(computer) (line 398)",
+          "Base router terminalUrl passed toComputerRef(computer) (base router.ts:3126 area, unchanged in candidate) whose id is the DB providerRef",
+          "For process computers providerRef is the workspace dir PATH (process-sandbox.ts:503-506: ref id = 'process-<taskId>', providerRef = workspaceDir), so a DB-derived ref never matches the tasks map — at base (computer.id) AND at candidate (taskIdOf of a path without the 'process-' prefix returns the path)",
+          "apps/api/src/router.ts is NOT in the diff — S6 neither introduced nor fixed the gap. Confirmed."
+        ]
+      }
+    }
+  },
+  "exploratory": {
+    "productionPathOfflineSmoke": {
+      "result": "COVERED — node-pty-spawner.test.ts test 4 ran green locally: createSandboxProvider('process', { dataDir: tmp }) -> createTaskContext -> connectTerminal -> sendInput('echo factory-s6-$((20+22))') -> reconnect scrollback contains 'factory-s6-42' with a REAL bash PTY. This is the factory production path, offline, deterministic."
+    },
+    "idleSweepNoComputer": {
+      "result": "VERIFIED — sweep skips when bot.computerId is null (job-reconciler.ts:402; coding-idle-sweep.test.ts test 2 asserts sleepComputerIfIdle not called). Additional safety: sleepComputerIfIdle itself returns early unless the computer exists, has providerRef, and state===\"running\" (computer-idle.ts:196-197)."
+    },
+    "sweepNeverSleepsActiveRun": {
+      "result": "VERIFIED — the sweep only sleeps after checkIdle returns true, and checkIdle returns false when latestRunId references a run not in cancelled/completed/failed (coding-session-service.ts:668-680); coding-idle-sweep.test.ts test 3 exercises this guard end-to-end through the mocked prisma."
+    },
+    "unhandledRejectionPaths": {
+      "result": "NONE FOUND — aux block uses Promise.allSettled (job-reconciler.ts:126-136, cannot reject); per-session try/catch (:404-406); the only awaits outside the per-session try are codingSession.findMany (:389) and createSessionServiceDeps (:393), whose rejection is captured by allSettled and logged 'auxiliary reconciliation'; outer reconcileSafely also catches (:349-353); stop() awaits reconciling with catch (:366). No path leaves an unhandled rejection."
+    },
+    "newFinding_productionReachability": {
+      "severity": "INFORMATIONAL (pre-existing, out of S6 scope, affects how V18 value lands)",
+      "finding": "T28's production injection is currently LATENT: the only production caller of SandboxProvider.connectTerminal is the router terminalUrl handler (apps/api/src/router.ts:3125-3127), and it null-gates process computers before reaching the provider — computerSupportsTerminal(kind) admits only docker/e2b/daytona/box/fake (packages/adapters/src/computer-lifecycle.ts:587-591), checked at router.ts:3113. So even after fixing the declared id-resolution gap, terminalUrl returns { url: null } for process computers. The wiring is proven at the adapter boundary (factory -> provider -> real PTY), but no production surface routes a process computer into it yet. Exposing it requires BOTH the kind-gate decision and the taskIdOf/providerRef resolution fix — a later lane."
+    },
+    "minorNote_failedSpawnAssertion": {
+      "severity": "INFORMATIONAL",
+      "finding": "process-pty-wiring.test.ts's failed-spawn test asserts the refusal and that the provider stays operable, but does not directly assert the failed sessionId is absent from the session registry (the id is never returned to the caller, so worst case is a memory leak). Source deletes the record before rethrow (process-sandbox.ts:421-423)."
+    }
+  },
+  "flaky": [
+    "packages/adapters/src/process-sandbox.test.ts > an aborted in-flight command settles with a bounded wait and a recorded exit (T12 wiring) — timing-sensitive on this host; failed in my full-suite runs at BOTH base and candidate (maker observed it pass in their full-suite run and fail in small batches). Not caused by S6; included in the identical base/candidate fail set."
+  ],
+  "notes": "Baseline adjudication performed by detaching this QA worktree at base 0a39f8ac, running the identical suite, and returning to ss/qa/004-s6-run1 (worktree verified back at candidate 924da3ba before artifact commit)."
+}

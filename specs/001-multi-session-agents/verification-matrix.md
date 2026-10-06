@@ -5,13 +5,13 @@ Grill evidence: .super-speckit/grills/001-multi-session-agents/spec-grill.md
 
 | # | Requirement (spec ref) | Verification | Evidence expected | Slice |
 | --- | --- | --- | --- | --- |
-| V1 | R1 create/list sessions | API test: create 2 named sessions for one bot; list returns both, ordered lastMessageAt desc nulls last, createdAt desc (tie + empty-session cases) | vitest assertion output | S1/S2 |
-| V2 | R2 independent history/serialization | API test: message session A and B alternately; separate message lists; both accept runs while busy-guard filters per thread | vitest | S1 |
-| V3 | R2 computer lease exception | Existing computer-lifecycle tests still pass (per-bot serialization untouched) | vitest suite pass | S1 |
-| V4 | R6 lossless migration | Integration test: DB with existing bot thread → migrate → thread is primary, messages intact, bot DTO threadId unchanged; partial unique index `(botId) WHERE is_primary` exists; migration re-run idempotent | test-integration | S1 |
-| V5 | R5 messaging regression | API test: inbound DM lands on primary session; peer DM delivery unchanged | vitest | S1 |
-| V6 | R3 switch/rename/delete | E2E web: switch sessions, rename, delete non-primary, last-session guard | Playwright spec | S2 |
-| V7 | R4 compaction-aware resume | E2E web: history (summary + tail) intact after reload; mobile test asserts session list renders (or recorded degradation) | Playwright + mobile test | S2/S3 |
+| V1 | REQ-R1 create/list sessions | API test: create 2 named sessions for one bot; list returns both, ordered lastMessageAt desc nulls last, createdAt desc (tie + empty-session cases) | vitest assertion output | S1/S2 |
+| V2 | REQ-R2 independent history/serialization | API test: message session A and B alternately; separate message lists; both accept runs while busy-guard filters per thread | vitest | S1 |
+| V3 | REQ-R2 computer lease exception | Existing computer-lifecycle tests still pass (per-bot serialization untouched) | vitest suite pass | S1 |
+| V4 | REQ-R6 lossless migration | Integration test: DB with existing bot thread → migrate → thread is primary, messages intact, bot DTO threadId unchanged; partial unique index `(botId) WHERE is_primary` exists; migration re-run idempotent | test-integration | S1 |
+| V5 | REQ-R5 messaging regression | API test: inbound DM lands on primary session; peer DM delivery unchanged | vitest | S1 |
+| V6 | REQ-R3 switch/rename/delete | E2E web: switch sessions, rename, delete non-primary, last-session guard | Playwright spec | S2 |
+| V7 | REQ-R4 compaction-aware resume | E2E web: history (summary + tail) intact after reload; mobile test asserts session list renders (or recorded degradation) | Playwright + mobile test | S2/S3 |
 | V8 | Legacy compatibility | Existing router/web e2e suites pass unmodified (botId-only inputs land on primary) | CI suites | S1-S3 |
 | V9 | Addressing (grill #1) | API test: threads/send + threads/get with explicit non-primary threadId; botId-only resolves to primary | vitest | S1 |
 | V10 | Legacy pinning (grill #3) | Grep gate over `packages/` + `apps/`: zero unscoped `thread.findFirst(`, `thread.findUniqueOrThrow(`, or `thread.findFirstOrThrow(` where-clauses keyed on `botId` alone — every botId-only thread lookup must carry `isPrimary: true` (id-/groupId-scoped lookups exempt); all 7 product sites pinned via `PRIMARY_SESSION_ORDER` or `isPrimary: true`; CI grep + vitest | CI grep + vitest | S1 |
