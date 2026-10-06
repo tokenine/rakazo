@@ -59,6 +59,7 @@ import {
   pushTokenPath,
   reconcileCloudAgents,
   reconcileComputerUpdates,
+  reconcileIdleCodingSessions,
   removePiUserSessions,
   ScriptedAgentRuntime,
   SmtpEmailProvider,
@@ -466,6 +467,9 @@ export async function createApp(
         jobs,
         reconcileCloudAgents: () => reconcileCloudAgents({ prisma, jobs, cloudAgent }),
         reconcileComputerUpdates: () => reconcileComputerUpdates({ prisma, jobs }),
+        // S6 T30: idle coding sessions route through the computer sleep contract.
+        reconcileIdleCodingSessions: () =>
+          reconcileIdleCodingSessions({ prisma, sandbox, home, jobs, events }),
       })
     : undefined;
   reconciler?.start();

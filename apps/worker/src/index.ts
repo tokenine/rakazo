@@ -40,6 +40,7 @@ import {
   pipedreamConfigFromEnv,
   reconcileCloudAgents,
   reconcileComputerUpdates,
+  reconcileIdleCodingSessions,
   reconcileTelegramUserBots,
   resolveDeploymentModel,
   resolvePiSessionRoot,
@@ -321,6 +322,9 @@ async function main() {
     leadership: createPostgresReconciliationLeadership(pool),
     reconcileCloudAgents: () => reconcileCloudAgents({ prisma, jobs, cloudAgent }),
     reconcileComputerUpdates: () => reconcileComputerUpdates({ prisma, jobs }),
+    // S6 T30: idle coding sessions route through the computer sleep contract.
+    reconcileIdleCodingSessions: () =>
+      reconcileIdleCodingSessions({ prisma, sandbox, home, jobs, events }),
   });
   reconciler.start();
 

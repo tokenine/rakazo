@@ -11,6 +11,7 @@ import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { ManagedSandboxEmulator } from "./e2b-emulator.js";
 import { E2BSandboxProvider } from "./e2b-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
+import { createNodePtySpawner } from "./node-pty-spawner.js";
 import { NoneSandboxProvider } from "./none-sandbox.js";
 import { ProcessSandboxProvider } from "./process-sandbox.js";
 
@@ -96,7 +97,14 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
     case "process":
       // 004-code-mode T9: per-task process-level runtime (Q9 FINAL, trusted-code
       // threat model — guards accidents/resource conflicts, NOT malice).
-      return new ProcessSandboxProvider({ root: opts.dataDir });
+      // S6 T28: the production path gets the real node-pty spawner (loaded
+      // lazily inside the spawner, so constructing this provider never loads
+      // the native binary); tests construct ProcessSandboxProvider directly
+      // and keep the no-op default.
+      return new ProcessSandboxProvider({
+        root: opts.dataDir,
+        ptySpawner: createNodePtySpawner({ root: opts.dataDir }),
+      });
     case "fake":
       return new FakeSandboxProvider();
     default:

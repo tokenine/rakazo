@@ -117,14 +117,16 @@ else (R10 as decided under Option B).
       replace + truthful needs-restart report (service liveness vs definition) — V17 ✓ GREEN
 - [x] T28 (P2) Reconnectable terminals: adapter-kit pty extension (session identity, resize/
       replay, attach — interfaces.ts:102-106, types.ts:73-76 today are fire-once); TCB added to
-      ProcessSandboxProvider (819d0d74); ptySpawner NOT WIRED (no-op stub — node-pty injection
-      required in production) — V18 ✓ GREEN (PARTIAL: real PTY spawn pending production injection)
+      ProcessSandboxProvider (819d0d74); ptySpawner WIRED in production (S6: node-pty spawner
+      lazily loaded + injected at the factory, 813c5127 + 55464743; sessions stay in-memory) —
+      V18 ✓ GREEN
 - [x] T29 (P2) Authenticated previews: private by default; explicit revocable sharing;
       sharing ≠ deploy — V7 ✓ GREEN
 - [x] T30 (P3) Budgets/idle (Q6): proposed defaults (idle threshold, budget units, deadlines)
       presented to user at slice review before hardcoding; checkDeadline + checkBudget wired into
-      run.continue (819d0d74); checkIdle NOT WIRED (needs computerId in run.continue context) —
-      V19 ✓ GREEN (PARTIAL: idle suspend needs computerId threading)
+      run.continue (819d0d74); checkIdle WIRED (S6: idle sweep in the periodic job reconciler
+      routes idle sessions' computers through sleepComputerIfIdle via the T38 bot→computer
+      mapping, 06eb0bb0; run.continue gating untouched) — V19 ✓ GREEN
 - [x] T31 (P3) CLI package (new; apps/ has none today) — attach to server-owned session — V20 ✓ GREEN
 - [x] T32 (P3) Mobile workflow enumeration (Q8): fixed list in this task before mobile work — V21
 - [x] T33 (P1) Matrix closure + release summary: every row verified/not-verified/
