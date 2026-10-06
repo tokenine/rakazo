@@ -69,7 +69,13 @@ test("switch sessions, rename, delete, and keep botId-only legacy routing", asyn
   await sessionRow(page, "Deep research").hover();
   await sessionRow(page, "Deep research").getByTestId("session-delete-trigger").click();
   await sessionRow(page, "Deep research").getByTestId("session-delete-confirm").click();
-  await expect(page.getByTestId("session-switcher-row")).toHaveCount(1);
+  // The popover may close once the delete lands (union popover behavior); reopen it
+  // in that case so the remaining-row assertion inspects an open switcher.
+  const rows = page.getByTestId("session-switcher-row");
+  if ((await rows.count()) === 0) {
+    await switcherTrigger(page).click();
+  }
+  await expect(rows).toHaveCount(1);
   await expect(page).toHaveURL(new RegExp(`/app/${botId}$`));
 
   // The last remaining session cannot be deleted (grill #6).
