@@ -386,6 +386,106 @@ describe("google tool execution", () => {
     expect(data?.link).toContain("drive.google.com");
   });
 
+  it("uploads into a folder via folder_id and surfaces a hidden-folder error", async () => {
+    const prisma = fakePrisma([
+      row({ provider: "googledrive", secretId: "google-connection:conn-1" }),
+    ]);
+    prisma.secrets.set(
+      "google-connection:conn-1",
+      `enc:${JSON.stringify({ access_token: "access-token", expires_at: Date.now() + 3600_000 })}`,
+    );
+    const upload = async (fetchImpl: unknown, args: Record<string, unknown>) => {
+      const provider = connector(prisma, fetchImpl);
+      const events = [];
+      for await (const event of provider.execute(
+        {
+          tool: "gdrive_upload_file",
+          args,
+          executionId: "e1",
+          route: {
+            connectorId: "google",
+            resourceId: "googledrive",
+            toolName: "gdrive_upload_file",
+          },
+        },
+        CONTEXT,
+      )) {
+        events.push(event);
+      }
+      return events;
+    };
+
+    const fetch = vi.fn().mockResolvedValue(jsonResponse({ id: "f2", name: "n.md" }));
+    await upload(fetch, { name: "n.md", content: "x", folder_id: "fold-1" });
+    const uploadCall = fetch.mock.calls.find(([url]) => String(url).includes("upload"));
+    expect(uploadCall).toBeDefined();
+    const uploadBody = new TextDecoder().decode((uploadCall![1] as RequestInit).body as Uint8Array);
+    expect(uploadBody).toContain('"parents":["fold-1"]');
+
+    // Google's real 404 body is JSON; drive.file hides foreign folders behind it.
+    const failing = connector(
+      prisma,
+      vi.fn().mockResolvedValue(jsonResponse({ error: { message: "File not found: gone." } }, 404)),
+    );
+    const events = [];
+    for await (const event of failing.execute(
+      {
+        tool: "gdrive_upload_file",
+        args: { name: "n.md", content: "x", folder_id: "gone" },
+        executionId: "e2",
+        route: {
+          connectorId: "google",
+          resourceId: "googledrive",
+          toolName: "gdrive_upload_file",
+        },
+      },
+      CONTEXT,
+    )) {
+      events.push(event);
+    }
+    const errorEvent = events.find((event) => (event as { type?: string }).type === "error") as
+      | { message?: string }
+      | undefined;
+    expect(errorEvent?.message).toContain("not visible to this app");
+  });
+
+  it("creates a Drive folder with the folder mimeType", async () => {
+    const prisma = fakePrisma([
+      row({ provider: "googledrive", secretId: "google-connection:conn-1" }),
+    ]);
+    prisma.secrets.set(
+      "google-connection:conn-1",
+      `enc:${JSON.stringify({ access_token: "access-token", expires_at: Date.now() + 3600_000 })}`,
+    );
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ id: "fold-9", name: "ai7", webViewLink: "https://l.test" }),
+      );
+    const provider = connector(prisma, fetch);
+    const events = [];
+    for await (const event of provider.execute(
+      {
+        tool: "gdrive_create_folder",
+        args: { name: "ai7" },
+        executionId: "e4",
+        route: {
+          connectorId: "google",
+          resourceId: "googledrive",
+          toolName: "gdrive_create_folder",
+        },
+      },
+      CONTEXT,
+    )) {
+      events.push(event);
+    }
+    const [, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(String(init.body)).toContain("application/vnd.google-apps.folder");
+    const data = (events[0] as { data?: { created?: boolean; id?: string } }).data;
+    expect(data?.created).toBe(true);
+    expect(data?.id).toBe("fold-9");
+  });
+
   it("creates calendar events on the primary calendar", async () => {
     const prisma = fakePrisma([
       row({ provider: "googlecalendar", secretId: "google-connection:conn-1" }),

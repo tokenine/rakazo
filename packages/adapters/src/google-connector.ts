@@ -664,6 +664,11 @@ function googleToolsFor(slug: string): ConnectorTool[] {
               type: "string",
               description: "MIME type. Default text/plain; charset=utf-8.",
             },
+            folder_id: {
+              type: "string",
+              description:
+                "Optional destination folder id from gdrive_create_folder (or gdrive_list_files with folders).",
+            },
           },
           required: ["name"],
           additionalProperties: false,
@@ -672,13 +677,36 @@ function googleToolsFor(slug: string): ConnectorTool[] {
         route: { ...route, toolName: "gdrive_upload_file" },
       },
       {
+        name: "gdrive_create_folder",
+        description:
+          "Create a folder in Google Drive. Upload into it with gdrive_upload_file's folder_id.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Folder name, e.g. ai7" },
+            parent_id: {
+              type: "string",
+              description: "Optional parent folder id (omit to create at the Drive root).",
+            },
+          },
+          required: ["name"],
+          additionalProperties: false,
+        },
+        readOnly: false,
+        route: { ...route, toolName: "gdrive_create_folder" },
+      },
+      {
         name: "gdrive_list_files",
         description:
-          "List files this app created in Google Drive (drive.file scope cannot list the rest of the drive).",
+          "List files and folders this app created in Google Drive (drive.file scope cannot list the rest of the drive).",
         inputSchema: {
           type: "object",
           properties: {
             name_contains: { type: "string", description: "Filter by file name substring." },
+            folder_id: {
+              type: "string",
+              description: "Only list direct children of this folder id.",
+            },
             page_size: { type: "number", description: "1-50. Default 20." },
           },
           additionalProperties: false,
@@ -987,7 +1015,11 @@ async function driveExecute(
       );
     }
     const boundary = `rakazo-${randomBytes(12).toString("hex")}`;
-    const metadata = JSON.stringify({ name });
+    const folderId = typeof args.folder_id === "string" ? args.folder_id.trim() : "";
+    const metadata = JSON.stringify({
+      name,
+      ...(folderId ? { parents: [folderId] } : {}),
+    });
     const body = Buffer.concat([
       Buffer.from(
         `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n` +
@@ -996,20 +1028,52 @@ async function driveExecute(
       content,
       Buffer.from(`\r\n--${boundary}--`),
     ]);
-    const created = (await fetchJson(
-      `${DRIVE_UPLOAD_API}/files?uploadType=multipart&fields=id,name,webViewLink`,
-      {
-        method: "POST",
-        headers: { "content-type": `multipart/related; boundary=${boundary}` },
-        body: new Uint8Array(body),
-      },
-    )) as { id?: string; name?: string; webViewLink?: string };
+    let created: { id?: string; name?: string; webViewLink?: string };
+    try {
+      created = (await fetchJson(
+        `${DRIVE_UPLOAD_API}/files?uploadType=multipart&fields=id,name,webViewLink`,
+        {
+          method: "POST",
+          headers: { "content-type": `multipart/related; boundary=${boundary}` },
+          body: new Uint8Array(body),
+        },
+      )) as { id?: string; name?: string; webViewLink?: string };
+    } catch (error) {
+      // drive.file: a parent the app cannot see (not app-created) surfaces as a 404.
+      if (folderId && String((error as Error).message).includes("404")) {
+        throw new Error(
+          `folder_id ${folderId} is not visible to this app — drive.file only sees folders this app created (check gdrive_list_files)`,
+        );
+      }
+      throw error;
+    }
     return {
       uploaded: true,
       id: created.id ?? null,
       name: created.name ?? name,
       link: created.webViewLink ?? null,
       bytes: content.byteLength,
+      ...(folderId ? { folder_id: folderId } : {}),
+    };
+  }
+  if (toolName === "gdrive_create_folder") {
+    const name = String(args.name ?? "").trim();
+    if (!name) throw new Error("name is required");
+    const parentId = typeof args.parent_id === "string" ? args.parent_id.trim() : "";
+    const folder = (await fetchJson(`${DRIVE_API}/files?fields=id,name,webViewLink`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name,
+        mimeType: "application/vnd.google-apps.folder",
+        ...(parentId ? { parents: [parentId] } : {}),
+      }),
+    })) as { id?: string; name?: string; webViewLink?: string };
+    return {
+      created: true,
+      id: folder.id ?? null,
+      name: folder.name ?? name,
+      link: folder.webViewLink ?? null,
     };
   }
   if (toolName === "gdrive_list_files") {
@@ -1018,6 +1082,10 @@ async function driveExecute(
     const contains = typeof args.name_contains === "string" ? args.name_contains.trim() : "";
     if (contains) {
       filters.push(`name contains '${contains.replace(/['\\]/g, "\\$&")}'`);
+    }
+    const folderId = typeof args.folder_id === "string" ? args.folder_id.trim() : "";
+    if (folderId) {
+      filters.push(`'${folderId.replace(/['\\]/g, "\\$&")}' in parents`);
     }
     const params = new URLSearchParams({
       q: filters.join(" and "),
