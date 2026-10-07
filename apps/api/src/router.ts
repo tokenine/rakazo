@@ -4165,10 +4165,10 @@ export function createRouter(deps: RouterDeps) {
         }));
       }),
       begin: authed.connections.begin.handler(async ({ context, input }) => {
+        const managedId = IntegrationProviderIdSchema.safeParse(input.connectorId);
         const connector =
-          deps.integrationSettings &&
-          (input.connectorId === "composio" || input.connectorId === "pipedream")
-            ? await deps.integrationSettings.resolve(input.connectorId)
+          deps.integrationSettings && managedId.success
+            ? await deps.integrationSettings.resolve(managedId.data)
             : deps.connectors.managed(input.connectorId);
         if (!connector) {
           throw new ORPCError("BAD_REQUEST", {

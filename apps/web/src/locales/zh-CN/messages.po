@@ -2237,6 +2237,10 @@ msgstr "导入 OpenAPI JSON"
 msgid "Imported {0} cookies · {1} sites of local storage."
 msgstr ""
 
+#: src/components/integrations/IntegrationSetup.tsx
+msgid "In your Google Cloud OAuth client, add this authorized redirect URI:"
+msgstr ""
+
 #: src/pages/shell/message-cards.tsx
 msgid "Inbox & email"
 msgstr "收件箱和邮件"

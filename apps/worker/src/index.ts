@@ -20,11 +20,13 @@ import {
   databaseCapacityBackoffMs,
   EncryptedSecretStore,
   ExpoPushProvider,
+  GoogleConnector,
   GraphileJobPublisher,
   GraphileJobWorkerHost,
   InMemoryJobQueue,
   InstalledConnectorProvider,
   isComposioEnabled,
+  isGoogleEnabled,
   isPipedreamEnabled,
   LocalAgentHomeStore,
   LocalArtifactStore,
@@ -120,6 +122,15 @@ async function main() {
   const pipedream = isPipedreamEnabled(pipedreamConfig)
     ? new PipedreamConnector(pipedreamConfig)
     : undefined;
+  // Tools execute in THIS process: without the google fallback here, a Google
+  // connection's tools would show in the UI but never surface during a run.
+  const googleConfig = {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  };
+  const google = isGoogleEnabled(googleConfig)
+    ? new GoogleConnector(googleConfig, { prisma, secrets })
+    : undefined;
   // pollInboundMessages stays false (the default) here: this process
   // only ever sends outbound (messaging.deliver jobs). It must never poll
   // Telegram — that would steal the single getUpdates slot away from the
@@ -149,6 +160,7 @@ async function main() {
         ? new ComposioConnector(process.env.COMPOSIO_API_KEY)
         : undefined,
       pipedream,
+      google,
     },
   );
   const stack = createConnectorStack(false, undefined, [
