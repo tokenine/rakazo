@@ -153,6 +153,82 @@ describe("openai-codex API key guard", () => {
   });
 });
 
+describe("Ai7 house provider", () => {
+  const row = {
+    id: "cred-ai7",
+    provider: "ai7",
+    label: "Ai7",
+    isDefault: true,
+    defaultModel: "basic",
+  };
+
+  it("stores a fixed-endpoint openai_compatible secret with the given key", () => {
+    const plaintext = buildModelConnectPlaintext({
+      provider: "ai7",
+      apiKey: "ai7-secret-key",
+      modelId: "basic",
+    });
+    expect(parseModelSecret(plaintext)).toEqual({
+      kind: "openai_compatible",
+      baseUrl: "https://api.ai7.work/v1",
+      apiKey: "ai7-secret-key",
+    });
+  });
+
+  it("ignores client-supplied endpoint and model id (both are fixed)", () => {
+    const plaintext = buildModelConnectPlaintext({
+      provider: "ai7",
+      apiKey: "ai7-secret-key",
+      baseUrl: "http://localhost:9/v1",
+      modelId: "anything-else",
+    });
+    expect(parseModelSecret(plaintext)).toMatchObject({
+      baseUrl: "https://api.ai7.work/v1",
+    });
+  });
+
+  it("rejects a connect without a usable key", () => {
+    expect(() => buildModelConnectPlaintext({ provider: "ai7", modelId: "basic" })).toThrow(
+      /API key/,
+    );
+    expect(() =>
+      buildModelConnectPlaintext({ provider: "ai7", apiKey: "short", modelId: "basic" }),
+    ).toThrow(/API key/);
+  });
+
+  it("inherits the previous key on a limit-only update", () => {
+    const previous = buildModelConnectPlaintext({
+      provider: "ai7",
+      apiKey: "ai7-secret-key",
+      maxTokens: 8192,
+    });
+    const updated = buildModelConnectPlaintext({ provider: "ai7", maxTokens: 16384 }, previous);
+    expect(parseModelSecret(updated)).toMatchObject({
+      apiKey: "ai7-secret-key",
+      baseUrl: "https://api.ai7.work/v1",
+      maxTokens: 16384,
+    });
+  });
+
+  it("does not inherit a key from a different openai-compatible endpoint", () => {
+    const previous = serializeModelSecret({
+      kind: "openai_compatible",
+      baseUrl: "http://localhost:8000/v1",
+      apiKey: "local-key",
+    });
+    expect(() =>
+      buildModelConnectPlaintext({ provider: "ai7", modelId: "basic" }, previous),
+    ).toThrow(/API key/);
+  });
+
+  it("hides the secret in the credential DTO", () => {
+    const plaintext = buildModelConnectPlaintext({ provider: "ai7", apiKey: "ai7-secret-key" });
+    const dto = modelCredentialDto(row, plaintext);
+    expect(dto).toMatchObject({ provider: "ai7", modelId: "basic", hasKey: true });
+    expect(JSON.stringify(dto)).not.toContain("ai7-secret-key");
+  });
+});
+
 describe("modelCredentialDto", () => {
   it("returns stored baseUrl and modelId for openai-compatible credentials", () => {
     const plaintext = serializeModelSecret({

@@ -1019,6 +1019,14 @@ export type ModelCredential = z.infer<typeof ModelCredentialSchema>;
 
 export const OPENAI_COMPATIBLE_PROVIDER_ID = "openai-compatible";
 
+/** House provider: fixed OpenAI-compatible gateway, one fixed model, key-only setup. */
+export const AI7_PROVIDER_ID = "ai7";
+export const AI7_BASE_URL = "https://api.ai7.work/v1";
+export const AI7_MODEL_ID = "basic";
+
+/** The two providers the model settings UI offers. */
+export const UI_MODEL_PROVIDER_IDS = [AI7_PROVIDER_ID, OPENAI_COMPATIBLE_PROVIDER_ID];
+
 export const ModelConnectInputSchema = z
   .object({
     provider: z.string(),
@@ -1058,6 +1066,24 @@ export const ModelConnectInputSchema = z
           code: "custom",
           message: "Model id is required for OpenAI-compatible models",
           path: ["modelId"],
+        });
+      }
+      return;
+    }
+    if (value.provider === AI7_PROVIDER_ID) {
+      if (value.modelId !== undefined && value.modelId.trim() !== AI7_MODEL_ID) {
+        ctx.addIssue({
+          code: "custom",
+          message: `The Ai7 model id is fixed to ${AI7_MODEL_ID}`,
+          path: ["modelId"],
+        });
+      }
+      const apiKey = value.apiKey?.trim() ?? "";
+      if (apiKey.length < 8) {
+        ctx.addIssue({
+          code: "custom",
+          message: "API key must contain at least 8 characters",
+          path: ["apiKey"],
         });
       }
       return;

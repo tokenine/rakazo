@@ -29,7 +29,7 @@ test("local settings open and save integrations without an app session", async (
             json = [
               {
                 provider: "openai-compatible",
-                providerName: "OpenAI-compatible",
+                providerName: "Custom Provider",
                 id: "custom",
                 label: "Custom model",
                 billing: "",

@@ -3578,8 +3578,8 @@ msgid "Search or type a URL"
 msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
-msgid "Search providers"
-msgstr "Pesquisar provedores"
+#~ msgid "Search providers"
+#~ msgstr "Pesquisar provedores"
 
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Search skills"
@@ -3931,6 +3931,11 @@ msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "ThaiFi chain · Chain ID 17"
+msgstr ""
+
+#: src/pages/ModelSettingsOverlay.tsx
+#: src/pages/Onboarding.tsx
+msgid "The Ai7 server and model are fixed. Paste your Ai7 API key to connect."
 msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx

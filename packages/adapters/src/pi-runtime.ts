@@ -30,7 +30,7 @@ import type {
   AgentToolExecutionResult,
   ConnectorTool,
 } from "@rakazo/adapter-kit";
-import { usableModelId } from "@rakazo/contracts";
+import { AI7_PROVIDER_ID, usableModelId } from "@rakazo/contracts";
 import { getLogger } from "@rakazo/logging";
 import { isToolPauseResult } from "./approval-effect.js";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
@@ -39,6 +39,7 @@ import {
   normalizeOpenAiToolParameters,
   openAiToolParametersNeedNormalization,
 } from "./openai-tool-parameters.js";
+import { registerAi7Provider, registerAi7Runtime } from "./pi-ai7-provider.js";
 import { PiRuntimeCredentialStore, toOAuthCredential } from "./pi-credentials.js";
 import { registerLocalProvider } from "./pi-local-provider.js";
 import { codexComputeResidency } from "./pi-oauth.js";
@@ -79,8 +80,10 @@ const toolCallBudgetsByRun = new Map<string, ToolCallBudget>();
 // would run before .env is loaded and miss the local provider entirely.
 let catalogModelsCache: Models | undefined;
 function catalogModels(): Models {
-  catalogModelsCache ??= registerZaiPlatformProvider(
-    registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+  catalogModelsCache ??= registerAi7Provider(
+    registerZaiPlatformProvider(
+      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    ),
   );
   return catalogModelsCache;
 }
@@ -547,7 +550,14 @@ export function resolveRuntimeModel(modelConfig: AgentRunRequest["model"]): {
   const credentials = credentialStoreForRequest({ model: modelConfig }, provider);
   const models = modelsForRequest({ model: modelConfig }, provider, credentials);
   let model = models.getModel(provider, modelId);
-  if (!model && provider !== "openrouter" && provider !== OPENAI_COMPATIBLE_PROVIDER_ID) {
+  if (
+    !model &&
+    provider !== "openrouter" &&
+    provider !== OPENAI_COMPATIBLE_PROVIDER_ID &&
+    // Never serve an Ai7 connection from another provider's catalog: the
+    // fallback would ship the Ai7 key to that provider's endpoint.
+    provider !== AI7_PROVIDER_ID
+  ) {
     model = models.getModel("openrouter", modelId);
   }
   if (
@@ -560,7 +570,8 @@ export function resolveRuntimeModel(modelConfig: AgentRunRequest["model"]): {
   }
   const apiKey = modelConfig.oauth
     ? undefined
-    : modelConfig.provider === OPENAI_COMPATIBLE_PROVIDER_ID
+    : modelConfig.provider === OPENAI_COMPATIBLE_PROVIDER_ID ||
+        modelConfig.provider === AI7_PROVIDER_ID
       ? modelConfig.apiKey || "local"
       : // Only OpenRouter may fall back to the OpenRouter env key. Handing it to
         // another provider would ship our key to a vendor it was not issued for.
@@ -591,18 +602,34 @@ export function modelsForRequest(
 ): Models {
   const store = credentials ?? credentialStoreForRequest(request, provider);
   if (store) {
-    return registerZaiPlatformProvider(
-      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels({ credentials: store }))),
+    return registerAi7Provider(
+      registerZaiPlatformProvider(
+        registerOpenAiCompatibleCatalog(
+          registerLocalProvider(builtinModels({ credentials: store })),
+        ),
+      ),
     );
   }
   if (
-    provider === OPENAI_COMPATIBLE_PROVIDER_ID &&
+    (provider === OPENAI_COMPATIBLE_PROVIDER_ID || provider === AI7_PROVIDER_ID) &&
     request.model.baseUrl &&
     request.model.id.trim()
   ) {
-    const models = registerZaiPlatformProvider(
-      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    const models = registerAi7Provider(
+      registerZaiPlatformProvider(
+        registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+      ),
     );
+    if (provider === AI7_PROVIDER_ID) {
+      return registerAi7Runtime(models, {
+        modelId: request.model.id,
+        baseUrl: request.model.baseUrl,
+        reasoning: request.model.reasoning,
+        acceptsImages: request.model.acceptsImages,
+        maxTokens: request.model.maxTokens,
+        contextWindow: request.model.contextWindow,
+      });
+    }
     return registerOpenAiCompatibleRuntime(models, {
       modelId: request.model.id,
       baseUrl: request.model.baseUrl,

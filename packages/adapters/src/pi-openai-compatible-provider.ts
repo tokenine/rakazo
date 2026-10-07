@@ -94,7 +94,7 @@ function openAiCompatibleProvider(models: Model<"openai-completions">[]): Provid
   };
   return createProvider({
     id: OPENAI_COMPATIBLE_PROVIDER_ID,
-    name: "OpenAI-compatible",
+    name: "Custom Provider",
     baseUrl: models[0]?.baseUrl ?? OPENAI_COMPAT_BASE,
     auth: {
       apiKey: {

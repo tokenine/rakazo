@@ -1,6 +1,7 @@
 import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import type { ModelOAuthSignInMode, ThinkingLevel } from "@rakazo/contracts";
+import { registerAi7Provider } from "./pi-ai7-provider.js";
 import { LOCAL_PROVIDER_ID, registerLocalProvider } from "./pi-local-provider.js";
 import { SUBSCRIPTION_SIGN_IN_PROVIDERS } from "./pi-oauth.js";
 import {
@@ -38,8 +39,10 @@ export function listPiCatalog(): PiCatalogEntry[] {
 let cachedCatalog: PiCatalogEntry[] | undefined;
 
 function buildPiCatalog(): PiCatalogEntry[] {
-  const models = registerZaiPlatformProvider(
-    registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+  const models = registerAi7Provider(
+    registerZaiPlatformProvider(
+      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    ),
   );
   const entries: PiCatalogEntry[] = [];
   for (const provider of models.getProviders()) {

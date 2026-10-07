@@ -1,6 +1,8 @@
 import type { Models } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
+import { AI7_PROVIDER_ID } from "@rakazo/contracts";
 import { DEFAULT_OPENROUTER_MODEL_ID } from "./deployment-model.js";
+import { registerAi7Provider } from "./pi-ai7-provider.js";
 import { registerLocalProvider } from "./pi-local-provider.js";
 import {
   OPENAI_COMPATIBLE_PROVIDER_ID,
@@ -51,8 +53,10 @@ export function updateModelImageCapabilities(
 let catalogModelsCache: Models | undefined;
 
 function catalogModels(): Models {
-  catalogModelsCache ??= registerZaiPlatformProvider(
-    registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+  catalogModelsCache ??= registerAi7Provider(
+    registerZaiPlatformProvider(
+      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    ),
   );
   return catalogModelsCache;
 }
@@ -97,7 +101,9 @@ export function modelAcceptsImageInput(
   if (
     !model &&
     resolved.provider !== "openrouter" &&
-    resolved.provider !== OPENAI_COMPATIBLE_PROVIDER_ID
+    resolved.provider !== OPENAI_COMPATIBLE_PROVIDER_ID &&
+    // Ai7 modalities come from its own catalog entry, never another provider's.
+    resolved.provider !== AI7_PROVIDER_ID
   ) {
     model = models.getModel("openrouter", resolved.id);
   }
