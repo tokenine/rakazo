@@ -410,3 +410,44 @@ export function createAgentSkillsService(prisma: PrismaClient) {
 }
 
 export type AgentSkillsService = ReturnType<typeof createAgentSkillsService>;
+
+const GOOGLE_CONNECTOR_SKILL_KEYS = ["gmail", "google-calendar", "google-drive"];
+
+/**
+ * Auto-install the bundled google connector skills for a user who just
+ * connected a Google app. The skills teach the connector's exact tool names,
+ * so they should follow the connection instead of waiting for a manual store
+ * install. Idempotent; store rows snapshot store content at install time.
+ */
+export async function ensureGoogleConnectorSkills(
+  prisma: PrismaClient,
+  owner: { spaceId: string; userId: string },
+): Promise<void> {
+  const existing = await prisma.agentSkill.findMany({
+    where: {
+      spaceId: owner.spaceId,
+      userId: owner.userId,
+      storeKey: { in: GOOGLE_CONNECTOR_SKILL_KEYS },
+    },
+    select: { storeKey: true },
+  });
+  const have = new Set(existing.map((row) => row.storeKey));
+  for (const key of GOOGLE_CONNECTOR_SKILL_KEYS) {
+    if (have.has(key)) continue;
+    const entry = findSkillStoreEntry(key);
+    if (!entry) continue;
+    await prisma.agentSkill.create({
+      data: {
+        spaceId: owner.spaceId,
+        userId: owner.userId,
+        name: entry.name,
+        description: entry.description,
+        content: entry.content,
+        source: "builtin",
+        category: entry.category,
+        enabled: true,
+        storeKey: entry.key,
+      },
+    });
+  }
+}

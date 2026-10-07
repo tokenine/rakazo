@@ -12,7 +12,17 @@ import type { AppEnv } from "./env.js";
  */
 export function mountGoogleOAuthCallback(
   app: Hono,
-  deps: { integrationSettings?: IntegrationProviderSettings; env: AppEnv },
+  deps: {
+    integrationSettings?: IntegrationProviderSettings;
+    env: AppEnv;
+    /** Best-effort follow-up after a successful connect (e.g. auto-installing
+     * the matching connector skills). Failures must not fail the connect. */
+    onGoogleConnected?: (connected: {
+      slug: string;
+      userId: string;
+      spaceId: string;
+    }) => Promise<void>;
+  },
 ) {
   app.get(GOOGLE_CALLBACK_PATH, async (c) => {
     const url = new URL(c.req.url);
@@ -34,12 +44,19 @@ export function mountGoogleOAuthCallback(
       return callbackPage("Missing authorization details. Start the connection again in Ai7.");
     }
     try {
-      await provider.handleCallback({
+      const connected = await provider.handleCallback({
         state,
         code,
         webOrigin: deps.env.webOrigin,
         signal: c.req.raw.signal,
       });
+      if (deps.onGoogleConnected) {
+        try {
+          await deps.onGoogleConnected(connected);
+        } catch (error) {
+          getLogger().error("google connect follow-up failed", error);
+        }
+      }
       return callbackPage("Google connected. You can close this window.", true);
     } catch (error) {
       getLogger().error("google oauth callback failed", error);

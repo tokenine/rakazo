@@ -184,17 +184,20 @@ describe("google oauth callback", () => {
         access_token: "access-token-1",
         refresh_token: "refresh-token-1",
         expires_in: 3600,
+        scope:
+          "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
         id_token: `x.${Buffer.from(
           JSON.stringify({ email: "dome@example.test", sub: "sub-1" }),
         ).toString("base64url")}.y`,
       }),
     );
     const provider = connector(prisma, fetch);
-    await provider.handleCallback({
+    const connected = await provider.handleCallback({
       state: "state-1",
       code: "code-1",
       webOrigin: "https://bs.example.test",
     });
+    expect(connected).toEqual({ slug: "gmail", userId: "user-1", spaceId: "space-1" });
 
     const tokenCall = fetch.mock.calls.find(([url]) =>
       String(url).includes("oauth2.googleapis.com/token"),

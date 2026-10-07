@@ -91,6 +91,7 @@ import { requestLogging } from "@rakazo/logging/hono";
 import { MarkdownMemoryStore } from "@rakazo/memory";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { ensureGoogleConnectorSkills } from "./agent-skills.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
 import { mountGoogleOAuthCallback } from "./google-oauth-callback.js";
@@ -621,7 +622,15 @@ export async function createApp(
     return actor;
   });
   mountWebhookHttpRoutes(app, { prisma, secrets, events, jobs });
-  mountGoogleOAuthCallback(app, { integrationSettings, env });
+  mountGoogleOAuthCallback(app, {
+    integrationSettings,
+    env,
+    onGoogleConnected: (connected) =>
+      ensureGoogleConnectorSkills(prisma, {
+        spaceId: connected.spaceId,
+        userId: connected.userId,
+      }),
+  });
   // Shared with stop so a shutdown during retry delays does not restart polling.
   let messagingStopped = false;
   let clearMessagingRetryDelay: (() => void) | undefined;

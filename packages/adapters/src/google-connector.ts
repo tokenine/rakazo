@@ -48,6 +48,23 @@ export interface GoogleConnectorDependencies {
   fetch?: typeof fetch;
 }
 
+/** What a completed OAuth callback connected, for server-side follow-ups
+ * (e.g. auto-installing the matching connector skills). */
+export type GoogleCallbackResult = {
+  slug: string;
+  userId: string;
+  spaceId: string;
+};
+
+/** Match a granted-scope string back to the app tile that was connected. */
+function slugForGrantedScopes(scope: string | undefined): string {
+  if (!scope) return "";
+  for (const app of GOOGLE_APPS) {
+    if (app.scopes.some((entry) => scope.includes(entry))) return app.slug;
+  }
+  return "";
+}
+
 type GoogleApp = {
   slug: string;
   name: string;
@@ -201,7 +218,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
     code: string;
     webOrigin: string;
     signal?: AbortSignal;
-  }): Promise<void> {
+  }): Promise<GoogleCallbackResult> {
     const row = await this.dependencies.prisma.connection.findFirst({
       where: { connectorId: "google", providerRef: input.state, status: "pending" },
       select: { id: true, userId: true, spaceId: true, secretId: true },
@@ -258,6 +275,11 @@ export class GoogleConnector implements ManagedConnectorProvider {
         await tx.connection.update({ where: { id: row.id }, data: { secretId: recordId } });
       }
     });
+    return {
+      slug: slugForGrantedScopes(exchanged.scope),
+      userId: row.userId,
+      spaceId: row.spaceId,
+    };
   }
 
   async revoke(connectionRef: string, context: AdapterContext): Promise<void> {
@@ -435,6 +457,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
     access_token: string;
     refresh_token?: string;
     expires_in: number;
+    scope?: string;
     email?: string;
     sub?: string;
   }> {
@@ -459,6 +482,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
       refresh_token?: string;
       expires_in?: number;
       id_token?: string;
+      scope?: string;
       error?: string;
     };
     if (!response.ok || !parsed.access_token) {
@@ -469,6 +493,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
       access_token: parsed.access_token,
       ...(parsed.refresh_token ? { refresh_token: parsed.refresh_token } : {}),
       expires_in: parsed.expires_in ?? 3_600,
+      ...(parsed.scope ? { scope: parsed.scope } : {}),
       ...(claims?.email ? { email: claims.email } : {}),
       ...(claims?.sub ? { sub: claims.sub } : {}),
     };
