@@ -1,6 +1,6 @@
 # Ai7 — Session Handoff
 
-> Snapshot: 2026-09-29 · main @ `3406a70d` · upstream (elie222/rakazo) fully merged and deployed
+> Snapshot: 2026-10-05 · main @ `fce2b78d` · Skill Store + Skills & Connectors deployed to bs.ai7.work (199/demo still on branch `cloudflare` @ `be38d10`)
 > Product: **Ai7** (fork `tokenine/rakazo` of `elie222/rakazo`) — AI agent workbench sold to enterprises (on-prem), demos at **https://demo.ai7.work** (199, sandbox=cloudflare) and **https://bs.ai7.work** (119.59.123.107, sandbox=docker — the canary; owner dome@tel.co.th signed up, default model Z.AI/glm-5.3-flash)
 > Read this top-to-bottom before touching anything. §7 newest entries first. Ops runbook: `~/.agents/skills/rakazo-ops/SKILL.md` (server-side detail), rebrand runbook: `REBRAND-NOTES.md`.
 
@@ -71,7 +71,8 @@ Diagnostics: webhook info via decrypted token inside the api container; inbound 
 
 ## 5. Known gaps / next steps (priority order)
 
-1. **Inbound attachment UX** — **DONE 2026-09-27**: every inbound telegram/media attachment ingests as an artifact and surfaces in the thread UI. Photos → `image` blocks (vision input, unchanged); any other document → `file` block (`ArtifactFileCard` in the web UI, no changes needed there). Messaging ingest accepts ANY mime (`createOwnedArtifact(..., { allowAnyMimeType: true })`), 25 MB cap (`decodeAttachmentBase64` takes `maxBytes`), up to `ATTACHMENT_MAX_COUNT` (4) attachments per message (was `[0]` only), and documents get a `User attached file …` prompt note (web-parity via `promptTextForAttachments`). Still true but separate: the model cannot READ document contents on the messaging path (`loadCurrentTurnImages` is image-only) — it sees `[file: …]` in history + the prompt note.
+1. **Update 199/demo to main** (still branch `cloudflare` @ `be38d10`). REQUIRED after pull: `DELETE FROM mcp_oauth_sessions;` + one connector re-authorize (entry 0), and re-run the rebrand sweep/lingui steps only if a further upstream merge happens. Until 199 updates, the new desktop 0.1.6 UI gets "Not Found"/errors there for the Wallet panel (entry -1) AND the Skills & Connectors page (`agentSkills.catalog` 404 — entry -3); everything else keeps working.
+2. **Inbound attachment UX** — **DONE 2026-09-27**: every inbound telegram/media attachment ingests as an artifact and surfaces in the thread UI. Photos → `image` blocks (vision input, unchanged); any other document → `file` block (`ArtifactFileCard` in the web UI, no changes needed there). Messaging ingest accepts ANY mime (`createOwnedArtifact(..., { allowAnyMimeType: true })`), 25 MB cap (`decodeAttachmentBase64` takes `maxBytes`), up to `ATTACHMENT_MAX_COUNT` (4) attachments per message (was `[0]` only), and documents get a `User attached file …` prompt note (web-parity via `promptTextForAttachments`). Still true but separate: the model cannot READ document contents on the messaging path (`loadCurrentTurnImages` is image-only) — it sees `[file: …]` in history + the prompt note.
 2. **Multi-bot telegram** — **DONE 2026-09-27**: unlimited bots, many per user and many users side by side (see §2.4 for the keyed-adapter architecture). RPCs: `userConnect` returns `botId`, `userDisconnect` takes `{botId}`, `userStatus` returns `{bots:[{id,username}]}`; UI card is a list. Remaining known limits: each rakazo bot still links to exactly ONE chat line (`messaging_identities.botId @unique` — relinking a line re-points the bot); legacy `messaging_outbound` group rows with `telegram:` thread ids need the env bot to deliver (none in this deployment).
 3. **Streaming/stale-knowledge** — **DONE 2026-09-27**: the executor injects `messagingLiveStatusNote(...)` into EVERY run's instructions, built from DB truth at run start (`messaging.dmStatus` = identity provider + owner's telegram bot handle, `createMessagingContextLoader`). Bots can no longer claim "Telegram not connected" from stale memory. Prompt text: `packages/core/src/messaging-prompts.ts`; tests: `messaging-prompts.test.ts`, `messaging-context.test.ts`.
 4. **Windows Chrome import** (App-Bound stub), **WebM screen recording**, **Gmail/Calendar connectors** — deferred by user choice earlier.
@@ -85,9 +86,12 @@ Diagnostics: webhook info via decrypted token inside the api container; inbound 
 - Bash heredocs + python one-liners mangle backslash/backtick escaping through the tool JSON layer — write scratch scripts with the Write tool instead.
 - Server psql from host: camelCase columns need `\"double quotes\"` INSIDE the docker exec string — mind the quote layers (ssh '… docker exec … psql -c "… \"col\" …"').
 - LOG_LEVEL=debug is currently SET in server `.env` (added for telegram debugging) — remove if log noise matters.
+- **Version skew rule:** the desktop app bundles its own UI, so a freshly rebuilt app against an OLD server makes every new RPC 404 ("Not Found") — seen twice (Wallet panel, Skills & Connectors store). Deploy the server BEFORE/with the app; nothing to fix in the app itself.
+- **Desktop codesign identity is `Rakazo Local Dev`** (the §1 runbook's "Ai7 Local Dev" does not exist in the keychain) — electron-builder already signs with it; the manual re-sign step can be skipped.
+- **Local dev stack on this Mac** (first full run 2026-10-05, details in §7 entry -3): `rakazo/.env` exists (random dev secrets + `EMAIL_EMULATOR=true`); Postgres needs the `docker-compose.postgres-host.yml` overlay for host access on 127.0.0.1:5433; OTP readable at `http://127.0.0.1:3100/api/dev/emails`; container `compose-postgres-1` may still be running in OrbStack.
 - Test identity row `telegram-utest / 888000001` may exist in `messaging_identities` (from a probe) — harmless, deletable.
 
-## 7. Session log — 2026-09-28 evening (everything AFTER tag `handoff-2026-09-28`; branch head = d22069e)
+## 7. Session log — newest first (everything AFTER tag `handoff-2026-09-28`; branch head = fce2b78d)
 
 Read §2.5 (whitelist) + this section first. Working state: `SANDBOX_PROVIDER=cloudflare` live, allowlist = `dome@tel.co.th,@dome.cloud,dome@tokenine.co`, three accounts exist (dome@tel.co.th, dome@dome.cloud, dome@tokenine.co — all "Dome").
 
