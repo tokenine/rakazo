@@ -195,6 +195,11 @@ describe("google oauth callback", () => {
     );
 
     expect(pending.secretId).toBe("google-connection:conn-1");
+    // secrets_scope_check: kind "connector" requires a non-null spaceId.
+    const createCall = prisma.secret.create.mock.calls[0]?.[0] as unknown as
+      | { data: { spaceId: string } }
+      | undefined;
+    expect(createCall?.data.spaceId).toBe("space-1");
     const stored = JSON.parse(prisma.secrets.get("google-connection:conn-1")!.slice(4)) as {
       access_token: string;
       refresh_token?: string;

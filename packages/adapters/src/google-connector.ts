@@ -198,7 +198,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
   }): Promise<void> {
     const row = await this.dependencies.prisma.connection.findFirst({
       where: { connectorId: "google", providerRef: input.state, status: "pending" },
-      select: { id: true, userId: true, secretId: true },
+      select: { id: true, userId: true, spaceId: true, secretId: true },
     });
     if (!row) throw new Error("This Google authorization is no longer pending. Connect again.");
     const exchanged = await this.exchangeCode(
@@ -244,7 +244,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
           data: {
             id: recordId,
             userId: row.userId,
-            spaceId: null,
+            spaceId: row.spaceId,
             kind: "connector",
             ciphertext: stored.ciphertext,
           },
