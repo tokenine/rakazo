@@ -68,7 +68,7 @@ export function SkillsConnectorsOverlay({
   activeBotId?: string;
 }) {
   const { t } = useLingui();
-  const [tab, setTab] = useState<Tab>("skills");
+  const [tab, setTab] = useState<Tab>("connectors");
 
   return (
     <Dialog
