@@ -66,14 +66,16 @@ exists in Drive unless a tool call confirmed it.
 
 ## Uploading
 
-- Text: \`gdrive_upload_file\` with \`name\` (with extension) + \`content\`.
-- Binary/files on the computer (images, PDFs, docs the user attached or that you produced):
-  read the bytes with shell, then upload base64:
-  1. \`base64 -w0 /path/to/file\` (output to stdout; avoid printing huge blobs twice — capture once).
-  2. \`gdrive_upload_file\` with \`name\`, \`content_base64\`, and the right \`mime_type\`
-     (image/png, image/jpeg, application/pdf, ...).
-- Limit: 5MB per upload. If larger, shrink first via shell (e.g. compress/resize the image)
-  and say so; if you still cannot, tell the user the file is too big instead of pretending.
+- **File attached to the conversation (user uploaded it): ALWAYS use \`artifact_id\`.**
+  Every attachment note and history entry shows its id, e.g.
+  \`User attached image "1.png" (artifactId cmux…)\` or \`[image: 1.png artifact=cmux…]\`.
+  Call \`gdrive_upload_file\` with just \`artifact_id\` (+ \`folder_id\` if asked) — the server
+  reads the stored file directly. Works up to 25MB. **Never base64 an attachment through
+  shell just to re-upload it** — it wastes enormous context and breaks on real sizes.
+- Text you generated: \`gdrive_upload_file\` with \`name\` (with extension) + \`content\`.
+- Small binary data you produced (<1MB): \`content_base64\` (+ \`mime_type\`).
+- A computer-side file that was never attached to chat and is bigger than ~1MB has no
+  upload path yet — say so instead of chunking base64 through shell.
 - The result gives you \`id\` and \`link\` — report the link.
 
 ## Folders

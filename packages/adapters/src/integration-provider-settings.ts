@@ -6,6 +6,7 @@ import {
   IntegrationProviderIdSchema,
 } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
+import type { LocalArtifactStore } from "./artifacts.js";
 import { ComposioConnector } from "./composio-connector.js";
 import { GoogleConnector } from "./google-connector.js";
 import { PipedreamConnector } from "./pipedream-connector.js";
@@ -27,6 +28,7 @@ export class IntegrationProviderSettings {
       Record<IntegrationProviderId, ManagedConnectorProvider>
     > = {},
     private readonly factory?: (config: IntegrationProviderConfig) => ManagedConnectorProvider,
+    private readonly googleArtifacts?: Pick<LocalArtifactStore, "get">,
   ) {}
 
   private create(config: IntegrationProviderConfig): ManagedConnectorProvider {
@@ -36,6 +38,7 @@ export class IntegrationProviderSettings {
       return new GoogleConnector(config, {
         prisma: this.prisma,
         secrets: this.secrets,
+        artifacts: this.googleArtifacts,
       });
     }
     return new PipedreamConnector({ ...config, identitySecret: this.identitySecret });

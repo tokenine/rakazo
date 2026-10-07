@@ -98,15 +98,14 @@ export function messageBlockForArtifact(artifact: {
 
 export function promptTextForAttachments(
   text: string | undefined,
-  artifacts: Array<{ name: string; mimeType: string; size: number }>,
+  artifacts: Array<{ id: string; name: string; mimeType: string; size: number }>,
 ): string {
   const caption = text?.trim() ?? "";
-  const notes = artifacts
-    .filter((artifact) => !isAttachmentImageMimeType(artifact.mimeType))
-    .map(
-      (artifact) =>
-        `User attached file ${JSON.stringify(artifact.name)} (${artifact.mimeType}, ${artifact.size} bytes).`,
-    );
+  const notes = artifacts.map((artifact) =>
+    isAttachmentImageMimeType(artifact.mimeType)
+      ? `User attached image ${JSON.stringify(artifact.name)} (artifactId ${artifact.id}).`
+      : `User attached file ${JSON.stringify(artifact.name)} (${artifact.mimeType}, ${artifact.size} bytes, artifactId ${artifact.id}).`,
+  );
   return [caption, ...notes].filter(Boolean).join("\n\n") || "See attached files.";
 }
 
@@ -115,9 +114,9 @@ export function blocksToAgentHistoryText(blocks: MessageBlock[]): string {
     .map((block) => {
       if (block.kind === "text") return block.text;
       if (block.kind === "chart") return `[chart: ${block.name}]`;
-      if (block.kind === "image") return `[image: ${block.name}]`;
+      if (block.kind === "image") return `[image: ${block.name} artifact=${block.artifactId}]`;
       if (block.kind === "file") {
-        return `[file: ${block.name} (${block.mimeType}, ${block.size} bytes)]`;
+        return `[file: ${block.name} (${block.mimeType}, ${block.size} bytes) artifact=${block.artifactId}]`;
       }
       // Keep attribution on peer messages: without it a later turn cannot tell
       // which lines came from another bot rather than the user.

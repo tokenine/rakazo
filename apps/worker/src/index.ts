@@ -128,8 +128,11 @@ async function main() {
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   };
+  // Built early so the google connector can upload chat attachments
+  // (artifact_id) straight from disk without the bytes passing the model.
+  const artifacts = new LocalArtifactStore(dataDir);
   const google = isGoogleEnabled(googleConfig)
-    ? new GoogleConnector(googleConfig, { prisma, secrets })
+    ? new GoogleConnector(googleConfig, { prisma, secrets, artifacts })
     : undefined;
   // pollInboundMessages stays false (the default) here: this process
   // only ever sends outbound (messaging.deliver jobs). It must never poll
@@ -162,6 +165,8 @@ async function main() {
       pipedream,
       google,
     },
+    undefined,
+    artifacts,
   );
   const stack = createConnectorStack(false, undefined, [
     new InstalledConnectorProvider(prisma, secrets, {}, allowPrivateEndpoint),
@@ -173,7 +178,6 @@ async function main() {
   integrationSettings.warmDirectories();
   const memoryProviders = new SpaceMemoryProviderResolver(prisma, secrets);
   const home = new LocalAgentHomeStore(dataDir);
-  const artifacts = new LocalArtifactStore(dataDir);
   const inMemoryJobs = process.env.WAKEUP_DRIVER === "memory" ? new InMemoryJobQueue() : undefined;
   const jobs: JobPublisher = inMemoryJobs ?? new GraphileJobPublisher(pool);
   const jobHost: JobWorkerHost =

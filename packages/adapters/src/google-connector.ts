@@ -8,6 +8,7 @@ import type {
   ManagedConnectorProvider,
 } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
+import type { LocalArtifactStore } from "./artifacts.js";
 import { filterCatalog } from "./composio-connector.js";
 import {
   combineSignals,
@@ -30,6 +31,9 @@ export const GOOGLE_CALLBACK_PATH = "/api/integrations/google/callback";
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+// Artifact uploads read from disk on the server side — the cap matches the
+// attachment ingest ceiling, not the model-context one.
+const MAX_ARTIFACT_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 export interface GoogleConnectorConfig {
   clientId: string;
@@ -39,6 +43,8 @@ export interface GoogleConnectorConfig {
 export interface GoogleConnectorDependencies {
   prisma: PrismaClient;
   secrets: Pick<EncryptedSecretStore, "put" | "load">;
+  /** LocalArtifactStore when the deployment has one — enables artifact_id uploads. */
+  artifacts?: Pick<LocalArtifactStore, "get">;
   fetch?: typeof fetch;
 }
 
@@ -312,7 +318,7 @@ export class GoogleConnector implements ManagedConnectorProvider {
         return;
       }
       const tokens = await this.ensureFreshTokens(row.secretId, context);
-      const data = await executeGoogleTool(slug, call, tokens, context, this.dependencies.fetch);
+      const data = await executeGoogleTool(slug, call, tokens, context, this.dependencies);
       yield {
         type: "result",
         data: redactConnectorPayload(
@@ -650,19 +656,29 @@ function googleToolsFor(slug: string): ConnectorTool[] {
       {
         name: "gdrive_upload_file",
         description:
-          "Upload a file to Google Drive from text content (or base64 for binary). The app only sees files it created.",
+          "Upload a file to Google Drive. Preferred: artifact_id for any file attached to the conversation (no size gymnastics, up to 25MB). Otherwise text content or base64 for small binary data. The app only sees files it created.",
         inputSchema: {
           type: "object",
           properties: {
-            name: { type: "string", description: "File name with extension, e.g. report.md" },
+            name: {
+              type: "string",
+              description:
+                "File name with extension, e.g. report.md. Defaults to the artifact's name.",
+            },
+            artifact_id: {
+              type: "string",
+              description:
+                "Artifact id from an attachment note (User attached …) or history. Uploads the stored file directly.",
+            },
             content: { type: "string", description: "Text content (UTF-8)." },
             content_base64: {
               type: "string",
-              description: "Base64 content for binary files. Use instead of content.",
+              description:
+                "Base64 content for binary files. Use instead of content. Only for small (<1MB) data — prefer artifact_id for files.",
             },
             mime_type: {
               type: "string",
-              description: "MIME type. Default text/plain; charset=utf-8.",
+              description: "MIME type. Defaults to the artifact's or text/plain; charset=utf-8.",
             },
             folder_id: {
               type: "string",
@@ -670,7 +686,7 @@ function googleToolsFor(slug: string): ConnectorTool[] {
                 "Optional destination folder id from gdrive_create_folder (or gdrive_list_files with folders).",
             },
           },
-          required: ["name"],
+          required: [],
           additionalProperties: false,
         },
         readOnly: false,
@@ -736,15 +752,16 @@ async function executeGoogleTool(
   call: ConnectorCall,
   tokens: StoredGoogleTokens,
   context: AdapterContext,
-  fetchImpl?: typeof fetch,
+  dependencies: GoogleConnectorDependencies,
 ): Promise<unknown> {
   const toolName = call.route?.toolName ?? call.tool;
   const args = call.args ?? {};
+  const fetchImpl = dependencies.fetch;
   const fetchJson = (url: string, init: RequestInit = {}) =>
     googleJsonFetch(url, init, tokens, context, fetchImpl);
   if (slug === "gmail") return gmailExecute(toolName, args, fetchJson);
   if (slug === "googlecalendar") return calendarExecute(toolName, args, fetchJson);
-  return driveExecute(toolName, args, tokens, context, fetchImpl);
+  return driveExecute(toolName, args, tokens, context, dependencies);
 }
 
 // ---------------------------------------------------------------------------
@@ -989,33 +1006,52 @@ async function driveExecute(
   args: Record<string, unknown>,
   tokens: StoredGoogleTokens,
   context: AdapterContext,
-  fetchImpl?: typeof fetch,
+  dependencies: GoogleConnectorDependencies,
 ) {
   const fetchJson: FetchJson = (url, init = {}) =>
-    googleJsonFetch(url, init, tokens, context, fetchImpl);
+    googleJsonFetch(url, init, tokens, context, dependencies.fetch);
   if (toolName === "gdrive_upload_file") {
-    const name = String(args.name ?? "").trim();
-    if (!name) throw new Error("name is required");
-    const mime =
+    const folderId = typeof args.folder_id === "string" ? args.folder_id.trim() : "";
+    const artifactId = typeof args.artifact_id === "string" ? args.artifact_id.trim() : "";
+    let name = String(args.name ?? "").trim();
+    let mime =
       typeof args.mime_type === "string" && args.mime_type.trim()
         ? args.mime_type.trim()
         : "text/plain; charset=utf-8";
     let content: Buffer;
-    if (typeof args.content_base64 === "string" && args.content_base64.trim()) {
+    if (artifactId) {
+      const row = await dependencies.prisma.artifact.findFirst({
+        where: { id: artifactId, spaceId: context.spaceId },
+        select: { name: true, mimeType: true, storageKey: true },
+      });
+      if (!row) {
+        throw new Error(`Artifact ${artifactId} was not found in this space`);
+      }
+      if (!dependencies.artifacts) {
+        throw new Error("Artifact uploads are not available on this server");
+      }
+      // LocalArtifactStore.get only reads context.spaceId.
+      const bytes = await dependencies.artifacts.get(row.storageKey, {
+        spaceId: context.spaceId,
+      } as AdapterContext);
+      content = Buffer.from(bytes);
+      if (!name) name = row.name;
+      if (typeof args.mime_type !== "string" || !args.mime_type.trim()) {
+        mime = row.mimeType || mime;
+      }
+    } else if (typeof args.content_base64 === "string" && args.content_base64.trim()) {
       content = Buffer.from(args.content_base64, "base64");
     } else if (typeof args.content === "string") {
       content = Buffer.from(args.content, "utf8");
     } else {
-      throw new Error("Provide content or content_base64");
+      throw new Error("Provide artifact_id (for attached files), content, or content_base64");
     }
     if (content.byteLength === 0) throw new Error("File content is empty");
-    if (content.byteLength > MAX_UPLOAD_BYTES) {
-      throw new Error(
-        `File is larger than the ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)}MB limit`,
-      );
+    const limit = artifactId ? MAX_ARTIFACT_UPLOAD_BYTES : MAX_UPLOAD_BYTES;
+    if (content.byteLength > limit) {
+      throw new Error(`File is larger than the ${Math.round(limit / 1024 / 1024)}MB limit`);
     }
     const boundary = `rakazo-${randomBytes(12).toString("hex")}`;
-    const folderId = typeof args.folder_id === "string" ? args.folder_id.trim() : "";
     const metadata = JSON.stringify({
       name,
       ...(folderId ? { parents: [folderId] } : {}),

@@ -560,8 +560,10 @@ describe("compactHistory", () => {
     await compactHistory(harness.deps, "thread-1");
 
     const [request] = harness.runtime.run.mock.calls[0]!;
-    expect(request.prompt).toContain("[file: plan.pdf (application/pdf, 123 bytes)]");
-    expect(request.prompt).toContain("[image: diagram.png]");
+    expect(request.prompt).toContain(
+      "[file: plan.pdf (application/pdf, 123 bytes) artifact=artifact-1]",
+    );
+    expect(request.prompt).toContain("[image: diagram.png artifact=artifact-2]");
   });
 
   it("compacts locally without a semantic memory provider", async () => {

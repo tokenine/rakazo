@@ -31,9 +31,22 @@ type ConnectionRow = {
 };
 
 function fakePrisma(rows: ConnectionRow[], secrets: Map<string, string> = new Map()) {
+  const artifacts = new Map<
+    string,
+    { id: string; spaceId: string; name: string; mimeType: string; storageKey: string }
+  >();
   const store = {
     rows,
     secrets,
+    artifacts,
+    artifact: {
+      findFirst: vi.fn(
+        async ({ where }: { where: { id: string; spaceId: string } }) =>
+          [...artifacts.values()].find(
+            (entry) => entry.id === where.id && entry.spaceId === where.spaceId,
+          ) ?? null,
+      ),
+    },
     secret: {
       create: vi.fn(async ({ data }: { data: { id: string; ciphertext: string } }) => {
         store.secrets.set(data.id, data.ciphertext);
@@ -484,6 +497,61 @@ describe("google tool execution", () => {
     const data = (events[0] as { data?: { created?: boolean; id?: string } }).data;
     expect(data?.created).toBe(true);
     expect(data?.id).toBe("fold-9");
+  });
+
+  it("uploads an attachment by artifact_id without the bytes passing the model", async () => {
+    const prisma = fakePrisma([
+      row({ provider: "googledrive", secretId: "google-connection:conn-1" }),
+    ]);
+    prisma.secrets.set(
+      "google-connection:conn-1",
+      `enc:${JSON.stringify({ access_token: "access-token", expires_at: Date.now() + 3600_000 })}`,
+    );
+    prisma.artifacts.set("art-1", {
+      id: "art-1",
+      spaceId: "space-1",
+      name: "photo.png",
+      mimeType: "image/png",
+      storageKey: "disk-key-1",
+    });
+    const reads: string[] = [];
+    const fetch = vi.fn().mockResolvedValue(jsonResponse({ id: "f3", name: "photo.png" }));
+    const provider = new GoogleConnector(
+      { clientId: "client-id", clientSecret: "client-secret" },
+      {
+        prisma: prisma as never,
+        secrets: fakeSecrets() as never,
+        artifacts: {
+          get: vi.fn(async (storageKey: string) => {
+            reads.push(storageKey);
+            return new Uint8Array([1, 2, 3, 4]);
+          }),
+        },
+        fetch: fetch as typeof fetch,
+      },
+    );
+    const events = [];
+    for await (const event of provider.execute(
+      {
+        tool: "gdrive_upload_file",
+        args: { artifact_id: "art-1", folder_id: "fold-1" },
+        executionId: "e1",
+        route: { connectorId: "google", resourceId: "googledrive", toolName: "gdrive_upload_file" },
+      },
+      CONTEXT,
+    )) {
+      events.push(event);
+    }
+    expect(reads).toEqual(["disk-key-1"]);
+    const uploadCall = fetch.mock.calls.find(([url]) => String(url).includes("upload"));
+    expect(uploadCall).toBeDefined();
+    const body = new TextDecoder().decode((uploadCall![1] as RequestInit).body as Uint8Array);
+    expect(body).toContain('"name":"photo.png"');
+    expect(body).toContain("image/png");
+    expect(body).toContain('"parents":["fold-1"]');
+    const data = (events[0] as { data?: { uploaded?: boolean; bytes?: number } }).data;
+    expect(data?.uploaded).toBe(true);
+    expect(data?.bytes).toBe(4);
   });
 
   it("creates calendar events on the primary calendar", async () => {

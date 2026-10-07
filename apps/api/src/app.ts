@@ -306,7 +306,7 @@ export async function createApp(
   const google =
     googleOverride ??
     (isGoogleEnabled(googleConfig)
-      ? new GoogleConnector(googleConfig, { prisma, secrets })
+      ? new GoogleConnector(googleConfig, { prisma, secrets, artifacts })
       : undefined);
   // This process registers the inbound sink (messaging.onInbound below),
   // so it's the one that must hold Telegram's live getUpdates connection —
@@ -344,15 +344,22 @@ export async function createApp(
     remoteConnectors,
     env.mcpAllowPrivateEndpoint,
   );
-  const integrationSettings = new IntegrationProviderSettings(prisma, secrets, env.encryptionKey, {
-    composio:
-      composioOverride ??
-      (isComposioEnabled(env.composioApiKey)
-        ? new ComposioConnector(env.composioApiKey)
-        : undefined),
-    pipedream,
-    google,
-  });
+  const integrationSettings = new IntegrationProviderSettings(
+    prisma,
+    secrets,
+    env.encryptionKey,
+    {
+      composio:
+        composioOverride ??
+        (isComposioEnabled(env.composioApiKey)
+          ? new ComposioConnector(env.composioApiKey)
+          : undefined),
+      pipedream,
+      google,
+    },
+    undefined,
+    artifacts,
+  );
   const stack = createConnectorStack(false, composioOverride, [
     installed,
     ...integrationSettings

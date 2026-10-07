@@ -210,10 +210,10 @@ async function ingestDirectAttachments(
   text: string,
 ): Promise<{
   blocks: MessageBlock[];
-  artifacts: Array<{ name: string; mimeType: string; size: number }>;
+  artifacts: Array<{ id: string; name: string; mimeType: string; size: number }>;
 }> {
   const blocks: MessageBlock[] = [];
-  const artifacts: Array<{ name: string; mimeType: string; size: number }> = [];
+  const artifacts: Array<{ id: string; name: string; mimeType: string; size: number }> = [];
   // Very large bodies are command payloads, not document captions — the
   // long-standing anti-abuse gate skips media ingestion for them.
   if (!deps.artifacts || text.length >= 2_000) return { blocks, artifacts };
@@ -240,7 +240,12 @@ async function ingestDirectAttachments(
         { allowAnyMimeType: true, maxBytes: MESSAGING_ATTACHMENT_MAX_BYTES },
       );
       blocks.push(messageBlockForArtifact(stored));
-      artifacts.push({ name: stored.name, mimeType: stored.mimeType, size: stored.size });
+      artifacts.push({
+        id: stored.id,
+        name: stored.name,
+        mimeType: stored.mimeType,
+        size: stored.size,
+      });
     } catch (error) {
       getLogger().warn("messaging attachment ingestion failed", {
         message: error instanceof Error ? error.message : String(error),
