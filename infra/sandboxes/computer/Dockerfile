@@ -108,7 +108,14 @@ RUN set -eux; \
     rm -f /tmp/google-chrome.deb; \
     rm -rf /var/lib/apt/lists/*; \
     google-chrome-stable --version; \
-  fi
+  fi; \
+  # Wallet-first first page: the new tab page opens the ThaiFi wallet instead of
+  # google.com, for Chrome and the chromium fallback alike. Session restore is
+  # untouched (--restore-last-session keeps bringing back the previous tabs).
+  mkdir -p /etc/opt/chrome/policies/managed /etc/chromium/policies/managed; \
+  printf '%s\n' '{"NewTabPageLocation":"https://wallet.thaifi.com"}' \
+    | tee /etc/opt/chrome/policies/managed/rakazo.json /etc/chromium/policies/managed/rakazo.json >/dev/null; \
+  python3 -m json.tool /etc/opt/chrome/policies/managed/rakazo.json
 ENV DISPLAY=:1
 ENV HOME=/home/rakazo
 # Keep UTF-8 explicit (an empty LANG broke non-ASCII file handling in the

@@ -103,7 +103,13 @@ RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_a
   && apt-get install -y --no-install-recommends /tmp/google-chrome.deb \
   && rm -f /tmp/google-chrome.deb \
   && rm -rf /var/lib/apt/lists/* \
-  && google-chrome-stable --version
+  && google-chrome-stable --version \
+  # Wallet-first first page: the new tab page opens the ThaiFi wallet instead of
+  # google.com, for Chrome and the chromium fallback alike.
+  && mkdir -p /etc/opt/chrome/policies/managed /etc/chromium/policies/managed \
+  && printf '%s\n' '{"NewTabPageLocation":"https://wallet.thaifi.com"}' \
+    | tee /etc/opt/chrome/policies/managed/rakazo.json /etc/chromium/policies/managed/rakazo.json >/dev/null \
+  && python3 -m json.tool /etc/opt/chrome/policies/managed/rakazo.json
 # Popular Thai Google families on top of the TLWG/Noto base, so Thai sites in
 # Chromium render with real Thai typefaces (Sarabun, Prompt, Kanit, ...).
 # Best-effort: a failed download just leaves fewer families behind.
