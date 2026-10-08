@@ -97,7 +97,7 @@ const SILENT_TOOL_CONTINUATION_PROMPT =
 const SILENT_ALLOWED_TOOL_CONTINUATION_PROMPT =
   "Continue the original task from the latest tool result. If you were instructed to stay silent when there is nothing to report, follow that instruction for the entire final assistant reply. Otherwise use any remaining tools needed, then give the user the final answer.";
 const TOOL_FINAL_RESPONSE_FALLBACK =
-  "I completed the tool step but could not produce a final response. Please ask me to continue.";
+  "ฉันทำงานเครื่องมือเสร็จแล้ว แต่สรุปผลไม่สำเร็จ — พิมพ์ 'ต่อ' เพื่อให้ฉันทำต่อได้เลยครับ";
 const DEFAULT_COMPUTER_SCREENSHOTS_TO_KEEP = 2;
 // Reasoning-capable models must not start at "off": for OpenRouter, pi-ai maps
 // that to reasoning.effort "none", which 400s on endpoints that mandate
@@ -471,7 +471,8 @@ export class PiAgentRuntime implements AgentRuntime {
             streamed = TOOL_FINAL_RESPONSE_FALLBACK;
             queue.push({ type: "text", text: streamed });
           } else if (toolCalls === 0 && !request.allowSilentEmpty) {
-            streamed = request.emptyResponseText?.trim() || "No response. Try again.";
+            streamed =
+              request.emptyResponseText?.trim() || "โมเดลไม่ส่งคำตอบกลับมา ลองสั่งใหม่อีกครั้งนะครับ";
             queue.push({ type: "text", text: streamed });
           }
         }

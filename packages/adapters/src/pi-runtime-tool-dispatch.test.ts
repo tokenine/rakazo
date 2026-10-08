@@ -763,11 +763,11 @@ describe("Pi connector tool dispatch", () => {
 
     expect(events).toContainEqual({
       type: "text",
-      text: "I completed the tool step but could not produce a final response. Please ask me to continue.",
+      text: "ฉันทำงานเครื่องมือเสร็จแล้ว แต่สรุปผลไม่สำเร็จ — พิมพ์ 'ต่อ' เพื่อให้ฉันทำต่อได้เลยครับ",
     });
     expect(events.at(-1)).toEqual({
       type: "done",
-      text: "I completed the tool step but could not produce a final response. Please ask me to continue.",
+      text: "ฉันทำงานเครื่องมือเสร็จแล้ว แต่สรุปผลไม่สำเร็จ — พิมพ์ 'ต่อ' เพื่อให้ฉันทำต่อได้เลยครับ",
     });
   });
 
@@ -811,7 +811,7 @@ describe("Pi connector tool dispatch", () => {
     expect(followUp.content).not.toContain("NO_RESPONSE");
     expect(events).not.toContainEqual({
       type: "text",
-      text: "I completed the tool step but could not produce a final response. Please ask me to continue.",
+      text: "ฉันทำงานเครื่องมือเสร็จแล้ว แต่สรุปผลไม่สำเร็จ — พิมพ์ 'ต่อ' เพื่อให้ฉันทำต่อได้เลยครับ",
     });
     expect(events.at(-1)).toEqual({ type: "done" });
   });
@@ -845,7 +845,10 @@ describe("Pi connector tool dispatch", () => {
       events.push(event);
     }
 
-    expect(events).not.toContainEqual({ type: "text", text: "No response. Try again." });
+    expect(events).not.toContainEqual({
+      type: "text",
+      text: "โมเดลไม่ส่งคำตอบกลับมา ลองสั่งใหม่อีกครั้งนะครับ",
+    });
     expect(events).toEqual([{ type: "done" }]);
   });
 
@@ -877,8 +880,8 @@ describe("Pi connector tool dispatch", () => {
       events.push(event);
     }
 
-    expect(events).toContainEqual({ type: "text", text: "No response. Try again." });
-    expect(events.at(-1)).toEqual({ type: "done", text: "No response. Try again." });
+    expect(events).toContainEqual({ type: "text", text: "โมเดลไม่ส่งคำตอบกลับมา ลองสั่งใหม่อีกครั้งนะครับ" });
+    expect(events.at(-1)).toEqual({ type: "done", text: "โมเดลไม่ส่งคำตอบกลับมา ลองสั่งใหม่อีกครั้งนะครับ" });
   });
 
   it("surfaces a contextual peer fallback when that run produces nothing", async () => {
@@ -949,7 +952,7 @@ describe("Pi connector tool dispatch", () => {
       events.push(event);
     }
 
-    expect(events.at(-1)).toEqual({ type: "done", text: "No response. Try again." });
+    expect(events.at(-1)).toEqual({ type: "done", text: "โมเดลไม่ส่งคำตอบกลับมา ลองสั่งใหม่อีกครั้งนะครับ" });
   });
 
   it("allows more than 80 tool calls by default when no fuse is configured", async () => {
