@@ -87,11 +87,11 @@ test("the computer workspace browses, uploads, and downloads files over the scre
 
   await page.getByRole("button", { name: "Terminal", exact: true }).click();
   const terminalWindow = page.getByRole("region", { name: "Terminal" });
-  await expect(page.getByTestId("computer-terminal")).toBeVisible();
-  // Holding control adds an interactive shell beside the bot's activity. The fake computer
-  // answers through the same capability, web proxy, websocket, and frame protocol.
-  await terminalWindow.getByRole("tab", { name: "Shell" }).click();
+  // Holding control opens straight into the interactive shell; the bot's activity is
+  // the other tab. The fake computer answers through the same capability, web proxy,
+  // websocket, and frame protocol.
   const shell = page.getByTestId("computer-shell");
+  await expect(shell).toBeVisible();
   await expect(page.getByTestId("computer-terminal")).toBeHidden();
   await expect(shell).toContainText("$");
   // Click near the pane's corner: the sidebar resize edge currently overlaps the overlay's middle.
