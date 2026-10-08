@@ -94,6 +94,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
   && npm install -g thaifi-wallet-cli@0.3.6 playwright-core@1.59.1 \
   && npm cache clean --force \
   && rm -rf /var/lib/apt/lists/*
+# Google Chrome: real Chrome signs into Google accounts and plays the
+# DRM/proprietary-codec media Debian chromium cannot. Cloudflare Containers
+# are amd64-only, so no architecture guard is needed here (chromium stays
+# installed as the binary fallback).
+RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o /tmp/google-chrome.deb \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends /tmp/google-chrome.deb \
+  && rm -f /tmp/google-chrome.deb \
+  && rm -rf /var/lib/apt/lists/* \
+  && google-chrome-stable --version
 # Popular Thai Google families on top of the TLWG/Noto base, so Thai sites in
 # Chromium render with real Thai typefaces (Sarabun, Prompt, Kanit, ...).
 # Best-effort: a failed download just leaves fewer families behind.

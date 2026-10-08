@@ -97,6 +97,18 @@ RUN set -eux; \
   tar -xzf "$archive" -C /usr/local/bin --strip-components=2 "gh_${GH_VERSION}_linux_${gh_arch}/bin/gh"; \
   rm -f "$archive"; \
   gh --version
+# Google Chrome on amd64: real Chrome signs into Google accounts and plays the
+# DRM/proprietary-codec media Debian chromium cannot. Chromium stays installed
+# as the fallback for other architectures (local dev on Apple Silicon).
+RUN set -eux; \
+  if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+    curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o /tmp/google-chrome.deb; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends /tmp/google-chrome.deb; \
+    rm -f /tmp/google-chrome.deb; \
+    rm -rf /var/lib/apt/lists/*; \
+    google-chrome-stable --version; \
+  fi
 ENV DISPLAY=:1
 ENV HOME=/home/rakazo
 # Keep UTF-8 explicit (an empty LANG broke non-ASCII file handling in the
