@@ -534,7 +534,6 @@ function tokenizeProtectedShellCommand(command: string): string[] | "dynamic" {
 export function isProtectedComputerLifecycleCommand(command: string): boolean {
   const words = tokenizeProtectedShellCommand(command);
   if (words === "dynamic") return true;
-
   const commandNames = words.map((word) => word.split("/").at(-1));
   if (commandNames.some((word) => /^(?:kill|pkill|killall|xkill)$/.test(word ?? ""))) {
     return true;
@@ -565,6 +564,18 @@ export function isProtectedComputerLifecycleCommand(command: string): boolean {
     if (program && isProtectedComputerLifecycleCommand(program)) return true;
   }
   return false;
+}
+
+/**
+ * Deployment opt-out for the graphical-shell desktop-protection guard. The
+ * guard exists so a bot cannot kill its own desktop/browser (the black-screen
+ * incidents), but its "any command substitution is uninspectable" rule also
+ * blocks ordinary build/deploy scripts. Operators who accept that trade-off
+ * set RAKAZO_COMPUTER_SHELL_GUARD=off to give bot shells full access.
+ */
+export function computerShellGuardEnabled(): boolean {
+  const raw = process.env.RAKAZO_COMPUTER_SHELL_GUARD?.trim().toLowerCase();
+  return raw !== "off" && raw !== "0" && raw !== "disabled";
 }
 
 /** Cap the roster so a large Space cannot flood the prompt. */
@@ -2718,7 +2729,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
           if (name === "shell") {
             const command = String(args.command ?? args.cmd ?? "");
-            if (graphical && isProtectedComputerLifecycleCommand(command)) {
+            if (
+              graphical &&
+              computerShellGuardEnabled() &&
+              isProtectedComputerLifecycleCommand(command)
+            ) {
               return finish({
                 error:
                   "This command was not run: the desktop-protection guard detected a protected command or shell syntax it cannot inspect. Shell access is still available. For ordinary repository work, use direct commands with explicit paths, without sourcing or command substitution. Do not stop or restart browser/desktop processes.",
