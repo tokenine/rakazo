@@ -146,6 +146,12 @@ const EXTENSION_MIME_TYPES: Record<string, AttachmentMimeType> = {
   ".html": "text/html",
   ".htm": "text/html",
   ".json": "application/json",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".webm": "audio/webm",
+  ".m4a": "audio/mp4",
+  ".zip": "application/zip",
 };
 
 const MIME_TYPE_EXTENSIONS: Record<AttachmentMimeType, string> = {
@@ -159,6 +165,12 @@ const MIME_TYPE_EXTENSIONS: Record<AttachmentMimeType, string> = {
   "text/csv": ".csv",
   "text/html": ".html",
   "application/json": ".json",
+  "audio/mpeg": ".mp3",
+  "audio/wav": ".wav",
+  "audio/ogg": ".ogg",
+  "audio/webm": ".webm",
+  "audio/mp4": ".m4a",
+  "application/zip": ".zip",
 };
 
 export function inferAttachmentMimeType(

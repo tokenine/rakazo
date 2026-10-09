@@ -14,11 +14,17 @@ export const ATTACHMENT_IMAGE_MIME_TYPES = [
 
 export const ATTACHMENT_FILE_MIME_TYPES = [
   "application/pdf",
+  "application/zip",
   "text/plain",
   "text/markdown",
   "text/csv",
   "text/html",
   "application/json",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+  "audio/webm",
+  "audio/mp4",
 ] as const;
 
 export const ATTACHMENT_ALLOWED_MIME_TYPES = [

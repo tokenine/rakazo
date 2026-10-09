@@ -98,9 +98,9 @@ describeAttachments("chat attachments", () => {
 
     const badMime = await raw(app, cookie, "artifacts/create", {
       botId: bot.id,
-      name: "evil.zip",
-      mimeType: "application/zip",
-      contentBase64: Buffer.from("zip").toString("base64"),
+      name: "evil.exe",
+      mimeType: "application/x-msdownload",
+      contentBase64: Buffer.from("mz").toString("base64"),
     });
     expect(badMime.status).toBeGreaterThanOrEqual(400);
 
