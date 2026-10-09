@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { AdapterContext, MessagingSurface } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it, vi } from "vitest";
@@ -953,5 +956,174 @@ describe("deliverMessagingOutbound retry enqueue failure", () => {
     expect(deps.rows).toEqual([
       expect.objectContaining({ kind: "dm", status: "sent", providerHandle: "handle-out-1" }),
     ]);
+  });
+});
+
+describe("bot file attachments mirror to the chat app", () => {
+  it("mirrors a kind:file block into an artifact outbox row like images", async () => {
+    const deps = createDeps({
+      messages: [
+        {
+          id: "m-2",
+          blocks: [
+            { kind: "text", text: "เสียงพร้อมแล้วครับ" },
+            {
+              kind: "file",
+              name: "sawasdee_kha_dom.wav",
+              mimeType: "audio/wav",
+              size: 115_350,
+              artifactId: "art-1",
+            },
+          ],
+        },
+      ],
+    });
+    await deliverMessagingOutbound(deps, { runId: "run-1" }, context);
+
+    expect(deps.rows).toEqual([
+      expect.objectContaining({
+        idempotencyKey: "msg:m-2",
+        kind: "dm",
+        body: "เสียงพร้อมแล้วครับ",
+      }),
+      expect.objectContaining({
+        idempotencyKey: "file:m-2:art-1",
+        kind: "file",
+        identityId: "mi-1",
+        body: "sawasdee_kha_dom.wav",
+        artifactId: "art-1",
+        status: "sent",
+      }),
+    ]);
+    // Without dataDir/secrets the file row degrades to a text mention —
+    // never silently dropped like the pre-fix behaviour.
+    expect(deps.sendToThread).toHaveBeenCalledWith(
+      { threadId: "sendblue:dm-1", body: "sawasdee_kha_dom.wav" },
+      context,
+    );
+  });
+
+  it("uploads a bot audio file to telegram via sendDocument", async () => {
+    const workDir = await mkdtemp(join(tmpdir(), "delivery-artifact-"));
+    try {
+      const spaceId = "ws-1";
+      const storageKey = "storage-key-1";
+      await mkdir(join(workDir, "artifacts", spaceId), { recursive: true });
+      await writeFile(
+        join(workDir, "artifacts", spaceId, storageKey),
+        Buffer.from("fake wav bytes"),
+      );
+
+      const base = createDeps({
+        messages: [],
+        identity: { provider: "telegram-urow-1", dmThreadId: "telegram-urow-1:chat-9" },
+        outboundRows: [
+          {
+            id: "out-file-1",
+            idempotencyKey: "file:m-9:art-1",
+            kind: "file",
+            identityId: "mi-1",
+            body: "sawasdee_kha_dom.wav",
+            sourceMessageId: "m-9",
+            artifactId: "art-1",
+            status: "pending",
+          },
+        ],
+      });
+      const fetchMock = vi.fn(
+        async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      try {
+        const deps = {
+          ...base,
+          dataDir: workDir,
+          secrets: { load: vi.fn(() => "tg-token-1") },
+          prisma: Object.assign(base.prisma, {
+            artifact: {
+              findUnique: vi.fn(async () => ({
+                id: "art-1",
+                spaceId,
+                storageKey,
+                mimeType: "audio/wav",
+                name: "sawasdee_kha_dom.wav",
+              })),
+            },
+            messagingTelegramBot: {
+              findFirst: vi.fn(async () => ({ userId: "user-1", tokenCiphertext: "cipher-1" })),
+            },
+          }),
+        } as unknown as MessagingDeliveryDeps;
+
+        await deliverMessagingOutbound(deps, { runId: "run-1" }, context);
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+        expect(url).toBe("https://api.telegram.org/bottg-token-1/sendDocument");
+        const form = init.body as FormData;
+        expect(form.get("chat_id")).toBe("chat-9");
+        expect(form.get("caption")).toBe("sawasdee_kha_dom.wav");
+        const file = form.get("document") as File | null;
+        expect(file?.name).toBe("sawasdee_kha_dom.wav");
+        expect(file?.type).toBe("audio/wav");
+        expect(base.sendToThread).not.toHaveBeenCalled();
+        expect(base.rows[0]).toMatchObject({ id: "out-file-1", status: "sent" });
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    } finally {
+      await rm(workDir, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to a text mention when the artifact bytes are unreadable", async () => {
+    const workDir = await mkdtemp(join(tmpdir(), "delivery-empty-"));
+    try {
+      const base = createDeps({
+        messages: [],
+        identity: { provider: "telegram-urow-1", dmThreadId: "telegram-urow-1:chat-9" },
+        outboundRows: [
+          {
+            id: "out-file-2",
+            idempotencyKey: "file:m-9:art-2",
+            kind: "file",
+            identityId: "mi-1",
+            body: "sawasdee_kha_dom.wav",
+            sourceMessageId: "m-9",
+            artifactId: "art-2",
+            status: "pending",
+          },
+        ],
+      });
+      const deps = {
+        ...base,
+        dataDir: workDir,
+        secrets: { load: vi.fn(() => "tg-token-1") },
+        prisma: Object.assign(base.prisma, {
+          artifact: {
+            findUnique: vi.fn(async () => ({
+              id: "art-2",
+              spaceId: "ws-1",
+              storageKey: "missing-key",
+              mimeType: "audio/wav",
+              name: "sawasdee_kha_dom.wav",
+            })),
+          },
+          messagingTelegramBot: {
+            findFirst: vi.fn(async () => ({ userId: "user-1", tokenCiphertext: "cipher-1" })),
+          },
+        }),
+      } as unknown as MessagingDeliveryDeps;
+
+      await deliverMessagingOutbound(deps, { runId: "run-1" }, context);
+
+      expect(base.sendToThread).toHaveBeenCalledWith(
+        { threadId: "telegram-urow-1:chat-9", body: "sawasdee_kha_dom.wav" },
+        context,
+      );
+      expect(base.rows[0]).toMatchObject({ id: "out-file-2", status: "sent" });
+    } finally {
+      await rm(workDir, { recursive: true, force: true });
+    }
   });
 });
