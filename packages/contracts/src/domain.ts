@@ -955,10 +955,10 @@ export type ThreadSnapshot = z.infer<typeof ThreadSnapshotSchema>;
  * Default maximum number of completion tokens for an OpenAI-compatible connection.
  * GLM-class models think before answering and their thinking is billed against
  * max_tokens: at 4k a heavy turn ran out of room mid-thought and returned an
- * empty answer that looked like a completed run. 16k leaves room for thinking
- * plus a real reply while staying inside conservative context assumptions.
+ * empty answer that looked like a completed run. 40k leaves room for long
+ * thinking plus a real reply on heavy retrieval turns.
  */
-export const DEFAULT_MODEL_MAX_TOKENS = 16_384;
+export const DEFAULT_MODEL_MAX_TOKENS = 40_960;
 
 /** Largest completion-token limit exposed by model settings. */
 export const MAX_MODEL_MAX_TOKENS = 131_072;
