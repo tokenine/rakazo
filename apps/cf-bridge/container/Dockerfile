@@ -35,6 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     python3 \
+    python3-pip \
+    python3-venv \
+    ffmpeg \
     ca-certificates \
     procps \
     bash \

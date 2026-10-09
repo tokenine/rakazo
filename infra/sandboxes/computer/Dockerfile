@@ -30,6 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     python3 \
+    python3-pip \
+    python3-venv \
+    ffmpeg \
     libnss-wrapper \
     ca-certificates \
     procps \
@@ -118,6 +121,11 @@ RUN set -eux; \
   python3 -m json.tool /etc/opt/chrome/policies/managed/rakazo.json
 ENV DISPLAY=:1
 ENV HOME=/home/rakazo
+# Bots write Python scripts constantly: let plain `pip install --user` work on the
+# externally-managed Debian Python (containers are no-root, so the blast radius
+# is the bot's own home).
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_USER=1
 # Keep UTF-8 explicit (an empty LANG broke non-ASCII file handling in the
 # file chooser for CJK-market users) and generate zh_CN.UTF-8 so deployments
 # that override the computer environment can opt in to a Chinese locale.
