@@ -62,16 +62,14 @@ async function readSandboxJson<T>(
   res: Response,
   signal: AbortSignal,
   maxBytes = MAX_SANDBOX_SUCCESS_RESPONSE_BYTES,
+  readTimeoutMs = SANDBOX_SUCCESS_RESPONSE_TIMEOUT_MS,
 ): Promise<T> {
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (Number.isFinite(declared) && declared > maxBytes) {
     cancelResponseBody(res);
     throw new Error(`sandbox response exceeds ${maxBytes} bytes`);
   }
-  const readSignal = AbortSignal.any([
-    signal,
-    AbortSignal.timeout(SANDBOX_SUCCESS_RESPONSE_TIMEOUT_MS),
-  ]);
+  const readSignal = AbortSignal.any([signal, AbortSignal.timeout(readTimeoutMs)]);
   let bytes: Uint8Array;
   try {
     bytes = await readBodyCapped(res, maxBytes, readSignal);
@@ -181,13 +179,14 @@ export class DockerSandboxProvider implements SandboxProvider {
     request: CommandRequest,
     context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
+    const timeoutMs = boundedSandboxCommandTimeoutMs(request.timeoutMs);
     const res = await fetch(this.url(`/computers/${computer.id}/exec`), {
       method: "POST",
       headers: { ...this.headers(context, computer.botId), "content-type": "application/json" },
       body: JSON.stringify({
         ...request,
         cwd: dockerCwd(request.cwd),
-        timeoutMs: boundedSandboxCommandTimeoutMs(request.timeoutMs),
+        timeoutMs,
       }),
       signal: context.signal,
     });
@@ -196,9 +195,13 @@ export class DockerSandboxProvider implements SandboxProvider {
       yield { type: "exit", code: 1 };
       return;
     }
+    // The supervisor streams keepalives and answers only when the command settles,
+    // so the read window must cover the whole command budget, not a fixed 30s.
     const body = await readSandboxJson<{ stdout: string; stderr: string; code: number }>(
       res,
       context.signal,
+      MAX_SANDBOX_SUCCESS_RESPONSE_BYTES,
+      timeoutMs + 60_000,
     );
     if (body.stdout) yield { type: "stdout", data: body.stdout };
     if (body.stderr) yield { type: "stderr", data: body.stderr };

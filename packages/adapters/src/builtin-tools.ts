@@ -318,12 +318,16 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "shell",
     description:
-      "Run a command inside this bot's computer. cwd defaults to the bot's folder on a Team Computer and the workspace root on a Private Computer.",
+      "Run a command inside this bot's computer. cwd defaults to the bot's folder on a Team Computer and the workspace root on a Private Computer. Commands are killed at their time limit (default 5 minutes); pass timeout_ms up to 3600000 (1 hour) for long installs, downloads, or builds — and prefer printing progress to a file you re-check over one giant command.",
     inputSchema: {
       type: "object",
       properties: {
         command: { type: "string" },
         cwd: { type: "string" },
+        timeout_ms: {
+          type: "number",
+          description: "Optional time limit for this command in milliseconds (1000-3600000).",
+        },
       },
       required: ["command"],
     },

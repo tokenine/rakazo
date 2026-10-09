@@ -50,6 +50,7 @@ import {
   assertTransition,
   blocksToAgentHistoryText,
   botMessageAllowsSilence,
+  boundedSandboxCommandTimeoutMs,
   CALL_CLIENT_NONCE_PREFIX,
   callIdFromClientNonce,
   connectorKindFromToolName,
@@ -65,6 +66,7 @@ import {
   isMessagingChannelRun,
   isOneShotRoutineCrons,
   isTerminal,
+  MAX_SANDBOX_COMMAND_TIMEOUT_MS,
   messagingChannelId,
   messagingChannelPrivacyBlock,
   messagingDmSurfaceNote,
@@ -2741,6 +2743,12 @@ export function createRunExecutor(deps: ExecutorDeps) {
               output: "",
             });
             try {
+              const timeoutMs = boundedSandboxCommandTimeoutMs(
+                typeof args.timeout_ms === "number"
+                  ? Math.min(Math.max(args.timeout_ms, 1_000), MAX_SANDBOX_COMMAND_TIMEOUT_MS)
+                  : undefined,
+                sandboxCommandTimeoutMs(),
+              );
               const result = await runSandboxCommand(
                 deps.sandbox,
                 computer,
@@ -2759,6 +2767,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
                 cwd,
                 agentEnvironment,
                 context,
+                timeoutMs,
               );
               const redacted = redactAgentCommandResult(result, runSecrets);
               await appendComputerCommand({
@@ -2771,16 +2780,18 @@ export function createRunExecutor(deps: ExecutorDeps) {
               });
               return finish(redacted);
             } catch (error) {
+              const detail = error instanceof Error ? error.message : String(error);
               await appendComputerCommand({
                 ...commandEvent,
                 status: "done",
                 exitCode: 1,
-                output: redactSecrets(
-                  error instanceof Error ? error.message : "command failed",
-                  runSecrets,
-                ).slice(-COMPUTER_COMMAND_OUTPUT_MAX_CHARS),
+                output: redactSecrets(detail, runSecrets).slice(-COMPUTER_COMMAND_OUTPUT_MAX_CHARS),
               });
-              throw error;
+              // A failed shell call is the model's problem to adapt to (retry, split the
+              // work, or request a longer timeout_ms) — not a reason to kill the run.
+              return finish({
+                error: `shell command failed: ${detail}. If the command needs longer, rerun with timeout_ms (up to 3600000) or split it into smaller commands.`,
+              });
             }
           }
           if (name === "open_path") {
@@ -5487,6 +5498,7 @@ async function runSandboxCommand(
     runId?: string;
     signal: AbortSignal;
   },
+  timeoutMs: number = sandboxCommandTimeoutMs(),
 ) {
   let stdout = "";
   let stderr = "";
@@ -5497,7 +5509,7 @@ async function runSandboxCommand(
       argv,
       cwd,
       env: Object.keys(env).length > 0 ? env : undefined,
-      timeoutMs: sandboxCommandTimeoutMs(),
+      timeoutMs,
     },
     context,
   )) {

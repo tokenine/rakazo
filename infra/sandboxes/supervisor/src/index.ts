@@ -17,6 +17,7 @@ import { requestLogging } from "@rakazo/logging/hono";
 import Docker from "dockerode";
 import { Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { streamText } from "hono/streaming";
 import { z } from "zod";
 import {
   assertVolumeSubpathSupport,
@@ -346,32 +347,41 @@ app.post("/computers/:id/exec", async (c) => {
       timeoutMs: z.number().int().positive().optional(),
     })
     .parse(await c.req.json());
-  try {
-    const { container } = await managedContainer(
-      id,
-      c.req.header("x-rakazo-bot-id"),
-      c.req.header("x-rakazo-space-id"),
-    );
-    const screenId = c.req.header("x-rakazo-screen-id") || c.req.header("x-rakazo-bot-id") || id;
-    const screenIndex = computerScreens.get(id)?.get(screenId)?.index ?? 0;
-    const layout = screenPorts(screenIndex);
-    const result = await runContainerCommand(
-      container,
-      body.argv.length ? body.argv : ["/bin/echo", "ready"],
-      {
-        workingDir: body.cwd ?? "/home/rakazo",
-        env: [
-          ...computerCommandEnv(layout),
-          ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
-        ],
-        timeoutMs: boundedSandboxCommandTimeoutMs(body.timeoutMs),
-      },
-    );
-    return c.json(result);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return c.json({ stdout: "", stderr: message, code: 1 }, 200);
-  }
+  // Headers flush immediately and a newline heartbeat follows, so a long command's
+  // single end-of-run JSON never trips the caller's HTTP header/body read timeouts.
+  return streamText(c, async (stream) => {
+    const keepalive = setInterval(() => {
+      void stream.write("\n");
+    }, 20_000);
+    try {
+      const { container } = await managedContainer(
+        id,
+        c.req.header("x-rakazo-bot-id"),
+        c.req.header("x-rakazo-space-id"),
+      );
+      const screenId = c.req.header("x-rakazo-screen-id") || c.req.header("x-rakazo-bot-id") || id;
+      const screenIndex = computerScreens.get(id)?.get(screenId)?.index ?? 0;
+      const layout = screenPorts(screenIndex);
+      const result = await runContainerCommand(
+        container,
+        body.argv.length ? body.argv : ["/bin/echo", "ready"],
+        {
+          workingDir: body.cwd ?? "/home/rakazo",
+          env: [
+            ...computerCommandEnv(layout),
+            ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
+          ],
+          timeoutMs: boundedSandboxCommandTimeoutMs(body.timeoutMs),
+        },
+      );
+      await stream.write(JSON.stringify(result));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await stream.write(JSON.stringify({ stdout: "", stderr: message, code: 1 }));
+    } finally {
+      clearInterval(keepalive);
+    }
+  });
 });
 
 app.post("/computers/:id/browser", async (c) => {
