@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP, type LookupFunction } from "node:net";
 import {
@@ -22,6 +23,7 @@ import {
   assertAllowedOpenAiCompatibleRequestUrl,
   assertAllowedOpenAiCompatibleUrl,
   assertHttpsForKeyedOpenAiCompatibleUrl,
+  isOpenCodeCompatibleUrl,
   isPrivateOpenAiCompatibleHostname,
   normalizeOpenAiCompatibleBaseUrl,
   OPENAI_COMPATIBLE_PROVIDER_ID,
@@ -83,12 +85,12 @@ function openAiCompatibleProvider(models: Model<"openai-completions">[]): Provid
   const safeApi: ProviderStreams = {
     stream: (model, context, options) =>
       api.stream(model, context, {
-        ...options,
+        ...withOpenCodeCompatHeaders(model, options),
         fetch: createOpenAiCompatibleFetch(options?.fetch),
       }),
     streamSimple: (model, context, options) =>
       api.streamSimple(model, context, {
-        ...options,
+        ...withOpenCodeCompatHeaders(model, options),
         fetch: createOpenAiCompatibleFetch(options?.fetch),
       }),
   };
@@ -138,6 +140,40 @@ export function createOpenAiCompatibleLookup(
       throw new Error("Public model server hostname resolved to a private address");
     }
   });
+}
+
+const OPENCODE_SESSION_HEADER = "x-opencode-session";
+
+type OpenCodeStreamOptions = { sessionId?: string; headers?: Record<string, string | null> };
+
+/** Header names are case-insensitive: any caller-set casing counts as explicit. */
+function carryHeader(headers: Record<string, string | null> | undefined, name: string): boolean {
+  return Object.keys(headers ?? {}).some((key) => key.toLowerCase() === name);
+}
+
+/**
+ * OpenCode endpoints reject chat requests without a sticky x-opencode-session
+ * header. Custom Provider connections pointed at OpenCode get the same
+ * per-conversation id the native opencode providers use — the caller's session
+ * id when one is supplied, a stable-per-call UUID otherwise — plus our client
+ * tag, on every stream through this provider.
+ */
+export function withOpenCodeCompatHeaders(
+  model: { baseUrl?: string },
+  options?: OpenCodeStreamOptions,
+): OpenCodeStreamOptions | undefined {
+  if (!isOpenCodeCompatibleUrl(model.baseUrl)) return options;
+  const sessionId = options?.sessionId?.trim() || randomUUID();
+  const headers: Record<string, string | null> = { ...options?.headers };
+  // Injection acts like a default header: an explicit caller value under any
+  // casing wins and is never duplicated, mirroring the native opencode path.
+  if (!carryHeader(headers, OPENCODE_SESSION_HEADER)) {
+    headers[OPENCODE_SESSION_HEADER] = sessionId;
+  }
+  if (!carryHeader(headers, "x-opencode-client")) {
+    headers["x-opencode-client"] = "rakazo";
+  }
+  return { ...options, sessionId, headers };
 }
 
 function headersCarryAuthorization(headers: HeadersInit): boolean {
@@ -409,6 +445,11 @@ export async function probeOpenAiCompatibleModels(
   try {
     const headers: Record<string, string> = { Accept: "application/json" };
     if (input.apiKey?.trim()) headers.Authorization = `Bearer ${input.apiKey.trim()}`;
+    // OpenCode's gateway wants the session header on every request it routes.
+    if (isOpenCodeCompatibleUrl(baseUrl.href)) {
+      headers["x-opencode-session"] = randomUUID();
+      headers["x-opencode-client"] = "rakazo";
+    }
     const safeFetch = createOpenAiCompatibleFetch(fetchImpl);
     const response = await safeFetch(new URL("models", `${baseUrl.href}/`).href, {
       headers,

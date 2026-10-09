@@ -54,6 +54,21 @@ export function isPrivateOpenAiCompatibleHostname(hostname: string): boolean {
   return false;
 }
 
+/**
+ * OpenCode gateways (zen/go) reject chat requests without a sticky
+ * x-opencode-session header; detect them so the client can attach one
+ * automatically instead of the user learning the 400 by hand.
+ */
+export function isOpenCodeCompatibleUrl(raw: string | undefined | null): boolean {
+  if (!raw?.trim()) return false;
+  try {
+    const hostname = normalizeHostname(new URL(raw.trim()).hostname);
+    return hostname === "opencode.ai" || hostname.endsWith(".opencode.ai");
+  } catch {
+    return false;
+  }
+}
+
 function isBlockedHostname(hostname: string): boolean {
   const normalized = normalizeHostname(hostname);
   return (
