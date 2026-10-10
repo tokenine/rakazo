@@ -3,6 +3,7 @@ import {
   assertAllowedOpenAiCompatibleRequestUrl,
   assertAllowedOpenAiCompatibleUrl,
   assertHttpsForKeyedOpenAiCompatibleUrl,
+  isOpenCodeCompatibleUrl,
   normalizeOpenAiCompatibleBaseUrl,
   openAiCompatAllowPublicHosts,
 } from "./openai-compatible-url.js";
@@ -15,6 +16,17 @@ afterEach(() => {
 });
 
 describe("openai-compatible URL policy", () => {
+  it("detects OpenCode gateways by host, not path", () => {
+    expect(isOpenCodeCompatibleUrl("https://opencode.ai/zen/go/v1")).toBe(true);
+    expect(isOpenCodeCompatibleUrl("https://opencode.ai/zen/v1")).toBe(true);
+    expect(isOpenCodeCompatibleUrl("https://api.opencode.ai/v1")).toBe(true);
+    expect(isOpenCodeCompatibleUrl("https://api.z.ai/api/coding/paas/v4")).toBe(false);
+    expect(isOpenCodeCompatibleUrl("https://opencode.example.com/v1")).toBe(false);
+    expect(isOpenCodeCompatibleUrl("not a url")).toBe(false);
+    expect(isOpenCodeCompatibleUrl(undefined)).toBe(false);
+    expect(isOpenCodeCompatibleUrl("")).toBe(false);
+  });
+
   it("normalizes missing /v1 suffix without doubling it", () => {
     expect(normalizeOpenAiCompatibleBaseUrl("http://127.0.0.1:8000")).toBe(
       "http://127.0.0.1:8000/v1",

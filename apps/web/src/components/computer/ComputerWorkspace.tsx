@@ -11,11 +11,17 @@ const TerminalApp = lazy(() => import("./TerminalApp"));
 
 type App = "terminal" | "files";
 type Position = { x: number; y: number };
+type Size = { width: number; height: number };
+
+const MIN_WINDOW_WIDTH = 320;
+const MIN_WINDOW_HEIGHT = 220;
+const DEFAULT_WINDOW_WIDTH = 560;
+const DEFAULT_WINDOW_HEIGHT = 420;
 
 /**
  * The computer overlay body: the live screen fills the desktop, and a dock opens the
- * terminal and file browser as movable windows on top of it. The browser button tucks the
- * windows away (keeping their sessions) to reveal the screen.
+ * terminal and file browser as movable, resizable windows on top of it. The browser
+ * button tucks the windows away (keeping their sessions) to reveal the screen.
  */
 export function ComputerWorkspace({
   botId,
@@ -39,6 +45,7 @@ export function ComputerWorkspace({
   const [open, setOpen] = useState<App[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [positions, setPositions] = useState<Partial<Record<App, Position>>>({});
+  const [sizes, setSizes] = useState<Partial<Record<App, Size>>>({});
   const running = computer?.state === "running";
   const shellAvailable = running && Boolean(computer?.terminalAvailable);
   const hasScreen = computer?.kind !== "desktop";
@@ -64,6 +71,10 @@ export function ComputerWorkspace({
     (app: App, position: Position) => setPositions((current) => ({ ...current, [app]: position })),
     [],
   );
+  const resize = useCallback(
+    (app: App, size: Size) => setSizes((current) => ({ ...current, [app]: size })),
+    [],
+  );
 
   if (!dock) return <div className="relative h-full min-h-0">{children}</div>;
 
@@ -79,8 +90,10 @@ export function ComputerWorkspace({
             hidden={collapsed}
             bounds={desktop}
             position={positions[app.id] ?? defaultPosition(app.id, desktop.current)}
+            size={sizes[app.id] ?? defaultSize(desktop.current)}
             zIndex={10 + open.indexOf(app.id)}
             onMove={(position) => move(app.id, position)}
+            onResize={(size) => resize(app.id, size)}
             onFocus={() => focus(app.id)}
             onClose={() => toggle(app.id)}
           >
@@ -135,13 +148,28 @@ export function ComputerWorkspace({
   );
 }
 
-const WINDOW_WIDTH = 560;
-
 /** Terminal opens on the left and Files on the right so both stay visible. */
 function defaultPosition(app: App, desktop: HTMLDivElement | null): Position {
   if (app === "terminal") return { x: 32, y: 24 };
   const width = desktop?.clientWidth ?? 0;
-  return { x: Math.max(48, width - WINDOW_WIDTH - 32), y: 56 };
+  return { x: Math.max(48, width - DEFAULT_WINDOW_WIDTH - 32), y: 56 };
+}
+
+/** The pre-resize size: the classic 560×420 window, clamped to the desktop. */
+function defaultSize(desktop: HTMLDivElement | null): Size {
+  const width = Math.min(
+    DEFAULT_WINDOW_WIDTH,
+    (desktop?.clientWidth ?? DEFAULT_WINDOW_WIDTH + 32) - 32,
+  );
+  const height = Math.min(DEFAULT_WINDOW_HEIGHT, Math.round((desktop?.clientHeight ?? 600) * 0.7));
+  return {
+    width: Math.max(MIN_WINDOW_WIDTH, width),
+    height: Math.max(MIN_WINDOW_HEIGHT, height),
+  };
+}
+
+function clampValue(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 function WorkspaceWindow({
@@ -149,8 +177,10 @@ function WorkspaceWindow({
   hidden,
   bounds,
   position,
+  size,
   zIndex,
   onMove,
+  onResize,
   onFocus,
   onClose,
   children,
@@ -160,14 +190,17 @@ function WorkspaceWindow({
   hidden: boolean;
   bounds: RefObject<HTMLDivElement | null>;
   position: Position;
+  size: Size;
   zIndex: number;
   onMove: (position: Position) => void;
+  onResize: (size: Size) => void;
   onFocus: () => void;
   onClose: () => void;
   children: ReactNode;
 }) {
   const { t } = useLingui();
   const drag = useRef<{ dx: number; dy: number } | null>(null);
+  const resizing = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if ((event.target as HTMLElement).closest("button")) return;
@@ -187,15 +220,50 @@ function WorkspaceWindow({
     });
   }
 
+  function startResize(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    resizing.current = {
+      x: event.clientX,
+      y: event.clientY,
+      width: size.width,
+      height: size.height,
+    };
+  }
+
+  function resizeTo(event: PointerEvent<HTMLDivElement>) {
+    const start = resizing.current;
+    if (!start) return;
+    // Keep the right/bottom edge inside the desktop as the window grows.
+    const area = bounds.current?.getBoundingClientRect();
+    const maxWidth = area ? area.width - position.x : Number.MAX_SAFE_INTEGER;
+    const maxHeight = area ? area.height - position.y : Number.MAX_SAFE_INTEGER;
+    onResize({
+      width: Math.round(
+        clampValue(
+          start.width + event.clientX - start.x,
+          MIN_WINDOW_WIDTH,
+          Math.max(MIN_WINDOW_WIDTH, maxWidth),
+        ),
+      ),
+      height: Math.round(
+        clampValue(
+          start.height + event.clientY - start.y,
+          MIN_WINDOW_HEIGHT,
+          Math.max(MIN_WINDOW_HEIGHT, maxHeight),
+        ),
+      ),
+    });
+  }
+
   return (
     <section
       aria-label={title}
       hidden={hidden}
       className={cn(
-        "absolute h-[min(420px,70%)] w-[min(560px,calc(100%-32px))] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl",
+        "absolute flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl",
         hidden ? "hidden" : "flex",
       )}
-      style={{ left: position.x, top: position.y, zIndex }}
+      style={{ left: position.x, top: position.y, width: size.width, height: size.height, zIndex }}
       onPointerDownCapture={onFocus}
     >
       <div
@@ -218,6 +286,25 @@ function WorkspaceWindow({
         </Button>
       </div>
       <div className="min-h-0 flex-1">{children}</div>
+      {[
+        "absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize",
+        "absolute inset-y-0 right-0 w-1.5 cursor-ew-resize",
+        "absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize",
+      ].map((className) => (
+        <div
+          key={className}
+          aria-hidden
+          className={cn("touch-none", className)}
+          onPointerDown={startResize}
+          onPointerMove={resizeTo}
+          onPointerUp={() => {
+            resizing.current = null;
+          }}
+          onPointerCancel={() => {
+            resizing.current = null;
+          }}
+        />
+      ))}
     </section>
   );
 }

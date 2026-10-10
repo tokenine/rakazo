@@ -12,6 +12,7 @@ import {
   prepareOpenAiCompatibleConnect,
   probeOpenAiCompatibleModels,
   registerOpenAiCompatibleRuntime,
+  withOpenCodeCompatHeaders,
 } from "./pi-openai-compatible-provider.js";
 
 describe("model connect", () => {
@@ -367,5 +368,77 @@ describe("openai-compatible provider", () => {
       (entry) => entry.provider === OPENAI_COMPATIBLE_PROVIDER_ID,
     );
     expect(entries.length).toBeGreaterThan(0);
+  });
+
+  it("sends the OpenCode session headers when probing an OpenCode endpoint", async () => {
+    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
+    try {
+      let seen: { url: string; headers?: HeadersInit } | undefined;
+      const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
+        seen = { url: String(input), headers: init?.headers };
+        return new Response(JSON.stringify({ object: "list", data: [{ id: "glm-5.3" }] }), {
+          status: 200,
+        });
+      };
+      await expect(
+        probeOpenAiCompatibleModels({ baseUrl: "https://opencode.ai/zen/go/v1" }, fetchImpl),
+      ).resolves.toEqual(["glm-5.3"]);
+      const headers = new Headers(seen?.headers);
+      expect(headers.get("x-opencode-session")).toMatch(/[0-9a-f-]{32,}/);
+      expect(headers.get("x-opencode-client")).toBe("rakazo");
+    } finally {
+      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+    }
+  });
+});
+
+describe("Custom Provider OpenCode headers", () => {
+  it("attaches the sticky session and client headers for OpenCode base URLs", () => {
+    const result = withOpenCodeCompatHeaders(
+      { baseUrl: "https://opencode.ai/zen/go/v1" },
+      { sessionId: "thread-1:bot-1", headers: { "X-Custom": "1" } },
+    );
+
+    expect(result).toEqual({
+      sessionId: "thread-1:bot-1",
+      headers: {
+        "x-opencode-session": "thread-1:bot-1",
+        "x-opencode-client": "rakazo",
+        "X-Custom": "1",
+      },
+    });
+  });
+
+  it("generates a session id when the caller did not provide one", () => {
+    const result = withOpenCodeCompatHeaders({ baseUrl: "https://opencode.ai/zen/go/v1" });
+
+    expect(result?.sessionId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    expect(result?.headers?.["x-opencode-session"]).toBe(result?.sessionId);
+    expect(result?.headers?.["x-opencode-client"]).toBe("rakazo");
+  });
+
+  it("keeps an explicit session header regardless of casing", () => {
+    const result = withOpenCodeCompatHeaders(
+      { baseUrl: "https://opencode.ai/zen/go/v1" },
+      { sessionId: "thread-1:bot-1", headers: { "X-OpenCode-Session": "explicit" } },
+    );
+
+    expect(result?.sessionId).toBe("thread-1:bot-1");
+    expect(result?.headers?.["X-OpenCode-Session"]).toBe("explicit");
+    expect(Object.keys(result?.headers ?? {})).not.toContain("x-opencode-session");
+    expect(result?.headers?.["x-opencode-client"]).toBe("rakazo");
+  });
+
+  it("leaves other endpoints untouched, including z.ai", () => {
+    const model = { baseUrl: "https://api.z.ai/api/coding/paas/v4" };
+    const options = { sessionId: "thread-1:bot-1", headers: { "X-Custom": "1" } };
+
+    expect(withOpenCodeCompatHeaders(model, options)).toBe(options);
+    expect(withOpenCodeCompatHeaders({ baseUrl: undefined }, options)).toBe(options);
+    expect(withOpenCodeCompatHeaders(model, undefined)).toBeUndefined();
   });
 });

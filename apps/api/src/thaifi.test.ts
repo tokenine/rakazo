@@ -41,9 +41,9 @@ describe("fetchThaifiBalances", () => {
       "fetch",
       vi.fn(async () =>
         Response.json([
-          { jsonrpc: "2.0", id: 0, result: "0x" + 1_234_567n.toString(16).padStart(64, "0") },
-          { jsonrpc: "2.0", id: 1, result: "0x" + 4_498_625n.toString(16).padStart(64, "0") },
-          { jsonrpc: "2.0", id: 2, result: "0x" + 0n.toString(16).padStart(64, "0") },
+          { jsonrpc: "2.0", id: 0, result: `0x${1_234_567n.toString(16).padStart(64, "0")}` },
+          { jsonrpc: "2.0", id: 1, result: `0x${4_498_625n.toString(16).padStart(64, "0")}` },
+          { jsonrpc: "2.0", id: 2, result: `0x${0n.toString(16).padStart(64, "0")}` },
         ]),
       ),
     );

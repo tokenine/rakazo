@@ -1,6 +1,8 @@
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import type { Me, ThinkingLevel } from "@rakazo/contracts";
 import {
+  AI7_BASE_URL,
+  AI7_PROVIDER_ID,
   DEFAULT_MODEL_CONTEXT_WINDOW,
   DEFAULT_MODEL_MAX_TOKENS,
   MAX_MODEL_CONTEXT_WINDOW,
@@ -11,6 +13,7 @@ import {
   parseModelContextWindow,
   parseModelMaxImagesPerPrompt,
   parseModelMaxTokens,
+  UI_MODEL_PROVIDER_IDS,
 } from "@rakazo/contracts";
 import { createModelProbe, initialModelProbeState } from "@rakazo/core";
 import {
@@ -63,7 +66,6 @@ export function ModelSettingsOverlay({
   const [credentials, setCredentials] = useState<ModelCredential[]>([]);
   const [me, setMe] = useState<Me | null>(null);
   const [provider, setProvider] = useState("");
-  const [providerQuery, setProviderQuery] = useState("");
   const [modelId, setModelId] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -112,10 +114,19 @@ export function ModelSettingsOverlay({
       rpc.me(),
     ]);
     if (refreshRevision !== refreshRevisionRef.current) return;
-    const nextProvider =
-      provider && nextCatalog.some((entry) => entry.provider === provider)
-        ? provider
-        : (nextMe.defaultProvider ?? nextCatalog[0]?.provider ?? "");
+    const offered = (candidate: string | undefined | null): boolean =>
+      Boolean(
+        candidate &&
+          UI_MODEL_PROVIDER_IDS.includes(candidate) &&
+          nextCatalog.some((entry) => entry.provider === candidate),
+      );
+    const nextProvider = offered(provider)
+      ? provider!
+      : offered(nextMe.defaultProvider)
+        ? nextMe.defaultProvider!
+        : (UI_MODEL_PROVIDER_IDS.find((candidate) =>
+            nextCatalog.some((entry) => entry.provider === candidate),
+          ) ?? UI_MODEL_PROVIDER_IDS[0]!);
     const nextCredential = nextCredentials.find((entry) => entry.provider === nextProvider);
     const nextModel =
       nextProvider === OPENAI_COMPATIBLE_PROVIDER_ID
@@ -163,30 +174,27 @@ export function ModelSettingsOverlay({
   const groups = useMemo(() => {
     const grouped = new Map<string, ModelCatalogEntry[]>();
     for (const entry of catalog) {
+      if (!UI_MODEL_PROVIDER_IDS.includes(entry.provider)) continue;
       const entries = grouped.get(entry.provider) ?? [];
       entries.push(entry);
       grouped.set(entry.provider, entries);
     }
-    return [...grouped].map(([id, entries]) => ({
-      id,
-      name: entries[0]?.providerName ?? id,
-      entries,
-    }));
+    return [...grouped]
+      .sort(
+        ([left], [right]) =>
+          UI_MODEL_PROVIDER_IDS.indexOf(left) - UI_MODEL_PROVIDER_IDS.indexOf(right),
+      )
+      .map(([id, entries]) => ({
+        id,
+        name: entries[0]?.providerName ?? id,
+        entries,
+      }));
   }, [catalog]);
-  const filteredGroups = useMemo(() => {
-    const query = providerQuery.trim().toLowerCase();
-    if (!query) return groups;
-    return groups.filter((group) =>
-      [group.id, group.name, ...group.entries.flatMap((entry) => [entry.id, entry.label])]
-        .join(" ")
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [groups, providerQuery]);
   const modelsForProvider = catalog.filter((entry) => entry.provider === provider);
   const selected = modelsForProvider.find((entry) => entry.id === modelId) ?? modelsForProvider[0];
   selectedLabelRef.current = selected?.label;
   const isOpenAiCompatible = provider === OPENAI_COMPATIBLE_PROVIDER_ID;
+  const isAi7 = provider === AI7_PROVIDER_ID;
   const credential = credentials.find((entry) => entry.provider === provider);
   const currentEntry = catalog.find(
     (entry) => entry.provider === me?.defaultProvider && entry.id === me?.defaultModel,
@@ -202,7 +210,8 @@ export function ModelSettingsOverlay({
     baseUrl: effectiveBaseUrl,
     modelId,
   });
-  const builtinLimitSave = !isOpenAiCompatible && Boolean(credential) && apiKey.trim().length === 0;
+  const builtinLimitSave =
+    !isOpenAiCompatible && !isAi7 && Boolean(credential) && apiKey.trim().length === 0;
 
   function updateBaseUrl(nextBaseUrl: string) {
     setBaseUrl(nextBaseUrl);
@@ -279,7 +288,7 @@ export function ModelSettingsOverlay({
 
   async function connectKey() {
     if (!selected) return;
-    const savingLimitOnly = !isOpenAiCompatible && !apiKey.trim();
+    const savingLimitOnly = !isOpenAiCompatible && !isAi7 && !apiKey.trim();
     if (isOpenAiCompatible) {
       if (!effectiveBaseUrl || !modelId.trim()) return;
     } else if (savingLimitOnly) {
@@ -426,19 +435,9 @@ export function ModelSettingsOverlay({
           <div className="mb-3 text-[13.5px] text-muted-foreground">
             <Trans>Providers</Trans>
           </div>
-          <label className="sr-only" htmlFor="model-provider-search">
-            <Trans>Search providers</Trans>
-          </label>
-          <Input
-            id="model-provider-search"
-            value={providerQuery}
-            onChange={(event) => setProviderQuery(event.target.value)}
-            placeholder={t`Search providers`}
-            className="h-10 rounded-xl px-3.5"
-          />
           <div className="rk-scroll mt-3 max-h-[240px] overflow-y-auto rounded-xl border border-border md:min-h-0 md:max-h-none md:flex-1">
-            {filteredGroups.length ? (
-              filteredGroups.map((group) => {
+            {groups.length ? (
+              groups.map((group) => {
                 const connected = credentials.some((entry) => entry.provider === group.id);
                 return (
                   <button
@@ -481,7 +480,27 @@ export function ModelSettingsOverlay({
           {selected ? (
             <>
               <div className="block text-[13.5px] text-muted-foreground">
-                {isOpenAiCompatible ? (
+                {isAi7 ? (
+                  <>
+                    <div className="rounded-xl border border-border px-4 py-3">
+                      <div className="text-[12.5px] uppercase tracking-[0.08em] text-muted-foreground/80">
+                        <Trans>Server URL</Trans>
+                      </div>
+                      <div className="mt-1 font-mono text-[14px] text-foreground">
+                        {AI7_BASE_URL}
+                      </div>
+                      <div className="mt-3 text-[12.5px] uppercase tracking-[0.08em] text-muted-foreground/80">
+                        <Trans>Model</Trans>
+                      </div>
+                      <div className="mt-1 text-[15px] text-foreground">{selected.label}</div>
+                    </div>
+                    <p className="mt-2 text-[13px] leading-[1.5] text-muted-foreground">
+                      <Trans>
+                        The Ai7 server and model are fixed. Paste your Ai7 API key to connect.
+                      </Trans>
+                    </p>
+                  </>
+                ) : isOpenAiCompatible ? (
                   <>
                     <label className="block" htmlFor="model-base-url">
                       <Trans>Server URL</Trans>

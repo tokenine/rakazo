@@ -10,8 +10,17 @@ const history = vi.hoisted(() => ({
   impl: vi.fn<(...args: unknown[]) => Promise<ComputerCommand[]>>(),
 }));
 
+const terminalUrl = vi.hoisted(() => ({
+  impl: vi.fn<(...args: unknown[]) => Promise<{ url: string }>>(),
+}));
+
 vi.mock("../../lib/rpc", () => ({
-  rpc: { computer: { commands: (...args: unknown[]) => history.impl(...args) } },
+  rpc: {
+    computer: {
+      commands: (...args: unknown[]) => history.impl(...args),
+      terminalUrl: (...args: unknown[]) => terminalUrl.impl(...args),
+    },
+  },
 }));
 
 vi.mock("@lingui/react/macro", () => {
@@ -23,9 +32,14 @@ vi.mock("@lingui/react/macro", () => {
 const term = vi.hoisted(() => {
   const api = {
     writes: [] as string[],
+    cols: 80,
+    rows: 24,
     loadAddon: vi.fn(),
     open: vi.fn(),
     dispose: vi.fn(),
+    focus: vi.fn(),
+    onData: vi.fn(() => ({ dispose() {} })),
+    onResize: vi.fn(() => ({ dispose() {} })),
     write(data: string) {
       api.writes.push(data);
     },
@@ -81,7 +95,7 @@ function hangHistory() {
   return resolve;
 }
 
-async function renderTerminal() {
+async function renderTerminal(canUseShell = false) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
@@ -95,7 +109,7 @@ async function renderTerminal() {
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<TerminalApp botId="bot-1" canUseShell={false} />);
+    root.render(<TerminalApp botId="bot-1" canUseShell={canUseShell} />);
   });
   return {
     async cleanup() {
@@ -106,9 +120,14 @@ async function renderTerminal() {
   };
 }
 
+function activeTab(): string | undefined {
+  return document.querySelector('[role="tab"][aria-selected="true"]')?.textContent;
+}
+
 afterEach(() => {
   term.writes.length = 0;
   history.impl.mockReset();
+  terminalUrl.impl.mockReset();
 });
 
 it("keeps the terminal blank until history settles, then shows the empty state", async () => {
@@ -118,6 +137,34 @@ it("keeps the terminal blank until history settles, then shows the empty state",
     expect(term.writes).toEqual([]);
     await act(async () => resolveHistory([]));
     expect(term.writes).toEqual(["\x1bc\x1b[2mNo bot activity yet.\x1b[0m\r\n"]);
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("opens on the shell tab and connects when control is already held", async () => {
+  history.impl.mockResolvedValue([]);
+  // Hanging URL: the connection is in flight; the shell pane is what matters here.
+  terminalUrl.impl.mockImplementation(() => new Promise(() => undefined));
+  const view = await renderTerminal(true);
+  try {
+    expect(activeTab()).toBe("Shell");
+    expect(terminalUrl.impl).toHaveBeenCalledWith({ botId: "bot-1" });
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("shows only the activity feed when control is missing", async () => {
+  const resolveHistory = hangHistory();
+  const view = await renderTerminal(false);
+  try {
+    // No tabs without control: activity only, no shell pane, no connection attempt.
+    expect(document.querySelector('[role="tab"]')).toBeNull();
+    expect(document.querySelector('[data-testid="computer-shell"]')).toBeNull();
+    expect(terminalUrl.impl).not.toHaveBeenCalled();
+    await act(async () => resolveHistory([]));
+    expect(document.querySelector('[data-testid="computer-terminal"]')).not.toBeNull();
   } finally {
     await view.cleanup();
   }

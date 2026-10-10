@@ -190,12 +190,13 @@ async function mirrorRun(deps: MessagingDeliveryDeps, runId: string): Promise<vo
   for (const message of messages) {
     const blocks = (message.blocks ?? []) as MessageBlock[];
     for (const block of blocks) {
-      if (block.kind !== "image" || !("artifactId" in block) || !block.artifactId) continue;
+      if (block.kind !== "image" && block.kind !== "file") continue;
+      if (!("artifactId" in block) || !block.artifactId) continue;
       rows.push({
-        idempotencyKey: `img:${message.id}:${block.artifactId}`,
-        kind: "image",
+        idempotencyKey: `${block.kind}:${message.id}:${block.artifactId}`,
+        kind: block.kind,
         identityId: identity.id,
-        body: ("name" in block && typeof block.name === "string" && block.name) || "image",
+        body: ("name" in block && typeof block.name === "string" && block.name) || block.kind,
         sourceMessageId: message.id,
         artifactId: block.artifactId,
       });

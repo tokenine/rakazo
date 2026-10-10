@@ -7,7 +7,7 @@ import { newClientId } from "../../lib/client-id";
 import { connectMcpOauth } from "../../lib/mcp-connect";
 import { rpc } from "../../lib/rpc";
 
-type Choice = "direct" | "composio" | "pipedream" | "executor";
+type Choice = "direct" | "composio" | "pipedream" | "google" | "executor";
 
 export function IntegrationSetup({
   onDone,
@@ -44,12 +44,15 @@ export function IntegrationSetup({
     { id: "direct", label: t`Direct MCP` },
     { id: "composio", label: "Composio" },
     { id: "pipedream", label: "Pipedream" },
+    { id: "google", label: "Google" },
     { id: "executor", label: "Executor" },
   ];
-  const managed = choice === "composio" || choice === "pipedream";
+  const managed = choice === "composio" || choice === "pipedream" || choice === "google";
   const hasCredentials = Boolean(apiKey.trim());
   const credentialsReady =
-    hasCredentials && (choice !== "pipedream" || Boolean(clientId.trim() && projectId.trim()));
+    hasCredentials &&
+    (choice !== "pipedream" || Boolean(clientId.trim() && projectId.trim())) &&
+    (choice !== "google" || Boolean(clientId.trim()));
   const remoteResults = [
     ...new Map(
       results.flatMap((result) =>
@@ -88,13 +91,15 @@ export function IntegrationSetup({
       await rpc.integrationSetup.save(
         choice === "composio"
           ? { provider: "composio", apiKey }
-          : {
-              provider: "pipedream",
-              clientId,
-              clientSecret: apiKey,
-              projectId,
-              environment: "production",
-            },
+          : choice === "google"
+            ? { provider: "google", clientId, clientSecret: apiKey }
+            : {
+                provider: "pipedream",
+                clientId,
+                clientSecret: apiKey,
+                projectId,
+                environment: "production",
+              },
       );
       setApiKey("");
       setState(await rpc.integrationSetup.get());
@@ -138,7 +143,10 @@ export function IntegrationSetup({
           className="overflow-hidden rounded-xl border border-border"
         >
           {choices
-            .filter(({ id }) => !managedOnly || id === "composio" || id === "pipedream")
+            .filter(
+              ({ id }) =>
+                !managedOnly || id === "composio" || id === "pipedream" || id === "google",
+            )
             .map(({ id, label }) => (
               <button
                 key={id}
@@ -158,7 +166,7 @@ export function IntegrationSetup({
             ))}
         </fieldset>
       ) : null}
-      {choice === "composio" || choice === "pipedream" ? (
+      {managed ? (
         <>
           {configured ? (
             <p className="text-sm text-success">
@@ -167,7 +175,7 @@ export function IntegrationSetup({
           ) : null}
           {state?.canConfigure ? (
             <>
-              {choice === "pipedream" ? (
+              {choice === "pipedream" || choice === "google" ? (
                 <>
                   <label htmlFor={`${fieldId}-client-id`} className="block text-sm">
                     <Trans>Client ID</Trans>
@@ -179,16 +187,18 @@ export function IntegrationSetup({
                       autoComplete="off"
                     />
                   </label>
-                  <label htmlFor={`${fieldId}-project-id`} className="block text-sm">
-                    <Trans>Project ID</Trans>
-                    <Input
-                      id={`${fieldId}-project-id`}
-                      className="mt-2"
-                      value={projectId}
-                      onChange={(event) => setProjectId(event.target.value)}
-                      autoComplete="off"
-                    />
-                  </label>
+                  {choice === "pipedream" ? (
+                    <label htmlFor={`${fieldId}-project-id`} className="block text-sm">
+                      <Trans>Project ID</Trans>
+                      <Input
+                        id={`${fieldId}-project-id`}
+                        className="mt-2"
+                        value={projectId}
+                        onChange={(event) => setProjectId(event.target.value)}
+                        autoComplete="off"
+                      />
+                    </label>
+                  ) : null}
                 </>
               ) : null}
               <label htmlFor={`${fieldId}-key`} className="block text-sm">
@@ -202,12 +212,24 @@ export function IntegrationSetup({
                   autoComplete="new-password"
                 />
               </label>
+              {choice === "google" ? (
+                <p className="text-sm leading-[1.5] text-muted-foreground">
+                  <Trans>
+                    In your Google Cloud OAuth client, add this authorized redirect URI:
+                  </Trans>{" "}
+                  <code className="break-all">
+                    {`${window.location.origin}/api/integrations/google/callback`}
+                  </code>
+                </p>
+              ) : null}
               <a
                 className="text-sm text-muted-foreground underline"
                 href={
                   choice === "composio"
                     ? "https://dashboard.composio.dev"
-                    : "https://pipedream.com/docs/connect/mcp/developers"
+                    : choice === "google"
+                      ? "https://console.cloud.google.com/apis/credentials"
+                      : "https://pipedream.com/docs/connect/mcp/developers"
                 }
                 target="_blank"
                 rel="noreferrer"

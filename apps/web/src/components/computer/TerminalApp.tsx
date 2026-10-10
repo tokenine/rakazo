@@ -28,9 +28,10 @@ const SHELL_STABLE_MS = 10_000;
 type View = "activity" | "shell";
 
 /**
- * The terminal always shows what the bot did on its computer. A user holding control can
- * also open an interactive shell; it starts on first use and stays connected across tab
- * switches. Without control, "Open shell" takes control and then switches to the shell.
+ * The terminal opens on the interactive shell when control is available, with the bot's
+ * activity one tab away. Without control, activity is shown and "Open shell" takes
+ * control and then switches to the shell. The shell starts when first shown and stays
+ * connected across tab switches.
  */
 export default function TerminalApp({
   botId,
@@ -42,8 +43,8 @@ export default function TerminalApp({
   onTakeControl?: () => Promise<boolean>;
 }) {
   const { t } = useLingui();
-  const [view, setView] = useState<View>("activity");
-  const [shellOpened, setShellOpened] = useState(false);
+  const [view, setView] = useState<View>("shell");
+  const [shellOpened, setShellOpened] = useState(true);
   // Set by "Open shell": switch to the shell once control actually arrives.
   const [shellRequested, setShellRequested] = useState(false);
   const [takingControl, setTakingControl] = useState(false);

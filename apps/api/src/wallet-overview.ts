@@ -47,7 +47,7 @@ export async function walletOverview(
       const base = { botId: bot.id, botName: bot.name };
       const computer = bot.computer;
       const providerRef = computer?.providerRef;
-      if (!computer || computer.state !== "running" || !providerRef) {
+      if (computer?.state !== "running" || !providerRef) {
         return { ...base, state: "unavailable" as const };
       }
       const stdout = await execOnComputer(

@@ -1,5 +1,27 @@
-import { describe, expect, it } from "vitest";
-import { isProtectedComputerLifecycleCommand } from "./executor.js";
+import { afterEach, describe, expect, it } from "vitest";
+import { computerShellGuardEnabled, isProtectedComputerLifecycleCommand } from "./executor.js";
+
+const savedGuard = process.env.RAKAZO_COMPUTER_SHELL_GUARD;
+
+afterEach(() => {
+  if (savedGuard === undefined) delete process.env.RAKAZO_COMPUTER_SHELL_GUARD;
+  else process.env.RAKAZO_COMPUTER_SHELL_GUARD = savedGuard;
+});
+
+describe("computer shell guard opt-out", () => {
+  it("is enabled unless the operator turns it off", () => {
+    delete process.env.RAKAZO_COMPUTER_SHELL_GUARD;
+    expect(computerShellGuardEnabled()).toBe(true);
+    for (const value of ["on", "", "strict"]) {
+      process.env.RAKAZO_COMPUTER_SHELL_GUARD = value;
+      expect(computerShellGuardEnabled()).toBe(true);
+    }
+    for (const value of ["off", "0", "disabled", " OFF ", "Disabled"]) {
+      process.env.RAKAZO_COMPUTER_SHELL_GUARD = value;
+      expect(computerShellGuardEnabled()).toBe(false);
+    }
+  });
+});
 
 describe("computer lifecycle command guard", () => {
   it("rejects commands that can destroy a graphical bot's desktop", () => {

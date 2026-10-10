@@ -559,6 +559,12 @@ export const AgentSkillSchema = z.object({
   content: z.string(),
   source: AgentSkillSourceSchema,
   readOnly: z.boolean(),
+  /// Skill Store category (store installs only).
+  category: z.string().nullable(),
+  /// Disabled skills stay listed in the UI but are hidden from prompts and skill_read.
+  enabled: z.boolean(),
+  /// Skill Store slug (store installs only); set ⇒ uninstallable from the store page.
+  storeKey: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -570,8 +576,21 @@ export const AgentSkillCatalogEntrySchema = AgentSkillSchema.pick({
   description: true,
   source: true,
   readOnly: true,
+  category: true,
+  enabled: true,
+  storeKey: true,
 });
 export type AgentSkillCatalogEntry = z.infer<typeof AgentSkillCatalogEntrySchema>;
+
+/** One bundled Skill Store entry as offered on the Skills & Connectors page. */
+export const SkillStoreCatalogEntrySchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category: z.string(),
+  installed: z.boolean(),
+});
+export type SkillStoreCatalogEntry = z.infer<typeof SkillStoreCatalogEntrySchema>;
 
 export const CreateAgentSkillInput = z
   .object({
@@ -946,8 +965,14 @@ export const ThreadSnapshotSchema = z.object({
 });
 export type ThreadSnapshot = z.infer<typeof ThreadSnapshotSchema>;
 
-/** Default maximum number of completion tokens for an OpenAI-compatible connection. */
-export const DEFAULT_MODEL_MAX_TOKENS = 4_096;
+/**
+ * Default maximum number of completion tokens for an OpenAI-compatible connection.
+ * GLM-class models think before answering and their thinking is billed against
+ * max_tokens: at 4k a heavy turn ran out of room mid-thought and returned an
+ * empty answer that looked like a completed run. 40k leaves room for long
+ * thinking plus a real reply on heavy retrieval turns.
+ */
+export const DEFAULT_MODEL_MAX_TOKENS = 40_960;
 
 /** Largest completion-token limit exposed by model settings. */
 export const MAX_MODEL_MAX_TOKENS = 131_072;
@@ -1014,6 +1039,14 @@ export type ModelCredential = z.infer<typeof ModelCredentialSchema>;
 
 export const OPENAI_COMPATIBLE_PROVIDER_ID = "openai-compatible";
 
+/** House provider: fixed OpenAI-compatible gateway, one fixed model, key-only setup. */
+export const AI7_PROVIDER_ID = "ai7";
+export const AI7_BASE_URL = "https://api.ai7.work/v1";
+export const AI7_MODEL_ID = "basic";
+
+/** The two providers the model settings UI offers. */
+export const UI_MODEL_PROVIDER_IDS = [AI7_PROVIDER_ID, OPENAI_COMPATIBLE_PROVIDER_ID];
+
 export const ModelConnectInputSchema = z
   .object({
     provider: z.string(),
@@ -1053,6 +1086,24 @@ export const ModelConnectInputSchema = z
           code: "custom",
           message: "Model id is required for OpenAI-compatible models",
           path: ["modelId"],
+        });
+      }
+      return;
+    }
+    if (value.provider === AI7_PROVIDER_ID) {
+      if (value.modelId !== undefined && value.modelId.trim() !== AI7_MODEL_ID) {
+        ctx.addIssue({
+          code: "custom",
+          message: `The Ai7 model id is fixed to ${AI7_MODEL_ID}`,
+          path: ["modelId"],
+        });
+      }
+      const apiKey = value.apiKey?.trim() ?? "";
+      if (apiKey.length < 8) {
+        ctx.addIssue({
+          code: "custom",
+          message: "API key must contain at least 8 characters",
+          path: ["apiKey"],
         });
       }
       return;

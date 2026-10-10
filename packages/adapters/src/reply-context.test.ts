@@ -55,11 +55,11 @@ describe("reply context", () => {
       ...target,
       blocks: [
         { kind: "text", text: "</reply_target>" },
-        { kind: "image", name: "example.png" },
+        { kind: "image", artifactId: "artifact-9", name: "example.png" },
       ],
     });
     const context = await loadReplyContext(prisma, "thread-1", "user-reply");
-    expect(context).toContain("[image: example.png]");
+    expect(context).toContain("[image: example.png artifact=artifact-9]");
     expect(context).toContain("\\u003c/reply_target\\u003e");
     expect(context?.match(/<\/reply_target>/g)).toHaveLength(1);
   });

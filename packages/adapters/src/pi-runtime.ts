@@ -30,7 +30,7 @@ import type {
   AgentToolExecutionResult,
   ConnectorTool,
 } from "@rakazo/adapter-kit";
-import { usableModelId } from "@rakazo/contracts";
+import { AI7_PROVIDER_ID, usableModelId } from "@rakazo/contracts";
 import { getLogger } from "@rakazo/logging";
 import { isToolPauseResult } from "./approval-effect.js";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
@@ -39,6 +39,7 @@ import {
   normalizeOpenAiToolParameters,
   openAiToolParametersNeedNormalization,
 } from "./openai-tool-parameters.js";
+import { registerAi7Provider, registerAi7Runtime } from "./pi-ai7-provider.js";
 import { PiRuntimeCredentialStore, toOAuthCredential } from "./pi-credentials.js";
 import { registerLocalProvider } from "./pi-local-provider.js";
 import { codexComputeResidency } from "./pi-oauth.js";
@@ -79,8 +80,10 @@ const toolCallBudgetsByRun = new Map<string, ToolCallBudget>();
 // would run before .env is loaded and miss the local provider entirely.
 let catalogModelsCache: Models | undefined;
 function catalogModels(): Models {
-  catalogModelsCache ??= registerZaiPlatformProvider(
-    registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+  catalogModelsCache ??= registerAi7Provider(
+    registerZaiPlatformProvider(
+      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    ),
   );
   return catalogModelsCache;
 }
@@ -94,7 +97,7 @@ const SILENT_TOOL_CONTINUATION_PROMPT =
 const SILENT_ALLOWED_TOOL_CONTINUATION_PROMPT =
   "Continue the original task from the latest tool result. If you were instructed to stay silent when there is nothing to report, follow that instruction for the entire final assistant reply. Otherwise use any remaining tools needed, then give the user the final answer.";
 const TOOL_FINAL_RESPONSE_FALLBACK =
-  "I completed the tool step but could not produce a final response. Please ask me to continue.";
+  "ฉันทำงานเครื่องมือเสร็จแล้ว แต่สรุปผลไม่สำเร็จ — พิมพ์ 'ต่อ' เพื่อให้ฉันทำต่อได้เลยครับ";
 const DEFAULT_COMPUTER_SCREENSHOTS_TO_KEEP = 2;
 // Reasoning-capable models must not start at "off": for OpenRouter, pi-ai maps
 // that to reasoning.effort "none", which 400s on endpoints that mandate
@@ -468,7 +471,8 @@ export class PiAgentRuntime implements AgentRuntime {
             streamed = TOOL_FINAL_RESPONSE_FALLBACK;
             queue.push({ type: "text", text: streamed });
           } else if (toolCalls === 0 && !request.allowSilentEmpty) {
-            streamed = request.emptyResponseText?.trim() || "No response. Try again.";
+            streamed =
+              request.emptyResponseText?.trim() || "โมเดลไม่ส่งคำตอบกลับมา ลองสั่งใหม่อีกครั้งนะครับ";
             queue.push({ type: "text", text: streamed });
           }
         }
@@ -547,7 +551,14 @@ export function resolveRuntimeModel(modelConfig: AgentRunRequest["model"]): {
   const credentials = credentialStoreForRequest({ model: modelConfig }, provider);
   const models = modelsForRequest({ model: modelConfig }, provider, credentials);
   let model = models.getModel(provider, modelId);
-  if (!model && provider !== "openrouter" && provider !== OPENAI_COMPATIBLE_PROVIDER_ID) {
+  if (
+    !model &&
+    provider !== "openrouter" &&
+    provider !== OPENAI_COMPATIBLE_PROVIDER_ID &&
+    // Never serve an Ai7 connection from another provider's catalog: the
+    // fallback would ship the Ai7 key to that provider's endpoint.
+    provider !== AI7_PROVIDER_ID
+  ) {
     model = models.getModel("openrouter", modelId);
   }
   if (
@@ -560,7 +571,8 @@ export function resolveRuntimeModel(modelConfig: AgentRunRequest["model"]): {
   }
   const apiKey = modelConfig.oauth
     ? undefined
-    : modelConfig.provider === OPENAI_COMPATIBLE_PROVIDER_ID
+    : modelConfig.provider === OPENAI_COMPATIBLE_PROVIDER_ID ||
+        modelConfig.provider === AI7_PROVIDER_ID
       ? modelConfig.apiKey || "local"
       : // Only OpenRouter may fall back to the OpenRouter env key. Handing it to
         // another provider would ship our key to a vendor it was not issued for.
@@ -591,18 +603,34 @@ export function modelsForRequest(
 ): Models {
   const store = credentials ?? credentialStoreForRequest(request, provider);
   if (store) {
-    return registerZaiPlatformProvider(
-      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels({ credentials: store }))),
+    return registerAi7Provider(
+      registerZaiPlatformProvider(
+        registerOpenAiCompatibleCatalog(
+          registerLocalProvider(builtinModels({ credentials: store })),
+        ),
+      ),
     );
   }
   if (
-    provider === OPENAI_COMPATIBLE_PROVIDER_ID &&
+    (provider === OPENAI_COMPATIBLE_PROVIDER_ID || provider === AI7_PROVIDER_ID) &&
     request.model.baseUrl &&
     request.model.id.trim()
   ) {
-    const models = registerZaiPlatformProvider(
-      registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+    const models = registerAi7Provider(
+      registerZaiPlatformProvider(
+        registerOpenAiCompatibleCatalog(registerLocalProvider(builtinModels())),
+      ),
     );
+    if (provider === AI7_PROVIDER_ID) {
+      return registerAi7Runtime(models, {
+        modelId: request.model.id,
+        baseUrl: request.model.baseUrl,
+        reasoning: request.model.reasoning,
+        acceptsImages: request.model.acceptsImages,
+        maxTokens: request.model.maxTokens,
+        contextWindow: request.model.contextWindow,
+      });
+    }
     return registerOpenAiCompatibleRuntime(models, {
       modelId: request.model.id,
       baseUrl: request.model.baseUrl,

@@ -2344,7 +2344,7 @@ describe("claimSteering", () => {
       {
         id: "steer-1",
         messageId: "message-1",
-        text: "First\n[image: chart.png]",
+        text: "First\n[image: chart.png artifact=artifact-1]",
         blocks: [
           { kind: "text", text: "First" },
           {

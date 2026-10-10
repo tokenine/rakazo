@@ -1,5 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import {
+  AI7_BASE_URL,
+  AI7_MODEL_ID,
+  AI7_PROVIDER_ID,
   DEFAULT_MODEL_CONTEXT_WINDOW,
   DEFAULT_MODEL_MAX_TOKENS,
   type IntegrationSetupState,
@@ -12,6 +15,7 @@ import {
   parseModelMaxImagesPerPrompt,
   parseModelMaxTokens,
   type ThinkingLevel,
+  UI_MODEL_PROVIDER_IDS,
 } from "@rakazo/contracts";
 import { createModelProbe, initialModelProbeState } from "@rakazo/core";
 import {
@@ -106,7 +110,7 @@ export function OnboardingPage() {
   const needsIntegrationSetup = integrationSetup?.needsSetup ?? false;
   const [integrationServers, setIntegrationServers] = useState<string[]>([]);
   const [catalog, setCatalog] = useState<ModelCatalogEntry[]>([]);
-  const [provider, setProvider] = useState("openrouter");
+  const [provider, setProvider] = useState(AI7_PROVIDER_ID);
   const [modelId, setModelId] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -155,10 +159,18 @@ export function OnboardingPage() {
           ) ??
           models.find((entry) => entry.provider === me.defaultProvider) ??
           models[0];
-        if (preferred) {
-          setProvider(preferred.provider);
-          setModelId(preferred.provider === OPENAI_COMPATIBLE_PROVIDER_ID ? "" : preferred.id);
-        }
+        // Only the two offered providers are selectable; anything else (e.g. a
+        // deployment default) falls back to the house provider.
+        const preferredProvider =
+          preferred && UI_MODEL_PROVIDER_IDS.includes(preferred.provider)
+            ? preferred.provider
+            : AI7_PROVIDER_ID;
+        setProvider(preferredProvider);
+        setModelId(
+          preferredProvider === OPENAI_COMPATIBLE_PROVIDER_ID
+            ? ""
+            : (models.find((entry) => entry.provider === preferredProvider)?.id ?? AI7_MODEL_ID),
+        );
         setStep(me.needsModel ? "model" : integrations?.needsSetup ? "integrations" : "bot");
       })
       .catch(() => setStep("bot"));
@@ -170,9 +182,14 @@ export function OnboardingPage() {
   const providers = useMemo(() => {
     const seen = new Map<string, ModelCatalogEntry>();
     for (const entry of catalog) {
+      if (!UI_MODEL_PROVIDER_IDS.includes(entry.provider)) continue;
       if (!seen.has(entry.provider)) seen.set(entry.provider, entry);
     }
-    return [...seen.values()];
+    return [...seen.values()].sort(
+      (left, right) =>
+        UI_MODEL_PROVIDER_IDS.indexOf(left.provider) -
+        UI_MODEL_PROVIDER_IDS.indexOf(right.provider),
+    );
   }, [catalog]);
 
   const modelsForProvider = useMemo(
@@ -182,6 +199,7 @@ export function OnboardingPage() {
 
   const selected = modelsForProvider.find((entry) => entry.id === modelId) ?? modelsForProvider[0];
   const isOpenAiCompatible = provider === OPENAI_COMPATIBLE_PROVIDER_ID;
+  const isAi7 = provider === AI7_PROVIDER_ID;
   const subscriptionSignIn = selected?.signIn !== undefined;
   const acceptsKey = selected?.auth !== "oauth";
   const signInLabel = selected?.oauthLabel ?? t`Sign in`;
@@ -193,7 +211,11 @@ export function OnboardingPage() {
     selected &&
       modelId.trim() &&
       !oauthPending &&
-      (isOpenAiCompatible ? openAiCompatibleReady : acceptsKey && apiKey.trim()),
+      (isOpenAiCompatible
+        ? openAiCompatibleReady
+        : isAi7
+          ? apiKey.trim().length >= 8
+          : acceptsKey && apiKey.trim()),
   );
   const otherModelLabel = t`Other model…`;
   // Base UI Select.Value only resolves labels when Root gets `items`.
@@ -409,7 +431,27 @@ export function OnboardingPage() {
               </Select>
             </div>
             <div className="mt-6 block text-sm text-foreground">
-              {isOpenAiCompatible ? (
+              {isAi7 ? (
+                <>
+                  <div className="rounded-lg border border-border px-3.5 py-3">
+                    <div className="text-[12.5px] uppercase tracking-[0.08em] text-muted-foreground/80">
+                      <Trans>Server URL</Trans>
+                    </div>
+                    <div className="mt-1 font-mono text-[14px] text-foreground">{AI7_BASE_URL}</div>
+                    <div className="mt-3 text-[12.5px] uppercase tracking-[0.08em] text-muted-foreground/80">
+                      <Trans>Model</Trans>
+                    </div>
+                    <div className="mt-1 text-[15px] text-foreground">
+                      {selected?.label ?? AI7_MODEL_ID}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-[13px] leading-[1.5] text-muted-foreground">
+                    <Trans>
+                      The Ai7 server and model are fixed. Paste your Ai7 API key to connect.
+                    </Trans>
+                  </p>
+                </>
+              ) : isOpenAiCompatible ? (
                 <>
                   <label htmlFor={`${fieldId}-base-url`} className="block font-medium">
                     <Trans>Server URL</Trans>

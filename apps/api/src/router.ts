@@ -3683,6 +3683,18 @@ export function createRouter(deps: RouterDeps) {
       remove: authed.agentSkills.remove.handler(async ({ context, input }) =>
         agentSkills.remove(context.actor, input.skillId),
       ),
+      catalog: authed.agentSkills.catalog.handler(async ({ context }) =>
+        agentSkills.catalog(context.actor),
+      ),
+      install: authed.agentSkills.install.handler(async ({ context, input }) =>
+        agentSkills.install(context.actor, input),
+      ),
+      uninstall: authed.agentSkills.uninstall.handler(async ({ context, input }) =>
+        agentSkills.uninstall(context.actor, input.skillId),
+      ),
+      setEnabled: authed.agentSkills.setEnabled.handler(async ({ context, input }) =>
+        agentSkills.setEnabled(context.actor, input),
+      ),
     },
     capabilities: {
       list: authed.capabilities.list.handler(async ({ context }) => {
@@ -4431,10 +4443,10 @@ export function createRouter(deps: RouterDeps) {
         }));
       }),
       begin: authed.connections.begin.handler(async ({ context, input }) => {
+        const managedId = IntegrationProviderIdSchema.safeParse(input.connectorId);
         const connector =
-          deps.integrationSettings &&
-          (input.connectorId === "composio" || input.connectorId === "pipedream")
-            ? await deps.integrationSettings.resolve(input.connectorId)
+          deps.integrationSettings && managedId.success
+            ? await deps.integrationSettings.resolve(managedId.data)
             : deps.connectors.managed(input.connectorId);
         if (!connector) {
           throw new ORPCError("BAD_REQUEST", {

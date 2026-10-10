@@ -28,9 +28,9 @@ else
   esac
 fi
 mkdir -p "$PROFILE"
-BIN="$(command -v chromium || command -v chromium-browser || true)"
+BIN="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
 if [ -z "$BIN" ]; then
-  echo "chromium is not installed" >&2
+  echo "no Chrome or Chromium browser is installed" >&2
   exit 1
 fi
 USER_DATA_DIR_SET=0

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { captureScreenshot, signup } from "./helpers";
 
-test("onboarding uses compact model selects without misleading latest labels", async ({
+test("onboarding offers only Ai7 and Custom Provider, with a fixed Ai7 model", async ({
   page,
 }, testInfo) => {
   await page.route("**/rpc/me", async (route) => {
@@ -21,33 +21,32 @@ test("onboarding uses compact model selects without misleading latest labels", a
   });
 
   const stamp = Date.now();
-  await signup(page, `model-labels-${stamp}@rakazo.test`, "password12", `Model labels ${stamp}`);
+  await signup(
+    page,
+    `model-providers-${stamp}@rakazo.test`,
+    "password12",
+    `Model providers ${stamp}`,
+  );
   await expect(page.getByRole("heading", { name: "Connect a model" })).toBeVisible({
     timeout: 20_000,
   });
 
+  // The house provider is preselected: fixed server URL and model, key-only setup.
   const provider = page.getByRole("combobox", { name: "Provider" });
-  await expect(provider).toContainText("OpenRouter");
-  await page.getByLabel("API key").fill("openrouter-only-key");
+  await expect(provider).toContainText("Ai7");
+  await expect(page.getByText("https://api.ai7.work/v1")).toBeVisible();
+  await expect(page.getByText("Basic", { exact: true })).toBeVisible();
+  const ai7Key = page.getByLabel("API key");
+  await ai7Key.fill("short");
+  await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
+  await ai7Key.fill("ai7-provider-key");
+  await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
+
   await provider.click();
-  await expect(page.getByRole("option", { name: "ChatGPT" })).toBeVisible();
-  await expect(page.getByRole("option", { name: "Vercel AI Gateway" })).toBeVisible();
-  await page.getByRole("option", { name: "Anthropic" }).click();
-  await expect(provider).toContainText("Anthropic");
-  await expect(page.getByLabel(/API key/)).toHaveValue("");
-
-  const models = page.getByRole("combobox", { name: "Model", exact: true });
-  await models.click();
-  const labels = await page.getByRole("option").allTextContents();
-  // "latest" is an upstream alias marker, so it lands on families like Claude Opus 4.5 while
-  // newer models carry no marker. Rendered as-is it tells the user the opposite of the truth.
-  expect(labels.filter((label) => /\blatest\b/i.test(label))).toEqual([]);
-
-  // Select a non-default model and keep its user-facing alias visible in the compact trigger.
-  const alias = labels.find((label) => label.includes("(auto-updates)"));
-  expect(alias).toBeTruthy();
-  await page.getByRole("option", { name: alias! }).click();
-  await expect(models).toContainText(alias!);
+  await expect(page.getByRole("option", { name: "Custom Provider" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "OpenRouter" })).toHaveCount(0);
+  await expect(page.getByRole("option", { name: "ChatGPT" })).toHaveCount(0);
+  await page.getByRole("option", { name: "Custom Provider" }).click();
 
   await page.route("**/rpc/models/probeOpenAiCompatible", async (route) => {
     await route.fulfill({
@@ -55,8 +54,6 @@ test("onboarding uses compact model selects without misleading latest labels", a
       body: JSON.stringify({ json: { models: ["probed-model"] } }),
     });
   });
-  await provider.click();
-  await page.getByRole("option", { name: "OpenAI-compatible" }).click();
   await page.getByLabel("OpenAI-compatible server URL").fill("http://127.0.0.1:8090/v1");
   const manualModel = page.getByLabel("Model id");
   await expect(manualModel).toBeVisible();
@@ -97,5 +94,5 @@ test("onboarding uses compact model selects without misleading latest labels", a
   await manualModel.fill("probed-model-custom");
   await expect(manualModel).toHaveValue("probed-model-custom");
 
-  await captureScreenshot(page, testInfo, "onboarding-model-labels");
+  await captureScreenshot(page, testInfo, "onboarding-model-providers");
 });

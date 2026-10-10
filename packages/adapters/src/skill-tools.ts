@@ -86,8 +86,9 @@ export async function listAgentSkillRecords(
   prisma: PrismaClient,
   owner: SkillOwner,
 ): Promise<Array<SkillRecord & { id: string }>> {
+  // Disabled skills stay visible in the UI but leave prompts and skill_read.
   const rows = await prisma.agentSkill.findMany({
-    where: { spaceId: owner.spaceId, userId: owner.userId },
+    where: { spaceId: owner.spaceId, userId: owner.userId, enabled: true },
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
   return mergeBuiltinSkills(builtinRecords(), rows.map(toRecord));

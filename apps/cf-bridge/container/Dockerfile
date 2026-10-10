@@ -35,6 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     python3 \
+    python3-pip \
+    python3-venv \
+    ffmpeg \
     ca-certificates \
     procps \
     bash \
@@ -94,6 +97,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
   && npm install -g thaifi-wallet-cli@0.3.6 playwright-core@1.59.1 \
   && npm cache clean --force \
   && rm -rf /var/lib/apt/lists/*
+# Google Chrome: real Chrome signs into Google accounts and plays the
+# DRM/proprietary-codec media Debian chromium cannot. Cloudflare Containers
+# are amd64-only, so no architecture guard is needed here (chromium stays
+# installed as the binary fallback).
+RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o /tmp/google-chrome.deb \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends /tmp/google-chrome.deb \
+  && rm -f /tmp/google-chrome.deb \
+  && rm -rf /var/lib/apt/lists/* \
+  && google-chrome-stable --version \
+  # Wallet-first first page: the new tab page opens the ThaiFi wallet instead of
+  # google.com, for Chrome and the chromium fallback alike.
+  && mkdir -p /etc/opt/chrome/policies/managed /etc/chromium/policies/managed \
+  && printf '%s\n' '{"NewTabPageLocation":"https://wallet.thaifi.com"}' \
+    | tee /etc/opt/chrome/policies/managed/rakazo.json /etc/chromium/policies/managed/rakazo.json >/dev/null \
+  && python3 -m json.tool /etc/opt/chrome/policies/managed/rakazo.json
 # Popular Thai Google families on top of the TLWG/Noto base, so Thai sites in
 # Chromium render with real Thai typefaces (Sarabun, Prompt, Kanit, ...).
 # Best-effort: a failed download just leaves fewer families behind.

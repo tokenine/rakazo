@@ -38,12 +38,14 @@ import {
   EmailEmulator,
   EncryptedSecretStore,
   ExpoPushProvider,
+  GoogleConnector,
   GraphileJobPublisher,
   InMemoryJobQueue,
   InMemoryRealtimeFanout,
   InstalledConnectorProvider,
   IntegrationProviderSettings,
   isComposioEnabled,
+  isGoogleEnabled,
   isPipedreamEnabled,
   LocalAgentHomeStore,
   LocalArtifactStore,
@@ -90,8 +92,10 @@ import { requestLogging } from "@rakazo/logging/hono";
 import { MarkdownMemoryStore } from "@rakazo/memory";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { ensureGoogleConnectorSkills } from "./agent-skills.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
+import { mountGoogleOAuthCallback } from "./google-oauth-callback.js";
 import { healthRoutes } from "./health.js";
 import { mountLocalSettings } from "./local-settings.js";
 import {
@@ -153,6 +157,7 @@ export async function createApp(
     sandbox?: SandboxProvider;
     composio?: ComposioProvider;
     pipedream?: ManagedConnectorProvider;
+    google?: ManagedConnectorProvider;
     messaging?: MessagingSurface;
     email?: TransactionalEmailProvider;
     remoteConnectors?: RemoteConnectorDependencies;
@@ -165,6 +170,7 @@ export async function createApp(
     sandbox: sandboxOverride,
     composio: composioOverride,
     pipedream: pipedreamOverride,
+    google: googleOverride,
     messaging: messagingOverride,
     email: emailOverride,
     remoteConnectors,
@@ -295,6 +301,15 @@ export async function createApp(
   const pipedream =
     pipedreamOverride ??
     (isPipedreamEnabled(pipedreamConfig) ? new PipedreamConnector(pipedreamConfig) : undefined);
+  const googleConfig = {
+    clientId: env.googleClientId ?? "",
+    clientSecret: env.googleClientSecret ?? "",
+  };
+  const google =
+    googleOverride ??
+    (isGoogleEnabled(googleConfig)
+      ? new GoogleConnector(googleConfig, { prisma, secrets, artifacts })
+      : undefined);
   // This process registers the inbound sink (messaging.onInbound below),
   // so it's the one that must hold Telegram's live getUpdates connection —
   // see messagingPlatformsFromEnv's docstring for why a second poller
@@ -331,14 +346,22 @@ export async function createApp(
     remoteConnectors,
     env.mcpAllowPrivateEndpoint,
   );
-  const integrationSettings = new IntegrationProviderSettings(prisma, secrets, env.encryptionKey, {
-    composio:
-      composioOverride ??
-      (isComposioEnabled(env.composioApiKey)
-        ? new ComposioConnector(env.composioApiKey)
-        : undefined),
-    pipedream,
-  });
+  const integrationSettings = new IntegrationProviderSettings(
+    prisma,
+    secrets,
+    env.encryptionKey,
+    {
+      composio:
+        composioOverride ??
+        (isComposioEnabled(env.composioApiKey)
+          ? new ComposioConnector(env.composioApiKey)
+          : undefined),
+      pipedream,
+      google,
+    },
+    undefined,
+    artifacts,
+  );
   const stack = createConnectorStack(false, composioOverride, [
     installed,
     ...integrationSettings
@@ -606,6 +629,15 @@ export async function createApp(
     return actor;
   });
   mountWebhookHttpRoutes(app, { prisma, secrets, events, jobs });
+  mountGoogleOAuthCallback(app, {
+    integrationSettings,
+    env,
+    onGoogleConnected: (connected) =>
+      ensureGoogleConnectorSkills(prisma, {
+        spaceId: connected.spaceId,
+        userId: connected.userId,
+      }),
+  });
   // Shared with stop so a shutdown during retry delays does not restart polling.
   let messagingStopped = false;
   let clearMessagingRetryDelay: (() => void) | undefined;

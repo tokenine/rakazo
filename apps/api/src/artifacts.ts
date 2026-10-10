@@ -578,7 +578,7 @@ export function buildUserMessageBlocks(
 
 export function buildSendPrompt(
   text: string | undefined,
-  artifacts: Array<{ name: string; mimeType: string; size: number }>,
+  artifacts: Array<{ id: string; name: string; mimeType: string; size: number }>,
   connectorNames: string[] = [],
 ) {
   const prompt = promptTextForAttachments(text, artifacts);

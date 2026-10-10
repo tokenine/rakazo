@@ -104,6 +104,30 @@ describe("contracts", () => {
     ).toBe(false);
   });
 
+  it("requires an API key for the Ai7 provider and pins its model id", () => {
+    expect(
+      ModelConnectInputSchema.safeParse({
+        provider: "ai7",
+        apiKey: "ai7-api-key",
+        modelId: "basic",
+      }).success,
+    ).toBe(true);
+    expect(
+      ModelConnectInputSchema.safeParse({ provider: "ai7", apiKey: "ai7-api-key" }).success,
+    ).toBe(true);
+    expect(ModelConnectInputSchema.safeParse({ provider: "ai7" }).success).toBe(false);
+    expect(ModelConnectInputSchema.safeParse({ provider: "ai7", apiKey: "short" }).success).toBe(
+      false,
+    );
+    expect(
+      ModelConnectInputSchema.safeParse({
+        provider: "ai7",
+        apiKey: "ai7-api-key",
+        modelId: "other-model",
+      }).success,
+    ).toBe(false);
+  });
+
   it("accepts optional persisted duration only on valid steps blocks", () => {
     expect(
       MessageBlock.parse({

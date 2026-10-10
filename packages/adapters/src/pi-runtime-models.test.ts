@@ -1,5 +1,6 @@
 import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
 import type { AgentRunRequest } from "@rakazo/adapter-kit";
+import { AI7_PROVIDER_ID } from "@rakazo/contracts";
 import { describe, expect, it } from "vitest";
 import { buildModelConnectPlaintext, modelCredentialDto } from "./model-connect.js";
 import { modelAcceptsImageInput } from "./model-vision.js";
@@ -74,6 +75,30 @@ describe("request model catalogs", () => {
     expect(models.getModel(OPENAI_COMPATIBLE_PROVIDER_ID, "vision-model")?.input).toContain(
       "image",
     );
+  });
+
+  it("offers the Ai7 house model and resolves it without falling back to another provider", () => {
+    const entry = listPiCatalog().find(
+      (model) => model.provider === AI7_PROVIDER_ID && model.id === "basic",
+    );
+    expect(entry).toBeDefined();
+    expect(entry?.providerName).toBe("Ai7");
+
+    const models = modelsForRequest(
+      { model: { provider: AI7_PROVIDER_ID, id: "basic", baseUrl: "https://api.ai7.work/v1" } },
+      AI7_PROVIDER_ID,
+    );
+    expect(models.getModel(AI7_PROVIDER_ID, "basic")?.baseUrl).toBe("https://api.ai7.work/v1");
+
+    // An unknown Ai7 model id must resolve to nothing, never to another
+    // provider's catalog entry that would receive the Ai7 key.
+    const resolved = resolveRuntimeModel({ provider: AI7_PROVIDER_ID, id: "unknown-model" });
+    expect(resolved.provider).toBe(AI7_PROVIDER_ID);
+    expect(resolved.model).toBeUndefined();
+  });
+
+  it("keeps the Ai7 connection text-only until vision is declared", () => {
+    expect(modelAcceptsImageInput(AI7_PROVIDER_ID, "basic")).toBe(false);
   });
 });
 
