@@ -431,6 +431,9 @@ export function MarketplacePage() {
 
   const handleInstallFromCard = useCallback(
     (entry: CatalogEntry) => {
+      // The review modal renders only with a selected entry; a card Install
+      // skips the drawer, so select the entry here.
+      setSelectedEntry(entry);
       handleInstallFromDrawer(entry);
     },
     [handleInstallFromDrawer],
