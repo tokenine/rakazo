@@ -3442,6 +3442,7 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger
             data-testid="user-menu-trigger"
+            aria-label={userName}
             className="flex items-center gap-[11px] px-[18px] py-3.5"
           >
             <span className="grid h-8 w-8 place-items-center rounded-full bg-accent text-[12px] text-foreground/75">

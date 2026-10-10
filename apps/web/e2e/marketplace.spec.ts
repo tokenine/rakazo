@@ -110,6 +110,8 @@ test.describe("marketplace", () => {
     await page.waitForURL(/\/app\/marketplace/, { timeout: 30_000 });
 
     const cards = page.locator("[data-testid^='marketplace-card-']");
+    // The catalog loads async after the route renders; wait for it before counting.
+    await expect(cards.first()).toBeVisible({ timeout: 15_000 });
     const countAll = await cards.count();
     expect(countAll).toBeGreaterThan(0);
 

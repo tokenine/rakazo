@@ -190,7 +190,6 @@ export function SessionSwitcher({
                           onClick={() => {
                             setConfirmingId(null);
                             onDelete(session);
-                            setOpen(false);
                           }}
                         >
                           <Check size={13} aria-hidden="true" />

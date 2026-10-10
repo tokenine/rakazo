@@ -69,8 +69,9 @@ test("switch sessions, rename, delete, and keep botId-only legacy routing", asyn
   await sessionRow(page, "Deep research").hover();
   await sessionRow(page, "Deep research").getByTestId("session-delete-trigger").click();
   await sessionRow(page, "Deep research").getByTestId("session-delete-confirm").click();
-  // The popover may close once the delete lands (union popover behavior); reopen it
-  // in that case so the remaining-row assertion inspects an open switcher.
+  // Wait for the deletion to land before inspecting the switcher; if closing the
+  // confirm row also closed the popover, reopen it so the assertion sees the list.
+  await expect(sessionRow(page, "Deep research")).toHaveCount(0, { timeout: 10_000 });
   const rows = page.getByTestId("session-switcher-row");
   if ((await rows.count()) === 0) {
     await switcherTrigger(page).click();
