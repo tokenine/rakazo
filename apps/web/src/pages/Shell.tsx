@@ -983,7 +983,14 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
           return;
         }
         const currentBotId = routeBotId.current;
-        if (!currentBotId || !list.some((bot) => bot.id === currentBotId)) {
+        // Hub and marketplace are intentional non-thread views: a background
+        // refresh (a run event, focus, a bot rename) must not yank the user
+        // into a chat just because the URL has no bot id.
+        if (
+          !hubEntry &&
+          !marketplaceEntry &&
+          (!currentBotId || !list.some((bot) => bot.id === currentBotId))
+        ) {
           navigate(firstThreadRoute(list, groupList), { replace: true });
         }
       } finally {
