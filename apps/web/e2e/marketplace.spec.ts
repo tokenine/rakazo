@@ -31,8 +31,9 @@ test.describe("marketplace", () => {
     // After search, fewer or same cards visible.
     await expect(cards.first()).toBeVisible();
 
-    // Kind chips: click the Agents chip to filter.
-    const agentsChip = page.getByRole("button", { name: /agents/i });
+    // Kind chips: click the Agents chip to filter (exact: the sidebar also has
+    // a "Skills & Connectors" trigger that substring matching would hit).
+    const agentsChip = page.getByRole("button", { name: "Agents", exact: true });
     await agentsChip.click();
     await expect(cards.first()).toBeVisible();
 
@@ -115,19 +116,20 @@ test.describe("marketplace", () => {
     const countAll = await cards.count();
     expect(countAll).toBeGreaterThan(0);
 
-    // Filter to Agents only.
-    await page.getByRole("button", { name: /agents/i }).click();
+    // Filter to Agents only. Exact names: the sidebar also has a
+    // "Skills & Connectors" trigger that substring matching would hit.
+    await page.getByRole("button", { name: "Agents", exact: true }).click();
     await page.waitForTimeout(300);
     // Some cards should still be visible.
     await expect(cards.first()).toBeVisible();
 
     // Filter to Skills.
-    await page.getByRole("button", { name: /skills/i }).click();
+    await page.getByRole("button", { name: "Skills", exact: true }).click();
     await page.waitForTimeout(300);
     await expect(cards.first()).toBeVisible();
 
     // Back to All.
-    await page.getByRole("button", { name: /^all$/i }).click();
+    await page.getByRole("button", { name: "All", exact: true }).click();
     await page.waitForTimeout(300);
     const countAllAfter = await cards.count();
     expect(countAllAfter).toBe(countAll);
