@@ -41,17 +41,15 @@ test.describe("marketplace", () => {
     await searchInput.fill("");
     await page.waitForTimeout(300);
 
-    // Click a card to open the detail drawer.
+    // Card Install is a shortcut straight to the review modal (the card's
+    // onClick must not also open the detail drawer beneath it).
     const firstCard = cards.first();
     const installBtn = firstCard.getByRole("button", { name: /install/i });
     await installBtn.click();
 
-    // Detail drawer should open.
-    const drawerInstallBtn = page.getByTestId("drawer-install");
-    await expect(drawerInstallBtn).toBeVisible({ timeout: 5_000 });
-
-    // Click Install from drawer — opens import review modal.
-    await drawerInstallBtn.click();
+    // The detail drawer opens on a plain card click (browse path); it must NOT
+    // be stacked underneath the review modal here.
+    await expect(page.getByTestId("drawer-install")).toHaveCount(0);
 
     // Import review modal appears with Confirm Install.
     const confirmBtn = page.getByTestId("confirm-install");
@@ -123,12 +121,14 @@ test.describe("marketplace", () => {
     // Some cards should still be visible.
     await expect(cards.first()).toBeVisible();
 
-    // Filter to Skills.
+    // Filter to Skills. The bundled catalog ships agents only, so the honest
+    // assertion is the empty state; the filter itself must still apply.
     await page.getByRole("button", { name: "Skills", exact: true }).click();
     await page.waitForTimeout(300);
-    await expect(cards.first()).toBeVisible();
+    await expect(page.getByText(/no results/i)).toBeVisible();
+    await expect(cards).toHaveCount(0);
 
-    // Back to All.
+    // Back to All restores the cards.
     await page.getByRole("button", { name: "All", exact: true }).click();
     await page.waitForTimeout(300);
     const countAllAfter = await cards.count();

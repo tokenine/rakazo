@@ -91,7 +91,13 @@ function MarketplaceCard({
           <Button
             size="sm"
             variant="default"
-            onClick={() => onInstall(entry)}
+            onClick={(event) => {
+              // Install is a shortcut straight to the review modal; without
+              // stopping propagation the card's onClick stacks the detail
+              // drawer underneath it and the modal's portal traps the pointer.
+              event.stopPropagation();
+              onInstall(entry);
+            }}
             data-testid={`install-${entry.id}`}
           >
             <Trans>Install</Trans>
