@@ -65,12 +65,13 @@ test.describe("marketplace", () => {
     const botButtons = page.locator("button").filter({ hasText: /^[A-Z]/ });
     await expect(botButtons.first()).toBeVisible({ timeout: 15_000 });
 
-    // Navigate to the bot's thread.
+    // Navigate to the bot's thread. A freshly installed agent opens its primary
+    // session at the legacy /app/:botId shape; an explicit session adds a segment.
     await botButtons.first().click();
-    await page.waitForURL(/\/app\/[^/]+\/[^/]+$/, { timeout: 15_000 });
+    await page.waitForURL(/\/app\/[^/]+(\/[^/]+)?$/, { timeout: 15_000 });
 
     // Composer should be visible — we are in a thread.
-    await expect(page.getByPlaceholder(/message/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/message/i)).toBeVisible({ timeout: 15_000 });
 
     // Send a message and verify run proceeds (no crash/error shown).
     await page.getByPlaceholder(/message/i).fill("Hello");
