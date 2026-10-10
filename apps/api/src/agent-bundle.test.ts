@@ -2034,10 +2034,11 @@ describe("AgentBundleSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts public HTTP endpoint with standard path (AGENT-BUNDLE-005 regression)", () => {
-    // Non-loopback HTTP is less common but legitimate; the guard only blocks loopback
+  it("rejects every HTTP endpoint — bundles must be HTTPS (BUG-003-S1-06)", () => {
+    // The connector sink refuses all non-HTTPS at connect time; persisting a
+    // public http:// endpoint would only defer the refusal to a per-run error.
     const bundle = validBundle({ mcpServers: [makeMcpServer({ endpoint: "http://api.example.com/mcp" })] });
     const result = AgentBundleSchema.strict().safeParse(bundle);
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 });

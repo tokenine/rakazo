@@ -14,7 +14,8 @@
  */
 
 import * as z from "zod";
-import { McpTransportSchema, isLocalMcpHost } from "./mcp.js";
+import { McpTransportSchema } from "./mcp.js";
+import { isCloudMetadataHost, isPrivateNetworkHost } from "./bot-secrets.js";
 
 // ---------------------------------------------------------------------------
 // Length constants (bundle cap = 2 MB)
@@ -67,15 +68,16 @@ export const AgentBundleMcpServerSchema = z
     /**
      * Remote endpoint URL.
      *
-     * Security: rejects loopback, link-local, and non-HTTPS schemes before the
-     * bundle is ever persisted or served to other users. The McpConnector local-HTTP
-     * opt-in is legitimate for operator-configured servers; this guard prevents a
-     * third-party bundle from reaching it. Covers:
-     * - 127.0.0.0/8, ::1, link-local (169.254/16, fe80::/10)
-     * - file:, ftp: and other non-HTTP(S) schemes
+     * Security: bundles must be public HTTPS — the connector sink refuses every
+     * non-HTTPS and every private target at connect time, and persisting one
+     * anyway would only defer the refusal to a confusing per-run error
+     * (BUG-003-S1-06). The guard therefore applies to any scheme and covers:
+     * - loopback (localhost, 127.0.0.0/8, ::1) and .local, RFC1918, CGNAT
+     * - link-local unicast (169.254/16, fe80::/10) and cloud metadata hosts
      * - 0.0.0.0 (all IPv4 interfaces)
+     * - file:, ftp: and other non-HTTPS schemes
      *
-     * See AGENT-BUNDLE-005.
+     * See AGENT-BUNDLE-005 and BUG-003-S1-06.
      */
     endpoint: z
       .string()
@@ -85,17 +87,15 @@ export const AgentBundleMcpServerSchema = z
         (value) => {
           try {
             const url = new URL(value);
-            if (url.protocol !== "https:" && url.protocol !== "http:") return false;
-            if (url.protocol === "http:") {
-              // Reject local/loopback/link-local HTTP regardless of hostname
-              if (isLocalMcpHost(url.hostname)) return false;
-            }
-            // Reject 0.0.0.0 (all IPv4 interfaces — not a real routable host)
-            if (url.hostname === "0.0.0.0") return false;
-            // Reject link-local unicast (169.254/16, fe80::/10)
-            const hostLower = url.hostname.toLowerCase();
+            if (url.protocol !== "https:") return false;
+            const hostname = url.hostname;
+            if (hostname === "0.0.0.0") return false;
+            if (isCloudMetadataHost(hostname)) return false;
+            if (isPrivateNetworkHost(hostname)) return false;
+            // Reject link-local unicast (169.254/16, fe80::/10) beyond the
+            // metadata addresses isCloudMetadataHost pins down.
+            const hostLower = hostname.toLowerCase();
             if (
-              hostLower === "169.254.0.0" ||
               hostLower.startsWith("169.254.") ||
               hostLower === "fe80" ||
               hostLower.startsWith("fe80:")
@@ -106,7 +106,7 @@ export const AgentBundleMcpServerSchema = z
             return false;
           }
         },
-        { message: "Endpoint must be a public HTTPS URL (HTTP is only allowed for public hosts, not localhost or private ranges)" },
+        { message: "Endpoint must be a public HTTPS URL" },
       ),
     /** stdio command (omit for HTTP transports) */
     command: z.string().max(500).optional(),
