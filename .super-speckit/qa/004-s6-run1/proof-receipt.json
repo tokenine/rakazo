@@ -1,0 +1,90 @@
+{
+  "run": "004-s6-run2",
+  "attempt_id": "s6-run2",
+  "candidate_sha": "2eb3d19d7c752f5b773c0ba508db96b997d6041a",
+  "checker": "claude-checker",
+  "worktree": "/Users/poom-work/.super-speckit-worktrees/004-s6-run1",
+  "result": "pass",
+  "reason": "READY: frozen-lockfile install exit 0; check 24/24 uncached; 17/17 new tests green incl. real-PTY row on darwin; adapters FAIL-set vs directly measured base 0a39f8ac EMPTY (19 pre-existing environmental at both commits); api 611 passed. Executed at 924da3ba by the independent checker lane; candidate re-frozen as C2 with matrix-markdown-only delta (verified).",
+  "evidence": ".super-speckit/qa/004-s6-run1/",
+  "environment": ".super-speckit/qa/004-s6-run1/environment-receipt.json",
+  "matrix_digest": "50fe17c84a72ab88c6c19f6ca9e80374bde8e8b3d147fe955c2044810d830068",
+  "requirements": [
+    {
+      "id": "REQ-R1",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R10",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R11",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R2",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R4",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R5",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R6",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R7",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R8",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    },
+    {
+      "id": "REQ-R9",
+      "result": "verified",
+      "evidence": ".super-speckit/qa/004-s6-run1/qa-report.md"
+    }
+  ],
+  "gates": [
+    {
+      "name": "frozen-lockfile-install",
+      "result": "pass"
+    },
+    {
+      "name": "typecheck",
+      "result": "pass"
+    },
+    {
+      "name": "new-tests",
+      "result": "pass"
+    },
+    {
+      "name": "adapters-suite-baseline-diff",
+      "result": "pass"
+    },
+    {
+      "name": "api-suite",
+      "result": "pass"
+    },
+    {
+      "name": "doc-only-delta",
+      "result": "pass"
+    }
+  ]
+}

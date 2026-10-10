@@ -1,7 +1,7 @@
 {
   "id": "004-code-mode",
   "state": "blocked",
-  "candidate_sha": null,
+  "candidate_sha": "2eb3d19d7c752f5b773c0ba508db96b997d6041a",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/004-code-mode/verification-matrix.md",
@@ -26,10 +26,10 @@
     "path": ".super-speckit/atlas/changes/004-code-mode/change-story.md"
   },
   "handoff": {
-    "path": ".super-speckit/handoffs/2026-10-05-selfheal-s5-s2-merged.md",
+    "path": ".super-speckit/handoffs/2026-10-11-s6-merged-next-gaps.md",
     "transfer": "agent-to-agent",
-    "stage": "s5-merged",
-    "attempt_id": "selfheal-r1"
+    "stage": "s6-merged",
+    "attempt_id": "s6-run2"
   },
   "runs": [
     {
@@ -40,9 +40,42 @@
       "reason": "READY: typecheck x6 packages, additive-only migrations, full suite shows canonical-19 macOS-env failures only, targeted suites green; two honest NOT-WIRED declarations (ptySpawner T28, checkIdle T30) with recorded path-to-verification",
       "evidence": ".super-speckit/qa/004-s5-run1/",
       "merged_as": "afdd3b4c"
+    },
+    {
+      "run": "004-s6-run1",
+      "candidate_sha": "924da3ba",
+      "checker": "qa-engineer-checker",
+      "result": "pass",
+      "reason": "READY: frozen-lockfile install 0, check 24/24 uncached, 17/17 new tests (real-PTY row satisfied on darwin), adapters FAIL-set vs directly measured base 0a39f8ac EMPTY (19 pre-existing environmental at both), api 611 passed; informational: production terminal path for process computers still latent (kind gate + id resolution must land together in a later slice)",
+      "evidence": ".super-speckit/qa/004-s6-run1/",
+      "receipt": ".super-speckit/qa/004-s6-run1/merge-receipt.json",
+      "merged_as": "f69e93f6"
+    },
+    {
+      "run": "004-s6-run2",
+      "candidate_sha": "2eb3d19d",
+      "checker": "claude-checker",
+      "result": "pass",
+      "reason": "READY re-freeze: only delta vs checker-verified 924da3ba is the verification matrix gaining explicit REQ- IDs (single-file markdown, git-verified; no code, test, or environment change), so run1 gates carried. Web playwright e2e battery RED at this candidate from pre-existing union-merge breakage (1f166822 onboarding Connect-a-model step, not S6's diff), triaged as BUG-UNION-E2E-01 and fixed after merge in 430a00bd + a3700758; slice retest on the merged stack pending",
+      "evidence": ".super-speckit/qa/004-s6-run1/",
+      "receipt": ".super-speckit/qa/004-s6-run1/proof-receipt.json",
+      "environment": ".super-speckit/qa/004-s6-run1/environment-receipt.json",
+      "merged_as": "98f1ca01"
     }
   ],
-  "bugs": [],
+  "bugs": [
+    {
+      "id": "BUG-UNION-E2E-01",
+      "artifact": ".super-speckit/bugs/union-e2e-onboarding-model-step.md",
+      "status": "open",
+      "severity": "high for release confidence (web e2e battery dead on the integration line), not a product defect",
+      "found_in": "union merge 1f166822 lineage; pre-existing to 004 S6 (S6 diff 924da3ba..2eb3d19d touches no web files)",
+      "found_by": "coordinator running the playwright gate during 004-s6-run1 proof",
+      "root_cause": "apps/web/e2e helpers.ts completeOnboarding predates the onboarding Connect-a-model step, so signup-driven specs time out at 20s",
+      "fix_sha": "430a00bd + a3700758 (both merged)",
+      "retest": "web playwright slice (sessions + marketplace + auth-lifecycle) green on the merged stack; retest pending, run by a checker who did not make the fix"
+    }
+  ],
   "human_approval": {
     "gate": "plan+tasks bundle r2 (5 slices T1-T33, V1-V21; Q9 Option 3 process isolation; Q10 Option B audited secrets)",
     "approver": "Poom5741",
@@ -59,7 +92,28 @@
   },
   "migration_reason": "Legacy evidence must be revalidated",
   "schema_version": 2,
-  "candidates": [],
+  "candidates": [
+    {
+      "sha": "2eb3d19d7c752f5b773c0ba508db96b997d6041a",
+      "maker": "claude-maker",
+      "matrix_digest": "50fe17c84a72ab88c6c19f6ca9e80374bde8e8b3d147fe955c2044810d830068"
+    }
+  ],
   "legacy_candidate_sha": "8b55445d603287cd8541c822ad28417dab89eeeb",
-  "revision": 1
+  "revision": 8,
+  "prerequisite_receipts": {
+    "baseline-feedback": {
+      "artifact": ".super-speckit/qa/004-s6-run1/findings.json",
+      "digest": "1d6f7fe9850186b2745605705e1bf81c0b389309c51caba5130765e2ea59a543"
+    },
+    "phase-contract": {
+      "artifact": ".super-speckit/atlas/changes/004-code-mode/change-story.md",
+      "digest": "11400e75e6b70b5db2fa0ced793eb0192e840ad217a28e39c80988caac03abee"
+    }
+  },
+  "qa_worktree": "/Users/poom-work/.super-speckit-worktrees/004-s6-run1",
+  "qa_attempt": "s6-run2",
+  "attempt_history": [
+    "s6-run2"
+  ]
 }

@@ -8,8 +8,14 @@
   "pnpm": "9.15.0 (corepack)",
   "os": "darwin 25.5.0 arm64",
   "gates": {
-    "install": { "command": "corepack pnpm install --frozen-lockfile", "exitCode": 0 },
-    "dbGenerate": { "command": "corepack pnpm --filter @rakazo/db generate", "exitCode": 0 },
+    "install": {
+      "command": "corepack pnpm install --frozen-lockfile",
+      "exitCode": 0
+    },
+    "dbGenerate": {
+      "command": "corepack pnpm --filter @rakazo/db generate",
+      "exitCode": 0
+    },
     "typecheck": {
       "command": "corepack pnpm check",
       "exitCode": 0,
@@ -28,5 +34,9 @@
     "baseInstallExit": 0,
     "baseSuiteExit": 1,
     "note": "FAIL sets diffed line-by-line: IDENTICAL base vs candidate"
-  }
+  },
+  "candidate_sha": "2eb3d19d7c752f5b773c0ba508db96b997d6041a",
+  "checker": "claude-checker",
+  "attempt_id": "s6-run2",
+  "note": "Gates executed by the independent checker lane at 924da3ba (run1). Attempt re-registered as s6-run2 because the only delta 924da3ba..C2 is the verification-matrix markdown gaining explicit REQ- IDs (git diff verified single-file, 18 line rewrites); no code, test, or environment change."
 }
