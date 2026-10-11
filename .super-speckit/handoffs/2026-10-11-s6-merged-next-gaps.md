@@ -10,6 +10,13 @@ Date: 2026-10-11 · Branch: `integration/001-multi-session-agents` @ `07007614` 
 - BUG-003-S1-06 closed by `a2c2d19d` (bundle endpoints public HTTPS, red-green contracts tests).
 - New open low bug: BUG-E2E-02 (`.super-speckit/bugs/send-timeout-under-slice-load.md`) — intermittent send timeouts under slice load; Playwright retries absorb it; probes recorded.
 
+## Update 2 — S7 slivers 1–3 shipped (2026-10-11 late)
+
+- Code-mode web surface, first vertical: `2446b3da` (codingSessions.create/list RPC, bot-scoped workspace + lease), `ce63ceaf` (Code toggle + engine picker in the new-session sheet, remembered engine, live status strip), `95338857` (acceptance card on the pills — record/get via codingAcceptance). Design decision: `.super-speckit/design/code-mode-web/decision.json`.
+- BUG-004-S7-01 found in the walkthrough and fixed (`578485b8`): the lease busy path queried inside an aborted Postgres tx and escaped as a 500; retested green live (`a03a90f5`).
+- New finding, unfiled (small): `codingAcceptance.record/get` (router ~5626) are session-ID-addressed without a space check — pre-existing since 003-era; give them the same space scoping as codingSessions in a repair lane.
+- Still open in the slice: diff + verification views (needs a workspace-diff RPC), wiring the bot's run to the coding session so the agent actually works the task from this UI, PTY terminal kind gate.
+
 ## Original state (2026-10-11 morning)
 
 - S6 (T28 real node-pty spawner + T30 idle-suspend sweep) merged twice: run1 candidate `924da3ba` → `f69e93f6`; run2 re-freeze `2eb3d19d` (verification-matrix markdown only, REQ- IDs added; no code delta vs the checker-verified tree) → `98f1ca01`. Both passes recorded in the feature state `runs[]` with evidence at `.super-speckit/qa/004-s6-run1/`.
