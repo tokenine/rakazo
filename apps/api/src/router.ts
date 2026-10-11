@@ -48,6 +48,7 @@ import {
   computerSupportsTerminal,
   computerSupportsUpdate,
   computerUpdateView,
+  buildGitGraph,
   createAcceptanceGateService,
   createUserTelegramPlatform,
   createVoiceProvider,
@@ -5700,6 +5701,27 @@ export function createRouter(deps: RouterDeps) {
           });
         const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
         return { path: input.path, content };
+      }),
+      gitGraph: authed.codingSessions.gitGraph.handler(async ({ context, input }) => {
+        const { computer, bot } = await codingSessionComputer(
+          deps.prisma,
+          repos,
+          context.actor,
+          input.sessionId,
+        );
+        const cwd = resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined);
+        const ctx = computerContext(context.actor, bot.id, "git");
+        // Read-only git argv, executed inside the session's workspace.
+        const run = async (argv: string[]) => {
+          let stdout = "";
+          let exitStatus = 1;
+          for await (const event of deps.sandbox.execute(toComputerRef(computer), { argv, cwd }, ctx)) {
+            if (event.type === "stdout") stdout += event.data;
+            if (event.type === "exit") exitStatus = event.code;
+          }
+          return { exitStatus, stdout };
+        };
+        return buildGitGraph(run);
       }),
       terminalUrl: authed.codingSessions.terminalUrl.handler(async ({ context, input }) => {
         const session = await deps.prisma.codingSession.findFirst({

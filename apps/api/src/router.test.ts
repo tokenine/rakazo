@@ -3591,6 +3591,149 @@ describe("coding session terminal", () => {
     expect(stopped.sandbox.connectTerminal).not.toHaveBeenCalled();
   });
 });
+describe("coding session git graph (T43)", () => {
+  const actor = {
+    spaceId: "workspace-1",
+    userId: "user-1",
+    email: "user@rakazo.test",
+    isDeploymentOwner: true,
+  } satisfies Actor;
+  const session = {
+    id: "coding-1",
+    botId: "bot-1",
+    spaceId: "workspace-1",
+    engine: "omp",
+    status: "active",
+  };
+
+  type FakeEvent = { type: string; data?: string; code?: number };
+
+  function setup(script: (argv: string[]) => FakeEvent[]) {
+    const sandbox = {
+      execute: vi.fn(async function* (
+        _computer: unknown,
+        request: { argv: string[] },
+      ) {
+        for (const event of script(request.argv)) yield event;
+      }),
+    };
+    const prisma = {
+      codingSession: { findFirst: vi.fn().mockResolvedValue({ ...session }) },
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          screenGeneration: 2,
+          threads: [{ id: "thread-1" }],
+          computer: {
+            id: "computer-1",
+            screenGeneration: 3,
+            kind: "process",
+            scope: "team",
+            state: "running",
+            providerRef: "sandbox-ref-1",
+            homeKey: "home-1",
+            controlHolder: "none",
+            controlLeaseId: null,
+            controlLeaseExpiresAt: null,
+            controlBotId: null,
+            controlRunId: null,
+          },
+        }),
+      },
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      sandbox,
+      jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
+      env: {
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "s",
+        sandboxProvider: "process",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const handler = new RPCHandler(createRouter(deps));
+    return async () => {
+      const { response } = await handler.handle(
+        new Request("http://127.0.0.1/rpc/codingSessions/gitGraph", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ json: { sessionId: "coding-1" } }),
+        }),
+        { prefix: "/rpc", context: { actor } },
+      );
+      return { status: response.status, body: await response.json(), sandbox };
+    };
+  }
+
+  const happy: FakeEvent[][] = {
+    rev: [{ type: "stdout", data: "true\n" }, { type: "exit", code: 0 }],
+    log: [
+      {
+        type: "stdout",
+        data:
+          "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0\x1fb2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1\x1fsecond\x1fTest Author\x1f2026-01-02T00:00:00Z\x1e" +
+          "b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1\x1f\x1ffirst\x1fTest Author\x1f2026-01-01T00:00:00Z\x1e",
+      },
+      { type: "exit", code: 0 },
+    ],
+    refs: [{ type: "stdout", data: "main\nfeature\n" }, { type: "exit", code: 0 }],
+    status: [{ type: "stdout", data: " M a.txt\n?? b.txt\n" }, { type: "exit", code: 0 }],
+  };
+
+  function scriptFor(parts: Record<string, FakeEvent[]>) {
+    return (argv: string[]): FakeEvent[] => {
+      const key = argv[1] ?? "";
+      if (key.startsWith("rev-parse")) return parts.rev ?? [{ type: "exit", code: 1 }];
+      if (key.startsWith("log")) return parts.log ?? [];
+      if (key.startsWith("for-each-ref")) return parts.refs ?? [];
+      if (key.startsWith("status")) return parts.status ?? [];
+      return [{ type: "exit", code: 1 }];
+    };
+  }
+
+  it("runs read-only git argv in the workspace and returns a compact graph", async () => {
+    const { status, body, sandbox } = await setup(scriptFor(happy))();
+    expect(status).toBe(200);
+    expect(body.json).toEqual({
+      commits: [
+        {
+          sha: "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0",
+          parents: ["b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1"],
+          subject: "second",
+          author: "Test Author",
+          date: "2026-01-02T00:00:00Z",
+        },
+        {
+          sha: "b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1",
+          parents: [],
+          subject: "first",
+          author: "Test Author",
+          date: "2026-01-01T00:00:00Z",
+        },
+      ],
+      refs: ["main", "feature"],
+      dirty: 2,
+      notRepo: false,
+    });
+    expect(sandbox.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      expect.objectContaining({ argv: expect.arrayContaining(["git"]) }),
+      expect.anything(),
+    );
+  });
+
+  it("returns a truthful empty state when the workspace is not a git repo", async () => {
+    const call = setup(
+      scriptFor({ rev: [{ type: "stdout", data: "fatal: not a git repository\n" }, { type: "exit", code: 128 }] }),
+    );
+    const { status, body } = await call();
+    expect(status).toBe(200);
+    expect(body.json).toEqual({ commits: [], refs: [], dirty: 0, notRepo: true });
+  });
+});
 
 describe("coding session workspace files (T42)", () => {
   const actor = {
@@ -3708,7 +3851,6 @@ describe("coding session workspace files (T42)", () => {
   });
 
   it("refuses files beyond the text cap truthfully", async () => {
-    const { call } = await Promise.resolve(setup());
     const big = setup();
     big.sandbox.readFile.mockRejectedValue(new Error("computer file exceeds 2097152 bytes"));
     await expect(big.call("readFile", { path: "big.bin" })).resolves.toMatchObject({

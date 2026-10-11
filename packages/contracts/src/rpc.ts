@@ -1085,6 +1085,22 @@ export const appContract = {
     readFile: oc
       .input(z.object({ sessionId: Id, path: z.string() }))
       .output(z.object({ path: z.string(), content: z.string() })),
+    gitGraph: oc.input(z.object({ sessionId: Id })).output(
+      z.object({
+        commits: z.array(
+          z.object({
+            sha: z.string(),
+            parents: z.array(z.string()),
+            subject: z.string(),
+            author: z.string(),
+            date: z.string(),
+          }),
+        ),
+        refs: z.array(z.string()),
+        dirty: z.number(),
+        notRepo: z.boolean(),
+      }),
+    ),
   },
   preview: {
     get: oc.input(z.object({ previewId: Id })).output(

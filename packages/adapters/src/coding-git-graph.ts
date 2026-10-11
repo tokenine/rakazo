@@ -23,9 +23,7 @@ export interface GitGraph {
 }
 
 /** Minimal runner shape — matches coding-repo-to-pr's CommandRunner.run. */
-export type GitCommandRunner = (
-  argv: string[],
-) => Promise<{ exitStatus: number; stdout: string }>;
+export type GitCommandRunner = (argv: string[]) => Promise<{ exitStatus: number; stdout: string }>;
 
 /** Field separator / record separator for --pretty=format (unit + record). */
 const FIELD = "\x1f";
@@ -50,8 +48,7 @@ export async function buildGitGraph(run: GitCommandRunner): Promise<GitGraph> {
     .map((entry) => entry.replace(/^\n/, ""))
     .filter((entry) => entry.trim().length > 0)
     .map((entry) => {
-      const [sha = "", parents = "", subject = "", author = "", date = ""] =
-        entry.split(FIELD);
+      const [sha = "", parents = "", subject = "", author = "", date = ""] = entry.split(FIELD);
       return {
         sha,
         parents: parents.split(" ").filter(Boolean),
@@ -61,12 +58,7 @@ export async function buildGitGraph(run: GitCommandRunner): Promise<GitGraph> {
       };
     });
 
-  const refs = await run([
-    "git",
-    "for-each-ref",
-    "refs/heads",
-    "--format=%(refname:short)",
-  ]);
+  const refs = await run(["git", "for-each-ref", "refs/heads", "--format=%(refname:short)"]);
   const status = await run(["git", "status", "--porcelain"]);
   const dirty = status.stdout.split("\n").filter((line) => line.trim().length > 0).length;
 

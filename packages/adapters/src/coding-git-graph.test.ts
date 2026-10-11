@@ -33,7 +33,10 @@ async function makeDir(): Promise<string> {
 
 async function initRepo(dir: string): Promise<void> {
   const git = async (...argv: string[]) =>
-    execFileAsync("git", argv, { cwd: dir, env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null" } });
+    execFileAsync("git", argv, {
+      cwd: dir,
+      env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null" },
+    });
   await git("init", "-b", "main");
   await git("config", "user.name", "Test Author");
   await git("config", "user.email", "author@example.test");

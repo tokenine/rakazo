@@ -31,6 +31,7 @@ export * from "./cloudflare-sandbox.js";
 export * from "./coding-acceptance-gate.js";
 export * from "./coding-engines-compose.js";
 export * from "./coding-session-service.js";
+export * from "./coding-git-graph.js";
 export * from "./coding-secret-grants.js";
 export * from "./composio-catalog-cache.js";
 export * from "./composio-connector.js";
