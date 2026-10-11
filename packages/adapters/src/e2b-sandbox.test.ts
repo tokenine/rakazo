@@ -719,6 +719,10 @@ describe("sandbox-gone detection", () => {
     new SandboxNotFoundError("Paused sandbox sandbox-ref-1 not found"),
     // The SDK error class must also identify loss when the API supplies a different message.
     new SandboxNotFoundError("Unavailable"),
+    // The supervisor relays the docker daemon's 404 wording for a missing container.
+    new Error(
+      'sandbox terminal failed: 400 {"error":"(HTTP code 404) no such container - No such container: computer-1"}',
+    ),
   ];
   const alive = [
     new Error("bash: x11vnc: command not found"),

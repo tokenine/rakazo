@@ -47,7 +47,7 @@ export function e2bCreateOptions(botId: string, apiKey: string) {
 // an expired sandbox surfaces as a TimeoutError about the *sandbox* timeout (502 / Unavailable
 // from envd), which used to read as a live sandbox and left every later call throwing forever.
 const SANDBOX_GONE_MESSAGE =
-  /probably not running anymore|likely due to sandbox timeout|killed or reached its end of life|sandbox [^:]{0,60}not found|sandbox [^:]{0,60}does not exist/i;
+  /probably not running anymore|likely due to sandbox timeout|killed or reached its end of life|sandbox [^:]{0,60}not found|sandbox [^:]{0,60}does not exist|no such container/i;
 // The same words from a live sandbox: a missing binary or a missing file inside it.
 const SHELL_MISSING_TARGET = /command not found|no such file|^path .* not found/i;
 /** Only provider-specific evidence of sandbox loss permits automatic replacement. */
