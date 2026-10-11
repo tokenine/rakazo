@@ -5657,6 +5657,68 @@ export function createRouter(deps: RouterDeps) {
       list: authed.codingSessions.list.handler(async ({ context, input }) => {
         return listBotCodingSessions({ prisma: deps.prisma }, context.actor, input.botId);
       }),
+      terminalUrl: authed.codingSessions.terminalUrl.handler(async ({ context, input }) => {
+        const session = await deps.prisma.codingSession.findFirst({
+          where: { id: input.sessionId, spaceId: context.actor.spaceId },
+        });
+        if (!session || session.engine !== "omp" || session.status !== "active") {
+          return { url: null };
+        }
+        let bot = await repos.getBot(context.actor, session.botId);
+        if (await expireStaleComputerControl(deps, bot.computer)) {
+          bot = await repos.getBot(context.actor, session.botId);
+        }
+        const computer = bot.computer;
+        if (
+          !computer?.providerRef ||
+          computer.state !== "running" ||
+          !deps.sandbox.connectTerminal ||
+          !computerSupportsTerminal(computer.kind)
+        ) {
+          return { url: null };
+        }
+        // Same rule as the computer terminal: only the user holding this bot's
+        // control lease may open an interactive shell on its workspace.
+        if (
+          !hasActiveComputerControl(computer) ||
+          computer.controlBotId !== bot.id ||
+          !computer.controlLeaseId
+        ) {
+          throw new ORPCError("FORBIDDEN", { message: "Take control first." });
+        }
+        const terminal = await deps.sandbox
+          .connectTerminal(
+            toComputerRef(computer),
+            {
+              controlToken: computer.controlLeaseId,
+              cwd: resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined),
+            },
+            await computerScreenContext(
+              deps.prisma,
+              context.actor,
+              computer.id,
+              bot.id,
+              "terminal",
+            ),
+          )
+          .catch((error: unknown) => clearGoneSandbox(deps, computer, error));
+        if (!terminal) return { url: null };
+        await keepComputerAwake(deps, computer.id);
+        return {
+          url: addScreenProxyCapability(
+            withViewOnly(terminal.url, false),
+            deps.env.screenProxySecret,
+            deps.env.webOrigin,
+            {
+              botId: bot.id,
+              computerId: computer.id,
+              botGeneration: bot.screenGeneration,
+              computerGeneration: computer.screenGeneration,
+              controlLeaseId: computer.controlLeaseId,
+            },
+          ),
+        };
+      }),
     },
     clientBrowser: {
       heartbeat: authed.clientBrowser.heartbeat.handler(async ({ context, input }) => {

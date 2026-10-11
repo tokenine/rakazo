@@ -1067,6 +1067,9 @@ export const appContract = {
           }),
         ),
       ),
+    terminalUrl: oc
+      .input(z.object({ sessionId: Id }))
+      .output(z.object({ url: z.string().nullable() })),
   },
   preview: {
     get: oc.input(z.object({ previewId: Id })).output(

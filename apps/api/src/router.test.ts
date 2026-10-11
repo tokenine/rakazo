@@ -3438,3 +3438,146 @@ describe("inspiration catalog RPC", () => {
     expect(body.json).toEqual(INSPIRATION_CATALOG);
   });
 });
+
+describe("coding session terminal", () => {
+  const actor = {
+    spaceId: "workspace-1",
+    userId: "user-1",
+    email: "user@rakazo.test",
+    isDeploymentOwner: true,
+  } satisfies Actor;
+  const session = {
+    id: "coding-1",
+    botId: "bot-1",
+    spaceId: "workspace-1",
+    engine: "omp",
+    status: "active",
+  };
+  const controlled = {
+    controlHolder: "user",
+    controlLeaseId: "lease-1",
+    controlLeaseExpiresAt: new Date(Date.now() + 60_000),
+    controlBotId: "bot-1",
+  };
+
+  function setup(
+    overrides: {
+      session?: Record<string, unknown> | null;
+      computer?: Record<string, unknown>;
+    } = {},
+  ) {
+    const sandbox = {
+      connectTerminal: vi.fn().mockResolvedValue({
+        url: "https://screen.example/vnc.html?path=websockify%3Ftoken%3Dterminal-1",
+      }),
+      readFile: vi.fn().mockResolvedValue(new TextEncoder().encode("hello")),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+    };
+    const prisma = {
+      codingSession: {
+        findFirst: vi.fn().mockResolvedValue(
+          overrides.session === null ? null : { ...session, ...overrides.session },
+        ),
+      },
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          screenGeneration: 2,
+          threads: [{ id: "thread-1" }],
+          computer: {
+            id: "computer-1",
+            screenGeneration: 3,
+            kind: "docker",
+            scope: "team",
+            state: "running",
+            providerRef: "sandbox-ref-1",
+            homeKey: "home-1",
+            controlHolder: "none",
+            controlLeaseId: null,
+            controlLeaseExpiresAt: null,
+            controlBotId: null,
+            controlRunId: null,
+            ...overrides.computer,
+          },
+        }),
+      },
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      sandbox,
+      jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
+      env: {
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "docker",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const handler = new RPCHandler(createRouter(deps));
+    const call = async () => {
+      const { response } = await handler.handle(
+        new Request("http://127.0.0.1/rpc/codingSessions/terminalUrl", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ json: { sessionId: "coding-1" } }),
+        }),
+        { prefix: "/rpc", context: { actor } },
+      );
+      return { status: response.status, body: await response.json() };
+    };
+    return { sandbox, call };
+  }
+
+  it("returns no url for sessions that are not an active omp session", async () => {
+    const pi = setup({ session: { engine: "normal-pi" } });
+    await expect(pi.call()).resolves.toMatchObject({ status: 200 });
+    expect(pi.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    const ended = setup({ session: { status: "ended" } });
+    await expect(ended.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null } },
+    });
+    expect(ended.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    const missing = setup({ session: null });
+    await expect(missing.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null } },
+    });
+  });
+
+  it("opens the terminal on the bot's workspace only while the user holds computer control", async () => {
+    const released = setup();
+    await expect(released.call()).resolves.toMatchObject({ status: 403 });
+    expect(released.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    const { sandbox, call } = setup({ computer: controlled });
+    const { status, body } = await call();
+    expect(status).toBe(200);
+    expect(sandbox.connectTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      { controlToken: "lease-1", cwd: "bots/bot-1" },
+      expect.anything(),
+    );
+    const url = new URL(body.json.url);
+    expect(url.origin).toBe("http://127.0.0.1:5173");
+    expect(openScreenCapability(url.pathname, "fake-test-secret")).toMatchObject({
+      scope: { botId: "bot-1", controlLeaseId: "lease-1" },
+      target: { hostname: "screen.example", interactive: true },
+    });
+  });
+
+  it("returns no url when the bot has no running computer", async () => {
+    const stopped = setup({
+      computer: { state: "stopped", providerRef: null, ...controlled },
+    });
+    await expect(stopped.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null } },
+    });
+    expect(stopped.sandbox.connectTerminal).not.toHaveBeenCalled();
+  });
+});
