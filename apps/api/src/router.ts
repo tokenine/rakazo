@@ -35,6 +35,7 @@ import {
   applyTeachingDesktopInput,
   archiveBot,
   assertSafeRemoteUrl,
+  buildGitGraph,
   buildMcpCredentialBlob,
   buildModelConnectPlaintext,
   CHATGPT_OAUTH_PROVIDER,
@@ -48,7 +49,6 @@ import {
   computerSupportsTerminal,
   computerSupportsUpdate,
   computerUpdateView,
-  buildGitGraph,
   createAcceptanceGateService,
   createUserTelegramPlatform,
   createVoiceProvider,
@@ -124,9 +124,9 @@ import {
   ATTACHMENT_MAX_BYTES,
   appContract,
   BUNDLED_CATALOG,
+  ComputerCommandSchema,
   createMarketplaceCatalog,
   createOperatorCatalogSource,
-  ComputerCommandSchema,
   EXPERT_AVATARS,
   EXPERT_CATALOG,
   EXPERT_MCP_PRESETS,
@@ -151,12 +151,6 @@ import {
   nextCronDateAcrossStrict,
 } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import {
-  BotCodingWorkspace,
-  BotNotFoundError,
-  createBotCodingSession,
-  listBotCodingSessions,
-} from "./coding-sessions.js";
 import {
   appendEventInTransaction,
   BotSectionNameConflictError,
@@ -217,6 +211,12 @@ import {
 } from "./artifacts.js";
 import { botProfileLabelsChanged, commitBotUpdate } from "./bot-update.js";
 import {
+  BotCodingWorkspace,
+  BotNotFoundError,
+  createBotCodingSession,
+  listBotCodingSessions,
+} from "./coding-sessions.js";
+import {
   executionBlocksUserTakeover,
   resolveBusyBotName,
   toComputerStatus,
@@ -243,6 +243,7 @@ import {
   promptFocus,
   startOnboarding,
 } from "./onboarding.js";
+import { createPreviewService } from "./previews.js";
 import { listSpaceRuns } from "./runs.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";
 import { querySpaceSearch } from "./search.js";
@@ -283,7 +284,6 @@ import {
   voiceContext,
 } from "./voice.js";
 import { startWalletPairing, walletOverview } from "./wallet-overview.js";
-import { createPreviewService } from "./previews.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -5639,11 +5639,7 @@ export function createRouter(deps: RouterDeps) {
     codingSessions: {
       create: authed.codingSessions.create.handler(async ({ context, input }) => {
         try {
-          return await createBotCodingSession(
-            { prisma: deps.prisma },
-            context.actor,
-            input,
-          );
+          return await createBotCodingSession({ prisma: deps.prisma }, context.actor, input);
         } catch (error) {
           if (error instanceof BotNotFoundError) {
             throw new ORPCError("NOT_FOUND", { message: error.message });
@@ -5716,7 +5712,11 @@ export function createRouter(deps: RouterDeps) {
         const run = async (argv: string[]) => {
           let stdout = "";
           let exitStatus = 1;
-          for await (const event of deps.sandbox.execute(toComputerRef(computer), { argv, cwd }, ctx)) {
+          for await (const event of deps.sandbox.execute(
+            toComputerRef(computer),
+            { argv, cwd },
+            ctx,
+          )) {
             if (event.type === "stdout") stdout += event.data;
             if (event.type === "exit") exitStatus = event.code;
           }
@@ -5755,18 +5755,15 @@ export function createRouter(deps: RouterDeps) {
         // URLs are raw interactive streams) must never be handed to a
         // leaseless user. Interactive terminals still require the lease
         // through connectTerminal's control token, so leased use is unchanged.
-        if (
-          !hasLease &&
-          deps.sandbox.describe().capabilities.viewOnlyTerminal !== true
-        ) {
+        if (!hasLease && deps.sandbox.describe().capabilities.viewOnlyTerminal !== true) {
           return { url: null, reason: "terminal not supported for this computer" };
         }
         // omp gets the bot's model setup: the key travels only as process env inside the
         // sandbox; models.yml (no secret inside) lands in the container HOME. OAuth-kind
         // credentials cannot be seeded this way and inject nothing.
         const injection =
-          session.engine === "omp" && bot.modelProvider && bot.modelId
-            ? await ompModelTerminalInjection(deps, context.actor, bot.modelProvider, bot.modelId)
+          session.engine === "omp"
+            ? await ompTerminalInjectionForBot(deps, context.actor, bot)
             : {};
         const terminal = await deps.sandbox
           .connectTerminal(
@@ -5777,7 +5774,8 @@ export function createRouter(deps: RouterDeps) {
               viewOnly: !hasLease,
               // R13: the user never types the engine's launch command — the
               // terminal bootstraps bash with omp already running inside.
-              launchCommand: session.engine === "omp" ? (injection.launchCommand ?? "omp") : undefined,
+              launchCommand:
+                session.engine === "omp" ? (injection.launchCommand ?? "omp") : undefined,
               ...(injection.env ? { env: injection.env } : {}),
               ...(injection.homeFiles ? { homeFiles: injection.homeFiles } : {}),
             },
@@ -6639,7 +6637,9 @@ export function createRouter(deps: RouterDeps) {
       }),
       create: authed.preview.create.handler(async ({ context, input }) => {
         const service = createPreviewService(deps.prisma);
-        return service.create(context.actor, { expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined });
+        return service.create(context.actor, {
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+        });
       }),
       revoke: authed.preview.revoke.handler(async ({ context, input }) => {
         const service = createPreviewService(deps.prisma);
@@ -7337,23 +7337,27 @@ function throwIfAborted(signal?: AbortSignal) {
  * same accessor a run uses (findModelCredential + the encrypted secret store); only
  * api-key-style credentials yield an injection, and the plaintext never leaves this call.
  */
-async function ompModelTerminalInjection(
+async function ompTerminalInjectionForBot(
   deps: { prisma: PrismaClient; secrets: Pick<EncryptedSecretStore, "load"> },
   actor: Pick<Actor, "userId" | "spaceId">,
-  provider: string,
-  modelId: string,
+  bot: { modelProvider: string | null; modelId: string | null },
 ): Promise<ReturnType<typeof ompTerminalInjection>> {
   try {
-    const credential = await findModelCredential(deps.prisma, actor, provider, modelId);
-    if (!credential?.secretId) return {};
+    // The bot's own model wins; otherwise the space default — the same
+    // precedence the run machinery applies to a plain chat.
+    const selected =
+      bot.modelProvider && bot.modelId
+        ? await findModelCredential(deps.prisma, actor, bot.modelProvider, bot.modelId)
+        : await findDefaultModelCredential(deps.prisma, actor);
+    if (!selected?.secretId) return {};
     const secret = await deps.prisma.secret.findFirst({
-      where: { id: credential.secretId, userId: actor.userId, spaceId: null },
+      where: { id: selected.secretId, userId: actor.userId, spaceId: null },
       select: { id: true, ciphertext: true },
     });
     if (!secret) return {};
     return ompTerminalInjection({
-      provider,
-      modelId,
+      provider: selected.provider,
+      modelId: selected.defaultModel ?? "",
       plaintext: deps.secrets.load(secret.ciphertext, secret.id),
     });
   } catch {
