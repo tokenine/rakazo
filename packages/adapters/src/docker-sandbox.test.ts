@@ -25,7 +25,9 @@ describe("Docker sandbox", () => {
   });
 
   it("forwards the terminal launch command to the supervisor when one is requested", async () => {
-    const fetchMock = vi.fn(async () => Response.json({ terminalUrl: "http://gateway.test/t" }));
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) =>
+      Response.json({ terminalUrl: "http://gateway.test/t" }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const provider = new DockerSandboxProvider("http://supervisor.test", "test-token");
     const computer = { id: "computer", botId: "bot", kind: "docker" as const, providerRef: "c" };
