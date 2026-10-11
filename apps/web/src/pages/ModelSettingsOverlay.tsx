@@ -7,8 +7,10 @@ import {
   DEFAULT_MODEL_MAX_TOKENS,
   MAX_MODEL_CONTEXT_WINDOW,
   MAX_MODEL_MAX_TOKENS,
+  OPENAI_COMPATIBLE_PRESETS,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   openAiCompatibleConnectReady,
+  openAiCompatiblePresetForBaseUrl,
   openAiCompatibleProbeSuccessMessage,
   parseModelContextWindow,
   parseModelMaxImagesPerPrompt,
@@ -502,7 +504,26 @@ export function ModelSettingsOverlay({
                   </>
                 ) : isOpenAiCompatible ? (
                   <>
-                    <label className="block" htmlFor="model-base-url">
+                    <label className="block" htmlFor="model-server-preset">
+                      <Trans>Preset</Trans>
+                      <NativeSelect
+                        id="model-server-preset"
+                        value={openAiCompatiblePresetForBaseUrl(baseUrl)?.baseUrl ?? ""}
+                        onChange={(event) => updateBaseUrl(event.target.value)}
+                        aria-label={t`Server preset`}
+                        className="mt-2 h-10 text-foreground"
+                      >
+                        <NativeSelectOption value="">
+                          <Trans>Custom server</Trans>
+                        </NativeSelectOption>
+                        {OPENAI_COMPATIBLE_PRESETS.map((preset) => (
+                          <NativeSelectOption key={preset.id} value={preset.baseUrl}>
+                            {preset.label}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="mt-3 block" htmlFor="model-base-url">
                       <Trans>Server URL</Trans>
                       <Input
                         id="model-base-url"
@@ -570,7 +591,10 @@ export function ModelSettingsOverlay({
                             setNotice(null);
                           }}
                           aria-label={t`Model id`}
-                          placeholder="exact-model-id"
+                          placeholder={
+                            openAiCompatiblePresetForBaseUrl(baseUrl)?.modelPlaceholder ??
+                            "exact-model-id"
+                          }
                           className="mt-2 h-10 text-foreground"
                         />
                       )}
