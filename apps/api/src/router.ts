@@ -5690,6 +5690,9 @@ export function createRouter(deps: RouterDeps) {
               controlToken: hasLease ? (computer.controlLeaseId ?? "") : "",
               cwd: resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined),
               viewOnly: !hasLease,
+              // R13: the user never types the engine's launch command — the
+              // terminal bootstraps bash with omp already running inside.
+              launchCommand: session.engine === "omp" ? "omp" : undefined,
             },
             await computerScreenContext(
               deps.prisma,

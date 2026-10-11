@@ -3555,7 +3555,7 @@ describe("coding session terminal", () => {
     expect(releasedResult.status).toBe(200);
     expect(released.sandbox.connectTerminal).toHaveBeenCalledWith(
       expect.objectContaining({ id: "sandbox-ref-1" }),
-      { controlToken: "", cwd: "bots/bot-1", viewOnly: true },
+      { controlToken: "", cwd: "bots/bot-1", viewOnly: true, launchCommand: "omp" },
       expect.anything(),
     );
     const releasedUrl = new URL(releasedResult.body.json.url);
@@ -3569,7 +3569,7 @@ describe("coding session terminal", () => {
     expect(status).toBe(200);
     expect(sandbox.connectTerminal).toHaveBeenCalledWith(
       expect.objectContaining({ id: "sandbox-ref-1" }),
-      { controlToken: "lease-1", cwd: "bots/bot-1", viewOnly: false },
+      { controlToken: "lease-1", cwd: "bots/bot-1", viewOnly: false, launchCommand: "omp" },
       expect.anything(),
     );
     const url = new URL(body.json.url);
