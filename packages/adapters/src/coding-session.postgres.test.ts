@@ -99,8 +99,13 @@ describePostgres("coding sessions (PostgreSQL)", () => {
       handoffSummary: "handoff",
     });
     const leases = await prisma.codingWorkspaceLease.findMany();
-    expect(leases.filter((lease) => lease.workspaceId === `ws-cont-${userId}`)).toHaveLength(1);
-    expect(leases[0]).toMatchObject({
+    const continuationLeases = leases.filter(
+      (lease) => lease.workspaceId === `ws-cont-${userId}`,
+    );
+    expect(continuationLeases).toHaveLength(1);
+    // Assert on the filtered row: findMany returns every lease in the shared
+    // test database, so an unfiltered [0] races other tests' leftovers.
+    expect(continuationLeases[0]).toMatchObject({
       sessionId: continuation.id,
       workspaceId: `ws-cont-${userId}`,
     });

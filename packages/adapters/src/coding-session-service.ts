@@ -180,36 +180,50 @@ async function createCodingSessionInTx(
   const now = clock.now();
   const expiresAt = leaseExpiry(clock, now);
   const owner = input.owner ?? input.userId;
-  try {
-    await tx.codingWorkspaceLease.create({
-      data: {
-        workspaceId: input.workspaceId,
-        sessionId: "pending",
-        owner,
-        fence: 1,
-        expiresAt,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-  } catch (error) {
-    if (!isUniqueViolation(error)) throw error;
+  // Read the lease BEFORE any write: once a statement fails inside a Postgres
+  // transaction the transaction is aborted, so the old catch-P2002-then-read
+  // shape made every busy-claim escape as a raw PrismaClientKnownRequestError
+  // (BUG-004-S7-01). Never query after a failed write in the same transaction.
+  const existingLease = await tx.codingWorkspaceLease.findUnique({
+    where: { workspaceId: input.workspaceId },
+  });
+  if (!existingLease) {
+    try {
+      await tx.codingWorkspaceLease.create({
+        data: {
+          workspaceId: input.workspaceId,
+          sessionId: "pending",
+          owner,
+          fence: 1,
+          expiresAt,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      // Lost a concurrent first claim; the transaction is aborted now, so
+      // fail closed instead of inspecting rows we can no longer read.
+      throw new WorkspaceBusyError(
+        input.workspaceId,
+        "another session claimed the workspace concurrently",
+      );
+    }
+  } else {
     // Lease row exists: take it over only when expired, conditioned on the
     // fence we just read; refuse when busy — never last-writer-wins.
-    const existing = await tx.codingWorkspaceLease.findUnique({
-      where: { workspaceId: input.workspaceId },
-    });
-    if (!existing) {
-      throw new WorkspaceBusyError(input.workspaceId, "lease row vanished while claiming");
-    }
-    if (!leaseExpired(existing, now)) {
+    if (!leaseExpired(existingLease, now)) {
       throw new WorkspaceBusyError(
         input.workspaceId,
         "another coding session holds the lease; never last-writer-wins on an active workspace",
       );
     }
     const taken = await tx.codingWorkspaceLease.updateMany({
-      where: { workspaceId: input.workspaceId, fence: existing.fence, expiresAt: { lte: now } },
+      where: {
+        workspaceId: input.workspaceId,
+        fence: existingLease.fence,
+        expiresAt: { lte: now },
+      },
       data: { owner, fence: { increment: 1 }, expiresAt, updatedAt: now },
     });
     if (taken.count !== 1) {
