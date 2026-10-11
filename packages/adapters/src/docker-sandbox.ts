@@ -263,7 +263,13 @@ export class DockerSandboxProvider implements SandboxProvider {
     const res = await fetch(this.url(`/computers/${computer.id}/terminal`), {
       method: "POST",
       headers: { ...this.headers(context, computer.botId), "content-type": "application/json" },
-      body: JSON.stringify({ controlToken: request.controlToken, cwd: request.cwd ?? "" }),
+      // viewOnly stays unforwarded: docker has no server-side view-only enforcement, and the
+      // B2 capability gate already refuses leaseless terminal use for this provider.
+      body: JSON.stringify({
+        controlToken: request.controlToken,
+        cwd: request.cwd ?? "",
+        launchCommand: request.launchCommand ?? "",
+      }),
       signal: context.signal,
     });
     if (!res.ok) {

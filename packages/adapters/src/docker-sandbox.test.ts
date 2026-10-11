@@ -24,6 +24,31 @@ describe("Docker sandbox", () => {
     vi.unstubAllGlobals();
   });
 
+  it("forwards the terminal launch command to the supervisor when one is requested", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ terminalUrl: "http://gateway.test/t" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const provider = new DockerSandboxProvider("http://supervisor.test", "test-token");
+    const computer = { id: "computer", botId: "bot", kind: "docker" as const, providerRef: "c" };
+
+    await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", launchCommand: "omp" },
+      context,
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      controlToken: "lease-1",
+      cwd: "",
+      launchCommand: "omp",
+    });
+
+    await provider.connectTerminal(computer, { controlToken: "lease-1" }, context);
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
+      controlToken: "lease-1",
+      cwd: "",
+      launchCommand: "",
+    });
+  });
+
   it("sends the bounded timeout to the supervisor and preserves its honest result", async () => {
     const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) =>
       Response.json({

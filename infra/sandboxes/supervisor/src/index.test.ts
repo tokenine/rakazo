@@ -230,6 +230,18 @@ describe("sandbox supervisor HTTP boundary", () => {
     }
   });
 
+  it("rejects terminal launch commands that are not a safe plain command", async () => {
+    for (const launchCommand of ["rm -rf /", `a`.repeat(257), "echo $(id)", "x; y"]) {
+      const response = await supervisorApp.request("/computers/id/terminal", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ controlToken: "ok-token", launchCommand }),
+      });
+      expect(response.status, launchCommand).toBe(400);
+      await expect(response.text()).resolves.toContain("launchCommand");
+    }
+  });
+
   it("rejects a provision request whose identity headers do not match its body", async () => {
     const response = await supervisorApp.request("/computers", {
       method: "POST",

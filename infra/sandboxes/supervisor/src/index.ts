@@ -713,13 +713,21 @@ app.post("/computers/:id/screen-mode", async (c) => {
 });
 
 app.post("/computers/:id/terminal", async (c) => {
-  const body = z
-    .object({
-      controlToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
-      cwd: z.string().max(4096).default(""),
-    })
-    .parse(await c.req.json());
   try {
+    // Inside the try so a rejected body (including an invalid launch command) answers 400.
+    const body = z
+      .object({
+        controlToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
+        cwd: z.string().max(4096).default(""),
+        // Validated at the boundary; terminalCommand still shell-quotes it before it reaches
+        // bash inside the container.
+        launchCommand: z
+          .string()
+          .max(256)
+          .regex(/^[A-Za-z0-9_@%+=:,./-]*$/, "invalid launch command")
+          .default(""),
+      })
+      .parse(await c.req.json());
     const id = c.req.param("id");
     const botId = c.req.header("x-rakazo-bot-id");
     const { container, info } = await managedContainer(
@@ -743,7 +751,14 @@ app.post("/computers/:id/terminal", async (c) => {
         [
           "bash",
           "-c",
-          terminalCommand(body.controlToken, terminalToken, cwd, undefined, screen.layout),
+          terminalCommand(
+            body.controlToken,
+            terminalToken,
+            cwd,
+            undefined,
+            screen.layout,
+            body.launchCommand || undefined,
+          ),
         ],
         { env: computerCommandEnv(screen.layout) },
       );
