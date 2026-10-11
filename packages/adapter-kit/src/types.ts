@@ -126,6 +126,11 @@ export interface TerminalRequest {
    * reconnecting an existing session never re-runs it.
    */
   launchCommand?: string;
+  /**
+   * Bounded process env for the terminal's shell (e.g. provider credentials that must
+   * never reach argv, files, or logs). Providers that cannot set spawn env ignore it.
+   */
+  env?: Record<string, string>;
 }
 
 /**

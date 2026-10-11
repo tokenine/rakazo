@@ -34,13 +34,18 @@ describe("Docker sandbox", () => {
 
     await provider.connectTerminal(
       computer,
-      { controlToken: "lease-1", launchCommand: "omp" },
+      {
+        controlToken: "lease-1",
+        launchCommand: "omp",
+        env: { RAKAZO_OMP_API_KEY: "secret-value" },
+      },
       context,
     );
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       controlToken: "lease-1",
       cwd: "",
       launchCommand: "omp",
+      env: { RAKAZO_OMP_API_KEY: "secret-value" },
     });
 
     await provider.connectTerminal(computer, { controlToken: "lease-1" }, context);
@@ -48,6 +53,7 @@ describe("Docker sandbox", () => {
       controlToken: "lease-1",
       cwd: "",
       launchCommand: "",
+      env: {},
     });
   });
 

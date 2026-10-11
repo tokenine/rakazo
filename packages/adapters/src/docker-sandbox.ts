@@ -269,6 +269,9 @@ export class DockerSandboxProvider implements SandboxProvider {
         controlToken: request.controlToken,
         cwd: request.cwd ?? "",
         launchCommand: request.launchCommand ?? "",
+        // Provider credentials travel as process env only; the supervisor bounds and
+        // validates keys and never logs values.
+        env: request.env ?? {},
       }),
       signal: context.signal,
     });
