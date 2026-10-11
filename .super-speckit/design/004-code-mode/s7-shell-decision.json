@@ -1,0 +1,22 @@
+{
+  "feature": "004-code-mode",
+  "slice": "s7-workspace-shell",
+  "decided_at": "2026-10-11",
+  "question": "How does the code workspace view present the seamless switch and side panels (R12)?",
+  "options": [
+    "A: inline expansion inside the chat header (status quo S7 slivers)",
+    "B: dedicated full-page workspace at /app/code/:sessionId with a left panel rail and the computer screen as the main area",
+    "C: modal overlay over the chat"
+  ],
+  "chosen": "B",
+  "why": "R12 requires panels as first-class surfaces outside the computer screen and a real destination for the switch; a full page matches the confirmed purpose map and the ArtifactsPage full-page precedent. Inline (A) is the discoverability defect being fixed; a modal (C) cannot host persistent panels.",
+  "layout": {
+    "switch": "persistent Chat/Code segmented control on the bot header; Code creates-or-reattaches the bot's active session and navigates to /app/code/:sessionId",
+    "rail": "left rail with Terminal / Files / Git panels; panel opens beside (not over) the computer screen; panels render only what the session supports (progressive disclosure)",
+    "terminal": "existing xterm LiveTerminal; lands in bash with omp already running for omp sessions; view-only banner-free — input disabled until control lease held (take control button appears only when a run holds the lease)",
+    "files": "file tree from codingSessions.listFiles; click opens read-only preview from codingSessions.readFile",
+    "gitGraph": "commit graph from codingSessions.gitGraph; empty truthful state when not a repo"
+  },
+  "reversible": true,
+  "reversal": "alias the route or re-dock panels; no data-model coupling"
+}
