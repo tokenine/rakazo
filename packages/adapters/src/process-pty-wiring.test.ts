@@ -12,7 +12,10 @@
  */
 
 import type { AdapterContext, ComputerRef } from "@rakazo/adapter-kit";
-import { describe, expect, it, vi } from "vitest";
+import { readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { ProcessSandboxProvider } from "./process-sandbox.js";
 
 const ctx: AdapterContext = {
@@ -53,9 +56,27 @@ function fakePtyHandle() {
   };
 }
 
+/**
+ * Hermetic task roots: created under the OS temp dir and removed after the
+ * suite. A leaked root previously landed in the repo working directory and
+ * accumulated across runs; the afterAll guard below fails the suite if that
+ * ever regresses.
+ */
+const suiteRoot = join(
+  tmpdir(),
+  `process-pty-wiring-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+);
+afterAll(() => {
+  rmSync(suiteRoot, { recursive: true, force: true });
+  const leaked = readdirSync(process.cwd()).filter((entry) =>
+    entry.startsWith("process-pty-wiring-"),
+  );
+  expect(leaked).toEqual([]);
+});
+
 async function makeProvider(spawner: ReturnType<typeof vi.fn>) {
   const provider = new ProcessSandboxProvider({
-    root: `process-pty-wiring-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    root: suiteRoot,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ptySpawner: spawner as any,
   });

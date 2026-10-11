@@ -10,3 +10,14 @@
 
 
 
+
+## 2026-10-12 — resource slice A: hermetic pty-wiring test roots
+
+- Red: added an afterAll guard to `packages/adapters/src/process-pty-wiring.test.ts`
+  asserting no `process-pty-wiring-*` remains in the working directory. Run with the
+  original relative `root` → 1 file failed, 12 tests passed, 12 directories leaked.
+- Green: suite uses one `mkdtemp` root under `os.tmpdir()` removed at teardown.
+  Rerun → 12 passed, 0 directories in CWD. All 12 behavior tests (scrollback,
+  reconnect, view-only demotion, spawn contract) unchanged and green.
+- Guardrail: `process-pty-wiring-*` added to `.gitignore`; 135 leaked directories
+  removed from the working directory. Production `ProcessSandboxProvider` untouched.

@@ -50,3 +50,6 @@ playwright-report-www
 # graphiti pilot venv (local-only, never committed)
 .venv-graphiti/
 .wrangler/
+
+# hermetic pty-wiring test roots must never land in the repo working directory
+process-pty-wiring-*
