@@ -192,13 +192,15 @@
     {
       "id": "BUG-003-S1-06",
       "artifact": ".super-speckit/bugs/003-S1-https-loopback-endpoint-inconsistency.md",
-      "status": "open",
+      "status": "closed",
       "severity": "low",
       "found_in": "800eb1e4",
       "found_by": "checker probe qa-retest5-mediumcontrols.test.ts + direct assertSafeRemoteUrl reachability probe",
       "root_cause": "the endpoint refine applies isLocalMcpHost() only inside the http: branch, so https://localhost and https://127.0.0.1 pass schema validation even though the comment claims loopback is rejected at parse time",
       "impact": "none reachable \u2014 assertSafeRemoteUrl (packages/adapters/src/remote-mcp.ts:127-145) blocks private hostnames for any protocol before a socket opens, verified with an injected resolver",
-      "blocks": "nothing; needs an explicit accept-or-fix decision"
+      "blocks": "nothing; needs an explicit accept-or-fix decision",
+      "fix_sha": "a2c2d19d",
+      "closed": "red 4/5 new contracts cases against the old http-only guard -> green after; api public-HTTP expectation flipped with rationale; contracts 108/108, api 616/616"
     },
     {
       "id": "BUG-003-S1-07",

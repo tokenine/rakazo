@@ -28,8 +28,8 @@
   "handoff": {
     "path": ".super-speckit/handoffs/2026-10-11-s6-merged-next-gaps.md",
     "transfer": "agent-to-agent",
-    "stage": "s6-merged",
-    "attempt_id": "s6-run2"
+    "stage": "union-bug-sweep-merged",
+    "attempt_id": "union-retest1"
   },
   "runs": [
     {
@@ -61,19 +61,38 @@
       "receipt": ".super-speckit/qa/004-s6-run1/proof-receipt.json",
       "environment": ".super-speckit/qa/004-s6-run1/environment-receipt.json",
       "merged_as": "98f1ca01"
+    },
+    {
+      "run": "004-union-retest1",
+      "candidate_sha": "07007614",
+      "checker": "claude-checker",
+      "result": "pass",
+      "reason": "main union (origin/main 29de238e -> 63de6a99) + BUG-003-S1-06 fix (a2c2d19d, red 4/5 -> green) + three product web bugs found by the slice (ef9f60c3 marketplace yank, 6178785f stacked dialog, 492b1cec missing selectedEntry) + e2e hardening (aaee2d0a, 00dc6b66, 21090395, 9029a388, 07007614). Acceptance on the final candidate with a full local scripted stack: sessions+marketplace+auth-lifecycle = 7 passed + 1 flaky pass-on-retry, 0 failures; suites: typecheck 24/24, api 616/616, contracts 108/108, web 358/358, adapters FAIL-set = known macOS environmental only",
+      "evidence": ".super-speckit/qa/004-union-retest1/",
+      "receipt": ".super-speckit/qa/004-union-retest1/acceptance.md"
     }
   ],
   "bugs": [
     {
       "id": "BUG-UNION-E2E-01",
       "artifact": ".super-speckit/bugs/union-e2e-onboarding-model-step.md",
-      "status": "open",
+      "status": "resolved",
       "severity": "high for release confidence (web e2e battery dead on the integration line), not a product defect",
       "found_in": "union merge 1f166822 lineage; pre-existing to 004 S6 (S6 diff 924da3ba..2eb3d19d touches no web files)",
       "found_by": "coordinator running the playwright gate during 004-s6-run1 proof",
       "root_cause": "apps/web/e2e helpers.ts completeOnboarding predates the onboarding Connect-a-model step, so signup-driven specs time out at 20s",
-      "fix_sha": "430a00bd + a3700758 (both merged)",
-      "retest": "web playwright slice (sessions + marketplace + auth-lifecycle) green on the merged stack; retest pending, run by a checker who did not make the fix"
+      "fix_sha": "430a00bd + a3700758",
+      "resolution": "retested 2026-10-11 on candidate 07007614 with a full local scripted stack (api+worker, AGENT_RUNTIME=scripted, CLOUD_AGENT_PROVIDER=emulator, MARKETPLACE_IMPORT_SECRET): slice sessions+marketplace+auth-lifecycle = 7 passed + 1 flaky pass-on-retry, 0 failures; retest surfaced and closed three product bugs ef9f60c3 (marketplace yank), 6178785f (stacked dialog), 492b1cec (missing selectedEntry) plus the aaee2d0a a11y name"
+    },
+    {
+      "id": "BUG-E2E-02",
+      "artifact": ".super-speckit/bugs/send-timeout-under-slice-load.md",
+      "status": "open",
+      "severity": "low (test robustness / possible runtime behavior)",
+      "found_in": "local scripted-stack slice runs, candidates a2c2d19d..07007614",
+      "found_by": "coordinator during the BUG-UNION-E2E-01 retest",
+      "root_cause": "unverified: sends intermittently fail under full-slice load (composer never clears); leading suspects are the modelSetup.needsModel gate and scripted-runtime run multiplication (457 runs per handful of users)",
+      "retest": "capture the failing send's RPC body in a full-slice run; explain the run multiplication"
     }
   ],
   "human_approval": {
@@ -100,7 +119,7 @@
     }
   ],
   "legacy_candidate_sha": "8b55445d603287cd8541c822ad28417dab89eeeb",
-  "revision": 8,
+  "revision": 9,
   "prerequisite_receipts": {
     "baseline-feedback": {
       "artifact": ".super-speckit/qa/004-s6-run1/findings.json",

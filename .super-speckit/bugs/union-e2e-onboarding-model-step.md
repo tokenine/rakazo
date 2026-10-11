@@ -1,6 +1,6 @@
 # BUG-UNION-E2E-01 — e2e onboarding helper stalls on the "Connect a model" step
 
-- Status: `confirmed` (2026-10-06)
+- Status: `fixed and retested` (2026-10-11)
 - Found in: integration line web e2e slice run against the merged stack (candidate 2eb3d19d lineage)
 - Severity: `high` for release confidence (whole sessions/marketplace/auth e2e battery is dead on this line), not a product defect
 - Found by: coordinator running the playwright gate during 004-s6-run1 proof
@@ -35,3 +35,15 @@ existing Chief-wait flow.
 
 The playwright slice (sessions + marketplace + auth-lifecycle) going green on the merged
 stack is the retest; CI's full playwright suite covers the rest on push.
+
+## Retest (2026-10-11, after the main union 63de6a99 and follow-up fixes)
+
+The slice runs green end-to-end on candidate 07007614 against a full local scripted
+stack (AGENT_RUNTIME=scripted, CLOUD_AGENT_PROVIDER=emulator, EMAIL_EMULATOR=true,
+SANDBOX_PROVIDER=fake, MARKETPLACE_IMPORT_SECRET set, api + worker): 7 passed + 1 flaky
+pass-on-retry (`sessions` resume), 0 failures. Reaching that uncovered three real product
+bugs, fixed in `ef9f60c3` (background bot refresh yanked hub/marketplace into a chat),
+`6178785f` (card Install stacked the review modal on the detail drawer, trapping the
+pointer), `492b1cec` (card Install never selected the entry, so the review modal did not
+mount), plus the account-trigger a11y name in `aaee2d0a`. Residual: sends intermittently
+time out under slice load — tracked in `send-timeout-under-slice-load.md`.

@@ -1,10 +1,19 @@
 # BUG-003-S1-06 — `https://localhost` bundle endpoints pass schema validation
 
-- Status: `confirmed` — **defence-in-depth only, not a live vulnerability**
+- Status: `closed` (2026-10-11, fix `a2c2d19d`)
 - Found in: `003-agent-marketplace / candidate 800eb1e4 / QA run 003-s1-retest5, checker probe`
 - Affected requirement: `R4` — matrix row **V2** (SSRF variant)
 - Severity: `low` (informational / consistency)
 - Related: AGENT-BUNDLE-005, fixed by `466a8bcf`
+
+## Resolution
+
+`a2c2d19d` rewrites `AgentBundleMcpServerSchema.endpoint` (`packages/contracts/src/agent-bundle.ts`):
+bundles must be public HTTPS — the refine rejects every non-HTTPS scheme and, for any
+scheme, loopback/.local/RFC1918/CGNAT (`isPrivateNetworkHost`), cloud metadata hosts
+(`isCloudMetadataHost`), link-local unicast and `0.0.0.0`. Regression coverage:
+`packages/contracts/src/agent-bundle.test.ts` (red 4/5 against the old guard, green
+after) and the flipped public-HTTP expectation in `apps/api/src/agent-bundle.test.ts`.
 
 ## Expected / actual
 
