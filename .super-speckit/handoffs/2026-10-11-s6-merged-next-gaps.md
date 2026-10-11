@@ -17,6 +17,12 @@ Date: 2026-10-11 · Branch: `integration/001-multi-session-agents` @ `07007614` 
 - New finding, unfiled (small): `codingAcceptance.record/get` (router ~5626) are session-ID-addressed without a space check — pre-existing since 003-era; give them the same space scoping as codingSessions in a repair lane.
 - Still open in the slice: diff + verification views (needs a workspace-diff RPC), wiring the bot's run to the coding session so the agent actually works the task from this UI, PTY terminal kind gate.
 
+## Update 3 — provider catalog gap (2026-10-11 night)
+
+Maintainer request: "add more native model provider like the original rakazo". Finding: origin/main and this line are identical — the model settings UI offers only TWO providers (`ai7`, `openai-compatible`, `UI_MODEL_PROVIDER_IDS` in contracts/domain.ts). But the pi engine ships ~40 native providers (`pi-ai/dist/providers/`: anthropic, openai, google, openrouter, groq, deepseek, mistral, xai, together, fireworks, cerebras, moonshot, zai, opencode, vercel-ai-gateway, github-copilot, bedrock, cloudflare, …), and `models.list` already merges `listAvailablePiCatalog` — the UI's hardcoded two-id gate throws them away.
+
+Next slice (S8, native provider catalog): drive the settings + onboarding provider pickers from the engine's own auth-aware catalog instead of the hardcoded ids; key-only connect through the existing `models.connect` machinery (no per-provider env vars, per AGENTS). Keep `ai7` first as the house default. Review `ModelSettingsOverlay.tsx` + `Onboarding.tsx` gates (`UI_MODEL_PROVIDER_IDS.includes`) and the credential→catalog mapping.
+
 ## Original state (2026-10-11 morning)
 
 - S6 (T28 real node-pty spawner + T30 idle-suspend sweep) merged twice: run1 candidate `924da3ba` → `f69e93f6`; run2 re-freeze `2eb3d19d` (verification-matrix markdown only, REQ- IDs added; no code delta vs the checker-verified tree) → `98f1ca01`. Both passes recorded in the feature state `runs[]` with evidence at `.super-speckit/qa/004-s6-run1/`.

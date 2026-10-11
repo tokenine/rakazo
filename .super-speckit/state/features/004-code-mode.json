@@ -28,8 +28,8 @@
   "handoff": {
     "path": ".super-speckit/handoffs/2026-10-11-s6-merged-next-gaps.md",
     "transfer": "agent-to-agent",
-    "stage": "s7-sliver3-shipped",
-    "attempt_id": "s7-w3"
+    "stage": "provider-gap-found",
+    "attempt_id": "s8-w1"
   },
   "runs": [
     {
@@ -131,7 +131,7 @@
     }
   ],
   "legacy_candidate_sha": "8b55445d603287cd8541c822ad28417dab89eeeb",
-  "revision": 12,
+  "revision": 13,
   "prerequisite_receipts": {
     "baseline-feedback": {
       "artifact": ".super-speckit/qa/004-s6-run1/findings.json",
