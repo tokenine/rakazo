@@ -228,3 +228,50 @@ ignored the coding session's launchCommand, and the computer image shipped no om
   spawn/platform-specific specs; core/adapters/supervisor tsc clean except one pre-existing
   box-sandbox.test.ts error. Supervisor endpoint parsing is covered by the boundary rejection
   test (loopback-to-Docker full-path unit skipped: the route needs a real container).
+
+### Cycle I — omp model setup on the docker terminal path (2026-10-11)
+
+The terminal auto-launches omp but shows no-model: the container has none of the bot's
+provider credentials. Design: the secret travels only as supervisor process env (inherited
+by the terminal server's pty child — terminal-server.py identity() copies os.environ
+unfiltered, so no core change was needed); omp's models.yml names the env var, never the
+key, so checkpoint scope is irrelevant to secret exposure.
+
+- RED (supervisor): index.test.ts endpoint tests for env (bad key shapes, 17 keys, 4KB+
+  values) and homeFiles (absolute, `..`, non-.omp, >8KB, 9 files) all failed before any
+  implementation; terminalHomeFilesCommand unit tests failed (function missing). GREEN:
+  zod body gained bounded `env` (key regex, ≤16, ≤4096) and `homeFiles` (≤8, ≤8KB), merged
+  into runContainerCommand env / a pre-launch shell stanza; terminalHomeFilesCommand
+  enforces the under-~/.omp path policy again and writes umask 177. First green attempt
+  had one wrong assertion (shellQuote emits a real newline, not `\n`).
+- Core: no change — verified the pty child inherits the full command env (read +
+  terminal-server/desktop-runtime suites green). Committing a leftover from Cycle H live
+  verification: the `time` import and prompt-wait in the terminal server program were
+  uncommitted; HEAD could not have launched omp at all without it.
+- RED (adapter): docker-sandbox.test.ts expected env/homeFiles in the terminal body.
+  GREEN: TerminalRequest gained optional env/homeFiles; docker forwards both; the process
+  provider is unchanged (its spawn env already passes through locally).
+- RED (adapters): omp-terminal.test.ts — native mapping, custom route, oauth refusal,
+  keyless refusal all failed (module missing). GREEN: ompTerminalInjection maps only
+  unambiguous api-key provider ids to omp's bundled providers (anthropic, openai, google,
+  deepseek, openrouter, groq, mistral, xai, cerebras, together, fireworks,
+  zai-platform→ZAI_API_KEY); everything else with a usable key and base URL takes omp's
+  custom-provider route (provider "rakazo", apiKey: RAKAZO_OMP_API_KEY); oauth and keyless
+  inject nothing. Rakazo's "zai" id (coding-plan endpoint) deliberately takes the custom
+  route because omp's bundled "zai" is the regular platform endpoint.
+- RED (api): router.test.ts terminalUrl tests asserting env present with the key value,
+  models.yml containing the env NAME but not the key, and oauth → no env. GREEN:
+  ompModelTerminalInjection reuses findModelCredential (packages/db model-credentials.ts,
+  the same accessor ai-consent uses for a bot's selected model) plus deps.secrets.load;
+  unreadable credentials and missing selections inject nothing and the terminal still
+  opens with bare `omp`. First run failed on the B2 gate (needed viewOnlyTerminal: true
+  in the fixture), then on homeFiles `[]` vs undefined (native route sends no file).
+- Verification: supervisor suite green except the 4 known computer-loopback environmental
+  failures; docker-sandbox 23 passed; omp-terminal 6 passed; router.test.ts 100 passed;
+  core suite green; api/core/adapter-kit/supervisor tsc clean; adapters tsc has the one
+  pre-existing box-sandbox.test.ts error (reproduced on a clean tree); adapters suite has
+  the same 18 environmental failures as the clean tree.
+- Known limitations: oauth-kind credentials (ChatGPT/Codex subscriptions, Claude plans)
+  cannot be seeded — omp's own /login is required and the terminal truthfully shows
+  no-model. omp model ids may drift from pi catalog ids; a mismatch leaves omp on its
+  picker rather than failing the terminal. The process provider ignores request.env.
