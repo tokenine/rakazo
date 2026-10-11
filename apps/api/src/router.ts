@@ -150,6 +150,12 @@ import {
 } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import {
+  BotCodingWorkspace,
+  BotNotFoundError,
+  createBotCodingSession,
+  listBotCodingSessions,
+} from "./coding-sessions.js";
+import {
   appendEventInTransaction,
   BotSectionNameConflictError,
   CannotDeleteDefaultSpaceError,
@@ -5626,6 +5632,30 @@ export function createRouter(deps: RouterDeps) {
       }),
       get: authed.codingAcceptance.get.handler(async ({ input }) => {
         return codingAcceptanceGate.get(input.sessionId);
+      }),
+    },
+    codingSessions: {
+      create: authed.codingSessions.create.handler(async ({ context, input }) => {
+        try {
+          return await createBotCodingSession(
+            { prisma: deps.prisma },
+            context.actor,
+            input,
+          );
+        } catch (error) {
+          if (error instanceof BotNotFoundError) {
+            throw new ORPCError("NOT_FOUND", { message: error.message });
+          }
+          if (error instanceof BotCodingWorkspace) {
+            throw new ORPCError("CONFLICT", {
+              message: "This bot already has an active coding session on its workspace",
+            });
+          }
+          throw error;
+        }
+      }),
+      list: authed.codingSessions.list.handler(async ({ context, input }) => {
+        return listBotCodingSessions({ prisma: deps.prisma }, context.actor, input.botId);
       }),
     },
     clientBrowser: {

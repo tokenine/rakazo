@@ -1,0 +1,33 @@
+{
+  "feature": "004-code-mode",
+  "slice": "S7 — code-mode web surface (T6/V16)",
+  "decided_by": "maintainer instruction 'walk through decision then start working' (2026-10-11); choices below are the orchestrator's recorded product assumptions, reversible per choice",
+  "decision": {
+    "surface": {
+      "chosen": "B — code mode lives inside the existing session model",
+      "rejected": "A — a separate /code route",
+      "why": "A coding session IS a session (bound to workspace+engine, lease-held, shown in the switcher). Reusing the session sheet, switcher and thread gives discoverability for free and adds no new top-level chrome to maintain."
+    },
+    "entry": {
+      "chosen": "B — a 'Coding session' toggle in the existing new-session sheet, with an engine picker (default normal-pi, last choice remembered per user)",
+      "rejected": "A — a /code slash command in the composer",
+      "why": "The sheet already exists and is discoverable; a slash command hides the feature behind syntax users must learn."
+    },
+    "engine": {
+      "chosen": "normal-pi default, omp selectable; last choice remembered in localStorage per user",
+      "why": "normal-pi is the only engine with a full adapter+conformance record in this deployment; omp is selectable but fails closed via EngineUnavailableError rather than silently switching."
+    },
+    "workspace": {
+      "chosen": "v1 uses the bot's existing workspace automatically; no repo picker",
+      "limitation": "Users cannot choose or clone a repo from the UI yet — recorded as an explicit non-goal for this slice."
+    },
+    "progress_and_results": {
+      "chosen": "a read-only coding panel in the thread: session status, latest run state, acceptance record (outcome + verification commands via the existing codingAcceptance RPC), and workspace diff once the diff RPC lands",
+      "rejected": "building the diff/PR view in the same first commit",
+      "why": "smallest verifiable sliver first: create+see a coding session end to end before adding richer views."
+    }
+  },
+  "prototype": "prototype.html",
+  "accessibility_baseline": "WCAG 2.2 AA",
+  "next_slices": ["diff + verification views (codingSessions.diff RPC)", "repo-to-PR status + PR link panel", "PTY terminal attach for process computers (kind gate + id resolution)"]
+}

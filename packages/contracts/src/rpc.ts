@@ -1037,6 +1037,37 @@ export const appContract = {
           .nullable(),
       ),
   },
+  codingSessions: {
+    create: oc
+      .input(
+        z.object({
+          botId: Id,
+          engine: z.enum(["normal-pi", "omp"]),
+          title: z.string().max(200).optional(),
+        }),
+      )
+      .output(
+        z.object({
+          id: Id,
+          workspaceId: z.string(),
+          engine: z.enum(["normal-pi", "omp"]),
+          status: z.string(),
+        }),
+      ),
+    list: oc
+      .input(z.object({ botId: Id }))
+      .output(
+        z.array(
+          z.object({
+            id: Id,
+            workspaceId: z.string(),
+            engine: z.string(),
+            status: z.string(),
+            title: z.string().nullable(),
+          }),
+        ),
+      ),
+  },
   preview: {
     get: oc.input(z.object({ previewId: Id })).output(
       z.object({
