@@ -5,7 +5,7 @@ import type { Pool, PrismaClient, ThreadEvents } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import type { PoolClient } from "pg";
 import { returnBotMessageOutcome } from "./bot-messages.js";
-import { checkIdle, createSessionServiceDeps } from "./coding-session-service.js";
+import { isIdleCodingSession } from "./coding-session-service.js";
 import { scheduleComputerControlExpiry } from "./computer-control.js";
 import { sleepComputerIfIdle } from "./computer-idle.js";
 import { isUserProgressClientNonce } from "./user-progress.js";
@@ -371,13 +371,17 @@ export function createJobReconciler(
 
 /**
  * S6 T30 — production caller for the coding-session idle gate (checkIdle had
- * none). Enumerates active coding sessions, keeps the ones checkIdle marks
- * idle (sessions with an active run or no recorded activity never pass), and
- * routes each idle session's computer through the existing
- * sleepComputerIfIdle contract — resolved via the same session.botId →
- * bot.computer mapping the T38 reconcileCrash path uses. A session whose bot
- * has no computer is skipped explicitly. Per-session failures are logged and
- * non-fatal: the sweep continues.
+ * none). Enumerates active coding sessions, keeps the ones the shared
+ * isIdleCodingSession predicate marks idle (sessions with an active run or no
+ * recorded activity never pass), and routes each idle session's computer
+ * through the existing sleepComputerIfIdle contract — resolved via the same
+ * session.botId → bot.computer mapping the T38 reconcileCrash path uses. A
+ * session whose bot has no computer is skipped explicitly. Per-session
+ * failures are logged and non-fatal: the sweep continues.
+ *
+ * The sweep is batched: session rows, latest-run statuses, and bot → computer
+ * mappings each resolve with one query, so sweep cost does not grow with the
+ * number of sessions.
  */
 export async function reconcileIdleCodingSessions(deps: {
   prisma: PrismaClient;
@@ -386,21 +390,55 @@ export async function reconcileIdleCodingSessions(deps: {
   jobs: JobPublisher;
   events: ThreadEvents;
 }): Promise<void> {
+  const now = new Date();
   const sessions = await deps.prisma.codingSession.findMany({
     where: { status: "active" },
-    select: { id: true, botId: true },
+    select: {
+      id: true,
+      botId: true,
+      status: true,
+      latestRunId: true,
+      idleThresholdMinutes: true,
+      lastActivityAt: true,
+    },
   });
-  const codingDeps = createSessionServiceDeps({ prisma: deps.prisma });
-  for (const session of sessions) {
+  const latestRunIds = [
+    ...new Set(sessions.map((s) => s.latestRunId).filter((id): id is string => !!id)),
+  ];
+  const runs = latestRunIds.length
+    ? await deps.prisma.run.findMany({
+        where: { id: { in: latestRunIds } },
+        select: { id: true, status: true },
+      })
+    : [];
+  const runStatusById = new Map(runs.map((run) => [run.id, run.status]));
+  const idleBotIds = [
+    ...new Set(
+      sessions
+        .filter(
+          (session) =>
+            session.botId &&
+            isIdleCodingSession(
+              session,
+              session.latestRunId ? runStatusById.get(session.latestRunId) : undefined,
+              now,
+            ),
+        )
+        .map((session) => session.botId as string),
+    ),
+  ];
+  const bots = idleBotIds.length
+    ? await deps.prisma.bot.findMany({
+        where: { id: { in: idleBotIds } },
+        select: { id: true, computerId: true },
+      })
+    : [];
+  const computerIdByBot = new Map(bots.map((bot) => [bot.id, bot.computerId]));
+  for (const botId of idleBotIds) {
+    const computerId = computerIdByBot.get(botId);
+    if (!computerId) continue;
     try {
-      if (!(await checkIdle(codingDeps, { sessionId: session.id }))) continue;
-      if (!session.botId) continue;
-      const bot = await deps.prisma.bot.findUnique({
-        where: { id: session.botId },
-        select: { computerId: true },
-      });
-      if (!bot?.computerId) continue;
-      await sleepComputerIfIdle(deps, bot.computerId);
+      await sleepComputerIfIdle(deps, computerId);
     } catch (error) {
       getLogger().error("idle coding-session sweep", error);
     }

@@ -35,3 +35,20 @@
   (`terminalSession`) uses it, replaying the same newest-capacity lines as before.
 - Green: scrollback, process-pty-wiring, pty-session, node-pty-spawner suites —
   27 passed. No other suites import process-sandbox.
+
+## 2026-10-12 — resource slice C: batched idle-sweep queries
+
+- Red: new test in `coding-idle-sweep.test.ts` — 3 idle sessions must resolve
+  with exactly one findMany per table; the batched fake throws if the sweep
+  calls per-session `codingSession.findUnique`/`bot.findUnique`. Failed against
+  the old per-session loop (1 failed | 6 passed) with "must not fetch sessions
+  one by one".
+- Green: extracted the pure `isIdleCodingSession` predicate from `checkIdle`
+  (single source of truth; `checkIdle` now delegates, all 24 of its tests
+  unchanged and green) and rewrote `reconcileIdleCodingSessions` to three
+  batched queries (sessions with idle fields, latest-run statuses by id, bot →
+  computer by id) — 2N+1 queries per sweep became 3, regardless of session
+  count. Existing behavioral assertions (idle suspend, no-computer skip,
+  active-run guard, no-activity guard, non-fatal per-session failure) kept,
+  with per-session failure now meaning per-computer sleep failure.
+- Green: coding-idle-sweep + coding-session-service + job-reconciler — 44 passed.

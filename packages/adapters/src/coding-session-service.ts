@@ -664,6 +664,39 @@ export async function recordActivity(
 }
 
 /**
+ * The idle decision shared by checkIdle and the batched sweep in
+ * job-reconciler: no non-terminal latest run and
+ * (now - lastActivityAt) > idleThresholdMinutes (null threshold = Q6 default 30).
+ */
+export function isIdleCodingSession(
+  row: {
+    status: string | null;
+    latestRunId: string | null;
+    idleThresholdMinutes: number | null;
+    lastActivityAt: Date | null;
+  },
+  latestRunStatus: string | null | undefined,
+  now: Date,
+): boolean {
+  if (row.status !== "active") return false;
+  // A running or waiting_takeover run means the session is not idle.
+  if (
+    row.latestRunId &&
+    latestRunStatus != null &&
+    latestRunStatus !== "cancelled" &&
+    latestRunStatus !== "completed" &&
+    latestRunStatus !== "failed"
+  ) {
+    return false;
+  }
+  if (!row.lastActivityAt) return false; // No activity record = not idle
+  // T30 V19: nullable columns (migration-safe). Null = pre-migration row; use Q6 default.
+  const idleThreshold = row.idleThresholdMinutes ?? 30;
+  const idleMs = idleThreshold * 60 * 1000;
+  return now.getTime() - row.lastActivityAt.getTime() > idleMs;
+}
+
+/**
  * T30 V19: true when the session is idle-suspendable — no active run and
  * (now - lastActivityAt) > idleThresholdMinutes.
  * Reuses the existing sleepComputerIfIdle contract from computer-idle.ts;
@@ -677,28 +710,23 @@ export async function checkIdle(
     where: { id: input.sessionId },
   })) as Record<string, unknown> | null;
   if (!row) throw new CodingSessionNotFoundError(input.sessionId);
-  if (row.status !== "active") return false;
-  // A running or waiting_takeover run means the session is not idle.
+  let latestRunStatus: string | null | undefined;
   if (row.latestRunId) {
     const run = await deps.prisma.run.findFirst({
       where: { id: row.latestRunId as string },
     });
-    if (
-      run &&
-      run.status !== "cancelled" &&
-      run.status !== "completed" &&
-      run.status !== "failed"
-    ) {
-      return false;
-    }
+    latestRunStatus = run?.status ?? null;
   }
-  // T30 V19: nullable columns (migration-safe). Null = pre-migration row; use Q6 default.
-  const idleThreshold = (row.idleThresholdMinutes as number | null) ?? 30;
-  const lastActivity = row.lastActivityAt as Date | null;
-  if (!lastActivity) return false; // No activity record = not idle
-  const idleMs = idleThreshold * 60 * 1000;
-  const elapsed = deps.now().getTime() - lastActivity.getTime();
-  return elapsed > idleMs;
+  return isIdleCodingSession(
+    {
+      status: row.status as string | null,
+      latestRunId: row.latestRunId as string | null,
+      idleThresholdMinutes: row.idleThresholdMinutes as number | null,
+      lastActivityAt: row.lastActivityAt as Date | null,
+    },
+    latestRunStatus,
+    deps.now(),
+  );
 }
 
 /**

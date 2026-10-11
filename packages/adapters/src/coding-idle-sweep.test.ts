@@ -52,28 +52,71 @@ function sweepDeps(prisma: PrismaClient) {
   };
 }
 
-function sweepPrisma(sessions: Array<Record<string, unknown>>): PrismaClient {
+
+/**
+ * Batched-query contract: the sweep resolves every idle decision and every
+ * bot→computer mapping with at most one query per table — no per-session
+ * findUnique/findFirst round trips (2N+1 queries became 3).
+ */
+function batchedSweepPrisma(
+  sessions: Array<Record<string, unknown>>,
+  bots: Array<{ id: string; computerId: string | null }> = [],
+  runs: Array<{ id: string; status: string }> = [],
+): PrismaClient {
   return {
-    run: { findMany: vi.fn(async () => []), findFirst: vi.fn(async () => null) },
+    run: {
+      findMany: vi.fn(async () => runs),
+      findFirst: vi.fn(async () => null),
+    },
     routine: { findMany: vi.fn(async () => []) },
     computer: { findMany: vi.fn(async () => []) },
     messagingOutbound: { findFirst: vi.fn(async () => null) },
     codingSession: {
       findMany: vi.fn(async () => sessions),
-      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
-        IDLE_ROW_BASE && sessions.some((s) => s.id === where.id)
-          ? { ...IDLE_ROW_BASE, id: where.id }
-          : null,
-      ),
+      findUnique: vi.fn(async () => {
+        throw new Error("sweep must not fetch sessions one by one");
+      }),
     },
-    bot: { findUnique: vi.fn(async () => null) },
+    bot: {
+      findMany: vi.fn(async () => bots),
+      findUnique: vi.fn(async () => {
+        throw new Error("sweep must not fetch bots one by one");
+      }),
+    },
   } as unknown as PrismaClient;
 }
 
 describe("reconcileIdleCodingSessions (T30 S6)", () => {
+  it("resolves N sessions with at most one query per table (no per-session lookups)", async () => {
+    const prisma = batchedSweepPrisma(
+      [
+        { ...IDLE_ROW_BASE, id: "s1", botId: "b1" },
+        { ...IDLE_ROW_BASE, id: "s2", botId: "b2" },
+        { ...IDLE_ROW_BASE, id: "s3", botId: "b3", latestRunId: "run-1" },
+      ],
+      [
+        { id: "b1", computerId: "c1" },
+        { id: "b2", computerId: "c2" },
+        { id: "b3", computerId: "c3" },
+      ],
+      // Terminal latest run: s3 stays idle (only non-terminal runs block).
+      [{ id: "run-1", status: "completed" }],
+    );
+    const deps = sweepDeps(prisma);
+
+    await reconcileIdleCodingSessions(deps);
+
+    expect(prisma.codingSession.findMany).toHaveBeenCalledOnce();
+    expect(prisma.run.findMany).toHaveBeenCalledOnce();
+    expect(prisma.bot.findMany).toHaveBeenCalledOnce();
+    expect(sleepComputerIfIdle).toHaveBeenCalledTimes(3);
+  });
+
   it("suspends the computer behind an idle coding session", async () => {
-    const prisma = sweepPrisma([{ id: "s1", botId: "b1" }]);
-    vi.mocked(prisma.bot.findUnique).mockResolvedValue({ computerId: "c1" } as never);
+    const prisma = batchedSweepPrisma(
+      [{ ...IDLE_ROW_BASE, id: "s1", botId: "b1" }],
+      [{ id: "b1", computerId: "c1" }],
+    );
     const deps = sweepDeps(prisma);
 
     await reconcileIdleCodingSessions(deps);
@@ -82,8 +125,10 @@ describe("reconcileIdleCodingSessions (T30 S6)", () => {
   });
 
   it("skips a session whose bot has no computer", async () => {
-    const prisma = sweepPrisma([{ id: "s1", botId: "b1" }]);
-    vi.mocked(prisma.bot.findUnique).mockResolvedValue({ computerId: null } as never);
+    const prisma = batchedSweepPrisma(
+      [{ ...IDLE_ROW_BASE, id: "s1", botId: "b1" }],
+      [{ id: "b1", computerId: null }],
+    );
     const deps = sweepDeps(prisma);
 
     await reconcileIdleCodingSessions(deps);
@@ -92,12 +137,11 @@ describe("reconcileIdleCodingSessions (T30 S6)", () => {
   });
 
   it("skips a session with an active run (checkIdle guard)", async () => {
-    const prisma = sweepPrisma([{ id: "s1", botId: "b1" }]);
-    vi.mocked(prisma.codingSession.findUnique).mockResolvedValue({
-      ...IDLE_ROW_BASE,
-      latestRunId: "run-1",
-    } as never);
-    vi.mocked(prisma.run.findFirst).mockResolvedValue({ id: "run-1", status: "running" } as never);
+    const prisma = batchedSweepPrisma(
+      [{ ...IDLE_ROW_BASE, id: "s1", botId: "b1", latestRunId: "run-1" }],
+      [{ id: "b1", computerId: "c1" }],
+      [{ id: "run-1", status: "running" }],
+    );
     const deps = sweepDeps(prisma);
 
     await reconcileIdleCodingSessions(deps);
@@ -106,11 +150,9 @@ describe("reconcileIdleCodingSessions (T30 S6)", () => {
   });
 
   it("skips a session with no recorded activity (checkIdle guard)", async () => {
-    const prisma = sweepPrisma([{ id: "s1", botId: "b1" }]);
-    vi.mocked(prisma.codingSession.findUnique).mockResolvedValue({
-      ...IDLE_ROW_BASE,
-      lastActivityAt: null,
-    } as never);
+    const prisma = batchedSweepPrisma([
+      { ...IDLE_ROW_BASE, id: "s1", botId: "b1", lastActivityAt: null },
+    ]);
     const deps = sweepDeps(prisma);
 
     await reconcileIdleCodingSessions(deps);
@@ -119,18 +161,24 @@ describe("reconcileIdleCodingSessions (T30 S6)", () => {
   });
 
   it("keeps sweeping when one session fails (per-session failures are non-fatal)", async () => {
-    const prisma = sweepPrisma([
-      { id: "s1", botId: "b1" },
-      { id: "s2", botId: "b2" },
-    ]);
-    vi.mocked(prisma.bot.findUnique)
-      .mockRejectedValueOnce(new Error("db hiccup"))
-      .mockResolvedValueOnce({ computerId: "c2" } as never);
+    const prisma = batchedSweepPrisma(
+      [
+        { ...IDLE_ROW_BASE, id: "s1", botId: "b1" },
+        { ...IDLE_ROW_BASE, id: "s2", botId: "b2" },
+      ],
+      [
+        { id: "b1", computerId: "c1" },
+        { id: "b2", computerId: "c2" },
+      ],
+    );
+    vi.mocked(sleepComputerIfIdle)
+      .mockRejectedValueOnce(new Error("sleep failed"))
+      .mockResolvedValueOnce(undefined as never);
     const deps = sweepDeps(prisma);
 
     await reconcileIdleCodingSessions(deps);
 
-    expect(sleepComputerIfIdle).toHaveBeenCalledTimes(1);
+    expect(sleepComputerIfIdle).toHaveBeenCalledTimes(2);
     expect(sleepComputerIfIdle).toHaveBeenCalledWith(deps, "c2");
   });
 
