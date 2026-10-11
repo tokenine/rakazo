@@ -81,3 +81,42 @@ baseline.
 - `turbo check` contracts/adapter-kit/adapters/api: only the pre-existing
   `box-sandbox.test.ts` headless-kind error remains (present on clean tree).
 - `biome check` on touched files: no new lint/format issues vs clean tree.
+
+## Cycle E — T39 web Chat/Code switch and workspace shell (2026-10-11)
+
+- RED `code-mode-switch.test.tsx` (component missing — transform failed on the
+  import). GREEN after `CodeModeSwitch`: segmented Chat|Code control, Code
+  reattaches the bot's active session (`codingSessions.list`) or creates one
+  with the remembered `rakazo:coding-engine` localStorage value, then navigates
+  to `/app/code/:sessionId`. 3/3. Route added in `App.tsx` with the sibling
+  auth-guard pattern (lazy page, signed-out → /sign-in).
+- RED `CodeWorkspace.test.tsx` (page missing), then implementation: 4/4 —
+  rail enables Terminal/Files/Git only when terminalUrl/listFiles/gitGraph
+  return content; a leaseless `terminalUrl` (view_only=true in the URL) renders
+  the xterm non-interactive (`interactive=false` → `disableStdin`, no focus
+  steal); files tree lazy-loads directories and opens a readFile preview;
+  git graph renders sha/subject/relative date/refs/dirty and falls back to the
+  truthful "Not a git repository." line (the Git panel stays open for it).
+- RED rewritten `coding-strip.test.tsx`: pills now navigate to the workspace
+  and no longer expand an inline terminal/acceptance card in chat. GREEN after
+  `CodingSessionsStrip` became a navigation strip and the acceptance card moved
+  to `shell/acceptance-card.tsx`, rendered in the workspace rail.
+- Test-infra note: vitest must run through the repo command
+  (`corepack pnpm --filter @rakazo/web test`, root `../..`). Running vitest
+  from `apps/web` picks up the app vite config and its lingui babel plugin,
+  which compiles macro imports to `@lingui/react` and breaks the macro mocks
+  ~12 older tests rely on (those failures reproduce on a stashed clean tree;
+  not caused by this slice). Under the repo command: 58 files / 369 tests
+  passed, tsc clean, production build clean.
+- E2E `e2e/code-workspace.spec.ts` (chromium, runs green locally): sign-up →
+  onboarding → mock the coding-session RPCs → click the Code control → asserts
+  `/app/code/:sessionId`, the rail, the README preview and the git graph, with
+  screenshots 01-03 attached.
+
+## Final verification, slice-7 web (2026-10-11)
+
+- `corepack pnpm --filter @rakazo/web test`: 58 files / 369 tests passed
+  (2 jsdom `scrollTo` unhandled-error warnings also present on clean HEAD).
+- `tsc --noEmit` clean; `vite build` clean (pre-existing chunk-size warning).
+- Web e2e for this spec passed locally (chromium project, dev webServer);
+  the desktop Playwright suite was left to CI per workspace policy.

@@ -43,3 +43,22 @@ Grill: `.super-speckit/grills/004-code-mode/spec-grill.md`
 | V23 | REQ-R13 omp real spawn | Active omp session's PTY bootstraps bash and launches omp automatically; spawnOmp production stub replaced; no manual launch needed | vitest (fake omp) + e2e | S7 |
 | V24 | REQ-R12 files + preview panels | Workspace file listing/read RPC authorized to session viewers; file tree renders; read-only preview opens a file | vitest + web e2e | S7 |
 | V25 | REQ-R12 git graph panel | Workspace git history/branches computed server-side; graph panel renders for a git repo; empty state for non-repo | vitest + web e2e | S7 |
+
+## Slice-7 web evidence (2026-10-11)
+
+- V22 — verified web-side: `apps/web/e2e/code-workspace.spec.ts` (chromium,
+  green locally) drives sign-up → chat → the Code control → `/app/code/:sessionId`
+  with the rail rendered; unit `code-mode-switch.test.tsx` covers the
+  reattach-or-create navigation. Journey-UX pass and CI screenshot link pending.
+- V18b — verified web-side: `CodeWorkspace.test.tsx` asserts a leaseless
+  `terminalUrl` (view_only URL) renders the xterm with input disabled
+  (`interactive=false`) and no focus steal; server-side drop was verified in
+  cycles A-B above. No live-PTY web e2e (terminal mocked) — unverified live.
+- V23 — web-side evidence only indirectly (terminal panel mounts the
+  session PTY stream); the omp auto-launch itself is covered by cycles B's
+  adapter/router tests. Not verified with a real omp run.
+- V24 — verified web-side: unit `CodeWorkspace.test.tsx` (lazy dir load,
+  read-only preview) and the e2e spec's README preview step.
+- V25 — verified web-side: unit git-graph render incl. the truthful
+  not-a-repo line, and the e2e spec's graph assertions (subject, short sha,
+  ref). Not verified against a real repo workspace live.
