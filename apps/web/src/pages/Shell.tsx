@@ -148,7 +148,6 @@ import {
 import { ComputerUpdateProgress } from "../components/ComputerUpdateProgress";
 import { CallCard } from "../components/call/CallCard";
 import { VoiceChatCard } from "../components/call/VoiceChatCard";
-import { ComputerWorkspace } from "../components/computer/ComputerWorkspace";
 import { MessageHoverMetadata } from "../components/MessageHoverMetadata";
 import { SkillDraftCard } from "../components/teach/SkillDraftCard";
 import { TeachCaptureOverlay } from "../components/teach/TeachCaptureOverlay";
@@ -4804,19 +4803,6 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
               </div>
             ) : null}
             <div className="relative min-h-0 flex-1 bg-background">
-              <ComputerWorkspace
-                botId={computerBot.id}
-                computer={computer}
-                hasControl={hasControl}
-                dock={!recordingSkill}
-                onTakeControl={
-                  computer?.state === "running" &&
-                  !hasControl &&
-                  !computerTakeoverBlocked(computer, snapshot?.run?.status)
-                    ? () => openComputer(computerBot.id)
-                    : undefined
-                }
-              >
                 {computer?.kind === "desktop" ? (
                   <DesktopKindEmptyState className="grid h-full place-items-center px-8 text-center text-sm text-muted-foreground/80" />
                 ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
@@ -4849,7 +4835,6 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
                         : computerLabel(computer?.mode, computerBot.name))}
                   </div>
                 )}
-              </ComputerWorkspace>
             </div>
           </div>
         </div>
