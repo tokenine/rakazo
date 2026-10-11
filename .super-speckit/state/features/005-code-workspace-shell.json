@@ -1,7 +1,7 @@
 {
   "id": "005-code-workspace-shell",
-  "state": "candidate_ready",
-  "candidate_sha": "5371a9cf3b50c405d5d8f4e64dfa611908c1908c",
+  "state": "qa_running",
+  "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3",
   "maker": "zcode-maker",
   "checker": "zcode-checker",
   "matrix": "specs/005-code-workspace-shell/verification-matrix.md",
@@ -50,7 +50,7 @@
   "bugs": [],
   "delivery_contract": "playbook-v1",
   "schema_version": 2,
-  "revision": 25,
+  "revision": 29,
   "prerequisite_receipts": {
     "research": {
       "artifact": ".super-speckit/state/receipts/005-code-workspace-shell/research.md",
@@ -79,10 +79,17 @@
       "sha": "5371a9cf3b50c405d5d8f4e64dfa611908c1908c",
       "maker": "zcode-maker",
       "matrix_digest": "5d367375717c198858a3bb377099cc336fe1430998bf6bfc9fd508707d501c14"
+    },
+    {
+      "sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3",
+      "maker": "zcode-maker",
+      "matrix_digest": "5d367375717c198858a3bb377099cc336fe1430998bf6bfc9fd508707d501c14"
     }
   ],
   "qa_worktree": "/private/tmp/rakazo-qa-s7",
   "attempt_history": [
-    "s7-shell-q1"
-  ]
+    "s7-shell-q1",
+    "s7-shell-q3"
+  ],
+  "qa_attempt": "s7-shell-q3"
 }
