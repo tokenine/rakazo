@@ -272,6 +272,7 @@ export class DockerSandboxProvider implements SandboxProvider {
         // Provider credentials travel as process env only; the supervisor bounds and
         // validates keys and never logs values.
         env: request.env ?? {},
+        homeFiles: request.homeFiles ?? [],
       }),
       signal: context.signal,
     });

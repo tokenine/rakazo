@@ -38,6 +38,7 @@ describe("Docker sandbox", () => {
         controlToken: "lease-1",
         launchCommand: "omp",
         env: { RAKAZO_OMP_API_KEY: "secret-value" },
+        homeFiles: [{ path: ".omp/agent/models.yml", content: "providers: {}\n" }],
       },
       context,
     );
@@ -46,6 +47,7 @@ describe("Docker sandbox", () => {
       cwd: "",
       launchCommand: "omp",
       env: { RAKAZO_OMP_API_KEY: "secret-value" },
+      homeFiles: [{ path: ".omp/agent/models.yml", content: "providers: {}\n" }],
     });
 
     await provider.connectTerminal(computer, { controlToken: "lease-1" }, context);
@@ -54,6 +56,7 @@ describe("Docker sandbox", () => {
       cwd: "",
       launchCommand: "",
       env: {},
+      homeFiles: [],
     });
   });
 

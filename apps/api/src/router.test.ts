@@ -3464,7 +3464,10 @@ describe("coding session terminal", () => {
     overrides: {
       session?: Record<string, unknown> | null;
       computer?: Record<string, unknown>;
+      bot?: Record<string, unknown>;
       viewOnlyTerminal?: boolean;
+      /** Model credential plaintext (via a fake secrets.load) backing the bot's selection. */
+      credentialPlaintext?: string;
     } = {},
   ) {
     const sandbox = {
@@ -3498,6 +3501,9 @@ describe("coding session terminal", () => {
       bot: {
         findFirst: vi.fn().mockResolvedValue({
           id: "bot-1",
+          modelProvider: null,
+          modelId: null,
+          ...overrides.bot,
           screenGeneration: 2,
           threads: [{ id: "thread-1" }],
           computer: {
@@ -3519,10 +3525,34 @@ describe("coding session terminal", () => {
       },
       computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+      spaceModelPreference: {
+        findMany: vi.fn().mockResolvedValue(
+          overrides.bot?.modelProvider
+            ? [
+                {
+                  modelId: overrides.bot.modelId,
+                  isDefault: true,
+                  credential: {
+                    id: "cred-1",
+                    provider: overrides.bot.modelProvider,
+                    secretId: "secret-1",
+                    updatedAt: new Date(),
+                    createdAt: new Date(),
+                  },
+                },
+              ]
+            : [],
+        ),
+      },
+      userModelCredential: { findMany: vi.fn().mockResolvedValue([]) },
+      secret: {
+        findFirst: vi.fn().mockResolvedValue({ id: "secret-1", ciphertext: "cipher" }),
+      },
     } as unknown as PrismaClient;
     const deps = {
       prisma,
       sandbox,
+      secrets: { load: vi.fn(() => overrides.credentialPlaintext ?? "") },
       jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
       env: {
         webOrigin: "http://127.0.0.1:5173",
@@ -3628,6 +3658,60 @@ describe("coding session terminal", () => {
       expect.anything(),
     );
     expect(new URL(leasedResult.body.json.url).origin).toBe("http://127.0.0.1:5173");
+  });
+
+  it("seeds omp with the bot's api-key credential as process env, never as a file or command", async () => {
+    const native = setup({
+      viewOnlyTerminal: true,
+      bot: { modelProvider: "anthropic", modelId: "claude-opus-4-8" },
+      credentialPlaintext: JSON.stringify({ kind: "api_key", key: "sk-test-secret" }),
+    });
+    const result = await native.call();
+    expect(result.status).toBe(200);
+    const request = native.sandbox.connectTerminal.mock.calls[0]?.[1];
+    expect(request).toMatchObject({
+      launchCommand: "omp --model anthropic/claude-opus-4-8",
+      env: { ANTHROPIC_API_KEY: "sk-test-secret" },
+    });
+    expect(request.homeFiles).toBeUndefined();
+
+    // Custom endpoints take omp's custom-provider route: models.yml names the env
+    // var; the key itself rides the env only.
+    const custom = setup({
+      viewOnlyTerminal: true,
+      bot: { modelProvider: "openai_compatible", modelId: "my-model" },
+      credentialPlaintext: JSON.stringify({
+        kind: "openai_compatible",
+        baseUrl: "https://gateway.example.com/v1",
+        apiKey: "sk-test-secret",
+      }),
+    });
+    await custom.call();
+    const customRequest = custom.sandbox.connectTerminal.mock.calls[0]?.[1];
+    expect(customRequest.env).toEqual({ RAKAZO_OMP_API_KEY: "sk-test-secret" });
+    expect(customRequest.launchCommand).toBe("omp --model rakazo/my-model");
+    const modelsYml = customRequest.homeFiles.find(
+      (file: { path: string }) => file.path === ".omp/agent/models.yml",
+    );
+    expect(modelsYml.content).toContain("apiKey: RAKAZO_OMP_API_KEY");
+    expect(modelsYml.content).toContain("baseUrl: https://gateway.example.com/v1");
+    expect(modelsYml.content).not.toContain("sk-test-secret");
+  });
+
+  it("injects nothing for oauth-kind credentials (omp shows no-model, truthfully)", async () => {
+    const oauth = setup({
+      viewOnlyTerminal: true,
+      bot: { modelProvider: "openai-codex", modelId: "gpt-5.5" },
+      credentialPlaintext: JSON.stringify({
+        kind: "oauth",
+        credential: { type: "oauth", access: "token", refresh: "r", expires: 9999999999 },
+      }),
+    });
+    await oauth.call();
+    const request = oauth.sandbox.connectTerminal.mock.calls[0]?.[1];
+    expect(request.env).toBeUndefined();
+    expect(request.homeFiles).toBeUndefined();
+    expect(request.launchCommand).toBe("omp");
   });
 });
 describe("coding session git graph (T43)", () => {

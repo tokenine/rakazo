@@ -72,6 +72,7 @@ import {
   mapScratchpadItem,
   modelCredentialAuthKindsForSpace,
   modelCredentialDto,
+  ompTerminalInjection,
   parseModelSecret,
   pickReusableConnection,
   planLiveConnectionSync,
@@ -5760,6 +5761,13 @@ export function createRouter(deps: RouterDeps) {
         ) {
           return { url: null, reason: "terminal not supported for this computer" };
         }
+        // omp gets the bot's model setup: the key travels only as process env inside the
+        // sandbox; models.yml (no secret inside) lands in the container HOME. OAuth-kind
+        // credentials cannot be seeded this way and inject nothing.
+        const injection =
+          session.engine === "omp" && bot.modelProvider && bot.modelId
+            ? await ompModelTerminalInjection(deps, context.actor, bot.modelProvider, bot.modelId)
+            : {};
         const terminal = await deps.sandbox
           .connectTerminal(
             toComputerRef(computer),
@@ -5769,7 +5777,9 @@ export function createRouter(deps: RouterDeps) {
               viewOnly: !hasLease,
               // R13: the user never types the engine's launch command — the
               // terminal bootstraps bash with omp already running inside.
-              launchCommand: session.engine === "omp" ? "omp" : undefined,
+              launchCommand: session.engine === "omp" ? (injection.launchCommand ?? "omp") : undefined,
+              ...(injection.env ? { env: injection.env } : {}),
+              ...(injection.homeFiles ? { homeFiles: injection.homeFiles } : {}),
             },
             await computerScreenContext(
               deps.prisma,
@@ -7320,6 +7330,36 @@ async function persistModelCredential(
 
 function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw signal.reason ?? new Error("Request cancelled");
+}
+
+/**
+ * The bot's selected model credential, translated for an omp coding terminal. Reuses the
+ * same accessor a run uses (findModelCredential + the encrypted secret store); only
+ * api-key-style credentials yield an injection, and the plaintext never leaves this call.
+ */
+async function ompModelTerminalInjection(
+  deps: { prisma: PrismaClient; secrets: Pick<EncryptedSecretStore, "load"> },
+  actor: Pick<Actor, "userId" | "spaceId">,
+  provider: string,
+  modelId: string,
+): Promise<ReturnType<typeof ompTerminalInjection>> {
+  try {
+    const credential = await findModelCredential(deps.prisma, actor, provider, modelId);
+    if (!credential?.secretId) return {};
+    const secret = await deps.prisma.secret.findFirst({
+      where: { id: credential.secretId, userId: actor.userId, spaceId: null },
+      select: { id: true, ciphertext: true },
+    });
+    if (!secret) return {};
+    return ompTerminalInjection({
+      provider,
+      modelId,
+      plaintext: deps.secrets.load(secret.ciphertext, secret.id),
+    });
+  } catch {
+    // An unreadable credential must not break the terminal; omp shows no-model.
+    return {};
+  }
 }
 
 function nextRoutineDate(crons: string[], timezone: string): Date {

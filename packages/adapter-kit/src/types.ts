@@ -131,6 +131,12 @@ export interface TerminalRequest {
    * never reach argv, files, or logs). Providers that cannot set spawn env ignore it.
    */
   env?: Record<string, string>;
+  /**
+   * Secret-free config files written under ~/.omp/ in the sandbox HOME before the
+   * terminal server starts (e.g. omp's models.yml, whose apiKey is only an env var
+   * NAME). Providers without a matching boundary ignore it.
+   */
+  homeFiles?: Array<{ path: string; content: string }>;
 }
 
 /**
