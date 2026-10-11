@@ -120,6 +120,12 @@ export interface TerminalRequest {
    * control lease, streaming does not.
    */
   viewOnly?: boolean;
+  /**
+   * T41: command to run inside the shell at session creation (e.g. `omp` so
+   * the user never types the engine's launch command). Spawn-time only —
+   * reconnecting an existing session never re-runs it.
+   */
+  launchCommand?: string;
 }
 
 /**

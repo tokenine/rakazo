@@ -327,11 +327,24 @@ export interface PtyHandle {
   onData?: (listener: (line: string) => void) => void;
 }
 
+/**
+ * T41: optional spawn overrides, additive to the bash `--norc` default.
+ * `args` replaces the shell arguments (e.g. `["--norc", "-lc", "omp"]` to
+ * land the user inside a running omp); `env` extends the scrubbed allowlist
+ * base — secrets never ride here, only the audited grant channel injects
+ * those.
+ */
+export interface PtySpawnOptions {
+  args?: string[];
+  env?: Record<string, string>;
+}
+
 /** Thin interface so TCB can be tested with a spy/fake PTY. */
 export type PtySpawner = (
   taskId: string,
   cols: number,
   rows: number,
+  options?: PtySpawnOptions,
 ) => Promise<PtyHandle>;
 
 export class ProcessSandboxProvider implements SandboxProvider {
@@ -422,8 +435,15 @@ export class ProcessSandboxProvider implements SandboxProvider {
       this.ptySessions.set(record.sessionId, record);
       // Start the PTY process if a spawner is configured (node-pty or
       // equivalent). A failed spawn leaves no half-registered session behind.
+      // T41: a launch command runs inside the shell at spawn time only —
+      // the reconnect branch above never reaches this.
       try {
-        const handle = await this.opts.ptySpawner?.(task.taskId, record.cols, record.rows);
+        const options: PtySpawnOptions | undefined = request.launchCommand
+          ? { args: ["--norc", "-lc", request.launchCommand] }
+          : undefined;
+        const handle = options
+          ? await this.opts.ptySpawner?.(task.taskId, record.cols, record.rows, options)
+          : await this.opts.ptySpawner?.(task.taskId, record.cols, record.rows);
         if (handle) this.attachPtyHandle(record.sessionId, handle);
       } catch (error) {
         this.ptySessions.delete(record.sessionId);

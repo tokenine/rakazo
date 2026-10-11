@@ -177,6 +177,42 @@ describe("T28 S6: PtySpawner wiring in ProcessSandboxProvider", () => {
     expect(fake.writes).toEqual([]);
   });
 
+  it("T41: launch command spawns the shell with bash --norc -lc inside the workspace", async () => {
+    const fake = fakePtyHandle();
+    const spawner = vi.fn(async () => fake.handle);
+    const { provider, computer } = await makeProvider(spawner);
+
+    const session = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", launchCommand: "omp" },
+      ctx,
+    );
+
+    expect(spawner).toHaveBeenCalledWith("task-1", 80, 24, {
+      args: ["--norc", "-lc", "omp"],
+    });
+    expect(session.sessionId).toBeTruthy();
+  });
+
+  it("T41: reconnecting a launched session never re-spawns", async () => {
+    const fake = fakePtyHandle();
+    const spawner = vi.fn(async () => fake.handle);
+    const { provider, computer } = await makeProvider(spawner);
+
+    const session = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", launchCommand: "omp" },
+      ctx,
+    );
+    await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", sessionId: session.sessionId, launchCommand: "omp" },
+      ctx,
+    );
+
+    expect(spawner).toHaveBeenCalledTimes(1);
+  });
+
   it("a failed spawn refuses the terminal and leaves the session operable", async () => {
     const fake = fakePtyHandle();
     const { provider, computer } = await makeProvider(

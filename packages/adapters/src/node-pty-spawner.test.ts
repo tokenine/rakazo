@@ -96,6 +96,26 @@ describe("T28 S6: node-pty production spawner", () => {
     handle.dispose();
   });
 
+  itPty("T41: spawn args replace the default argv (launch command runs at spawn)", async () => {
+    const root = await makeRoot();
+    await mkdir(path.join(root, taskWorkspaceDirName("task-pty-launch")), { recursive: true });
+    const spawner = createNodePtySpawner({ root });
+
+    const handle = await spawner("task-pty-launch", 80, 24, {
+      args: ["--norc", "-lc", "echo t41-launch-marker"],
+    });
+    const lines: string[] = [];
+    handle.onData?.((line) => lines.push(line));
+
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline && !lines.some((line) => line.includes("t41-launch-marker"))) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    expect(lines.some((line) => line.includes("t41-launch-marker"))).toBe(true);
+
+    handle.dispose();
+  });
+
   itPty("dispose is quiet when called twice", async () => {
     const root = await makeRoot();
     await mkdir(path.join(root, taskWorkspaceDirName("task-pty-dispose")), { recursive: true });

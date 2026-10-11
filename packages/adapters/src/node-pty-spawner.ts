@@ -22,18 +22,21 @@ import {
   processTaskRootDir,
   taskWorkspaceDirName,
   type PtyHandle,
+  type PtySpawnOptions,
   type PtySpawner,
 } from "./process-sandbox.js";
 import { scrubProcessEnv } from "./process-env-scrub.js";
 
 export function createNodePtySpawner(options: { root?: string } = {}): PtySpawner {
-  return async (taskId, cols, rows) => {
+  return async (taskId, cols, rows, spawnOptions?: PtySpawnOptions) => {
     // Deferred load of the native binary (see module comment).
     const nodePty = await import("node-pty");
     const cwd = path.join(processTaskRootDir(options.root), taskWorkspaceDirName(taskId));
     // POSIX-only, like the provider's bash-based execute(); the PTY exists
-    // only where the process runtime exists.
-    const pty = nodePty.spawn("bash", ["--norc"], {
+    // only where the process runtime exists. T41: spawnOptions.args replaces
+    // the default `--norc` argv (e.g. `["--norc", "-lc", "omp"]` so the user
+    // lands inside a running omp); env stays the scrubbed allowlist.
+    const pty = nodePty.spawn("bash", spawnOptions?.args ?? ["--norc"], {
       name: "xterm-256color",
       cols,
       rows,
