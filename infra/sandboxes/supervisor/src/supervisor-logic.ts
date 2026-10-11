@@ -478,6 +478,35 @@ export function demuxDockerStream(buffer: Buffer): { stdout: string; stderr: str
 }
 
 /**
+ * Shell lines writing bounded, secret-free config files into the computer's HOME before the
+ * terminal server starts (e.g. omp's ~/.omp/agent/models.yml, whose apiKey is only an env var
+ * NAME — the secret itself travels as process env and never lands in a file). Paths must stay
+ * under `.omp/` inside HOME; contents are written owner-only and are never logged.
+ */
+export function terminalHomeFilesCommand(
+  files: Array<{ path: string; content: string }>,
+): string {
+  if (files.length === 0) return "";
+  const lines = ["set -e", "umask 177"];
+  for (const file of files) {
+    const segments = file.path.split("/");
+    if (
+      file.path.length === 0 ||
+      file.path.startsWith("/") ||
+      segments[0] !== ".omp" ||
+      segments.some((segment) => segment === "" || segment === "." || segment === "..") ||
+      segments.some((segment) => !/^[A-Za-z0-9._-]+$/.test(segment))
+    ) {
+      throw new Error("home file path must resolve under ~/.omp/");
+    }
+    const dir = segments.slice(0, -1).join("/");
+    if (dir) lines.push(`mkdir -p "$HOME/${dir}"`);
+    lines.push(`printf %s ${shellQuote(file.content)} >"$HOME/${file.path}"`);
+  }
+  return lines.join("\n");
+}
+
+/**
  * Environment for commands in a computer: the bot's shell tool and the user's terminal share
  * it. Neither exec sets a Docker `User`, so both run as the container's workspace user.
  */

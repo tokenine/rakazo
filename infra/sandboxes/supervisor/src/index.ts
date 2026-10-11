@@ -82,6 +82,8 @@ import {
   stopExtraScreenCommand,
   teardownReleasedScreen,
   terminalCommand,
+  terminalHomeFilesCommand,
+
   toSandboxInput,
   withKeyedLock,
   workspaceTarget,
@@ -726,6 +728,19 @@ app.post("/computers/:id/terminal", async (c) => {
           .max(256)
           .regex(/^[A-Za-z0-9_@%+=:,./-]*$/, "invalid launch command")
           .default(""),
+        // Provider credentials travel as process env (inherited by the terminal server's
+        // pty shell) and never as argv, files, or log output; keys are bounded names and
+        // values are never logged.
+        env: z
+          .record(z.string().regex(/^[A-Z_][A-Z0-9_]{0,63}$/), z.string().max(4096))
+          .refine((env) => Object.keys(env).length <= 16, "too many env vars")
+          .optional(),
+        // Secret-free config files written under ~/.omp/ before the server starts
+        // (path policy enforced again by terminalHomeFilesCommand).
+        homeFiles: z
+          .array(z.object({ path: z.string().max(512), content: z.string().max(8192) }))
+          .max(8)
+          .optional(),
       })
       .parse(await c.req.json());
     const id = c.req.param("id");
@@ -751,16 +766,26 @@ app.post("/computers/:id/terminal", async (c) => {
         [
           "bash",
           "-c",
-          terminalCommand(
-            body.controlToken,
-            terminalToken,
-            cwd,
-            undefined,
-            screen.layout,
-            body.launchCommand || undefined,
-          ),
+          [
+            terminalHomeFilesCommand(body.homeFiles ?? []),
+            terminalCommand(
+              body.controlToken,
+              terminalToken,
+              cwd,
+              undefined,
+              screen.layout,
+              body.launchCommand || undefined,
+            ),
+          ]
+            .filter(Boolean)
+            .join("\n"),
         ],
-        { env: computerCommandEnv(screen.layout) },
+        {
+          env: [
+            ...computerCommandEnv(screen.layout),
+            ...Object.entries(body.env ?? {}).map(([key, value]) => `${key}=${value}`),
+          ],
+        },
       );
       if (result.code === 75) throw new TerminalControlReleasedError();
       if (result.code !== 0) throw new Error(result.stderr || "terminal failed to start");
