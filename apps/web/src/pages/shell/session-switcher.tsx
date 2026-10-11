@@ -4,6 +4,18 @@ import { Badge, Button, Input, Popover, PopoverContent, PopoverTrigger } from "@
 import { Check, ChevronDown, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+/** Coding engines a coding session can bind to (wire truth in the RPC contract). */
+export type CodingEngineChoice = "normal-pi" | "omp";
+const CODING_ENGINE_STORAGE_KEY = "rakazo:coding-engine";
+
+export function rememberedCodingEngine(): CodingEngineChoice {
+  try {
+    return window.localStorage.getItem(CODING_ENGINE_STORAGE_KEY) === "omp" ? "omp" : "normal-pi";
+  } catch {
+    return "normal-pi";
+  }
+}
+
 /**
  * Compact session switcher inside the bot chat header (design decision for
  * 001: primary-first then last-activity ordering, unread badges, new/rename/
@@ -22,7 +34,7 @@ export function SessionSwitcher({
   sessions: BotSession[];
   onSelect: (sessionId: string) => void;
   /** Called after navigation so Shell can refresh the list. */
-  onCreate: (createdSession: BotSession) => void;
+  onCreate: (createdSession: BotSession, coding?: CodingEngineChoice) => void;
   onRename: (sessionId: string, name: string) => void;
   onDelete: (session: BotSession) => void;
 }) {
@@ -33,6 +45,7 @@ export function SessionSwitcher({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [coding, setCoding] = useState<CodingEngineChoice | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const active =
@@ -222,9 +235,10 @@ export function SessionSwitcher({
               event.preventDefault();
               const trimmed = newName.trim();
               if (!trimmed) return;
-              onCreate({ id: "", name: trimmed } as BotSession);
+              onCreate({ id: "", name: trimmed } as BotSession, coding ?? undefined);
               setNewName("");
               setCreating(false);
+              setCoding(null);
               setOpen(false);
             }}
           >
@@ -239,6 +253,41 @@ export function SessionSwitcher({
                 if (event.key === "Escape") setCreating(false);
               }}
             />
+            <Button
+              type="button"
+              size="sm"
+              variant={coding ? "default" : "ghost"}
+              className="h-7 px-2 text-[12px]"
+              aria-pressed={coding !== null}
+              data-testid="session-create-coding"
+              title={t`Coding session on this bot's workspace`}
+              onClick={() => {
+                const next = coding ?? rememberedCodingEngine();
+                setCoding(next === "omp" ? "omp" : "normal-pi");
+              }}
+            >
+              <Trans>Code</Trans>
+            </Button>
+            {coding !== null ? (
+              <select
+                aria-label={t`Coding engine`}
+                data-testid="session-create-engine"
+                className="h-7 rounded-lg bg-accent px-1.5 text-[12px] text-foreground"
+                value={coding}
+                onChange={(event) => {
+                  const engine = event.target.value === "omp" ? "omp" : "normal-pi";
+                  setCoding(engine);
+                  try {
+                    window.localStorage.setItem(CODING_ENGINE_STORAGE_KEY, engine);
+                  } catch {
+                    /* private mode: the choice just is not remembered */
+                  }
+                }}
+              >
+                <option value="normal-pi">normal-pi</option>
+                <option value="omp">omp</option>
+              </select>
+            ) : null}
             <Button
               type="submit"
               size="sm"

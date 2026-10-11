@@ -272,6 +272,9 @@ const PeerMessagesOverlay = lazy(() =>
 const PluginsOverlay = lazy(() =>
   import("./PluginsOverlay").then((module) => ({ default: module.PluginsOverlay })),
 );
+const CodingSessionsStrip = lazy(() =>
+  import("./shell/coding-strip").then((module) => ({ default: module.CodingSessionsStrip })),
+);
 const SkillsConnectorsOverlay = lazy(() =>
   import("./SkillsConnectorsOverlay").then((module) => ({
     default: module.SkillsConnectorsOverlay,
@@ -559,6 +562,7 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
     commitSnapshot(update(snapshotRef.current));
   }
   const [pluginsOpen, setPluginsOpen] = useState(false);
+  const [codingSessionsTick, setCodingSessionsTick] = useState(0);
   const [skillsConnectorsOpen, setSkillsConnectorsOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1333,7 +1337,20 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
     void refreshSessions(active.id);
   }, [inGroup, active?.id, refreshSessions]);
 
-  async function createSessionAndView(targetBotId: string, name: string) {
+  async function createSessionAndView(
+    targetBotId: string,
+    name: string,
+    coding?: "normal-pi" | "omp",
+  ) {
+    if (coding) {
+      try {
+        await rpc.codingSessions.create({ botId: targetBotId, engine: coding, title: name });
+        setCodingSessionsTick((tick) => tick + 1);
+      } catch (error) {
+        setSendError(error instanceof Error ? error.message : t`Could not start the coding session`);
+      }
+      return;
+    }
     try {
       const created = await rpc.threads.createSession({ botId: targetBotId, name });
       // Await refresh so the new session is in the sessions list before navigating.
@@ -3638,8 +3655,8 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
                     selectedPrimary ? `/app/${active.id}` : `/app/${active.id}/${sessionId}`,
                   );
                 }}
-                onCreate={(session) => {
-                  void createSessionAndView(active.id, session.name ?? "");
+                onCreate={(session, coding) => {
+                  void createSessionAndView(active.id, session.name ?? "", coding);
                 }}
                 onRename={(sessionId, name) =>
                   void renameSessionAndView(active.id, sessionId, name)
@@ -3648,6 +3665,11 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
               />
             ) : null}
           </div>
+          {active && !marketplaceEntry && !hubEntry ? (
+            <Suspense>
+              <CodingSessionsStrip botId={active.id} refreshTick={codingSessionsTick} />
+            </Suspense>
+          ) : null}
           <div className="flex items-center gap-1">
             {!inGroup && active ? (
               <button
