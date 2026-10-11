@@ -129,6 +129,13 @@ try:
 except FileNotFoundError:
     pass
 os.makedirs(state, mode=0o700, exist_ok=True)
+# exist_ok never repairs a pre-existing directory: a dir created without the
+# execute bit (bad umask, earlier root-owned run) would silently kill every
+# later session at the first mkstemp, and serve() exits are invisible to clients.
+try:
+    os.chmod(state, 0o700)
+except OSError:
+    pass
 server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 previous = os.umask(0o077)
 server.bind(path)
@@ -139,9 +146,16 @@ while True:
     conn = server.accept()[0]
     if os.fork() == 0:
         server.close()
+        code = 0
         try:
             serve(conn)
+        except BaseException:
+            # os._exit would drop the traceback (and the reason a client saw an
+            # instant close); print it to stderr, which is the terminal's log.
+            import traceback
+            traceback.print_exc()
+            code = 1
         finally:
-            os._exit(0)
+            os._exit(code)
     conn.close()
 `;
