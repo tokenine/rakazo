@@ -5677,21 +5677,19 @@ export function createRouter(deps: RouterDeps) {
         ) {
           return { url: null };
         }
-        // Same rule as the computer terminal: only the user holding this bot's
-        // control lease may open an interactive shell on its workspace.
-        if (
-          !hasActiveComputerControl(computer) ||
-          computer.controlBotId !== bot.id ||
-          !computer.controlLeaseId
-        ) {
-          throw new ORPCError("FORBIDDEN", { message: "Take control first." });
-        }
+        // The lease buys input; without it the terminal streams view-only
+        // (the provider drops input frames server-side — R12/R7).
+        const hasLease =
+          hasActiveComputerControl(computer) &&
+          computer.controlBotId === bot.id &&
+          !!computer.controlLeaseId;
         const terminal = await deps.sandbox
           .connectTerminal(
             toComputerRef(computer),
             {
-              controlToken: computer.controlLeaseId,
+              controlToken: hasLease ? (computer.controlLeaseId ?? "") : "",
               cwd: resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined),
+              viewOnly: !hasLease,
             },
             await computerScreenContext(
               deps.prisma,
@@ -5706,7 +5704,7 @@ export function createRouter(deps: RouterDeps) {
         await keepComputerAwake(deps, computer.id);
         return {
           url: addScreenProxyCapability(
-            withViewOnly(terminal.url, false),
+            withViewOnly(terminal.url, !hasLease),
             deps.env.screenProxySecret,
             deps.env.webOrigin,
             {

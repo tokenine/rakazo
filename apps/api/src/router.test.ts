@@ -3549,17 +3549,27 @@ describe("coding session terminal", () => {
     });
   });
 
-  it("opens the terminal on the bot's workspace only while the user holds computer control", async () => {
+  it("T40: streams the terminal view-only without the lease, interactive with it", async () => {
     const released = setup();
-    await expect(released.call()).resolves.toMatchObject({ status: 403 });
-    expect(released.sandbox.connectTerminal).not.toHaveBeenCalled();
+    const releasedResult = await released.call();
+    expect(releasedResult.status).toBe(200);
+    expect(released.sandbox.connectTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      { controlToken: "", cwd: "bots/bot-1", viewOnly: true },
+      expect.anything(),
+    );
+    const releasedUrl = new URL(releasedResult.body.json.url);
+    expect(openScreenCapability(releasedUrl.pathname, "fake-test-secret")).toMatchObject({
+      scope: { botId: "bot-1", controlLeaseId: null },
+      target: { hostname: "screen.example", interactive: false },
+    });
 
     const { sandbox, call } = setup({ computer: controlled });
     const { status, body } = await call();
     expect(status).toBe(200);
     expect(sandbox.connectTerminal).toHaveBeenCalledWith(
       expect.objectContaining({ id: "sandbox-ref-1" }),
-      { controlToken: "lease-1", cwd: "bots/bot-1" },
+      { controlToken: "lease-1", cwd: "bots/bot-1", viewOnly: false },
       expect.anything(),
     );
     const url = new URL(body.json.url);
