@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { OPENAI_COMPATIBLE_PRESETS } from "@rakazo/contracts";
 import {
   assertAllowedOpenAiCompatibleRequestUrl,
   assertAllowedOpenAiCompatibleUrl,
@@ -146,6 +147,23 @@ describe("openai-compatible URL policy", () => {
     process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
     expect(assertAllowedOpenAiCompatibleUrl("https://api.example.com/v1").href).toBe(
       "https://api.example.com/v1",
+    );
+  });
+
+  it("allows shipped preset endpoints without the public gate", () => {
+    delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
+    for (const preset of OPENAI_COMPATIBLE_PRESETS) {
+      expect(assertAllowedOpenAiCompatibleUrl(preset.baseUrl).href).toBe(preset.baseUrl);
+    }
+  });
+
+  it("still gates public hosts that merely imitate a preset path", () => {
+    delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
+    expect(() =>
+      assertAllowedOpenAiCompatibleUrl("https://api.z.ai.example.com/api/coding/paas/v4"),
+    ).toThrow(/Public model endpoints are blocked/);
+    expect(() => assertAllowedOpenAiCompatibleUrl("http://api.z.ai/api/coding/paas/v4")).toThrow(
+      /Public model endpoints are blocked/,
     );
   });
 });
