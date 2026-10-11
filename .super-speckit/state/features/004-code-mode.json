@@ -28,8 +28,8 @@
   "handoff": {
     "path": ".super-speckit/handoffs/2026-10-11-s6-merged-next-gaps.md",
     "transfer": "agent-to-agent",
-    "stage": "s7-sliver1-2",
-    "attempt_id": "s7-w1"
+    "stage": "s7-slice1-shipped",
+    "attempt_id": "s7-w2"
   },
   "runs": [
     {
@@ -97,12 +97,14 @@
     {
       "id": "BUG-004-S7-01",
       "artifact": ".super-speckit/bugs/coding-session-busy-500.md",
-      "status": "open",
+      "status": "resolved",
       "severity": "medium (busy path surfaces as 500 instead of 409)",
       "found_in": "ce63ceaf, interactive browser walkthrough",
       "found_by": "coordinator during the S7 sliver walkthrough",
       "root_cause": "the lease-claim busy path runs findUnique in the same interactive transaction after the P2002, which Postgres aborts; the raw PrismaClientKnownRequestError escapes the RPC as a 500",
-      "retest": "second coding start on the same bot shows the clear busy message (409); real-Postgres regression in coding-session.postgres.test.ts"
+      "retest": "second coding start on the same bot shows the clear busy message (409); real-Postgres regression in coding-session.postgres.test.ts",
+      "fix_sha": "578485b8",
+      "resolution": "lease claim reads before writing (never queries after a failed statement in the tx); env-gated V13 Postgres test red -> green against real Postgres; offline service tests 24/24; live retest on 578485b8: second coding start shows the clear busy message (409) instead of Internal server error"
     }
   ],
   "human_approval": {
@@ -129,7 +131,7 @@
     }
   ],
   "legacy_candidate_sha": "8b55445d603287cd8541c822ad28417dab89eeeb",
-  "revision": 10,
+  "revision": 11,
   "prerequisite_receipts": {
     "baseline-feedback": {
       "artifact": ".super-speckit/qa/004-s6-run1/findings.json",
