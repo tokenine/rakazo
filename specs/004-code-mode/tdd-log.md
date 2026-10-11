@@ -136,3 +136,24 @@ baseline.
   the API layer (comment states the constraint in the source).
 - Adapters suite after the fix: 19 failed / 2771 passed — identical to the
   recorded environmental baseline.
+
+## Cycle F (cont.) — review repair B2: truthful gate for non-enforcing terminal providers (2026-10-11)
+
+- Repair choice recorded (option b): the desktop/daytona/e2b adapters hand out
+  raw interactive terminal URLs (VNC control port) and have no per-keystroke
+  server-side input channel to drop, so a shared sticky-drop conformance test
+  cannot be honest for them. Instead the API now gates
+  `codingSessions.terminalUrl` on a new provider-neutral capability,
+  `SandboxCapabilities.viewOnlyTerminal` (declared only by
+  ProcessSandboxProvider): a leaseless request against a provider without the
+  capability returns the truthful `{ url: null,
+  reason: "terminal not supported for this computer" }` and never calls
+  connectTerminal. Leased (interactive) use is unchanged for every provider,
+  so no desktop/daytona/e2b regression.
+- RED `router.test.ts` "B2: leaseless view-only terminals are refused on
+  providers that cannot enforce view-only" — the pre-fix router called
+  connectTerminal and returned an interactive URL for a capability-less
+  provider. GREEN after the capability + gate + contract `reason` field.
+  Api suite: 632 passed / 1 skipped; touched-package tsc clean except the
+  pre-existing `box-sandbox.test.ts` SandboxKind literal error that also
+  fails on clean HEAD.

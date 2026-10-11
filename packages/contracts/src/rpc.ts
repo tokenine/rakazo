@@ -1069,7 +1069,13 @@ export const appContract = {
       ),
     terminalUrl: oc
       .input(z.object({ sessionId: Id }))
-      .output(z.object({ url: z.string().nullable() })),
+      .output(
+        z.object({
+          url: z.string().nullable(),
+          /** Set when url is null because the computer's provider cannot serve this terminal. */
+          reason: z.string().optional(),
+        }),
+      ),
     listFiles: oc
       .input(z.object({ sessionId: Id, path: z.string().default("/") }))
       .output(

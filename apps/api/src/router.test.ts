@@ -3464,9 +3464,25 @@ describe("coding session terminal", () => {
     overrides: {
       session?: Record<string, unknown> | null;
       computer?: Record<string, unknown>;
+      viewOnlyTerminal?: boolean;
     } = {},
   ) {
     const sandbox = {
+      describe: vi.fn(() => ({
+        id: "test",
+        contractVersion: "1",
+        adapterVersion: "0.0.0",
+        capabilities: {
+          graphical: false,
+          pty: true,
+          snapshots: false,
+          takeover: false,
+          persistentHome: true,
+          ...(overrides.viewOnlyTerminal === undefined
+            ? {}
+            : { viewOnlyTerminal: overrides.viewOnlyTerminal }),
+        },
+      })),
       connectTerminal: vi.fn().mockResolvedValue({
         url: "https://screen.example/vnc.html?path=websockify%3Ftoken%3Dterminal-1",
       }),
@@ -3550,7 +3566,7 @@ describe("coding session terminal", () => {
   });
 
   it("T40: streams the terminal view-only without the lease, interactive with it", async () => {
-    const released = setup();
+    const released = setup({ viewOnlyTerminal: true });
     const releasedResult = await released.call();
     expect(releasedResult.status).toBe(200);
     expect(released.sandbox.connectTerminal).toHaveBeenCalledWith(
@@ -3589,6 +3605,29 @@ describe("coding session terminal", () => {
       body: { json: { url: null } },
     });
     expect(stopped.sandbox.connectTerminal).not.toHaveBeenCalled();
+  });
+
+  it("B2: leaseless view-only terminals are refused on providers that cannot enforce view-only", async () => {
+    // No viewOnlyTerminal capability (desktop/daytona/e2b-class provider):
+    // handing a leaseless user the raw terminal URL would be an interactive
+    // shell — return a truthful null instead.
+    const enforcing = setup({ viewOnlyTerminal: false });
+    await expect(enforcing.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null, reason: "terminal not supported for this computer" } },
+    });
+    expect(enforcing.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    // Holding the lease keeps the interactive terminal on the same provider.
+    const leased = setup({ viewOnlyTerminal: false, computer: controlled });
+    const leasedResult = await leased.call();
+    expect(leasedResult.status).toBe(200);
+    expect(leased.sandbox.connectTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      { controlToken: "lease-1", cwd: "bots/bot-1", viewOnly: false, launchCommand: "omp" },
+      expect.anything(),
+    );
+    expect(new URL(leasedResult.body.json.url).origin).toBe("http://127.0.0.1:5173");
   });
 });
 describe("coding session git graph (T43)", () => {

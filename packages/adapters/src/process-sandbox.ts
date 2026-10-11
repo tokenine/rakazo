@@ -387,6 +387,9 @@ export class ProcessSandboxProvider implements SandboxProvider {
       capabilities: {
         graphical: false,
         pty: true, // T28 V18: reconnectable terminals supported
+        // B1/T40: kind-0 input is dropped server-side (view-only + sticky
+        // demotion on reconnect), so leaseless view-only terminals are safe.
+        viewOnlyTerminal: true,
         snapshots: false,
         takeover: false,
         persistentHome: true,

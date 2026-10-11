@@ -5749,6 +5749,17 @@ export function createRouter(deps: RouterDeps) {
           hasActiveComputerControl(computer) &&
           computer.controlBotId === bot.id &&
           !!computer.controlLeaseId;
+        // B2: a provider that cannot enforce view-only server-side (no
+        // viewOnlyTerminal capability — desktop/daytona/e2b-class terminal
+        // URLs are raw interactive streams) must never be handed to a
+        // leaseless user. Interactive terminals still require the lease
+        // through connectTerminal's control token, so leased use is unchanged.
+        if (
+          !hasLease &&
+          deps.sandbox.describe().capabilities.viewOnlyTerminal !== true
+        ) {
+          return { url: null, reason: "terminal not supported for this computer" };
+        }
         const terminal = await deps.sandbox
           .connectTerminal(
             toComputerRef(computer),

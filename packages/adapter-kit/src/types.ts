@@ -269,6 +269,14 @@ export interface SandboxCapabilities {
   persistentHome: boolean;
   /** Distinct graphical screens for concurrent Team bots on one computer. */
   multiScreen?: boolean;
+  /**
+   * connectTerminal enforces TerminalRequest.viewOnly server-side: kind-0
+   * input frames never reach the terminal, and any view-only reconnect
+   * permanently demotes the session. Providers without this flag hand out
+   * raw terminal URLs whose input cannot be gated per lease — the API must
+   * not serve them to leaseless users.
+   */
+  viewOnlyTerminal?: boolean;
 }
 
 export interface ConnectorTool {
