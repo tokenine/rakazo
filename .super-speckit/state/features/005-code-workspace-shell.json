@@ -47,10 +47,30 @@
     "artifact": null
   },
   "runs": [],
-  "bugs": [],
+  "bugs": [
+    {
+      "id": "wake-resleep-idle-sweep",
+      "status": "open",
+      "evidence": ".super-speckit/bugs/wake-resleep-idle-sweep.md",
+      "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"
+    },
+    {
+      "id": "omp-launch-docker-path",
+      "status": "open",
+      "evidence": ".super-speckit/bugs/omp-launch-docker-path.md",
+      "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"
+    },
+    {
+      "id": "dbus-unknown-uid",
+      "status": "resolved",
+      "evidence": ".super-speckit/bugs/dbus-unknown-uid.md",
+      "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3",
+      "resolution": ".super-speckit/bugs/dbus-unknown-uid.md"
+    }
+  ],
   "delivery_contract": "playbook-v1",
   "schema_version": 2,
-  "revision": 29,
+  "revision": 33,
   "prerequisite_receipts": {
     "research": {
       "artifact": ".super-speckit/state/receipts/005-code-workspace-shell/research.md",
