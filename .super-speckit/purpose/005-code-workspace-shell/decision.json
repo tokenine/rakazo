@@ -1,0 +1,9 @@
+{
+  "feature": "005-code-workspace-shell",
+  "status": "confirmed",
+  "map": "purpose-map.md",
+  "visual": "purpose-map.html",
+  "confirmed_by": "Poom5741",
+  "confirmed_at": "2026-10-11T17:39:04+0700",
+  "confirmation": "Purpose amendment + revised change story presented in session 2026-10-11; user replied 'Go' after adding the side-panel requirement (terminal, file system, file preview, git graph outside the computer screen). Provenance: this ZCode session, messages on 2026-10-11."
+}

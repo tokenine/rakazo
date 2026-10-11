@@ -1,0 +1,19 @@
+{
+  "feature": "004-code-mode",
+  "slice": "s7-workspace-shell",
+  "candidate_sha": "1a006530a7435b445b534b3a5cdf64c11b92d20d",
+  "checker": "independent-qa-clone (/tmp path, disposable) + independent code-review agent distinct from makers",
+  "status": "passed_with_open_runtime_rows",
+  "blocking_findings": [],
+  "evidence": {
+    "qa_clone": "adapters 2771 passed / 19 failed (identical to recorded clean-macOS environmental baseline), api 632 passed / 1 skipped, web 58 files / 369 passed, 0 unhandled errors after 1a006530",
+    "review": "two blocking findings (B1 interactive-PTY reconnect leak, B2 adapters ignoring viewOnly) found, fixed red-first (09e4d6c3, 7be45a36), closure verified by the same independent reviewer",
+    "tdd_log": "specs/004-code-mode/tdd-log.md cycles A-F",
+    "web_e2e": "apps/web/e2e/code-workspace.spec.ts passed locally in chromium with screenshots (V22/V24/V25 web-side)"
+  },
+  "open_rows": [
+    "V23 runtime: live omp inside PTY on a real running computer (omp binary present locally; needs stack restart + sandbox image)",
+    "V25 runtime: live git graph against a real repo workspace",
+    "worker headless spawnOmp production wiring (explicitly out of slice scope, tracked in tasks.md T41 note)"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "id": "004-code-mode",
-  "state": "blocked",
+  "state": "planned",
   "candidate_sha": "2eb3d19d7c752f5b773c0ba508db96b997d6041a",
   "maker": "claude-maker",
   "checker": "claude-checker",
@@ -131,7 +131,7 @@
     }
   ],
   "legacy_candidate_sha": "8b55445d603287cd8541c822ad28417dab89eeeb",
-  "revision": 13,
+  "revision": 14,
   "prerequisite_receipts": {
     "baseline-feedback": {
       "artifact": ".super-speckit/qa/004-s6-run1/findings.json",
