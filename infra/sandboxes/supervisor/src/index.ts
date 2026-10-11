@@ -726,7 +726,7 @@ app.post("/computers/:id/terminal", async (c) => {
         launchCommand: z
           .string()
           .max(256)
-          .regex(/^[A-Za-z0-9_@%+=:,./-]*$/, "invalid launch command")
+          .regex(/^[A-Za-z0-9_@%+=:,./ -]*$/, "invalid launch command")
           .default(""),
         // Provider credentials travel as process env (inherited by the terminal server's
         // pty shell) and never as argv, files, or log output; keys are bounded names and
