@@ -14,8 +14,7 @@
  * semantics are covered in computer-idle.test.ts.
  */
 
-import type { SandboxProvider } from "@rakazo/adapter-kit";
-import type { AgentHomeStore } from "@rakazo/adapter-kit";
+import type { AgentHomeStore, SandboxProvider } from "@rakazo/adapter-kit";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sleepComputerIfIdle } from "./computer-idle.js";
@@ -51,7 +50,6 @@ function sweepDeps(prisma: PrismaClient) {
     events: {} as ThreadEvents,
   };
 }
-
 
 /**
  * Batched-query contract: the sweep resolves every idle decision and every
@@ -194,7 +192,11 @@ describe("reconcileIdleCodingSessions (T30 S6)", () => {
     } as unknown as PrismaClient;
     const { jobs, enqueue } = publisher();
 
-    await createJobReconciler({ prisma, jobs, reconcileIdleCodingSessions: idleSweep }).reconcileOnce();
+    await createJobReconciler({
+      prisma,
+      jobs,
+      reconcileIdleCodingSessions: idleSweep,
+    }).reconcileOnce();
 
     expect(idleSweep).toHaveBeenCalledOnce();
     // The failed sweep did not stop the run scan from being dispatched.
