@@ -202,13 +202,17 @@ function ShellTerminal({ botId, hidden }: { botId: string; hidden: boolean }) {
 export function CodingSessionTerminal({
   sessionId,
   hidden,
+  interactive = true,
 }: {
   sessionId: string;
   hidden: boolean;
+  /** False for a view-only stream (no control lease): output scrolls, input is disabled. */
+  interactive?: boolean;
 }) {
   return (
     <LiveTerminal
       hidden={hidden}
+      interactive={interactive}
       testId="coding-session-terminal"
       fetchUrl={() => rpc.codingSessions.terminalUrl({ sessionId })}
     />
@@ -219,14 +223,16 @@ function LiveTerminal({
   hidden,
   testId,
   fetchUrl,
+  interactive = true,
 }: {
   hidden: boolean;
   testId: string;
   fetchUrl: (signal: AbortSignal) => Promise<{ url: string | null }>;
+  interactive?: boolean;
 }) {
   const { t } = useLingui();
   const host = useRef<HTMLDivElement>(null);
-  const terminal = useXterm(host, true);
+  const terminal = useXterm(host, interactive);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -289,8 +295,8 @@ function LiveTerminal({
   }, [terminal, t, fetchUrl]);
 
   useEffect(() => {
-    if (!hidden) terminal?.focus();
-  }, [hidden, terminal]);
+    if (!hidden && interactive) terminal?.focus();
+  }, [hidden, interactive, terminal]);
 
   return <TerminalPane host={host} error={error} hidden={hidden} testId={testId} />;
 }

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const rpc = vi.hoisted(() => ({
@@ -14,11 +15,6 @@ const rpc = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/rpc", () => ({ rpc }));
-vi.mock("../../components/computer/TerminalApp", () => ({
-  CodingSessionTerminal: ({ sessionId, hidden }: { sessionId: string; hidden: boolean }) => (
-    <div data-testid="coding-session-terminal" data-session-id={sessionId} data-hidden={hidden} />
-  ),
-}));
 vi.mock("@lingui/react/macro", () => {
   const t = (parts: TemplateStringsArray) => parts.join("");
   return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
@@ -34,14 +30,34 @@ const ompSession = {
   title: "Refactor",
 };
 
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname}</span>;
+}
+
 function renderStrip(root: Root, container: HTMLElement) {
   act(() => {
-    root.render(<CodingSessionsStrip botId="bot-1" refreshTick={0} />);
+    root.render(
+      <MemoryRouter initialEntries={["/app/bot-1"]}>
+        <Routes>
+          <Route
+            path="/app/:botId"
+            element={
+              <div>
+                <CodingSessionsStrip botId="bot-1" refreshTick={0} />
+                <LocationProbe />
+              </div>
+            }
+          />
+          <Route path="/app/code/:sessionId" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
   });
   return container;
 }
 
-describe("CodingSessionsStrip omp terminal", () => {
+describe("CodingSessionsStrip (R12: pills navigate to the workspace)", () => {
   const container = document.createElement("div");
   let root: Root;
 
@@ -50,48 +66,36 @@ describe("CodingSessionsStrip omp terminal", () => {
     vi.clearAllMocks();
   });
 
-  async function expand(session: unknown) {
+  async function renderWith(session: unknown) {
     rpc.codingSessions.list.mockResolvedValue([session]);
-    rpc.codingAcceptance.get.mockResolvedValue(null);
-    rpc.codingSessions.terminalUrl.mockResolvedValue({ url: null });
     document.body.appendChild(container);
     root = createRoot(container);
     renderStrip(root, container);
     await act(async () => {});
+  }
+
+  it("navigates to the code workspace when a pill is clicked", async () => {
+    await renderWith(ompSession);
     const pill = container.querySelector('[data-testid="coding-session-pill-coding-omp-1"]') as
       | HTMLButtonElement
       | null;
     expect(pill).not.toBeNull();
     act(() => pill!.click());
     await act(async () => {});
-  }
-
-  it("shows a native terminal for an expanded active omp session", async () => {
-    await expand(ompSession);
-    const terminal = container.querySelector('[data-testid="coding-session-terminal"]') as
-      | HTMLElement
-      | null;
-    expect(terminal).not.toBeNull();
-    expect(terminal!.getAttribute("data-session-id")).toBe("coding-omp-1");
+    expect(
+      (container.querySelector('[data-testid="location"]') as HTMLElement).textContent,
+    ).toBe("/app/code/coding-omp-1");
   });
 
-  it("keeps pi sessions and ended sessions chat-only", async () => {
-    await expand({ ...ompSession, engine: "normal-pi" });
-    expect(container.querySelector('[data-testid="coding-session-terminal"]')).toBeNull();
-
-    const ended = document.createElement("div");
-    const endedRoot = createRoot(ended);
-    rpc.codingSessions.list.mockResolvedValue([{ ...ompSession, status: "ended" }]);
-    act(() => {
-      endedRoot.render(<CodingSessionsStrip botId="bot-1" refreshTick={0} />);
-    });
-    await act(async () => {});
-    const pill = ended.querySelector(
-      '[data-testid="coding-session-pill-coding-omp-1"]',
-    ) as HTMLButtonElement | null;
+  it("does not expand an inline terminal or acceptance card in chat", async () => {
+    rpc.codingSessions.terminalUrl.mockResolvedValue({ url: "wss://example.test/pty" });
+    await renderWith(ompSession);
+    const pill = container.querySelector('[data-testid="coding-session-pill-coding-omp-1"]') as
+      | HTMLButtonElement
+      | null;
     act(() => pill!.click());
     await act(async () => {});
-    expect(ended.querySelector('[data-testid="coding-session-terminal"]')).toBeNull();
-    act(() => endedRoot.unmount());
+    expect(container.querySelector('[data-testid="coding-session-terminal"]')).toBeNull();
+    expect(container.querySelector('[data-testid^="acceptance-card-"]')).toBeNull();
   });
 });
