@@ -187,3 +187,44 @@ Live defects found and dispositioned during the journey:
   reconciler tick 30s) re-parks a manually woken computer within one tick — no minimum-awake
   guard. Workaround applied for the journey (idleThresholdMinutes raised on active sessions).
   Filed as .super-speckit/bugs/wake-resleep-idle-sweep.md.
+
+### Cycle H — omp launch on the docker terminal path (2026-10-11)
+
+Bug: .super-speckit/bugs/omp-launch-docker-path.md. The docker/supervisor terminal path
+ignored the coding session's launchCommand, and the computer image shipped no omp/pi.
+
+- RED (core commands): desktop-runtime.test.ts "hands the launch command to a fresh terminal
+  server and never to a reused one" + "shell-quotes the launch command so metacharacters cannot
+  break out" — both failed before the change (spawn line had no fifth argv; hostile string
+  absent). GREEN after startTerminalCommand/terminalCommand gained an optional launchCommand,
+  shell-quoted via shellQuote into the python spawn argv (fresh-spawn branch only; reconnect
+  asserted unchanged). bash -n sanity included in the hostile case.
+- RED (python server): terminal-server.test.ts "types an optional launch command into the
+  initial shell once" failed (output never contained the command). GREEN after the server takes
+  an optional 4th positional argv and writes `<launch>\n` to the pty once per new shell — same
+  write path as user keystrokes, no protocol change. First green attempt failed because the
+  `\n` inside the embedded TS template literal became a real newline in the Python source
+  (every terminal-server test then failed to parse); fixed to `\\n` and all green.
+- RED (supervisor): index.test.ts "rejects terminal launch commands that are not a safe plain
+  command" failed — invalid launchCommand reached the Docker path (500). GREEN after the route
+  body gained launchCommand: z.string().max(256).regex(/^[A-Za-z0-9_@%+=:,./-]*$/) with the
+  parse moved inside the route try so rejections answer 400 (first green attempt still 500
+  because the parse sat outside the try). terminalCommand receives the validated value.
+- RED (adapter): docker-sandbox.test.ts "forwards the terminal launch command to the
+  supervisor" failed (body lacked launchCommand). GREEN after connectTerminal sends
+  {controlToken, cwd, launchCommand: request.launchCommand ?? ""}; viewOnly stays unforwarded
+  with a comment pointing at the B2 capability gate.
+- Image: Dockerfile installs @oh-my-pi/pi-coding-agent@18.6.1 and
+  @earendil-works/pi-coding-agent@1.1.0 (exact pins) into the root-owned /usr/local npm prefix
+  (runtime only executes, host-mapped uid never installs). omp 18.6.1 verified Bun-only by
+  inspecting the published tarball: 494 `Bun.*` call sites, so the shebang cannot be rewritten
+  to node — a pinned Bun 1.3.14 binary (TARGETARCH-mapped x64/aarch64) is installed instead.
+  pi (earendil fork, maintained successor of @mariozechner — reversible choice) runs on the
+  existing node 22. Image rebuilt as rakazo/computer:local; in-image smoke via
+  `docker run --rm --entrypoint sh` printed omp/18.6.1, 1.1.0 (pi), 1.3.14 (bun), v22.23.3.
+- Verification: core suite 655 passed; docker-sandbox 23 passed; supervisor suite green except
+  4 pre-existing computer-loopback environmental failures (reproduced on a clean tree);
+  adapters suite 18 failures vs the 19 environmental baseline, all in untouched
+  spawn/platform-specific specs; core/adapters/supervisor tsc clean except one pre-existing
+  box-sandbox.test.ts error. Supervisor endpoint parsing is covered by the boundary rejection
+  test (loopback-to-Docker full-path unit skipped: the route needs a real container).
