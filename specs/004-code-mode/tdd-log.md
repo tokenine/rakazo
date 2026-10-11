@@ -157,3 +157,33 @@ baseline.
   Api suite: 632 passed / 1 skipped; touched-package tsc clean except the
   pre-existing `box-sandbox.test.ts` SandboxKind literal error that also
   fails on clean HEAD.
+
+### Cycle G — live journey on the review stack (2026-10-11, docker sandbox)
+
+Stack: api+worker+web restarted at candidate code (SANDBOX_PROVIDER=docker, real
+rakazo/computer:local image). Driven in a real browser against the real app.
+
+- V22 live PASS: one visible Code switch on the bot header → /app/code/:sessionId navigation →
+  workspace shell with rail (Terminal/Files/Git) + acceptance card; pills navigate; back link
+  returns to chat. Screenshots in session artifacts.
+- V18b live PASS (docker semantics): leaseless terminalUrl → {url:null,
+  reason:"terminal not supported for this computer"} (B2 gate, truthful refusal on a provider
+  that cannot enforce view-only); with the computer-control lease → interactive URL; typed
+  `which omp` + Enter round-tripped input/output in a REAL bash (`rakazo@<container>:~/bots/<botId>$`).
+- V24 live PASS: Files panel lists the real container workspace root (.browser-profiles, .cache,
+  .config, .local, bots, shared); directory navigation + expand states work via the new RPC.
+- V25 live PASS (empty state): Git panel renders "Not a git repository." truthfully for the
+  non-repo workspace; populated-graph rendering still only e2e-mocked.
+- V23 BLOCKED live: omp did not auto-launch. Two causes: (1) omp is not installed in the
+  rakazo/computer image; (2) the docker/supervisor terminal path does not apply the
+  launch-command seam (only ProcessSandboxProvider's node-pty spawner does). Filed as
+  .super-speckit/bugs/omp-launch-docker-path.md.
+
+Live defects found and dispositioned during the journey:
+- Computer entrypoint crashed on any host that maps its own uid into the container (dbus-launch
+  with no passwd entry + set -u) — FIXED a43ab1b2, image rebuilt, computer boots (exit 0 on
+  graceful stop only).
+- Wake-then-resleep: the coding-session idle sweep (per-session idleThresholdMinutes, default 30,
+  reconciler tick 30s) re-parks a manually woken computer within one tick — no minimum-awake
+  guard. Workaround applied for the journey (idleThresholdMinutes raised on active sessions).
+  Filed as .super-speckit/bugs/wake-resleep-idle-sweep.md.
