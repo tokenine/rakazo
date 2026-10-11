@@ -104,12 +104,18 @@ export function assertHttpsForKeyedOpenAiCompatibleUrl(
   );
 }
 
-/** Shipped preset endpoints are product-curated HTTPS URLs and bypass the public gate. */
+/** Shipped preset endpoints are product-curated HTTPS URLs and bypass the public
+ * gate. Request URLs carry the full chat path on the preset origin, so match by
+ * origin plus path prefix rather than exact equality. */
 function isPresetEndpoint(url: URL): boolean {
-  return (
-    url.protocol === "https:" &&
-    OPENAI_COMPATIBLE_PRESETS.some((preset) => preset.baseUrl === url.href)
-  );
+  if (url.protocol !== "https:") return false;
+  return OPENAI_COMPATIBLE_PRESETS.some((preset) => {
+    const base = new URL(preset.baseUrl);
+    return (
+      url.origin === base.origin &&
+      (url.pathname === base.pathname || url.pathname.startsWith(`${base.pathname}/`))
+    );
+  });
 }
 
 export function assertAllowedOpenAiCompatibleRequestUrl(

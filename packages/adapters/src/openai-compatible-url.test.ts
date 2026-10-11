@@ -154,6 +154,9 @@ describe("openai-compatible URL policy", () => {
     delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
     for (const preset of OPENAI_COMPATIBLE_PRESETS) {
       expect(assertAllowedOpenAiCompatibleUrl(preset.baseUrl).href).toBe(preset.baseUrl);
+      // Request URLs carry the full chat path on the preset origin.
+      const requestUrl = `${preset.baseUrl}/chat/completions`;
+      expect(assertAllowedOpenAiCompatibleRequestUrl(requestUrl).href).toBe(requestUrl);
     }
   });
 
@@ -165,6 +168,11 @@ describe("openai-compatible URL policy", () => {
     expect(() => assertAllowedOpenAiCompatibleUrl("http://api.z.ai/api/coding/paas/v4")).toThrow(
       /Public model endpoints are blocked/,
     );
+    expect(() =>
+      assertAllowedOpenAiCompatibleRequestUrl(
+        "https://api.z.ai.example.com/api/coding/paas/v4/chat/completions",
+      ),
+    ).toThrow(/Public model endpoints are blocked/);
   });
 });
 
