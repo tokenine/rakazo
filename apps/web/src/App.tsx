@@ -29,6 +29,9 @@ const WelcomePage = lazy(() =>
 const ArtifactsPage = lazy(() =>
   import("./pages/Artifacts").then((module) => ({ default: module.ArtifactsPage })),
 );
+const CodeWorkspacePage = lazy(() =>
+  import("./pages/CodeWorkspace").then((module) => ({ default: module.CodeWorkspacePage })),
+);
 
 export function App() {
   if (window.location.pathname === LOCAL_SETTINGS_PAGE) return <LocalSettingsPage />;
@@ -112,6 +115,10 @@ function SessionApp() {
           <Route
             path="/app/artifacts"
             element={user ? <ArtifactsPage /> : <Navigate to="/sign-in" replace />}
+          />
+          <Route
+            path="/app/code/:sessionId"
+            element={user ? <CodeWorkspacePage /> : <Navigate to="/sign-in" replace />}
           />
           <Route
             path="/app/artifacts/:artifactId"

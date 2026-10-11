@@ -253,6 +253,7 @@ import {
   McpApprovalCard,
 } from "./shell/message-cards";
 import { SessionSwitcher } from "./shell/session-switcher";
+import { CodeModeSwitch } from "./shell/code-mode-switch";
 import { WindowChrome } from "./WindowChrome";
 
 const BotContextMenu = lazy(() =>
@@ -3640,6 +3641,9 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
                 </span>
               </span>
             </button>
+            {!inGroup && active ? (
+              <CodeModeSwitch botId={active.id} mode="chat" />
+            ) : null}
             {!inGroup && active ? (
               <SessionSwitcher
                 activeThreadId={threadId ?? activeSnapshot?.threadId}
