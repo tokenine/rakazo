@@ -142,6 +142,41 @@ describe("T28 S6: PtySpawner wiring in ProcessSandboxProvider", () => {
     expect(fake.disposals()).toBe(1);
   });
 
+  it("T40: a view-only session drops input frames before the live PTY", async () => {
+    const fake = fakePtyHandle();
+    const { provider, computer } = await makeProvider(vi.fn(async () => fake.handle));
+
+    const session = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", viewOnly: true },
+      ctx,
+    );
+    await session.sendInput({ kind: "text", text: "rm -rf /\n" });
+    await session.resize({ cols: 100, rows: 30 });
+
+    expect(fake.writes).toEqual([]);
+    expect(fake.resizes).toEqual([{ cols: 100, rows: 30 }]);
+  });
+
+  it("T40: a reconnected view-only session still drops input", async () => {
+    const fake = fakePtyHandle();
+    const { provider, computer } = await makeProvider(vi.fn(async () => fake.handle));
+
+    const session = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", viewOnly: true },
+      ctx,
+    );
+    const reconnect = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", sessionId: session.sessionId },
+      ctx,
+    );
+    await reconnect.sendInput({ kind: "text", text: "ls\n" });
+
+    expect(fake.writes).toEqual([]);
+  });
+
   it("a failed spawn refuses the terminal and leaves the session operable", async () => {
     const fake = fakePtyHandle();
     const { provider, computer } = await makeProvider(

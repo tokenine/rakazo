@@ -218,7 +218,8 @@ export class FakeSandboxProvider implements SandboxProvider {
       async sendInput(_input: { kind: "text"; text: string }) {
         // In-process input injection into a fake terminal is a no-op.
         // The fake terminal only speaks WebSocket, not a named-pipe API.
-        // A real provider would write to the PTY master fd.
+        // A real provider would write to the PTY master fd (T40: never for
+        // viewOnly sessions — the process provider drops those frames).
       },
     };
   }

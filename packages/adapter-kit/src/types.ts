@@ -114,6 +114,12 @@ export interface TerminalRequest {
    * When provided, the server replays scrollback from the existing session.
    */
   sessionId?: string;
+  /**
+   * View-only session (004 T40): the provider must drop kind-0 input frames
+   * before they reach the PTY; resize stays allowed. Input requires the
+   * control lease, streaming does not.
+   */
+  viewOnly?: boolean;
 }
 
 /**

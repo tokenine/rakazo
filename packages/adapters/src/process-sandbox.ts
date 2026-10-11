@@ -252,6 +252,12 @@ export interface PtySessionRecord {
   taskId: string;
   cols: number;
   rows: number;
+  /**
+   * T40: view-only sessions never receive input — the provider drops
+   * kind-0 frames before they can reach the PTY; resize stays allowed.
+   * Sticky on reconnect so a leaked view-only URL can never write.
+   */
+  viewOnly: boolean;
   /** Ring buffer of output lines; oldest entry is at index 0. */
   scrollback: string[];
   /** Maximum scrollback lines before oldest are evicted. */
@@ -270,12 +276,13 @@ function makeSessionId(): string {
  * Create a new session record for a task.
  * Called when connectTerminal is called without a sessionId.
  */
-export function createPtySessionRecord(taskId: string): PtySessionRecord {
+export function createPtySessionRecord(taskId: string, viewOnly = false): PtySessionRecord {
   return {
     sessionId: makeSessionId(),
     taskId,
     cols: 80,
     rows: 24,
+    viewOnly,
     scrollback: [],
     scrollbackCapacity: SCROLLBACK_CAPACITY,
     createdAt: new Date(),
@@ -411,7 +418,7 @@ export class ProcessSandboxProvider implements SandboxProvider {
       }
       record = existing;
     } else {
-      record = createPtySessionRecord(task.taskId);
+      record = createPtySessionRecord(task.taskId, request.viewOnly === true);
       this.ptySessions.set(record.sessionId, record);
       // Start the PTY process if a spawner is configured (node-pty or
       // equivalent). A failed spawn leaves no half-registered session behind.
@@ -451,6 +458,9 @@ export class ProcessSandboxProvider implements SandboxProvider {
         handle?.resize?.(dim);
       },
       sendInput: async (input) => {
+        // T40 view-only enforcement (server-side): input frames never reach
+        // the fd; resize above stays allowed.
+        if (record.viewOnly) return;
         if (input.kind !== "text") return;
         if (handle?.write) {
           // A live PTY echoes input itself; recording here would double it.
