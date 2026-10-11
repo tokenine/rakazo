@@ -1,5 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import { rpc } from "../../lib/rpc.js";
+import { CodingSessionTerminal } from "../../components/computer/TerminalApp";
 import { useEffect, useState } from "react";
 
 interface CodingSessionRow {
@@ -73,8 +74,22 @@ export function CodingSessionsStrip({ botId, refreshTick }: { botId: string; ref
         ))}
       </div>
       {expandedId ? <AcceptanceCard sessionId={expandedId} /> : null}
+      {expandedId ? <SessionTerminalFor sessionId={expandedId} sessions={sessions} /> : null}
     </div>
   );
+}
+
+/** Native shell only for active omp sessions; pi sessions stay chat-only. */
+function SessionTerminalFor({
+  sessionId,
+  sessions,
+}: {
+  sessionId: string;
+  sessions: CodingSessionRow[];
+}) {
+  const session = sessions.find((entry) => entry.id === sessionId);
+  if (!session || session.engine !== "omp" || session.status !== "active") return null;
+  return <CodingSessionTerminal sessionId={sessionId} hidden={false} />;
 }
 
 function AcceptanceCard({ sessionId }: { sessionId: string }) {
