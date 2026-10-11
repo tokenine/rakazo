@@ -429,6 +429,14 @@ export class ProcessSandboxProvider implements SandboxProvider {
           `connectTerminal: session ${request.sessionId} not found for task ${task.taskId}`,
         );
       }
+      // B1: view-only enforcement is NOT creation-time only. Any reconnect
+      // carrying viewOnly demotes the sticky record, so a leaked interactive
+      // PTY URL loses write access the moment it is used without the lease.
+      // The demotion is STICKY — viewOnly:false on the same sessionId returns
+      // the demoted session and still drops input. Write access can only be
+      // regained by spawning a NEW session, which requires the computer-control
+      // lease at the API layer; this provider must keep that property.
+      if (request.viewOnly === true) existing.viewOnly = true;
       record = existing;
     } else {
       record = createPtySessionRecord(task.taskId, request.viewOnly === true);

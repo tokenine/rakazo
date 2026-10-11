@@ -120,3 +120,19 @@ baseline.
 - `tsc --noEmit` clean; `vite build` clean (pre-existing chunk-size warning).
 - Web e2e for this spec passed locally (chromium project, dev webServer);
   the desktop Playwright suite was left to CI per workspace policy.
+
+## Cycle F — review repair B1: view-only demotion on reconnect (2026-10-11)
+
+- RED `process-pty-wiring.test.ts` "B1: a view-only reconnect demotes an
+  interactive session and the demotion is sticky" — failed against the
+  creation-time-only `record.viewOnly` enforcement: an interactive session
+  reconnected with `viewOnly: true` kept writing to the live PTY.
+- GREEN in `process-sandbox.ts`: the reconnect branch demotes the sticky
+  session record on ANY reconnect carrying `viewOnly` (`existing.viewOnly =
+  true`). The invariant now tested: after a view-only reconnect, no input ever
+  reaches that PTY again — a later `viewOnly: false` reconnect on the same
+  sessionId returns the demoted session and still drops input; write access is
+  only regained by spawning a NEW session, which requires the control lease at
+  the API layer (comment states the constraint in the source).
+- Adapters suite after the fix: 19 failed / 2771 passed — identical to the
+  recorded environmental baseline.

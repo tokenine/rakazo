@@ -177,6 +177,39 @@ describe("T28 S6: PtySpawner wiring in ProcessSandboxProvider", () => {
     expect(fake.writes).toEqual([]);
   });
 
+  it("B1: a view-only reconnect demotes an interactive session and the demotion is sticky", async () => {
+    const fake = fakePtyHandle();
+    const { provider, computer } = await makeProvider(vi.fn(async () => fake.handle));
+
+    // Created interactive (the caller held the computer-control lease).
+    const session = await provider.connectTerminal(computer, { controlToken: "lease-1" }, ctx);
+    await session.sendInput({ kind: "text", text: "echo before\n" });
+    expect(fake.writes).toEqual(["echo before\n"]);
+
+    // A leaked interactive PTY URL reconnected view-only must lose write
+    // access for good — no input ever reaches that PTY again.
+    const demoted = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", sessionId: session.sessionId, viewOnly: true },
+      ctx,
+    );
+    await demoted.sendInput({ kind: "text", text: "rm -rf /\n" });
+    expect(fake.writes).toEqual(["echo before\n"]);
+
+    // The demotion is sticky: a later viewOnly:false reconnect on the SAME
+    // sessionId returns the demoted session and still drops input. Write
+    // access is only regained by spawning a NEW session, which requires the
+    // control lease at the API layer.
+    const stillDemoted = await provider.connectTerminal(
+      computer,
+      { controlToken: "lease-1", sessionId: session.sessionId, viewOnly: false },
+      ctx,
+    );
+    expect(stillDemoted.sessionId).toBe(session.sessionId);
+    await stillDemoted.sendInput({ kind: "text", text: "ls\n" });
+    expect(fake.writes).toEqual(["echo before\n"]);
+  });
+
   it("T41: launch command spawns the shell with bash --norc -lc inside the workspace", async () => {
     const fake = fakePtyHandle();
     const spawner = vi.fn(async () => fake.handle);
