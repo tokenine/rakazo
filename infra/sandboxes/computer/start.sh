@@ -52,11 +52,18 @@ if [[ "$ready" -ne 1 ]]; then
 fi
 
 if command -v dbus-launch >/dev/null 2>&1; then
-  eval "$(dbus-launch --sh-syntax)"
-  # rakazo-browser is launched later without this session's environment; the
-  # file-chooser portals only work if the browser finds the same bus.
-  printf 'export DBUS_SESSION_BUS_ADDRESS=%s\n' "$DBUS_SESSION_BUS_ADDRESS" \
-    > /tmp/rakazo/dbus-session
+  # dbus-launch refuses to run when the container UID has no passwd entry
+  # (hosts that map their own uid:gid into the container). A missing session
+  # bus must degrade the file chooser, not kill the computer.
+  if dbus_output="$(dbus-launch --sh-syntax 2>/dev/null)"; then
+    eval "$dbus_output"
+    # rakazo-browser is launched later without this session's environment; the
+    # file-chooser portals only work if the browser finds the same bus.
+    printf 'export DBUS_SESSION_BUS_ADDRESS=%s\n' "$DBUS_SESSION_BUS_ADDRESS" \
+      > /tmp/rakazo/dbus-session
+  else
+    echo "dbus-launch unavailable for uid $(id -u); continuing without a session bus" >&2
+  fi
 fi
 
 # Chromium's file chooser talks to xdg-desktop-portal over the session bus.
