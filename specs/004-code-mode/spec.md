@@ -192,3 +192,18 @@ unsupported environment requirements disclosed explicitly.
   handoff summaries — asserted by literal AND transform sweep (base64/hex/URL-encoded forms of
   the secret) grepped over all artifact surfaces.
 - V9-V21 are expanded directly in `verification-matrix.md`.
+
+## Amendment 2026-10-11 — workspace shell (purpose amendment, CONFIRMED)
+
+12. **R12 — Seamless switch and workspace shell.** Entering code mode is one visible action from
+    a bot surface; creating or reattaching a coding session navigates to a dedicated code
+    workspace view rather than remaining in chat with inline pills. The workspace view surfaces
+    terminal, file system navigation, file preview, and git graph as first-class side panels
+    outside the computer screen; panels appear when the session has content for them
+    (progressive disclosure). View-only panel access must not require the takeover lease;
+    the lease is required only for input (R7 semantics unchanged).
+13. **R13 — OMP runs in the terminal.** An active OMP session presents a real shell experience:
+    the server spawns the workspace PTY and launches `omp` inside it automatically, with
+    credentials mapped server-side per R10. The headless RPC adapter (T25) remains the
+    programmatic path; the production `spawnOmp` stub must become a real spawn. The user never
+    has to type the engine's launch command themselves.

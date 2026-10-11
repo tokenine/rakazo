@@ -64,3 +64,10 @@ This map is a draft. A human confirms that this is the intended purpose, or corr
 implementation choices are deliberately outside this gate. A confirmation is recorded in
 `decision.json`; a correction returns the map to draft. Agents must never run `confirm-purpose` on
 this feature — the gate is human-only (see `.super-speckit/handoffs/004-purpose-gate-to-cloud-agent.md`).
+
+## Amendment 2026-10-11 — workspace shell (CONFIRMED in session, "Go")
+
+Code mode is a seamless switch, not a hidden sheet toggle. OMP code mode is a real bash shell that
+launches omp inside it — not a chat-UI clone of the ZCode screen. The code workspace view surfaces
+terminal, file system, file preview, and git graph as first-class side panels outside the computer
+screen. Out of scope for this amendment: full file-diff editor depth, engine switching mid-session.

@@ -1,9 +1,17 @@
 {
-  "feature": "004-code-mode",
-  "status": "confirmed",
-  "map": "purpose-map.md",
-  "visual": "purpose-map.html",
-  "confirmed_by": "Poom5741",
-  "confirmed_at": "2026-10-01T02:19:58Z",
-  "confirmation": "Human approval relayed by Chief 2026-10-01T02:15Z: user tapped 'Approve - record me as confirmer' on the DRAFT purpose map in Chief's chat. Executed by Tech Lead as owner on tl/004-purpose-gate-r1 from 0e86d8ca. Earlier 'pass continue proceed' was explicitly NOT treated as this decision."
+ "feature": "004-code-mode",
+ "status": "confirmed",
+ "map": "purpose-map.md",
+ "visual": "purpose-map.html",
+ "confirmed_by": "Poom5741",
+ "confirmed_at": "2026-10-01T02:19:58Z",
+ "confirmation": "Human approval relayed by Chief 2026-10-01T02:15Z: user tapped 'Approve - record me as confirmer' on the DRAFT purpose map in Chief's chat. Executed by Tech Lead as owner on tl/004-purpose-gate-r1 from 0e86d8ca. Earlier 'pass continue proceed' was explicitly NOT treated as this decision.",
+ "amendments": [
+  {
+   "confirmed_by": "Poom5741",
+   "confirmed_at": "2026-10-11T09:30:00+07:00",
+   "scope": "workspace-shell-amendment",
+   "confirmation": "Session messages 2026-10-11: code mode must be a seamless switch, not a hidden sheet toggle; omp code mode must be a real bash shell with omp launched inside it, not a chat-UI clone; terminal, file system, file preview, and git graph surface as first-class panels outside the computer screen. Explicit 'Go' received after the revised Purpose Map and change story were presented in session."
+  }
+ ]
 }

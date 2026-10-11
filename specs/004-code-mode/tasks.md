@@ -179,3 +179,23 @@ rather than per-task (noted for the surfaces slice).
 - [x] T38 Add the production crash-reconciliation caller: reconcileCrash called before retry
       in run.continue handler (try/catch non-fatal); session+homeRevision sourced from
       bot.computer per R8/T23 ✓ GREEN
+
+## Slice 7 — Workspace shell amendment (2026-10-11, purpose confirmed in session)
+
+**Goal**: the confirmed 2026-10-11 purpose amendment — seamless Chat→Code switch, a dedicated
+code workspace view with terminal/files/preview/git-graph side panels outside the computer
+screen, and omp actually running inside the terminal (R12/R13).
+
+- [ ] T39 (P1) Workspace shell: Chat/Code switch on the bot surface; creating or opening a
+      coding session navigates to the workspace view (no more popover-toggle + pill-strip-only
+      discovery) — V22
+- [ ] T40 (P1) Side panels — terminal: move the existing PTY pane into the workspace shell;
+      view-only streaming without the control lease; lease required only to send input — V18b
+- [ ] T41 (P1) OMP real spawn: production spawnOmp implemented (worker composition); an active
+      omp session's terminal bootstraps bash then launches omp inside; no manual launch — V23
+- [ ] T42 (P2) Side panels — files + preview: workspace file listing/read RPC; file tree panel;
+      read-only file preview — V24
+- [ ] T43 (P2) Side panels — git graph: git history/branch data computed in the workspace and
+      rendered as a graph panel — V25
+- [ ] T44 (P2) Red-green coverage: V22–V25 written failing first; journey-UX pass on the shell
+      (discoverability, empty/loading/error, lease recovery) before convergence.
