@@ -483,3 +483,18 @@ function finished(overrides: Partial<Command200Response> = {}): Command200Respon
     ...overrides,
   } as Command200Response;
 }
+
+describe("FakeSandboxProvider gone-box errors", () => {
+  it("signals a gone sandbox (not a generic error) for an unknown computer", async () => {
+    const { FakeSandboxProvider } = await import("./fake-sandbox.js");
+    const { isSandboxGoneError } = await import("./e2b-sandbox.js");
+    const provider = new FakeSandboxProvider();
+    await expect(
+      provider.connectTerminal(
+        { id: "computer-gone", kind: "headless" },
+        { controlToken: "lease" },
+        { userId: "user-1", screenLeaseId: "screen-1" } as never,
+      ),
+    ).rejects.toSatisfy(isSandboxGoneError);
+  });
+});
