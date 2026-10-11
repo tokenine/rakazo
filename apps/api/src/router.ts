@@ -5657,6 +5657,50 @@ export function createRouter(deps: RouterDeps) {
       list: authed.codingSessions.list.handler(async ({ context, input }) => {
         return listBotCodingSessions({ prisma: deps.prisma }, context.actor, input.botId);
       }),
+      listFiles: authed.codingSessions.listFiles.handler(async ({ context, input }) => {
+        const { computer, bot } = await codingSessionComputer(
+          deps.prisma,
+          repos,
+          context.actor,
+          input.sessionId,
+        );
+        const computerMode = parseComputerMode(computer.scope);
+        const storedPath = resolveBotWorkspacePath(computerMode, bot.id, input.path);
+        const entries = await deps.sandbox.listFiles(
+          toComputerRef(computer),
+          storedPath,
+          computerContext(context.actor, bot.id, "files"),
+        );
+        return entries.map((entry) => ({
+          ...entry,
+          path: displayBotWorkspacePath(computerMode, bot.id, input.path, entry.path),
+        }));
+      }),
+      readFile: authed.codingSessions.readFile.handler(async ({ context, input }) => {
+        const { computer, bot } = await codingSessionComputer(
+          deps.prisma,
+          repos,
+          context.actor,
+          input.sessionId,
+        );
+        const computerMode = parseComputerMode(computer.scope);
+        const storedPath = resolveBotWorkspacePath(computerMode, bot.id, input.path);
+        const bytes = await deps.sandbox
+          .readFile(
+            toComputerRef(computer),
+            storedPath,
+            computerContext(context.actor, bot.id, "read"),
+            { maxBytes: MAX_COMPUTER_TEXT_FILE_BYTES },
+          )
+          .catch((error: unknown) => {
+            if (error instanceof Error && /exceeds|too large/i.test(error.message)) {
+              throw new ORPCError("BAD_REQUEST", { message: "file is too large to preview" });
+            }
+            throw error;
+          });
+        const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        return { path: input.path, content };
+      }),
       terminalUrl: authed.codingSessions.terminalUrl.handler(async ({ context, input }) => {
         const session = await deps.prisma.codingSession.findFirst({
           where: { id: input.sessionId, spaceId: context.actor.spaceId },
@@ -7323,6 +7367,31 @@ async function keepComputerAwake(deps: RouterDeps, computerId: string) {
     data: { updatedAt: new Date() },
   });
   scheduleComputerSleep(deps.jobs, computerId);
+}
+
+/**
+ * T42/T43 shared auth for the codingSessions workspace RPCs: the session must
+ * live in the actor's space and be an active omp session, and the workspace
+ * computer must be running (same gate as the terminal URL).
+ */
+async function codingSessionComputer(
+  prisma: PrismaClient,
+  repos: ReturnType<typeof createRepos>,
+  actor: Actor,
+  sessionId: string,
+) {
+  const session = await prisma.codingSession.findFirst({
+    where: { id: sessionId, spaceId: actor.spaceId },
+  });
+  if (!session || session.engine !== "omp" || session.status !== "active") {
+    throw new ORPCError("NOT_FOUND", { message: "No active coding session." });
+  }
+  const bot = await repos.getBot(actor, session.botId);
+  const computer = bot.computer;
+  if (!computer?.providerRef || computer.state !== "running") {
+    throw new ORPCError("CONFLICT", { message: "Start the computer first." });
+  }
+  return { session, bot, computer };
 }
 
 function withViewOnly(url: string, viewOnly: boolean) {

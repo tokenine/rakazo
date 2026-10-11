@@ -3591,3 +3591,142 @@ describe("coding session terminal", () => {
     expect(stopped.sandbox.connectTerminal).not.toHaveBeenCalled();
   });
 });
+
+describe("coding session workspace files (T42)", () => {
+  const actor = {
+    spaceId: "workspace-1",
+    userId: "user-1",
+    email: "user@rakazo.test",
+    isDeploymentOwner: true,
+  } satisfies Actor;
+  const session = {
+    id: "coding-1",
+    botId: "bot-1",
+    spaceId: "workspace-1",
+    engine: "omp",
+    status: "active",
+  };
+
+  function setup(
+    overrides: {
+      session?: Record<string, unknown> | null;
+      computer?: Record<string, unknown>;
+    } = {},
+  ) {
+    const sandbox = {
+      listFiles: vi
+        .fn()
+        .mockResolvedValue([
+          { path: "src", kind: "dir", size: 96 },
+          { path: "README.md", kind: "file", size: 12, executable: true },
+        ]),
+      readFile: vi.fn().mockResolvedValue(new TextEncoder().encode("hello world")),
+    };
+    const prisma = {
+      codingSession: {
+        findFirst: vi.fn().mockResolvedValue(
+          overrides.session === null ? null : { ...session, ...overrides.session },
+        ),
+      },
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          screenGeneration: 2,
+          threads: [{ id: "thread-1" }],
+          computer: {
+            id: "computer-1",
+            screenGeneration: 3,
+            kind: "process",
+            scope: "team",
+            state: "running",
+            providerRef: "sandbox-ref-1",
+            homeKey: "home-1",
+            controlHolder: "none",
+            controlLeaseId: null,
+            controlLeaseExpiresAt: null,
+            controlBotId: null,
+            controlRunId: null,
+            ...overrides.computer,
+          },
+        }),
+      },
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      sandbox,
+      jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
+      env: {
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "process",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const handler = new RPCHandler(createRouter(deps));
+    const call = async (procedure: string, json: Record<string, unknown>) => {
+      const { response } = await handler.handle(
+        new Request(`http://127.0.0.1/rpc/codingSessions/${procedure}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ json: { sessionId: "coding-1", ...json } }),
+        }),
+        { prefix: "/rpc", context: { actor } },
+      );
+      return { status: response.status, body: await response.json() };
+    };
+    return { sandbox, call };
+  }
+
+  it("lists workspace entries relative to the workspace root", async () => {
+    const { sandbox, call } = await Promise.resolve(setup());
+    const { status, body } = await call("listFiles", { path: "src" });
+    expect(status).toBe(200);
+    expect(sandbox.listFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      "bots/bot-1/src",
+      expect.anything(),
+    );
+    expect(body.json).toEqual([
+      { path: "src", kind: "dir", size: 96 },
+      { path: "README.md", kind: "file", size: 12, executable: true },
+    ]);
+  });
+
+  it("reads a text file from the workspace with the size cap", async () => {
+    const { sandbox, call } = await Promise.resolve(setup());
+    const { status, body } = await call("readFile", { path: "README.md" });
+    expect(status).toBe(200);
+    expect(sandbox.readFile).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      "bots/bot-1/README.md",
+      expect.anything(),
+      { maxBytes: 2 * 1024 * 1024 },
+    );
+    expect(body.json).toEqual({ path: "README.md", content: "hello world" });
+  });
+
+  it("refuses files beyond the text cap truthfully", async () => {
+    const { call } = await Promise.resolve(setup());
+    const big = setup();
+    big.sandbox.readFile.mockRejectedValue(new Error("computer file exceeds 2097152 bytes"));
+    await expect(big.call("readFile", { path: "big.bin" })).resolves.toMatchObject({
+      status: 400,
+    });
+  });
+
+  it("requires a session in the actor's space", async () => {
+    const missing = setup({ session: null });
+    await expect(missing.call("listFiles", {})).resolves.toMatchObject({ status: 404 });
+    const wrongEngine = setup({ session: { engine: "normal-pi" } });
+    await expect(wrongEngine.call("readFile", { path: "x" })).resolves.toMatchObject({
+      status: 404,
+    });
+  });
+
+  it("refuses when the bot has no running workspace computer", async () => {
+    const stopped = setup({ computer: { state: "stopped", providerRef: null } });
+    await expect(stopped.call("listFiles", {})).resolves.toMatchObject({ status: 409 });
+  });
+});

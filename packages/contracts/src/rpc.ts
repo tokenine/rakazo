@@ -1070,6 +1070,21 @@ export const appContract = {
     terminalUrl: oc
       .input(z.object({ sessionId: Id }))
       .output(z.object({ url: z.string().nullable() })),
+    listFiles: oc
+      .input(z.object({ sessionId: Id, path: z.string().default("/") }))
+      .output(
+        z.array(
+          z.object({
+            path: z.string(),
+            kind: z.enum(["file", "dir"]),
+            size: z.number(),
+            executable: z.boolean().optional(),
+          }),
+        ),
+      ),
+    readFile: oc
+      .input(z.object({ sessionId: Id, path: z.string() }))
+      .output(z.object({ path: z.string(), content: z.string() })),
   },
   preview: {
     get: oc.input(z.object({ previewId: Id })).output(
