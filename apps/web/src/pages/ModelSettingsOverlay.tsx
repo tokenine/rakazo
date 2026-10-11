@@ -246,7 +246,7 @@ export function ModelSettingsOverlay({
     setBaseUrl(
       nextProvider === OPENAI_COMPATIBLE_PROVIDER_ID ? (nextCredential?.baseUrl ?? "") : "",
     );
-    detailScrollRef.current?.scrollTo({ top: 0 });
+    if (detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
     setApiKey("");
     resetOpenAiCompatibleProbe();
     setError(null);
@@ -358,7 +358,7 @@ export function ModelSettingsOverlay({
       );
       setApiKey("");
       await refresh();
-      detailScrollRef.current?.scrollTo({ top: 0 });
+      if (detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
       setNotice(
         isOpenAiCompatible || savingLimitOnly
           ? t`Saved.`
