@@ -10,7 +10,7 @@ describe("omp terminal injection", () => {
     });
     expect(injection.env).toEqual({ ANTHROPIC_API_KEY: "sk-ant-secret" });
     expect(injection.homeFiles).toHaveLength(1);
-    expect(injection.homeFiles?.[0].content).toContain("default: anthropic/claude-opus-4-8");
+    expect(injection.homeFiles?.[0]!.content).toContain("default: anthropic/claude-opus-4-8");
     expect(injection.launchCommand).toBe("omp --model anthropic/claude-opus-4-8");
   });
 
@@ -67,11 +67,11 @@ describe("omp terminal injection", () => {
       plaintext: "plain-key-value",
     });
     expect(codingPlan.homeFiles).toHaveLength(2);
-    expect(codingPlan.homeFiles?.[0].content).toContain(
+    expect(codingPlan.homeFiles?.[0]!.content).toContain(
       "baseUrl: https://api.z.ai/api/coding/paas/v4",
     );
-    expect(codingPlan.homeFiles?.[1].path).toBe(".omp/agent/config.yml");
-    expect(codingPlan.homeFiles?.[1].content).toContain("default: rakazo/glm-5");
+    expect(codingPlan.homeFiles?.[1]!.path).toBe(".omp/agent/config.yml");
+    expect(codingPlan.homeFiles?.[1]!.content).toContain("default: rakazo/glm-5");
     expect(Object.keys(codingPlan.env ?? {})).toEqual([OMP_API_KEY_ENV]);
   });
 
