@@ -163,8 +163,10 @@ test("a second client sees the session list change without reloading", async ({ 
   await expect(page.getByLabel("Session name")).toBeVisible({ timeout: 5_000 });
   await page.getByLabel("Session name").fill("Shared deep dive");
   await page.getByTestId("session-rename-save").click();
+  // Assert the rename landed before dismissing whatever dialog chrome remains;
+  // pressing Escape first could race the save's refresh.
+  await expect(sessionRow(page, "Shared deep dive")).toBeVisible({ timeout: 20_000 });
   await page.keyboard.press("Escape"); // close rename dialog
-  await expect(sessionRow(page, "Shared deep dive")).toBeVisible({ timeout: 10_000 });
   await expect(
     second.getByTestId("session-switcher-row").filter({ hasText: "Shared deep dive" }),
   ).toBeVisible({ timeout: 20_000 });
