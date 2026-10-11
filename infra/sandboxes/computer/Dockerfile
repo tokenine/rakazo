@@ -170,6 +170,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
   && npm install -g thaifi-wallet-cli@0.3.6 playwright-core@1.59.1 \
   && npm cache clean --force \
   && rm -rf /var/lib/apt/lists/*
+# Coding-agent CLIs for the coding-session terminal (the server requests launchCommand
+# "omp"), pinned to the exact versions the host adapters speak so behavior cannot drift
+# between image builds. Installed into the root-owned /usr/local prefix at build time —
+# containers only execute these binaries, never install, so the host-mapped uid works.
+# pi (@earendil-works fork, the maintained successor of @mariozechner) runs on node 22.
+RUN npm install -g \
+      @oh-my-pi/pi-coding-agent@18.6.1 \
+      @earendil-works/pi-coding-agent@1.1.0 \
+  && npm cache clean --force
+# omp 18.6.1 requires Bun: its dist is written against Bun APIs (Bun.file/spawn/...), so a
+# shebang rewrite to node would crash at runtime. Ship a pinned Bun runtime instead of
+# patching the entrypoint; the pin keeps the toolchain version deterministic.
+RUN case "$TARGETARCH" in \
+      amd64) bun_arch=x64 ;; \
+      arm64) bun_arch=aarch64 ;; \
+      *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+  && apt-get update && apt-get install -y --no-install-recommends unzip \
+  && curl -fsSL -o /tmp/bun.zip \
+       "https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-linux-${bun_arch}.zip" \
+  && unzip -q /tmp/bun.zip -d /tmp/bun \
+  && install -m 755 "/tmp/bun/bun-linux-${bun_arch}/bun" /usr/local/bin/bun \
+  && rm -rf /tmp/bun /tmp/bun.zip /var/lib/apt/lists/* \
+  && omp --version && pi --version && bun --version
 # Popular Thai Google families on top of the TLWG/Noto base, so Thai sites in
 # Chromium render with real Thai typefaces (Sarabun, Prompt, Kanit, ...).
 # Best-effort: a failed download just leaves fewer families behind.
