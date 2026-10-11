@@ -94,12 +94,12 @@ export function ompTerminalInjection(input: {
   };
 }
 
-/** modelRoles.default so the TUI opens on the Rakazo-picked model instead of first-run setup. */
+/** modelRoles.default plus the wizard off-switch: the TUI opens on the Rakazo-picked model. */
 function ompDefaultModelConfig(selector: string): { path: string; content: string } {
   const target = selector.replace(/^omp --model /, "").trim();
   return {
     path: ".omp/agent/config.yml",
-    content: `modelRoles:\n  default: ${target}\n`,
+    content: `startup:\n  setupWizard: false\nmodelRoles:\n  default: ${target}\n`,
   };
 }
 
