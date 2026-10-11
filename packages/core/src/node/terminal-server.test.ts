@@ -23,13 +23,14 @@ afterEach(() => {
   for (const step of cleanup.splice(0)) step();
 });
 
-async function startServer(asUser?: { uid: number; gid: number }) {
+async function startServer(asUser?: { uid: number; gid: number }, launchCommand?: string) {
   const root = mkdtempSync(path.join(tmpdir(), "terminal-server-"));
   const program = path.join(root, "server.py");
   const socket = path.join(root, "pty.sock");
   const state = path.join(root, "state");
   writeFileSync(program, TERMINAL_SERVER_PROGRAM);
   const argv = [program, socket, root, state];
+  if (launchCommand !== undefined) argv.push(launchCommand);
   if (asUser) chmodSync(root, 0o777);
   const server: ChildProcess = asUser
     ? spawn(
@@ -91,6 +92,23 @@ describe("terminal server", () => {
     await first.waitFor(/set-first/);
     second.client.write(encodeTerminalInput("echo other-$MARK-end\n"));
     await expect(second.waitFor(/other--end/)).resolves.toContain("other--end");
+  });
+
+  it("types an optional launch command into the initial shell once", async () => {
+    const { socket } = await startServer(undefined, "echo launched-$((40 + 2))");
+    const { client, waitFor } = connect(socket);
+    await expect(waitFor(/launched-42/)).resolves.toContain("launched-42");
+    // Exactly once: the launch text must not repeat while the session stays open.
+    client.write(encodeTerminalInput("echo still-open\n"));
+    const output = await waitFor(/still-open/);
+    expect(output.split("launched-42").length - 1).toBe(1);
+  });
+
+  it("starts a plain shell when no launch command is given", async () => {
+    const { socket } = await startServer();
+    const { client, waitFor } = connect(socket);
+    client.write(encodeTerminalInput("echo plain-shell\n"));
+    await expect(waitFor(/plain-shell/)).resolves.toBeDefined();
   });
 
   // Docker on macOS runs computers as the host uid, which has no passwd entry in the image.

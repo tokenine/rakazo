@@ -27,6 +27,7 @@ import {
   resetDesktopRuntimeCommand,
   screenPorts,
   shellQuote,
+  startTerminalCommand,
   stopExtraScreenCommand,
   terminalCommand,
 } from "./desktop-runtime.js";
@@ -213,6 +214,26 @@ describe("shared Linux desktop lifecycle", () => {
     expect(f.run(desktopTerminalCommand("a", "old:0", env, "c", "t", ".")).status).toBe(75);
     expect(f.run(desktopTerminalCommand("a", "run:1", env, "c", "t", ".")).status).toBe(0);
     expect(() => terminalCommand("c", "bad token", ".")).toThrow("invalid terminal token");
+  });
+
+  it("hands the launch command to a fresh terminal server and never to a reused one", () => {
+    const pythonSpawn = /nohup python3 \S+ \S+ \S+ \S+ 'omp' /;
+    expect(startTerminalCommand("token", "terminal", "/work", env, undefined, "omp")).toMatch(
+      pythonSpawn,
+    );
+    // Reconnect reuses the existing server; the launch command must not appear there.
+    const command = terminalCommand("token", "terminal", "/work", env);
+    expect(command).not.toContain("'omp'");
+    expect(command).not.toMatch(/terminal-server\.py \S+ \S+ \S+ \S+ '/);
+  });
+
+  it("shell-quotes the launch command so metacharacters cannot break out", () => {
+    const hostile = "echo hi; rm -rf / && $(dangerous) `x`";
+    const command = startTerminalCommand("token", "terminal", "/work", env, undefined, hostile);
+    expect(command).toContain(shellQuote(hostile));
+    const result = spawnSync("bash", ["-n", "-c", command], { encoding: "utf8" });
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
   });
 
   it("stops the terminal with the control lease and the screen transports", () => {

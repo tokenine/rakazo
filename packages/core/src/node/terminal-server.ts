@@ -7,6 +7,8 @@
 export const TERMINAL_SERVER_PROGRAM = `import fcntl, glob, os, pty, pwd, select, signal, socket, struct, sys, tempfile, termios
 
 path, cwd, state = sys.argv[1], sys.argv[2], sys.argv[3]
+# Optional initial input (e.g. "omp"), typed into each new shell exactly once.
+launch = sys.argv[4] if len(sys.argv) > 4 else ""
 MAX_FRAME = 1 << 20
 
 def identity(env):
@@ -59,6 +61,9 @@ def serve(conn):
             os.chdir(os.path.expanduser("~"))
         shell = env.get("SHELL") or "/bin/bash"
         os.execvpe(shell, [shell, "-l"], env)
+    if launch:
+        # Same path as user keystrokes: the pty buffers it until the shell reads it.
+        write_all(fd, (launch + "\\n").encode())
     pending = b""
     try:
         while True:
