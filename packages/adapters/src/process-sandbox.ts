@@ -267,6 +267,12 @@ export interface PtySessionRecord {
 
 /** Max scrollback ring buffer capacity. */
 const SCROLLBACK_CAPACITY = 10_000;
+/**
+ * Overflow slack before the buffer compacts back to capacity. Evicting one
+ * line per append (`Array.shift`) copies the whole buffer per line; compacting
+ * in chunks makes append amortized O(1) while bounding memory at capacity + chunk.
+ */
+const SCROLLBACK_COMPACT_CHUNK = 1_000;
 
 function makeSessionId(): string {
   return `pty-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -291,13 +297,23 @@ export function createPtySessionRecord(taskId: string, viewOnly = false): PtySes
 
 /**
  * Append a line to the scrollback ring buffer.
- * When capacity is exceeded, oldest entries are evicted.
+ * When capacity is exceeded, oldest entries are evicted in batches (see
+ * SCROLLBACK_COMPACT_CHUNK) so appends stay amortized O(1).
  */
 export function recordScrollbackLine(record: PtySessionRecord, line: string): void {
   record.scrollback.push(line);
-  if (record.scrollback.length > record.scrollbackCapacity) {
-    record.scrollback.shift();
+  if (record.scrollback.length > record.scrollbackCapacity + SCROLLBACK_COMPACT_CHUNK) {
+    record.scrollback.splice(0, record.scrollback.length - record.scrollbackCapacity);
   }
+}
+
+/**
+ * The visible scrollback for a session: the newest lines up to the record's
+ * capacity, oldest first. Reads must go through this window because the raw
+ * buffer may transiently hold up to one compaction chunk of already-evicted slack.
+ */
+export function scrollbackWindow(record: PtySessionRecord): string[] {
+  return record.scrollback.slice(-record.scrollbackCapacity);
 }
 
 /**
@@ -480,7 +496,7 @@ export class ProcessSandboxProvider implements SandboxProvider {
     return {
       sessionId: record.sessionId,
       url: `ws://localhost/pty/${record.sessionId}`,
-      scrollback: [...record.scrollback],
+      scrollback: [...scrollbackWindow(record)],
       cols: record.cols,
       rows: record.rows,
       resize: async (dim) => {

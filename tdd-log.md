@@ -21,3 +21,17 @@
   reconnect, view-only demotion, spawn contract) unchanged and green.
 - Guardrail: `process-pty-wiring-*` added to `.gitignore`; 135 leaked directories
   removed from the working directory. Production `ProcessSandboxProvider` untouched.
+
+## 2026-10-12 — resource slice B: amortized O(1) scrollback eviction
+
+- Pin: new `packages/adapters/src/scrollback.test.ts` characterizes the eviction
+  contract (newest `scrollbackCapacity` lines in order; no eviction below capacity;
+  high-volume bound) — 3 passed against the original `push`+`shift` implementation
+  before refactoring.
+- Refactor: `recordScrollbackLine` compacts in 1,000-line chunks instead of
+  `Array.shift` per line (per-line O(buffer) copy at full capacity → amortized O(1),
+  memory bounded at capacity + 1,000). Raw array may transiently hold evicted slack,
+  so visible reads go through a new `scrollbackWindow` helper; the reconnect replay
+  (`terminalSession`) uses it, replaying the same newest-capacity lines as before.
+- Green: scrollback, process-pty-wiring, pty-session, node-pty-spawner suites —
+  27 passed. No other suites import process-sandbox.
