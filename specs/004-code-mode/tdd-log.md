@@ -275,3 +275,22 @@ key, so checkpoint scope is irrelevant to secret exposure.
   cannot be seeded — omp's own /login is required and the terminal truthfully shows
   no-model. omp model ids may drift from pi catalog ids; a mismatch leaves omp on its
   picker rather than failing the terminal. The process provider ignores request.env.
+
+### Cycle H/I live verification + three defects found and fixed (2026-10-11 late)
+
+Live end-to-end on the review stack (docker sandbox, real browser): the coding terminal now opens
+bash with omp v18.6.1 already running, model GLM-5.3-Flash seeded from Rakazo's stored Z.AI
+credential (status bar shows the model; no setup wizard), in the bot's chat working directory
+(same resolveBotWorkspaceCwd the run machinery uses — requirement already structural).
+Defects found on the way, all fixed with tests:
+- supervisor launchCommand regex forbade spaces → `omp --model rakazo/x` was rejected 400
+  (charset widened; server-chosen values remain shell-quoted downstream).
+- terminal-server crashed silently on a state dir with a bad mode (drw-------): makedirs
+  exist_ok never repairs; every later session closed instantly and the traceback vanished in
+  the fork-child's os._exit — now chmod-enforces the dir and prints serve tracebacks to the
+  terminal log (a75054ef).
+- omp's first-run setup wizard appeared despite a seeded model — config.yml now seeds
+  startup.setupWizard=false + modelRoles.default (74e14985, bbf589c2).
+Operational notes: tsx watch never picks up cross-package changes — kill the api BY PORT PID and
+restart after adapters/core edits; a stale supervisor on 7091 fails EADDRINUSE silently in the
+log, so the old process serves old code.
