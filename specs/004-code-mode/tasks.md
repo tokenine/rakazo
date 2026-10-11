@@ -191,8 +191,10 @@ screen, and omp actually running inside the terminal (R12/R13).
       discovery) — V22
 - [ ] T40 (P1) Side panels — terminal: move the existing PTY pane into the workspace shell;
       view-only streaming without the control lease; lease required only to send input — V18b
-- [ ] T41 (P1) OMP real spawn: production spawnOmp implemented (worker composition); an active
-      omp session's terminal bootstraps bash then launches omp inside; no manual launch — V23
+- [ ] T41 (P1) OMP real spawn: an active omp session's terminal bootstraps bash then launches omp
+      inside via the launch-command seam (`bash --norc -lc omp` at PTY spawn; reconnect never
+      re-runs it); no manual launch. Remaining: headless worker `spawnOmp` (worker composition) is
+      still an open item — the current design bootstraps omp inside the user terminal instead. — V23
 - [ ] T42 (P2) Side panels — files + preview: workspace file listing/read RPC; file tree panel;
       read-only file preview — V24
 - [ ] T43 (P2) Side panels — git graph: git history/branch data computed in the workspace and
