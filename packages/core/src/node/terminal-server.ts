@@ -4,7 +4,7 @@
  * bytes; input arrives as `[kind:u8][length:u32be][payload]` frames (see contracts/terminal).
  * Per-session files live in the state directory, which is removed when the server stops.
  */
-export const TERMINAL_SERVER_PROGRAM = `import fcntl, glob, os, pty, pwd, select, signal, socket, struct, sys, tempfile, termios
+export const TERMINAL_SERVER_PROGRAM = `import fcntl, glob, os, pty, pwd, select, signal, socket, struct, sys, tempfile, termios, time
 
 path, cwd, state = sys.argv[1], sys.argv[2], sys.argv[3]
 # Optional initial input (e.g. "omp"), typed into each new shell exactly once.
@@ -62,7 +62,20 @@ def serve(conn):
         shell = env.get("SHELL") or "/bin/bash"
         os.execvpe(shell, [shell, "-l"], env)
     if launch:
-        # Same path as user keystrokes: the pty buffers it until the shell reads it.
+        # Wait for the shell's first output (its prompt) before typing: input written
+        # during startup can be swallowed by profile scripts before bash reads it.
+        deadline = time.time() + 3
+        try:
+            while time.time() < deadline:
+                ready, _, _ = select.select([fd], [], [], 0.2)
+                if fd in ready:
+                    data = os.read(fd, 65536)
+                    if not data:
+                        break
+                    break
+        except OSError:
+            pass
+        time.sleep(0.3)
         write_all(fd, (launch + "\\n").encode())
     pending = b""
     try:
