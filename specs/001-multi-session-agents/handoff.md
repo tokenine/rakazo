@@ -131,3 +131,21 @@ Strict red-green-refactor, with evidence:
 4. On completion: record candidate SHA, proceed to S2 design-first.
 5. If anything is genuinely blocked: record it in plan.md "Blockers" and write a new handoff
    before stopping — a pause is never silently dropped.
+
+## Slice 7 — 004 workspace shell amendment (2026-10-11)
+
+Purpose amendment confirmed in session (see `.super-speckit/purpose/004-code-mode/decision.json`
+amendments[0] and purpose-map.md). Seamless Chat/Code switch on the bot header; dedicated
+`/app/code/:sessionId` workspace view with terminal/files/git panels outside the computer screen;
+terminal streams VIEW-ONLY without the computer-control lease (input requires the lease, enforced
+provider-side with sticky demotion — B1); omp sessions bootstrap omp inside the bash PTY via the
+server-chosen launch command (T41); `codingSessions.listFiles/readFile/gitGraph` RPCs added.
+Non-process providers refuse leaseless view-only terminals truthfully (B2,
+`SandboxCapabilities.viewOnlyTerminal`).
+
+Independent review found two blocking findings (interactive-URL reconnect leak; adapters ignoring
+viewOnly) — both fixed with red-first tests (09e4d6c3, 7be45a36). Checker closure re-verify:
+see git log after this line. Open before milestone close: live journey with a real running
+computer + real omp (V23/V25 runtime rows), worker headless `spawnOmp` production wiring,
+`codingSessions.get` RPC to remove the bot-scan in CodeWorkspace, truthful surface for
+create-failure in the switch.
