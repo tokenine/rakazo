@@ -9,7 +9,8 @@ describe("omp terminal injection", () => {
       plaintext: JSON.stringify({ kind: "api_key", key: "sk-ant-secret" }),
     });
     expect(injection.env).toEqual({ ANTHROPIC_API_KEY: "sk-ant-secret" });
-    expect(injection.homeFiles).toBeUndefined();
+    expect(injection.homeFiles).toHaveLength(1);
+    expect(injection.homeFiles?.[0].content).toContain("default: anthropic/claude-opus-4-8");
     expect(injection.launchCommand).toBe("omp --model anthropic/claude-opus-4-8");
   });
 
@@ -55,7 +56,7 @@ describe("omp terminal injection", () => {
         modelId: "m",
         plaintext: "plain-key-value",
       });
-      expect(injection.homeFiles, provider).toBeUndefined();
+      expect(injection.homeFiles, provider).toHaveLength(1);
       expect(Object.keys(injection.env ?? {}), provider).toHaveLength(1);
     }
     // The z.ai coding-plan endpoint shares omp's "zai" provider id but not its
@@ -65,8 +66,12 @@ describe("omp terminal injection", () => {
       modelId: "glm-5",
       plaintext: "plain-key-value",
     });
-    expect(codingPlan.homeFiles).toHaveLength(1);
-    expect(codingPlan.homeFiles?.[0].content).toContain("baseUrl: https://api.z.ai/api/coding/paas/v4");
+    expect(codingPlan.homeFiles).toHaveLength(2);
+    expect(codingPlan.homeFiles?.[0].content).toContain(
+      "baseUrl: https://api.z.ai/api/coding/paas/v4",
+    );
+    expect(codingPlan.homeFiles?.[1].path).toBe(".omp/agent/config.yml");
+    expect(codingPlan.homeFiles?.[1].content).toContain("default: rakazo/glm-5");
     expect(Object.keys(codingPlan.env ?? {})).toEqual([OMP_API_KEY_ENV]);
   });
 

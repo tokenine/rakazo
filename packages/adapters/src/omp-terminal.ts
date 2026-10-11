@@ -63,29 +63,55 @@ export function ompTerminalInjection(input: {
   if (secret.kind === "oauth") return {};
   const apiKey = secret.kind === "api_key" ? secret.key : secret.apiKey;
   if (!apiKey) return {};
-  const native = input.provider in OMP_NATIVE_PROVIDERS ? OMP_NATIVE_PROVIDERS[input.provider] : undefined;
+  const native =
+    input.provider in OMP_NATIVE_PROVIDERS ? OMP_NATIVE_PROVIDERS[input.provider] : undefined;
   if (native && secret.kind === "api_key") {
+    const selector = modelSelector(native.provider, input.modelId);
     return {
       env: { [native.env]: apiKey },
-      launchCommand: modelSelector(native.provider, input.modelId),
+      homeFiles: selector ? [ompDefaultModelConfig(selector)] : [],
+      launchCommand: selector,
     };
   }
   const baseUrl =
-    secret.kind === "openai_compatible"
-      ? secret.baseUrl
-      : OMP_CUSTOM_BASE_URLS[input.provider];
+    secret.kind === "openai_compatible" ? secret.baseUrl : OMP_CUSTOM_BASE_URLS[input.provider];
   if (!baseUrl) return {};
+  const selector = input.modelId ? modelSelector("rakazo", input.modelId) : undefined;
   return {
     env: { [OMP_API_KEY_ENV]: apiKey },
-    homeFiles: [{ path: ".omp/agent/models.yml", content: ompModelsYml(baseUrl, input.modelId, secret.kind === "openai_compatible" ? secret : undefined) }],
-    launchCommand: input.modelId ? modelSelector("rakazo", input.modelId) : undefined,
+    homeFiles: [
+      {
+        path: ".omp/agent/models.yml",
+        content: ompModelsYml(
+          baseUrl,
+          input.modelId,
+          secret.kind === "openai_compatible" ? secret : undefined,
+        ),
+      },
+      ...(selector ? [ompDefaultModelConfig(selector)] : []),
+    ],
+    launchCommand: selector,
+  };
+}
+
+/** modelRoles.default so the TUI opens on the Rakazo-picked model instead of first-run setup. */
+function ompDefaultModelConfig(selector: string): { path: string; content: string } {
+  const target = selector.replace(/^omp --model /, "").trim();
+  return {
+    path: ".omp/agent/config.yml",
+    content: `modelRoles:\n  default: ${target}\n`,
   };
 }
 
 /** `omp --model <provider>/<modelId>`; omitted when the id is unusable on a command line. */
 function modelSelector(provider: string, modelId: string): string | undefined {
+  const target = modelTarget(provider, modelId);
+  return target ? `omp --model ${target}` : undefined;
+}
+
+function modelTarget(provider: string, modelId: string): string | undefined {
   if (!/^[A-Za-z0-9._-]{1,128}$/.test(modelId)) return undefined;
-  return `omp --model ${provider}/${modelId}`;
+  return `${provider}/${modelId}`;
 }
 
 /** Secret-free provider entry: `apiKey` names the env var omp resolves at runtime. */
@@ -102,7 +128,11 @@ function ompModelsYml(
     `    apiKey: ${OMP_API_KEY_ENV}`,
   ];
   if (modelId) {
-    lines.push("    models:", `      - id: ${yamlScalar(modelId)}`, `        name: ${yamlScalar(modelId)}`);
+    lines.push(
+      "    models:",
+      `      - id: ${yamlScalar(modelId)}`,
+      `        name: ${yamlScalar(modelId)}`,
+    );
     if (secret?.contextWindow) lines.push(`        contextWindow: ${secret.contextWindow}`);
     if (secret?.maxTokens) lines.push(`        maxTokens: ${secret.maxTokens}`);
   }
