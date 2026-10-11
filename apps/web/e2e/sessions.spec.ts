@@ -109,6 +109,10 @@ test("session history resumes after reload on the same session route", async ({ 
   await expect(
     page.getByTestId("transcript").getByText("field note two", { exact: true }),
   ).toBeVisible({ timeout: 30_000 });
+  // The optimistic entry can render before the send RPC resolves; wait for the
+  // composer to clear so the reload observes persisted history, not in-flight
+  // state.
+  await expect(page.getByPlaceholder(/^Message /)).toHaveValue("", { timeout: 15_000 });
 
   await page.reload();
   await expect(page.getByTestId("shell-root")).toHaveAttribute("data-ready", "true");
