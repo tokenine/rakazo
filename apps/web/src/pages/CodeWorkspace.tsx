@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Button, cn } from "@rakazo/ui-web";
 import { ChevronLeft, File, Folder, GitBranch, SquareTerminal } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CodingSessionTerminal } from "../components/computer/TerminalApp";
 import {
@@ -77,12 +77,22 @@ export function CodeWorkspacePage() {
     };
   }, [sessionId]);
 
+  // Availability is re-checked every time the Terminal panel is opened: the
+  // answer depends on the computer running and the control lease, both of
+  // which change while the user is here.
+  const refreshTerminal = useCallback(() => {
+    rpc.codingSessions
+      .terminalUrl({ sessionId })
+      .then(({ url }) => setTerminal(url ? { viewOnly: isViewOnlyUrl(url) } : null))
+      .catch(() => setTerminal(null));
+  }, [sessionId]);
+
+  useEffect(() => {
+    refreshTerminal();
+  }, [refreshTerminal]);
+
   useEffect(() => {
     let cancelled = false;
-    rpc.codingSessions.terminalUrl({ sessionId }).then(({ url }) => {
-      if (cancelled) return;
-      setTerminal(url ? { viewOnly: isViewOnlyUrl(url) } : null);
-    });
     rpc.codingSessions
       .listFiles({ sessionId, path: "/" })
       .then((entries) => {
@@ -121,7 +131,7 @@ export function CodeWorkspacePage() {
   }, [bot, t]);
 
   const panels: Array<{ id: PanelId; label: string; icon: typeof Folder; available: boolean }> = [
-    { id: "terminal", label: t`Terminal`, icon: SquareTerminal, available: terminal !== null },
+    { id: "terminal", label: t`Terminal`, icon: SquareTerminal, available: true },
     { id: "files", label: t`Files`, icon: Folder, available: (rootFiles?.length ?? 0) > 0 },
     {
       id: "git",
@@ -158,7 +168,10 @@ export function CodeWorkspacePage() {
                 data-testid={`panel-${id}`}
                 aria-pressed={panel === id}
                 disabled={!available}
-                onClick={() => setPanel(id)}
+                onClick={() => {
+                  if (id === "terminal") refreshTerminal();
+                  setPanel(id);
+                }}
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px]",
                   panel === id && available
@@ -174,12 +187,18 @@ export function CodeWorkspacePage() {
           </nav>
           <AcceptanceCard sessionId={sessionId} />
         </aside>
-        {panel === "terminal" && terminal ? (
+        {panel === "terminal" ? (
           <section
             aria-label={t`Terminal`}
             className="flex w-[26rem] min-w-72 shrink-0 flex-col overflow-hidden border-e border-border"
           >
-            <CodingSessionTerminal sessionId={sessionId} hidden={false} interactive={!terminal.viewOnly} />
+            {terminal ? (
+              <CodingSessionTerminal sessionId={sessionId} hidden={false} interactive={!terminal.viewOnly} />
+            ) : (
+              <p className="grid h-full place-items-center px-4 text-center text-sm text-muted-foreground">
+                <Trans>Terminal needs the computer running and your control.</Trans>
+              </p>
+            )}
           </section>
         ) : panel === "files" && rootFiles ? (
           <FilesPanel sessionId={sessionId} rootEntries={rootFiles} />

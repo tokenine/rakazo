@@ -133,6 +133,42 @@ describe("CodeWorkspacePage (T39/T42/T43 web)", () => {
     }
   });
 
+  it("recovers the terminal when the first availability check fails, on the next panel open", async () => {
+    document.body.appendChild(container);
+    root = createRoot(container);
+    happyMocks();
+    rpc.codingSessions.terminalUrl.mockRejectedValueOnce(new Error("lease raced"));
+    mount(root, container);
+    await act(async () => {});
+    // The failed check must not disable the panel: the user can just open it again.
+    const button = container.querySelector('[data-testid="panel-terminal"]') as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    act(() => button.click());
+    await act(async () => {});
+    const terminal = container.querySelector('[data-testid="coding-session-terminal"]') as
+      | HTMLElement
+      | null;
+    expect(terminal).not.toBeNull();
+    expect(rpc.codingSessions.terminalUrl).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a truthful line instead of a terminal when no terminal URL is available", async () => {
+    document.body.appendChild(container);
+    root = createRoot(container);
+    happyMocks();
+    rpc.codingSessions.terminalUrl.mockResolvedValue({ url: null });
+    mount(root, container);
+    await act(async () => {});
+    click(container, "panel-terminal");
+    await act(async () => {});
+    const section = container.querySelector('section[aria-label]') as HTMLElement | null;
+    expect(section).not.toBeNull();
+    expect(section!.textContent).toContain("Terminal");
+    expect(
+      container.querySelector('[data-testid="coding-session-terminal"]'),
+    ).toBeNull();
+  });
+
   it("renders the terminal view-only (input disabled) without a control lease", async () => {
     document.body.appendChild(container);
     root = createRoot(container);
