@@ -104,23 +104,23 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
     }
 
     // The run that answers this turn: match by id, fall back to the snapshot's
-    // current run (a fresh single-thread chat has only one).
+    // current run (a fresh single-thread chat has only one). A finished run
+    // disappears from the snapshot, so run === null with a reply is complete.
     const run = snap.run && (snap.run.id === sent.runId || !opts.threadId) ? snap.run : null;
-    const terminal =
-      run !== null &&
-      run.status !== "queued" &&
-      run.status !== "leased" &&
-      run.status !== "running";
-
     const reply = snap.messages
       .filter((m) => m.role === "bot" && m.seq > sent.seq)
       .map((m) => textOf(m.blocks))
       .filter(Boolean)
       .join("\n")
       .trim();
+    const terminal =
+      run === null
+        ? reply.length > 0
+        : run.status !== "queued" && run.status !== "leased" && run.status !== "running";
 
     if (terminal) {
-      if (run!.status === "failed") {
+      const status = run?.status ?? "completed";
+      if (status === "failed") {
         return cliError("GENERAL", "bot run failed; see the thread in the Rakazo web UI");
       }
       return {
@@ -128,8 +128,8 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
         data: {
           reply,
           threadId: snap.threadId,
-          runStatus: run!.status,
-          pendingInput: run!.status === "waiting_input" || run!.status === "waiting_takeover",
+          runStatus: status,
+          pendingInput: status === "waiting_input" || status === "waiting_takeover",
         },
       };
     }

@@ -86,6 +86,41 @@ describe("chat", () => {
     }
   });
 
+  it("completes when the finished run has vanished from the snapshot", async () => {
+    const fetchImpl = scriptedFetch([
+      rpc("threads.send", { taskId: "task_1", runId: "run_1", seq: 1 }),
+      rpc(
+        "threads.get",
+        {
+          threadId: "thread_1",
+          cursor: 2,
+          messages: [
+            { id: "m1", seq: 1, role: "user", blocks: [{ kind: "text", text: "hi" }] },
+            { id: "m2", seq: 2, role: "bot", blocks: [{ kind: "text", text: "all done" }] },
+          ],
+          olderCursor: null,
+          botId: BOT,
+          run: null,
+        },
+      ),
+    ]);
+
+    const result = await chat({
+      botId: BOT,
+      message: "hi",
+      baseUrl: "http://x/rpc",
+      spaceId: SPACE,
+      fetchImpl: fetchImpl as unknown as typeof globalThis.fetch,
+      pollMs: 0,
+      timeoutMs: 5_000,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data).toMatchObject({ reply: "all done", runStatus: "completed" });
+    }
+  });
+
   it("times out with a structured error when the bot never answers", async () => {
     const fetchImpl = scriptedFetch([
       rpc("threads.send", { taskId: "task_1", runId: "run_1", seq: 1 }),
