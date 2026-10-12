@@ -14,7 +14,8 @@
     "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "pnpm build",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postbuild": "chmod +x dist/index.js"
   },
   "devDependencies": {
     "@rakazo/contracts": "workspace:*",
