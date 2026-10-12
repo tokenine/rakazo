@@ -54,11 +54,11 @@
     },
     {
       "path": "apps/api/src/app.ts",
-      "digest": "5e9dab03ddb824e59df18f0e3133d473c4b3e17eee2e36a34e57d95c6623b475"
+      "digest": "9e874b591b1997c7c5cc94d40f6861527632d9db6d33d6022bb2a642089ad695"
     },
     {
       "path": "packages/db/prisma/schema.prisma",
-      "digest": "0259073b6a6b3646b356344d372e528f161f04ef69e195bb9c0e9cb9484db49c"
+      "digest": "a5c5d2c759cf5409c6d8dc0846ac838b6c195aec36ca583e1486b2db42796ba9"
     },
     {
       "path": "apps/api/src/google-oauth-callback.ts",
