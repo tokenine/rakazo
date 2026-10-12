@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * @rakazo/cli — CLI for attaching to server-owned sessions, managing approvals,
  * steering bots, and chatting with a bot from an agent or terminal.
@@ -22,18 +23,26 @@
  * by env vars and then by flags. Tokens are never printed.
  */
 
+import { randomBytes } from "node:crypto";
 import { chat } from "./chat.js";
 import { approve } from "./commands/approve.js";
 import { attach } from "./commands/attach.js";
 import { deny } from "./commands/deny.js";
 import { steer } from "./commands/steer.js";
 import { loadCredentials, removeCredentials, storeCredentials } from "./credentials.js";
+import { openBrowser, waitForCliCallback } from "./login-flow.js";
 import { cliError, emit, exitCodeFor } from "./output.js";
+import { orpcInvoke } from "./rpc.js";
 
 const BASE_URL = process.env.RAKAZO_BASE_URL;
 const DEFAULT_BASE_URL = "http://127.0.0.1:3000/rpc";
 const SPACE_ID = process.env.RAKAZO_SPACE_ID ?? "";
 const TOKEN = process.env.RAKAZO_TOKEN;
+
+function rpcBaseOf(origin: string): string {
+  const trimmed = origin.replace(/\/+$/, "");
+  return trimmed.endsWith("/rpc") ? trimmed : `${trimmed}/rpc`;
+}
 
 function usage(code = 1): never {
   console.error(`@rakazo/cli — chat with bots, attach to sessions, manage approvals, steer.
@@ -146,20 +155,64 @@ async function main() {
       emit(cliError("USAGE", "login requires --server <url>"), { json: parsed.json });
       process.exit(2);
     }
-    if (!parsed.token || !parsed.spaceId) {
+    if (parsed.token && parsed.spaceId) {
+      storeCredentials({ server: parsed.server, token: parsed.token, spaceId: parsed.spaceId });
       emit(
-        cliError(
-          "USAGE",
-          "login requires --token <token> and --space-id <id> (copy the token from your Rakazo web settings)",
-        ),
-        { json: parsed.json },
+        { ok: true, data: { server: parsed.server, spaceId: parsed.spaceId, tokenStored: true } },
+        { json: parsed.json, text: `Logged in to ${parsed.server} (token stored, never printed).` },
       );
-      process.exit(2);
+      return;
     }
-    storeCredentials({ server: parsed.server, token: parsed.token, spaceId: parsed.spaceId });
+    // Browser handshake (007): authorize page delivers a scoped token to a
+    // loopback listener. Space id comes from the token's account after login.
+    const state = randomBytes(16).toString("hex");
+    const device = parsed.remaining[0] ?? "CLI";
+    const authUrl = `${parsed.server.replace(/\/+$/, "")}/cli/authorize?state=${state}&port=PORT&name=${encodeURIComponent(device)}`;
+    const result = await waitForCliCallback({
+      state,
+      timeoutMs: parsed.timeoutMs ?? 300_000,
+      onListening: (port) => {
+        const url = authUrl.replace("port=PORT", `port=${port}`);
+        console.error(`Opening your browser to authorize "${device}"…`);
+        console.error(`If it does not open, visit: ${url}`);
+        openBrowser(url);
+      },
+    });
+    if ("denied" in result) {
+      emit(cliError("AUTH_FAILED", "authorization denied in the browser"), { json: parsed.json });
+      process.exit(3);
+    }
+    if ("timeout" in result || !("token" in result) || !result.token) {
+      emit(cliError("TIMEOUT", "no browser approval within the time limit"), { json: parsed.json });
+      process.exit(6);
+    }
+    // Discover the token's space from the account itself.
+    let spaceId = "";
+    try {
+      const me = (await orpcInvoke(
+        rpcBaseOf(parsed.server),
+        "me",
+        {},
+        { authorization: `Bearer ${result.token}` },
+        fetch,
+      )) as { spaceId?: string };
+      spaceId = me.spaceId ?? "";
+    } catch {
+      spaceId = "";
+    }
+    if (!spaceId) {
+      emit(cliError("GENERAL", "could not resolve the account space for the new token"), {
+        json: parsed.json,
+      });
+      process.exit(1);
+    }
+    storeCredentials({ server: parsed.server, token: result.token, spaceId });
     emit(
-      { ok: true, data: { server: parsed.server, spaceId: parsed.spaceId, tokenStored: true } },
-      { json: parsed.json, text: `Logged in to ${parsed.server} (token stored, never printed).` },
+      { ok: true, data: { server: parsed.server, spaceId, tokenStored: true } },
+      {
+        json: parsed.json,
+        text: `Logged in to ${parsed.server} as your account (token stored, never printed).`,
+      },
     );
     return;
   }

@@ -89,20 +89,17 @@ describe("chat", () => {
   it("completes when the finished run has vanished from the snapshot", async () => {
     const fetchImpl = scriptedFetch([
       rpc("threads.send", { taskId: "task_1", runId: "run_1", seq: 1 }),
-      rpc(
-        "threads.get",
-        {
-          threadId: "thread_1",
-          cursor: 2,
-          messages: [
-            { id: "m1", seq: 1, role: "user", blocks: [{ kind: "text", text: "hi" }] },
-            { id: "m2", seq: 2, role: "bot", blocks: [{ kind: "text", text: "all done" }] },
-          ],
-          olderCursor: null,
-          botId: BOT,
-          run: null,
-        },
-      ),
+      rpc("threads.get", {
+        threadId: "thread_1",
+        cursor: 2,
+        messages: [
+          { id: "m1", seq: 1, role: "user", blocks: [{ kind: "text", text: "hi" }] },
+          { id: "m2", seq: 2, role: "bot", blocks: [{ kind: "text", text: "all done" }] },
+        ],
+        olderCursor: null,
+        botId: BOT,
+        run: null,
+      }),
     ]);
 
     const result = await chat({

@@ -87,7 +87,10 @@ document.getElementById("allow").onclick = async () => {
     out.textContent = deliver.ok ? "Authorized — you can close this page." : "Could not reach the CLI listener. Paste this token into the CLI:\\n" + body.token;
   } catch { out.textContent = "Could not reach the CLI listener. Paste this token into the CLI:\\n" + body.token; }
 };
-document.getElementById("deny").onclick = () => { out.textContent = "Denied — nothing was issued."; };
+document.getElementById("deny").onclick = async () => {
+  try { await fetch("http://127.0.0.1:" + port + "/callback", { method: "POST", headers: {"content-type":"application/json"}, body: JSON.stringify({ state, denied: true }) }); } catch {}
+  out.textContent = "Denied — nothing was issued.";
+};
 </script>`
     : `<h1>Sign in first</h1><p>Open this page in a browser where you are signed in to Rakazo, then retry <b>rakazo login</b>.</p>`;
   return new Response(
