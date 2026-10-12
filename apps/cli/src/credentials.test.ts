@@ -29,10 +29,7 @@ describe("credentials store", () => {
   it("stores the file readable only by the owner", () => {
     const dir = tempConfigDir();
     try {
-      storeCredentials(
-        { server: "https://x", token: "t", spaceId: "s" },
-        { configDir: dir },
-      );
+      storeCredentials({ server: "https://x", token: "t", spaceId: "s" }, { configDir: dir });
       const mode = statSync(join(dir, "credentials.json")).mode & 0o777;
       expect(mode).toBe(0o600);
     } finally {

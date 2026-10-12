@@ -108,9 +108,7 @@ export function createClient(opts: ClientOptions): Client {
       const result = await orpcInvoke(
         baseUrl,
         "threads.get",
-        input.threadId
-          ? { botId: input.botId, threadId: input.threadId }
-          : { botId: input.botId },
+        input.threadId ? { botId: input.botId, threadId: input.threadId } : { botId: input.botId },
         headers,
         fetchImpl,
       );

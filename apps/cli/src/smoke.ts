@@ -30,7 +30,9 @@ async function smoke() {
     const sessions = await client.listSessions("test-bot");
     console.log(`[smoke] sessions: ${JSON.stringify(sessions)}`);
   } catch (err) {
-    console.log(`[smoke] listSessions error (expected without live server): ${err instanceof Error ? err.message : String(err)}`);
+    console.log(
+      `[smoke] listSessions error (expected without live server): ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   console.log("[smoke] fetching thread snapshot...");
@@ -38,7 +40,9 @@ async function smoke() {
     const thread = await client.getThread({ botId: "test-bot" });
     console.log(`[smoke] thread: ${JSON.stringify(thread)}`);
   } catch (err) {
-    console.log(`[smoke] getThread error (expected without live server): ${err instanceof Error ? err.message : String(err)}`);
+    console.log(
+      `[smoke] getThread error (expected without live server): ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   console.log("[smoke] sending steer...");
@@ -46,7 +50,9 @@ async function smoke() {
     const result = await client.steer({ botId: "test-bot", message: "hello from smoke" });
     console.log(`[smoke] steer result: ${JSON.stringify(result)}`);
   } catch (err) {
-    console.log(`[smoke] steer error (expected without live server): ${err instanceof Error ? err.message : String(err)}`);
+    console.log(
+      `[smoke] steer error (expected without live server): ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   console.log("[smoke] done — client constructed and calls attempted without throwing.");

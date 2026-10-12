@@ -5,8 +5,8 @@
  *   rakazo deny <bot-id> <server-id> [--base-url http://127.0.0.1:3000/rpc]
  */
 
-import { createClient } from "../client.js";
 import type { Client } from "../client.js";
+import { createClient } from "../client.js";
 
 export interface DenyOptions {
   botId: string;

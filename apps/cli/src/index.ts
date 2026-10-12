@@ -23,11 +23,11 @@
  */
 
 import { chat } from "./chat.js";
-import { loadCredentials, removeCredentials, storeCredentials } from "./credentials.js";
-import { attach } from "./commands/attach.js";
 import { approve } from "./commands/approve.js";
+import { attach } from "./commands/attach.js";
 import { deny } from "./commands/deny.js";
 import { steer } from "./commands/steer.js";
+import { loadCredentials, removeCredentials, storeCredentials } from "./credentials.js";
 import { cliError, emit, exitCodeFor } from "./output.js";
 
 const BASE_URL = process.env.RAKAZO_BASE_URL;
@@ -95,12 +95,31 @@ function parseFlags(list: string[]): Parsed {
       if (i + 1 >= list.length) usage(2);
       return list[++i]!;
     };
-    if (arg === "--base-url" || arg === "--server") { parsed.baseUrl = value(); if (arg === "--server") parsed.server = parsed.baseUrl; continue; }
-    if (arg === "--space-id") { parsed.spaceId = value(); continue; }
-    if (arg === "--token") { parsed.token = value(); continue; }
-    if (arg === "--json") { parsed.json = true; continue; }
-    if (arg === "--timeout") { parsed.timeoutMs = Number(value()); continue; }
-    if (arg === "--thread-id") { parsed.threadId = value(); continue; }
+    if (arg === "--base-url" || arg === "--server") {
+      parsed.baseUrl = value();
+      if (arg === "--server") parsed.server = parsed.baseUrl;
+      continue;
+    }
+    if (arg === "--space-id") {
+      parsed.spaceId = value();
+      continue;
+    }
+    if (arg === "--token") {
+      parsed.token = value();
+      continue;
+    }
+    if (arg === "--json") {
+      parsed.json = true;
+      continue;
+    }
+    if (arg === "--timeout") {
+      parsed.timeoutMs = Number(value());
+      continue;
+    }
+    if (arg === "--thread-id") {
+      parsed.threadId = value();
+      continue;
+    }
     remaining.push(arg);
   }
   return parsed;
@@ -139,7 +158,10 @@ async function main() {
 
   if (command === "logout") {
     removeCredentials();
-    emit({ ok: true, data: { loggedOut: true } }, { json: parsed.json, text: "Logged out; stored credentials removed." });
+    emit(
+      { ok: true, data: { loggedOut: true } },
+      { json: parsed.json, text: "Logged out; stored credentials removed." },
+    );
     return;
   }
 
@@ -150,7 +172,12 @@ async function main() {
     emit(
       {
         ok: true,
-        data: { server, spaceId, authenticated: tokenSet, source: stored ? "stored" : TOKEN ? "env" : "none" },
+        data: {
+          server,
+          spaceId,
+          authenticated: tokenSet,
+          source: stored ? "stored" : TOKEN ? "env" : "none",
+        },
       },
       {
         json: parsed.json,
@@ -191,7 +218,9 @@ async function main() {
       if (result.ok) {
         emit(result, {
           json: parsed.json,
-          text: result.data.reply || `(run ${result.data.runStatus}${result.data.pendingInput ? ", waiting for your input" : ""})`,
+          text:
+            result.data.reply ||
+            `(run ${result.data.runStatus}${result.data.pendingInput ? ", waiting for your input" : ""})`,
         });
       } else {
         emit(result, { json: parsed.json });
@@ -211,7 +240,13 @@ async function main() {
         console.error("Error: approve requires <bot-id> <server-id>\n");
         usage(1);
       }
-      await approve({ botId: parsed.remaining[0]!, serverId: parsed.remaining[1]!, baseUrl, spaceId, token });
+      await approve({
+        botId: parsed.remaining[0]!,
+        serverId: parsed.remaining[1]!,
+        baseUrl,
+        spaceId,
+        token,
+      });
       break;
     }
     case "deny": {
@@ -219,7 +254,13 @@ async function main() {
         console.error("Error: deny requires <bot-id> <server-id>\n");
         usage(1);
       }
-      await deny({ botId: parsed.remaining[0]!, serverId: parsed.remaining[1]!, baseUrl, spaceId, token });
+      await deny({
+        botId: parsed.remaining[0]!,
+        serverId: parsed.remaining[1]!,
+        baseUrl,
+        spaceId,
+        token,
+      });
       break;
     }
     case "steer": {
@@ -227,7 +268,13 @@ async function main() {
         console.error("Error: steer requires <bot-id> <message>\n");
         usage(1);
       }
-      await steer({ botId: parsed.remaining[0]!, message: parsed.remaining.slice(1).join(" "), baseUrl, spaceId, token });
+      await steer({
+        botId: parsed.remaining[0]!,
+        message: parsed.remaining.slice(1).join(" "),
+        baseUrl,
+        spaceId,
+        token,
+      });
       break;
     }
     default:

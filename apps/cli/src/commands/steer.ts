@@ -6,8 +6,8 @@
  *   echo "resume the build" | rakazo steer <bot-id> -
  */
 
-import { createClient } from "../client.js";
 import type { Client } from "../client.js";
+import { createClient } from "../client.js";
 
 export interface SteerOptions {
   botId: string;

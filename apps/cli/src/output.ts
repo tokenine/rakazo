@@ -4,12 +4,7 @@
  */
 
 export interface CliError {
-  code:
-    | "GENERAL"
-    | "USAGE"
-    | "AUTH_FAILED"
-    | "TIMEOUT"
-    | "UNREACHABLE";
+  code: "GENERAL" | "USAGE" | "AUTH_FAILED" | "TIMEOUT" | "UNREACHABLE";
   message: string;
   retryable: boolean;
 }

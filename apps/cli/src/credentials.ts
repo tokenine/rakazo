@@ -20,9 +20,7 @@ export interface CredentialsOptions {
 
 function credentialsPath(opts?: CredentialsOptions): string {
   const dir =
-    opts?.configDir ??
-    process.env.RAKAZO_CONFIG_DIR ??
-    join(homedir(), ".config", "rakazo");
+    opts?.configDir ?? process.env.RAKAZO_CONFIG_DIR ?? join(homedir(), ".config", "rakazo");
   return join(dir, "credentials.json");
 }
 

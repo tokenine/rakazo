@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emit, exitCodeFor, type CliError } from "./output.js";
+import { type CliError, emit, exitCodeFor } from "./output.js";
 
 /** Captures what emit() would write, without touching real stdio. */
 function capture() {

@@ -67,7 +67,13 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
   try {
     const params: Record<string, unknown> = { botId: opts.botId, text: opts.message };
     if (opts.threadId) params.threadId = opts.threadId;
-    sent = (await orpcInvoke(opts.baseUrl, "threads.send", params, headers, fetchImpl)) as SendResult;
+    sent = (await orpcInvoke(
+      opts.baseUrl,
+      "threads.send",
+      params,
+      headers,
+      fetchImpl,
+    )) as SendResult;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const cause = err instanceof Error && err.cause ? `: ${String(err.cause)}` : "";
@@ -100,7 +106,11 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
     // The run that answers this turn: match by id, fall back to the snapshot's
     // current run (a fresh single-thread chat has only one).
     const run = snap.run && (snap.run.id === sent.runId || !opts.threadId) ? snap.run : null;
-    const terminal = run !== null && run.status !== "queued" && run.status !== "leased" && run.status !== "running";
+    const terminal =
+      run !== null &&
+      run.status !== "queued" &&
+      run.status !== "leased" &&
+      run.status !== "running";
 
     const reply = snap.messages
       .filter((m) => m.role === "bot" && m.seq > sent.seq)

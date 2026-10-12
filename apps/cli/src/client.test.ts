@@ -12,8 +12,8 @@
  *   threads.send          → send a steer/prompt to a thread
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createClient, type Client } from "./client.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Client, createClient } from "./client.js";
 
 // ---------------------------------------------------------------------------
 // Fake fetch
@@ -42,7 +42,11 @@ function makeFakeFetch(responses: FakeResponses) {
     const body = typeof init?.body === "string" ? JSON.parse(init.body) : init?.body;
     // Route by the encoded URL path (e.g. /rpc/threads/listSessions), matching
     // how the server's oRPC handler dispatches.
-    const segments = new URL(String(input)).pathname.split("/").filter(Boolean).slice(1).map(decodeURIComponent);
+    const segments = new URL(String(input)).pathname
+      .split("/")
+      .filter(Boolean)
+      .slice(1)
+      .map(decodeURIComponent);
     const method = segments.join(".");
 
     const data = responses[method];
@@ -285,9 +289,9 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
     it("throws when the thread cannot be resolved", async () => {
       responses["threads.send"] = ERROR_SENTINEL;
 
-      await expect(
-        client.steer({ botId: "nonexistent-bot", message: "hello" }),
-      ).rejects.toThrow("ORPCError: NOT_FOUND");
+      await expect(client.steer({ botId: "nonexistent-bot", message: "hello" })).rejects.toThrow(
+        "ORPCError: NOT_FOUND",
+      );
     });
   });
 });

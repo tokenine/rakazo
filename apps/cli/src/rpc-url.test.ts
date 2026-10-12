@@ -14,7 +14,11 @@ describe("rpc url shape", () => {
       };
     }) as unknown as typeof globalThis.fetch;
 
-    const client = createClient({ baseUrl: "http://127.0.0.1:3100/rpc", spaceId: "s", fetch: fetchImpl });
+    const client = createClient({
+      baseUrl: "http://127.0.0.1:3100/rpc",
+      spaceId: "s",
+      fetch: fetchImpl,
+    });
     await client.listSessions("bot_1");
 
     expect(urls).toEqual(["http://127.0.0.1:3100/rpc/threads/listSessions"]);
@@ -31,7 +35,11 @@ describe("rpc url shape", () => {
       };
     }) as unknown as typeof globalThis.fetch;
 
-    const client = createClient({ baseUrl: "http://127.0.0.1:3100/rpc/", spaceId: "s", fetch: fetchImpl });
+    const client = createClient({
+      baseUrl: "http://127.0.0.1:3100/rpc/",
+      spaceId: "s",
+      fetch: fetchImpl,
+    });
     await client.listMcpAssignments("bot_1");
 
     expect(urls).toEqual(["http://127.0.0.1:3100/rpc/mcp/assignments/list"]);

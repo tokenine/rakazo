@@ -1,11 +1,4 @@
-/** Shared JSON-RPC 2.0 invoke against the API's oRPC /rpc endpoint. */
-
-export interface JsonRpcResponse {
-  jsonrpc: "2.0";
-  id: number;
-  result?: unknown;
-  error?: { code: number; message: string };
-}
+/** Shared invoke against the API's oRPC /rpc endpoint. */
 
 /** The server's oRPC handler routes path-style URLs only: /rpc/threads/send. */
 export function rpcUrl(baseUrl: string, method: string): string {
@@ -29,5 +22,5 @@ export async function orpcInvoke(
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${baseUrl}`);
   const data = (await res.json()) as { json?: unknown; error?: { message: string } };
   if (data.error) throw new Error(`ORPCError: ${data.error.message}`);
-  return data.json ?? data.result;
+  return data.json;
 }

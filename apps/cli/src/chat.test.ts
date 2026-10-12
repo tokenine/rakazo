@@ -16,7 +16,11 @@ function scriptedFetch(steps: { method: string; result: unknown }[]) {
     init?: { body: string },
   ): Promise<{ ok: boolean; status: number; json: () => Promise<{ json?: unknown }> }> => {
     // Route by URL path (e.g. /rpc/threads/send), like the server does.
-    const segments = new URL(String(url)).pathname.split("/").filter(Boolean).slice(1).map(decodeURIComponent);
+    const segments = new URL(String(url)).pathname
+      .split("/")
+      .filter(Boolean)
+      .slice(1)
+      .map(decodeURIComponent);
     const method = segments.join(".");
     const step = steps[Math.min(call, steps.length - 1)]!;
     call += 1;
