@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { chat } from "./chat.js";
-import type { JsonRpcResponse } from "./rpc.js";
 
 const SPACE = "space_1";
 const BOT = "bot_1";
@@ -13,17 +12,18 @@ function rpc(method: string, result: unknown): { method: string; result: unknown
 function scriptedFetch(steps: { method: string; result: unknown }[]) {
   let call = 0;
   return async (
-    _url: string | URL,
+    url: string | URL,
     init?: { body: string },
-  ): Promise<{ ok: boolean; status: number; json: () => Promise<JsonRpcResponse> }> => {
-    const body = JSON.parse(init?.body ?? "{}") as { method: string; id: number };
+  ): Promise<{ ok: boolean; status: number; json: () => Promise<{ json?: unknown }> }> => {
+    // Route by URL path (e.g. /rpc/threads/send), like the server does.
+    const segments = new URL(String(url)).pathname.split("/").filter(Boolean).slice(1).map(decodeURIComponent);
+    const method = segments.join(".");
     const step = steps[Math.min(call, steps.length - 1)]!;
     call += 1;
-    if (step.method !== body.method) {
-      throw new Error(`expected ${step.method}, got ${body.method}`);
+    if (step.method !== method) {
+      throw new Error(`expected ${step.method}, got ${method}`);
     }
-    const response: JsonRpcResponse = { jsonrpc: "2.0", id: body.id, result: step.result };
-    return { ok: true, status: 200, json: async () => response };
+    return { ok: true, status: 200, json: async () => ({ json: step.result }) };
   };
 }
 

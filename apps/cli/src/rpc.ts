@@ -20,14 +20,14 @@ export async function orpcInvoke(
   headers: Record<string, string>,
   fetchImpl: typeof globalThis.fetch,
 ): Promise<unknown> {
-  const body = { jsonrpc: "2.0", id: Math.floor(Math.random() * 1_000_000), method, params };
+  // Wire format: path-style URL, input serialized under the "json" key.
   const res = await fetchImpl(rpcUrl(baseUrl, method), {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ json: params }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${baseUrl}`);
-  const data = (await res.json()) as JsonRpcResponse;
+  const data = (await res.json()) as { json?: unknown; error?: { message: string } };
   if (data.error) throw new Error(`ORPCError: ${data.error.message}`);
-  return data.result;
+  return data.json ?? data.result;
 }
