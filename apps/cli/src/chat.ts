@@ -7,6 +7,7 @@
 
 import type { Envelope } from "./output.js";
 import { cliError } from "./output.js";
+import { orpcInvoke } from "./rpc.js";
 
 export interface ChatResult {
   reply: string;
@@ -51,25 +52,6 @@ function textOf(blocks: { kind: string; text?: string }[]): string {
     .map((b) => b.text ?? "")
     .filter(Boolean)
     .join("\n");
-}
-
-async function orpcInvoke(
-  baseUrl: string,
-  method: string,
-  params: Record<string, unknown>,
-  headers: Record<string, string>,
-  fetchImpl: typeof globalThis.fetch,
-): Promise<unknown> {
-  const body = { jsonrpc: "2.0", id: Math.floor(Math.random() * 1_000_000), method, params };
-  const res = await fetchImpl(baseUrl, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} from ${baseUrl}`);
-  const data = (await res.json()) as { result?: unknown; error?: { message: string } };
-  if (data.error) throw new Error(`ORPCError: ${data.error.message}`);
-  return data.result;
 }
 
 export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
