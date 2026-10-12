@@ -1,0 +1,55 @@
+{
+  "candidate_sha": "0a0e69d907c9725a03e1bc8fceaf57336ac3cd27",
+  "checker": "claude-checker",
+  "environment": ".super-speckit/qa/006-cli-agent-chat/environment.md",
+  "journeys": [
+    {
+      "row": "chat happy path",
+      "result": "pass",
+      "evidence": "chat --json returned ok:true with the fixture bot's reply, threadId, runStatus completed, exit 0"
+    },
+    {
+      "row": "timeout",
+      "result": "pass",
+      "evidence": "--timeout 1 returned {ok:false,error:{code:TIMEOUT,retryable:true}}, exit 6; organic 90s/180s TIMEOUTs also observed in runs 8 (pre-fix)"
+    },
+    {
+      "row": "login/status/redaction",
+      "result": "pass",
+      "evidence": "login stored 0600 credentials (run3 clone); status --json shows server/space/authenticated with token absent from all output"
+    },
+    {
+      "row": "logout",
+      "result": "pass",
+      "evidence": "logout removed stored credentials; status shows authenticated:false, source:none"
+    },
+    {
+      "row": "existing commands on fixed transport",
+      "result": "pass",
+      "evidence": "steer returned real taskId/runId/seq from the live server; attach listed the session \u2014 both had never actually reached the server before this feature"
+    },
+    {
+      "row": "web UI intact",
+      "result": "pass",
+      "evidence": "web dev server HTTP 200; no server-side code changed"
+    },
+    {
+      "row": "waiting_input/pending approvals",
+      "result": "partial-unit-only",
+      "evidence": "covered by scripted unit tests (chat.test); live row needs a bot flow that parks on ask/approval \u2014 deferred as non-blocking"
+    },
+    {
+      "row": "unit suite",
+      "result": "pass",
+      "evidence": "26 vitest tests green in the QA clone"
+    }
+  ],
+  "bugs_found_and_fixed": [
+    "CLI transport 404 (path-style URL requirement)",
+    "builtin default masked stored login server",
+    "threads.send contract (text, not content blocks; threadId omitted not null)",
+    "wire format {json: input} / {json: output}",
+    "completed run vanishes from snapshot (run:null) so chat never terminated",
+    "--help fell through to connection checks"
+  ]
+}

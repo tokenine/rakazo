@@ -1,0 +1,20 @@
+{
+  "investigation_digest": "6568a981691325b591bbf94d992def6c7f8e68c60e0312ce462131f6b7faf00c",
+  "observed": "login currently requires a bearer token no legitimate UI provides (proven on ai7 2026-10-12); actor resolution is a single choke point at apps/api/src/app.ts sessionHeaders; revocable-grant and callback-page precedents exist in-repo",
+  "proposed": "CliToken table (hashed, revocable), /cli/authorize page modeled on google-oauth-callback, one-time state loopback delivery, cliTokens.list/revoke RPCs, settings panel, CLI listener login with headless fallback",
+  "invariants": [
+    "raw tokens never stored server-side nor logged",
+    "delivery only to loopback hosts with one-time state",
+    "revoked tokens fail closed on next request",
+    "existing bearer sessions and all RPC routes unchanged"
+  ],
+  "verification_plan": "TDD offline (vitest contract tests for token auth/revoke; CLI listener tests with fake fetch); then live ai7 journey: login\u2192allow\u2192chat\u2192revoke\u2192AUTH_FAILED, deny path, headless fallback",
+  "view": {
+    "renderer": "mermaid",
+    "source": ".super-speckit/design/007-cli-auth-flow.mmd",
+    "source_digest": "731bcf69e3d34521b214e4e038164296ac0bc512df8111a6c84c9c4f62baa23d",
+    "artifact": ".super-speckit/design/007-cli-auth-flow.mmd",
+    "artifact_digest": "731bcf69e3d34521b214e4e038164296ac0bc512df8111a6c84c9c4f62baa23d",
+    "limitation": "plain mermaid rendered by the web UI's existing diagram support; Archify finalize was not run for this internal flow diagram"
+  }
+}

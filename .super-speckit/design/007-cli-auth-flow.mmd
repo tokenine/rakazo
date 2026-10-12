@@ -1,0 +1,10 @@
+flowchart LR
+  U[User terminal] --> CLI[rakazo login: loopback listener]
+  CLI -->|opens authorize URL| PAGE[GET /cli/authorize: session-authed page]
+  PAGE -->|Allow| SRV[API: create CliToken row, store SHA-256 hash]
+  PAGE -->|Deny / close| CLI_FAIL[CLI exit 3 AUTH_FAILED]
+  SRV -->|POST 127.0.0.1 callback once, raw token| CLI
+  CLI --> STORE[(~/.config/rakazo credentials 0600)]
+  STORE -->|Bearer CliToken| RPC[all RPC: chat, steer, attach...]
+  SRV --> ACTOR[actor resolution: session OR token hash -> Actor]
+  WEB[Settings panel] -->|rpc.cliTokens.list/revoke| SRV

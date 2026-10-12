@@ -23,6 +23,7 @@ model AiDataConsent {
 
 model User {
   aiDataConsents AiDataConsent[]
+  cliTokens      CliToken[]
   id                          String                       @id
   name                        String
   email                       String
@@ -1530,4 +1531,21 @@ model CodingWorkspaceLease {
 
   @@index([sessionId])
   @@map("coding_workspace_leases")
+}
+
+/// 007-cli-auth-handshake: a scoped, revocable credential for the Rakazo CLI.
+/// Raw tokens exist only at issuance; storage is the SHA-256 hash. No expiry
+/// by default — revocation-only lifecycle.
+model CliToken {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  tokenHash   String    @unique
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("cli_tokens")
 }
