@@ -93,6 +93,7 @@ import { MarkdownMemoryStore } from "@rakazo/memory";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { ensureGoogleConnectorSkills } from "./agent-skills.js";
+import { mountCliAuthorize } from "./cli-authorize.js";
 import { actorForCliToken } from "./cli-tokens.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
@@ -602,6 +603,14 @@ export async function createApp(
     return auth.handler(c.req.raw);
   });
   mountLocalSettings(app, { token: env.desktopStackToken, prisma, rpc });
+  mountCliAuthorize(app, {
+    prisma,
+    actorFor: async (request) => {
+      const session = await auth.api.getSession({ headers: sessionHeaders(request) });
+      if (!session?.user) return null;
+      return requireMembership(prisma, session.user.id).catch(() => null);
+    },
+  });
   app.use("/rpc/*", async (c, next) => {
     const authz = c.req.header("authorization");
     const bearer = authz?.toLowerCase().startsWith("bearer ") ? authz.slice(7).trim() : null;

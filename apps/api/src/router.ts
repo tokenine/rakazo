@@ -210,6 +210,7 @@ import {
   listSpaceArtifacts,
 } from "./artifacts.js";
 import { botProfileLabelsChanged, commitBotUpdate } from "./bot-update.js";
+import { cliTokensList, cliTokensRevoke } from "./cli-authorize.js";
 import {
   BotCodingWorkspace,
   BotNotFoundError,
@@ -1190,6 +1191,14 @@ export function createRouter(deps: RouterDeps) {
           mapUpdaterError(error);
         }
       }),
+    },
+    cliTokens: {
+      list: authed.cliTokens.list.handler(async ({ context }) =>
+        cliTokensList({ ...deps, actor: context.actor }),
+      ),
+      revoke: authed.cliTokens.revoke.handler(async ({ context, input }) =>
+        cliTokensRevoke({ ...deps, actor: context.actor }, input),
+      ),
     },
     experts: {
       list: authed.experts.list.handler(async () =>
@@ -5750,12 +5759,28 @@ export function createRouter(deps: RouterDeps) {
           hasActiveComputerControl(computer) &&
           computer.controlBotId === bot.id &&
           !!computer.controlLeaseId;
+        // A valid coding-workspace lease held by this user authorizes an interactive
+        // terminal that outlives control rotations: the terminal is keyed on the lease
+        // id, so Chief can hold the computer while the user keeps working in the Code
+        // workspace. The lease expires (and stops renewing) when the user leaves, so
+        // the terminal's authorization decays with their presence.
+        const workspaceLease = await deps.prisma.codingWorkspaceLease.findFirst({
+          where: {
+            sessionId: session.id,
+            owner: context.actor.userId,
+            expiresAt: { gt: new Date() },
+          },
+        });
         // B2: a provider that cannot enforce view-only server-side (no
         // viewOnlyTerminal capability — desktop/daytona/e2b-class terminal
         // URLs are raw interactive streams) must never be handed to a
         // leaseless user. Interactive terminals still require the lease
         // through connectTerminal's control token, so leased use is unchanged.
-        if (!hasLease && deps.sandbox.describe().capabilities.viewOnlyTerminal !== true) {
+        if (
+          !hasLease &&
+          !workspaceLease &&
+          deps.sandbox.describe().capabilities.viewOnlyTerminal !== true
+        ) {
           return { url: null, reason: "terminal not supported for this computer" };
         }
         // omp gets the bot's model setup: the key travels only as process env inside the
@@ -5771,7 +5796,15 @@ export function createRouter(deps: RouterDeps) {
             {
               controlToken: hasLease ? (computer.controlLeaseId ?? "") : "",
               cwd: resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined),
-              viewOnly: !hasLease,
+              viewOnly: !hasLease && !workspaceLease,
+              // Interactive input under the workspace lease is keyed on the lease id:
+              // stable while the user stays in the Code workspace, replaced when the
+              // lease is taken over. Without it, only the current control lease may
+              // start or reuse the terminal.
+              session:
+                workspaceLease && !hasLease
+                  ? { token: workspaceLease.id, key: workspaceLease.id }
+                  : undefined,
               // R13: the user never types the engine's launch command — the
               // terminal bootstraps bash with omp already running inside.
               launchCommand:
