@@ -50,7 +50,7 @@
   "bugs": [],
   "delivery_contract": "knowledge-v2",
   "schema_version": 2,
-  "revision": 21,
+  "revision": 24,
   "prerequisite_receipts": {
     "research": {
       "artifact": ".super-speckit/research/007-cli-auth-handshake.md",
@@ -62,7 +62,7 @@
     },
     "phase-contract": {
       "artifact": "specs/007-cli-auth-handshake/tasks.md",
-      "digest": "d9249665703c2c9e4934bed7132e88eac1334ff06826e53a5c30b5e333d13978"
+      "digest": "fe5da18aa28cd357d425b3335739a01d036006da103bc97e216881cdaa6bca5c"
     },
     "baseline-feedback": {
       "artifact": ".super-speckit/evidence/007-cli-auth-handshake/baseline-feedback.md",
