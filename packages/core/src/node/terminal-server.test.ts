@@ -229,4 +229,51 @@ describe.skipIf(!canRunScript)("terminal start script", () => {
     );
     expect(stale.status).toBe(75);
   });
+
+  it("keeps a workspace-session terminal alive across control-token rotation", async () => {
+    stop();
+    mkdirSync("/tmp/rakazo", { recursive: true });
+    const cwd = mkdtempSync(path.join(tmpdir(), "terminal-cwd-"));
+    cleanup.push(() => rmSync(cwd, { recursive: true, force: true }));
+
+    const startSession = (controlLease: string, tab: string) => {
+      writeFileSync(`/tmp/rakazo/control-token-${display}`, controlLease);
+      return spawnSync(
+        "bash",
+        [
+          "-eu",
+          "-c",
+          startTerminalCommand(controlLease, tab, cwd, undefined, layout, undefined, {
+            token: "ws-secret",
+            key: "ws-lease-1",
+          }),
+        ],
+        { encoding: "utf8" },
+      );
+    };
+
+    expect(startSession("lease-1", "ws-tab-1").status).toBe(0);
+    const socket = entries()[0]![1]!;
+    expect(socket).toContain(`terminal-ws-${display}-`);
+    const first = connect(socket);
+    first.client.write(encodeTerminalInput("echo ws-first-$((50 + 1))\n"));
+    await expect(first.waitFor(/ws-first-51/)).resolves.toBeDefined();
+
+    // Control rotates to a new lease: the workspace terminal must be reused, not replaced.
+    expect(startSession("lease-2", "ws-tab-2").status).toBe(0);
+    expect(entries()[0]![1]).toBe(socket);
+    const second = connect(entries()[1]![1]!);
+    second.client.write(encodeTerminalInput("echo ws-second-$((50 + 2))\n"));
+    await expect(second.waitFor(/ws-second-52/)).resolves.toBeDefined();
+    first.client.write(encodeTerminalInput("echo ws-still-$((50 + 3))\n"));
+    await expect(first.waitFor(/ws-still-53/)).resolves.toBeDefined();
+
+    // Even a fully stale control token in the file cannot disrupt it while the session
+    // token authorizes reuse.
+    writeFileSync(`/tmp/rakazo/control-token-${display}`, "lease-rotated-away");
+    expect(startSession("lease-rotated-away", "ws-tab-3").status).toBe(0);
+    expect(entries().length).toBe(3);
+    first.client.write(encodeTerminalInput("echo ws-alive-$((50 + 4))\n"));
+    await expect(first.waitFor(/ws-alive-54/)).resolves.toBeDefined();
+  });
 });

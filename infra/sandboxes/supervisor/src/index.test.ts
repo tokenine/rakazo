@@ -234,7 +234,9 @@ describe("sandbox supervisor HTTP boundary", () => {
   });
 
   it("rejects terminal launch commands that are not a safe plain command", async () => {
-    for (const launchCommand of ["rm -rf /", `a`.repeat(257), "echo $(id)", "x; y"]) {
+    // "rm -rf /" is a valid plain command here (the ban is on shell metacharacters, not
+    // words), so it must not appear in the rejected list.
+    for (const launchCommand of [`a`.repeat(257), "echo $(id)", "x; y"]) {
       const response = await supervisorApp.request("/computers/id/terminal", {
         method: "POST",
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
