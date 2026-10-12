@@ -31,11 +31,11 @@ describe("emit", () => {
 
   it("writes the error envelope to stdout (not stderr) in json mode", () => {
     const c = capture();
-    const error: CliError = { code: "DEVICE_OFFLINE", message: "offline", retryable: true };
+    const error: CliError = { code: "TIMEOUT", message: "offline", retryable: true };
     emit({ ok: false, error }, { json: true, ...c.streams });
     expect(JSON.parse(c.out[0]!)).toEqual({
       ok: false,
-      error: { code: "DEVICE_OFFLINE", message: "offline", retryable: true },
+      error: { code: "TIMEOUT", message: "offline", retryable: true },
     });
   });
 

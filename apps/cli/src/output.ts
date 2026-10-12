@@ -72,6 +72,20 @@ export function exitCodeFor(error: CliError | undefined): number {
   }
 }
 
+/** Map a thrown error to the documented CLI error codes. */
+export function classifyError(err: unknown): Failure {
+  const message = err instanceof Error ? err.message : String(err);
+  const cause = err instanceof Error && err.cause ? `: ${String(err.cause)}` : "";
+  const text = `${message}${cause}`;
+  if (/\b401\b|\b403\b|UNAUTHORIZED|FORBIDDEN/i.test(text)) {
+    return cliError("AUTH_FAILED", text);
+  }
+  if (/fetch failed|ECONNREFUSED|ENOTFOUND|ECONNRESET|UND_ERR/i.test(text)) {
+    return cliError("UNREACHABLE", text);
+  }
+  return cliError("GENERAL", text);
+}
+
 export function cliError(code: CliError["code"], message: string): Failure {
   return {
     ok: false,

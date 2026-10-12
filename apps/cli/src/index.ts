@@ -113,7 +113,15 @@ function parseFlags(list: string[]): Parsed {
       continue;
     }
     if (arg === "--timeout") {
-      parsed.timeoutMs = Number(value());
+      const raw = value();
+      const ms = Number(raw);
+      if (!Number.isFinite(ms) || ms <= 0) {
+        emit(cliError("USAGE", `--timeout needs a positive number of milliseconds, got "${raw}"`), {
+          json: parsed.json,
+        });
+        process.exit(2);
+      }
+      parsed.timeoutMs = ms;
       continue;
     }
     if (arg === "--thread-id") {
@@ -190,7 +198,8 @@ async function main() {
   // Connection resolution for server calls: flags > env > stored credentials > builtin default.
   // A bare server origin (from login) gains the /rpc base the client posts to.
   const server = parsed.server ?? parsed.baseUrl ?? BASE_URL ?? stored?.server ?? DEFAULT_BASE_URL;
-  const baseUrl = server.endsWith("/rpc") ? server : `${server.replace(/\/+$/, "")}/rpc`;
+  const origin = server.replace(/\/+$/, "");
+  const baseUrl = origin.endsWith("/rpc") ? origin : `${origin}/rpc`;
   const spaceId = parsed.spaceId || stored?.spaceId || "";
   const token = parsed.token ?? stored?.token ?? TOKEN;
 
@@ -215,15 +224,17 @@ async function main() {
         token,
         timeoutMs: parsed.timeoutMs,
       });
+      const redact = token ? [token] : [];
       if (result.ok) {
         emit(result, {
           json: parsed.json,
           text:
             result.data.reply ||
             `(run ${result.data.runStatus}${result.data.pendingInput ? ", waiting for your input" : ""})`,
+          redact,
         });
       } else {
-        emit(result, { json: parsed.json });
+        emit(result, { json: parsed.json, redact });
       }
       process.exit(exitCodeFor(result.ok ? undefined : result.error));
     }

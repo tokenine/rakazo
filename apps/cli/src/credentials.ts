@@ -6,7 +6,7 @@
 
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export interface Credentials {
   server: string;
@@ -26,7 +26,7 @@ function credentialsPath(opts?: CredentialsOptions): string {
 
 export function storeCredentials(creds: Credentials, opts?: CredentialsOptions): void {
   const path = credentialsPath(opts);
-  mkdirSync(path.slice(0, path.lastIndexOf("/")), { recursive: true });
+  mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(creds, null, 2)}\n`, { mode: 0o600 });
 }
 

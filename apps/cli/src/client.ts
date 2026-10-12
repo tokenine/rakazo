@@ -35,7 +35,7 @@ export interface ThreadSnapshot {
 
 export interface ThreadMessage {
   id: string;
-  role: "user" | "agent" | "system";
+  role: "user" | "bot" | "system";
   blocks: MessageBlock[];
 }
 

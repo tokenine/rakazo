@@ -6,7 +6,7 @@
  */
 
 import type { Envelope } from "./output.js";
-import { cliError } from "./output.js";
+import { classifyError, cliError } from "./output.js";
 import { orpcInvoke } from "./rpc.js";
 
 export interface ChatResult {
@@ -75,9 +75,7 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
       fetchImpl,
     )) as SendResult;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const cause = err instanceof Error && err.cause ? `: ${String(err.cause)}` : "";
-    return cliError("GENERAL", `${message}${cause}`);
+    return classifyError(err);
   }
 
   const deadline = Date.now() + timeoutMs;
@@ -98,9 +96,11 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
         fetchImpl,
       )) as Snapshot;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const cause = err instanceof Error && err.cause ? `: ${String(err.cause)}` : "";
-      return cliError("GENERAL", `${message}${cause}`);
+      // A transient poll failure shouldn't kill the chat; retry until the
+      // deadline, then surface the classified error.
+      if (Date.now() + pollMs >= deadline) return classifyError(err);
+      await new Promise((resolve) => setTimeout(resolve, pollMs));
+      continue;
     }
 
     // The run that answers this turn: match by id, fall back to the snapshot's
