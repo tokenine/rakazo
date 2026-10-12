@@ -406,6 +406,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": { target: api, changeOrigin: true },
         "/rpc": { target: api, changeOrigin: true },
+        "/cli": { target: api, changeOrigin: true },
       },
     },
     preview: {
@@ -415,6 +416,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": { target: api, changeOrigin: true },
         "/rpc": { target: api, changeOrigin: true },
+        "/cli": { target: api, changeOrigin: true },
       },
     },
   };
