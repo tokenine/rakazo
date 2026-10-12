@@ -1,5 +1,5 @@
 {
-  "investigation_digest": "6568a981691325b591bbf94d992def6c7f8e68c60e0312ce462131f6b7faf00c",
+  "investigation_digest": "0800b3034c0d30aefc7e4d8905dba33ba81481537838a4dfa8068331a2334072",
   "observed": "login currently requires a bearer token no legitimate UI provides (proven on ai7 2026-10-12); actor resolution is a single choke point at apps/api/src/app.ts sessionHeaders; revocable-grant and callback-page precedents exist in-repo",
   "proposed": "CliToken table (hashed, revocable), /cli/authorize page modeled on google-oauth-callback, one-time state loopback delivery, cliTokens.list/revoke RPCs, settings panel, CLI listener login with headless fallback",
   "invariants": [
