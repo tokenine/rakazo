@@ -1,0 +1,72 @@
+{
+  "id": "006-cli-agent-chat",
+  "state": "maker_running",
+  "candidate_sha": null,
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": "specs/006-cli-agent-chat/spec.md",
+  "ui_change": false,
+  "journey_ux": {
+    "status": "not_required",
+    "report": null,
+    "candidate_sha": null
+  },
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/006-cli-agent-chat/purpose-map.md",
+    "decision": ".super-speckit/purpose/006-cli-agent-chat/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/006-cli-agent-chat/spec-grill.md"
+  },
+  "route": {
+    "kind": "normal",
+    "rationale": "New product surface (CLI chat loop, auth persistence, packaging) with known behavior and verified backend seams; no uncertain cross-boundary design."
+  },
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/006-cli-agent-chat/change-story.md"
+  },
+  "handoff": {
+    "path": null
+  },
+  "decision_trail": {
+    "path": null
+  },
+  "verification_harness": {
+    "path": null
+  },
+  "static_review": {
+    "artifact": null
+  },
+  "corrective_enforcement": {
+    "artifact": null
+  },
+  "runs": [],
+  "bugs": [],
+  "delivery_contract": "playbook-v1",
+  "schema_version": 2,
+  "revision": 12,
+  "prerequisite_receipts": {
+    "research": {
+      "artifact": ".super-speckit/research/006-cli-agent-chat.md",
+      "digest": "8e79fc2ecbe437bd689c88e51b3e8a0ac775cc4d8fdf95d3ebb8bfb88a90f826"
+    },
+    "phase-contract": {
+      "artifact": "specs/006-cli-agent-chat/tasks.md",
+      "digest": "bbdb54cefacb785f3c6650e67df60868c86f4e7b1bc48f77f6fa9345bebda755"
+    },
+    "baseline-feedback": {
+      "artifact": ".super-speckit/evidence/006-cli-agent-chat/baseline-feedback.md",
+      "digest": "57a543c5684a10a9add7b10da14039ff522f3fa2bfa7fa8d66784f76dd017e70"
+    },
+    "architecture": {
+      "artifact": ".super-speckit/research/006-cli-agent-chat-architecture.md",
+      "digest": "75427c3d6995bc1ee6f02a6e1743a598a0a4e8db64c350f597b3533b627197d4"
+    }
+  }
+}

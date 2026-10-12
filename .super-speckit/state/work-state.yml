@@ -117,3 +117,26 @@ features:
     journey_ux_report: null
     runs: []
     bugs: [{"id": "wake-resleep-idle-sweep", "status": "open", "evidence": ".super-speckit/bugs/wake-resleep-idle-sweep.md", "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"}, {"id": "omp-launch-docker-path", "status": "open", "evidence": ".super-speckit/bugs/omp-launch-docker-path.md", "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"}, {"id": "dbus-unknown-uid", "status": "resolved", "evidence": ".super-speckit/bugs/dbus-unknown-uid.md", "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3", "resolution": ".super-speckit/bugs/dbus-unknown-uid.md"}]
+  - id: "006-cli-agent-chat"
+    state: "maker_running"
+    candidate_sha: null
+    maker: "claude-maker"
+    checker: "claude-checker"
+    matrix: "specs/006-cli-agent-chat/spec.md"
+    purpose_status: "confirmed"
+    purpose_map: ".super-speckit/purpose/006-cli-agent-chat/purpose-map.md"
+    grill_status: "complete"
+    grill_artifact: ".super-speckit/grills/006-cli-agent-chat/spec-grill.md"
+    route: "normal"
+    atlas: ".super-speckit/atlas/README.md"
+    change_story: ".super-speckit/atlas/changes/006-cli-agent-chat/change-story.md"
+    latest_handoff: null
+    decision_trail: null
+    verification_harness: null
+    static_review: null
+    corrective_enforcement: null
+    ui_change: false
+    journey_ux_status: "not_required"
+    journey_ux_report: null
+    runs: []
+    bugs: []
