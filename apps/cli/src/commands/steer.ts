@@ -31,5 +31,5 @@ export async function steer(opts: SteerOptions): Promise<void> {
     threadId: opts.threadId,
   });
 
-  console.log(`Sent steer → messageId: ${result.messageId}, role: ${result.role}, at: ${result.createdAt}`);
+  console.log(`Sent steer → taskId: ${result.taskId}, runId: ${result.runId}, seq: ${result.seq}`);
 }

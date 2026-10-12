@@ -68,7 +68,7 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
     sent = (await orpcInvoke(
       opts.baseUrl,
       "threads.send",
-      { botId: opts.botId, threadId: opts.threadId ?? null, content: [{ kind: "text", text: opts.message }] },
+      { botId: opts.botId, threadId: opts.threadId ?? null, text: opts.message },
       headers,
       fetchImpl,
     )) as SendResult;

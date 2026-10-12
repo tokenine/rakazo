@@ -269,12 +269,11 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
   // -------------------------------------------------------------------------
 
   describe("steer", () => {
-    it("sends a steer/prompt to a thread and returns the sent confirmation", async () => {
+    it("sends a steer/prompt to a thread and returns the send confirmation", async () => {
       responses["threads.send"] = {
-        messageId: "msg-steer-1",
-        role: "user",
-        content: [{ kind: "text", text: "resume the build" }],
-        createdAt: "2026-01-01T00:05:00Z",
+        taskId: "task-1",
+        runId: "run-1",
+        seq: 4,
       } as unknown;
 
       const result = await client.steer({
@@ -282,17 +281,14 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
         message: "resume the build",
       });
 
-      expect(result.role).toBe("user");
-      expect(result.content).toContainEqual(
-        expect.objectContaining({ kind: "text", text: "resume the build" }),
-      );
+      expect(result).toMatchObject({ taskId: "task-1", runId: "run-1", seq: 4 });
 
       const calls = fakeFetch.mock.calls;
       const reqBody = JSON.parse(calls[calls.length - 1]![1]!.body as string);
       expect(reqBody.method).toBe("threads.send");
       expect(reqBody.params).toMatchObject({
         botId: BOT_ID,
-        content: [{ kind: "text", text: "resume the build" }],
+        text: "resume the build",
       });
     });
 

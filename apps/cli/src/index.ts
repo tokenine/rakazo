@@ -159,7 +159,9 @@ async function main() {
   }
 
   // Connection resolution for server calls: flags > env > stored credentials > builtin default.
-  const baseUrl = parsed.server ?? parsed.baseUrl ?? stored?.server ?? DEFAULT_BASE_URL;
+  // A bare server origin (from login) gains the /rpc base the client posts to.
+  const server = parsed.server ?? parsed.baseUrl ?? stored?.server ?? DEFAULT_BASE_URL;
+  const baseUrl = server.endsWith("/rpc") ? server : `${server.replace(/\/+$/, "")}/rpc`;
   const spaceId = parsed.spaceId || stored?.spaceId || "";
   const token = parsed.token ?? stored?.token ?? TOKEN;
 

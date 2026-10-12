@@ -48,10 +48,9 @@ export interface McpAssignment {
 }
 
 export interface SentMessage {
-  messageId: string;
-  role: "user";
-  content: MessageBlock[];
-  createdAt: string;
+  taskId: string;
+  runId: string;
+  seq: number;
 }
 
 /** Exposed as the public contract — consumers import this name directly. */
@@ -193,14 +192,13 @@ export function createClient(opts: ClientOptions): Client {
     },
 
     async steer(input) {
-      const content: MessageBlock[] = [{ kind: "text", text: input.message }];
       const result = await orpcInvoke(
         baseUrl,
         "threads.send",
         {
           botId: input.botId,
           threadId: input.threadId ?? null,
-          content,
+          text: input.message,
         },
         headers,
         fetchImpl,
