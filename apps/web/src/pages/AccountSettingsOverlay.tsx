@@ -27,6 +27,7 @@ import {
   setUiAppearance,
 } from "../lib/ui-appearance";
 import { UI_LOCALE_LABELS, UI_LOCALES, type UiLocale } from "../lib/ui-locale";
+import { CliTokensSection } from "./CliTokensSection";
 
 export type SettingsGeneralProps = {
   email?: string | null;
@@ -236,6 +237,8 @@ export function GeneralSettingsPanels({
           </Button>
         </section>
       ) : null}
+
+      <CliTokensSection />
 
       <section className="rounded-xl border border-border px-4 py-4">
         <h3 className="text-[15px] font-medium text-foreground">
