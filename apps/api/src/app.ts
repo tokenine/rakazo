@@ -93,6 +93,8 @@ import { MarkdownMemoryStore } from "@rakazo/memory";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { ensureGoogleConnectorSkills } from "./agent-skills.js";
+import { mountCliAuthorize } from "./cli-authorize.js";
+import { actorForCliToken } from "./cli-tokens.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
 import { mountGoogleOAuthCallback } from "./google-oauth-callback.js";
@@ -601,12 +603,26 @@ export async function createApp(
     return auth.handler(c.req.raw);
   });
   mountLocalSettings(app, { token: env.desktopStackToken, prisma, rpc });
+  mountCliAuthorize(app, {
+    prisma,
+    actorFor: async (request) => {
+      const session = await auth.api.getSession({ headers: sessionHeaders(request) });
+      if (!session?.user) return null;
+      return requireMembership(prisma, session.user.id).catch(() => null);
+    },
+  });
   app.use("/rpc/*", async (c, next) => {
+    const authz = c.req.header("authorization");
+    const bearer = authz?.toLowerCase().startsWith("bearer ") ? authz.slice(7).trim() : null;
     const session = await auth.api.getSession({ headers: sessionHeaders(c.req.raw) });
     const requestedSpaceId = c.req.header("x-rakazo-space-id");
+    // Auth choke point: a bearer value that is not a live better-auth session
+    // may be a CLI token (007) — it resolves to the same Actor shape.
     const actor = session?.user
       ? await requireMembership(prisma, session.user.id, requestedSpaceId).catch(() => null)
-      : null;
+      : bearer
+        ? await actorForCliToken(prisma, bearer).catch(() => null)
+        : null;
     if (actor) {
       enrichLogContext({ "user.id": actor.userId, "space.id": actor.spaceId });
     }

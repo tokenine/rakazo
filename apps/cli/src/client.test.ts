@@ -12,8 +12,8 @@
  *   threads.send          → send a steer/prompt to a thread
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createClient, type Client } from "./client.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Client, createClient } from "./client.js";
 
 // ---------------------------------------------------------------------------
 // Fake fetch
@@ -38,16 +38,16 @@ function throwOrpcError(message: string): never {
 }
 
 function makeFakeFetch(responses: FakeResponses) {
-  return vi.fn(async (_input: RequestInfo, init?: RequestInit) => {
+  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
     const body = typeof init?.body === "string" ? JSON.parse(init.body) : init?.body;
-    const id =
-      typeof body === "object" && body !== null && "id" in body
-        ? ((body as { id?: number }).id ?? 0)
-        : 0;
-    const method =
-      typeof body === "object" && body !== null && "method" in body
-        ? ((body as { method?: string }).method ?? "")
-        : "";
+    // Route by the encoded URL path (e.g. /rpc/threads/listSessions), matching
+    // how the server's oRPC handler dispatches.
+    const segments = new URL(String(input)).pathname
+      .split("/")
+      .filter(Boolean)
+      .slice(1)
+      .map(decodeURIComponent);
+    const method = segments.join(".");
 
     const data = responses[method];
 
@@ -59,8 +59,6 @@ function makeFakeFetch(responses: FakeResponses) {
     if (data === undefined) {
       return new Response(
         JSON.stringify({
-          jsonrpc: "2.0",
-          id,
           error: { code: -32602, message: `Unhandled method: ${method}` },
         }),
         { status: 200, headers: { "content-type": "application/json" } },
@@ -72,7 +70,7 @@ function makeFakeFetch(responses: FakeResponses) {
       throwOrpcError(data.message);
     }
 
-    return new Response(JSON.stringify({ jsonrpc: "2.0", id, result: data }), {
+    return new Response(JSON.stringify({ json: data }), {
       status: 200,
       headers: { "content-type": "application/json" },
     });
@@ -127,8 +125,7 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
       expect(calls.length).toBeGreaterThan(0);
       const lastCall = calls[calls.length - 1]!;
       const reqBody = JSON.parse(lastCall[1]!.body as string);
-      expect(reqBody.method).toBe("threads.listSessions");
-      expect(reqBody.params).toMatchObject({ botId: BOT_ID });
+      expect(reqBody.json).toMatchObject({ botId: BOT_ID });
     });
 
     it("returns an empty list when no sessions exist for the bot", async () => {
@@ -215,8 +212,7 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
       // Verify the correct RPC method and params were sent.
       const calls = fakeFetch.mock.calls;
       const reqBody = JSON.parse(calls[calls.length - 1]![1]!.body as string);
-      expect(reqBody.method).toBe("mcp.assignments.approve");
-      expect(reqBody.params).toMatchObject({ botId: BOT_ID, serverId: SERVER_ID });
+      expect(reqBody.json).toMatchObject({ botId: BOT_ID, serverId: SERVER_ID });
     });
 
     it("throws when the assignment is not found", async () => {
@@ -251,8 +247,7 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
 
       const calls = fakeFetch.mock.calls;
       const reqBody = JSON.parse(calls[calls.length - 1]![1]!.body as string);
-      expect(reqBody.method).toBe("mcp.assignments.dismiss");
-      expect(reqBody.params).toMatchObject({ botId: BOT_ID, serverId: SERVER_ID });
+      expect(reqBody.json).toMatchObject({ botId: BOT_ID, serverId: SERVER_ID });
     });
 
     it("throws when the assignment is not found", async () => {
@@ -269,12 +264,11 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
   // -------------------------------------------------------------------------
 
   describe("steer", () => {
-    it("sends a steer/prompt to a thread and returns the sent confirmation", async () => {
+    it("sends a steer/prompt to a thread and returns the send confirmation", async () => {
       responses["threads.send"] = {
-        messageId: "msg-steer-1",
-        role: "user",
-        content: [{ kind: "text", text: "resume the build" }],
-        createdAt: "2026-01-01T00:05:00Z",
+        taskId: "task-1",
+        runId: "run-1",
+        seq: 4,
       } as unknown;
 
       const result = await client.steer({
@@ -282,26 +276,22 @@ describe("T31 RED: CLI client session attachment and approval operations", () =>
         message: "resume the build",
       });
 
-      expect(result.role).toBe("user");
-      expect(result.content).toContainEqual(
-        expect.objectContaining({ kind: "text", text: "resume the build" }),
-      );
+      expect(result).toMatchObject({ taskId: "task-1", runId: "run-1", seq: 4 });
 
       const calls = fakeFetch.mock.calls;
       const reqBody = JSON.parse(calls[calls.length - 1]![1]!.body as string);
-      expect(reqBody.method).toBe("threads.send");
-      expect(reqBody.params).toMatchObject({
+      expect(reqBody.json).toMatchObject({
         botId: BOT_ID,
-        content: [{ kind: "text", text: "resume the build" }],
+        text: "resume the build",
       });
     });
 
     it("throws when the thread cannot be resolved", async () => {
       responses["threads.send"] = ERROR_SENTINEL;
 
-      await expect(
-        client.steer({ botId: "nonexistent-bot", message: "hello" }),
-      ).rejects.toThrow("ORPCError: NOT_FOUND");
+      await expect(client.steer({ botId: "nonexistent-bot", message: "hello" })).rejects.toThrow(
+        "ORPCError: NOT_FOUND",
+      );
     });
   });
 });

@@ -719,7 +719,9 @@ app.post("/computers/:id/terminal", async (c) => {
     // Inside the try so a rejected body (including an invalid launch command) answers 400.
     const body = z
       .object({
-        controlToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
+        // Empty when the caller authenticates via sessionToken instead (workspace-lease
+        // terminals): the in-container token check accepts either identity.
+        controlToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).or(z.literal("")),
         cwd: z.string().max(4096).default(""),
         // Validated at the boundary; terminalCommand still shell-quotes it before it reaches
         // bash inside the container.
@@ -741,6 +743,14 @@ app.post("/computers/:id/terminal", async (c) => {
           .array(z.object({ path: z.string().max(512), content: z.string().max(8192) }))
           .max(8)
           .optional(),
+        // Workspace-session identity (optional): keys the terminal on the caller's coding
+        // workspace lease instead of the rotating control token, so the terminal (and its
+        // omp session) survives control rotations. Empty strings mean absent.
+        sessionToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).or(z.literal("")).default(""),
+        sessionKey: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).or(z.literal("")).default(""),
+      })
+      .refine((b) => (b.sessionToken === "") === (b.sessionKey === ""), {
+        message: "sessionToken and sessionKey must be provided together",
       })
       .parse(await c.req.json());
     const id = c.req.param("id");
@@ -775,6 +785,9 @@ app.post("/computers/:id/terminal", async (c) => {
               undefined,
               screen.layout,
               body.launchCommand || undefined,
+              body.sessionToken
+                ? { token: body.sessionToken, key: body.sessionKey }
+                : undefined,
             ),
           ]
             .filter(Boolean)

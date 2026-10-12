@@ -1,116 +1,344 @@
+#!/usr/bin/env node
+
 /**
- * @rakazo/cli — CLI for attaching to server-owned sessions, managing approvals, and steering bots.
+ * @rakazo/cli — CLI for attaching to server-owned sessions, managing approvals,
+ * steering bots, and chatting with a bot from an agent or terminal.
  *
  * Usage:
+ *   rakazo chat    <bot-id> "<message>" [--json] [--timeout <ms>]
+ *   rakazo login   --server <url> --token <t> --space-id <id>
+ *   rakazo logout
+ *   rakazo status  [--json]
  *   rakazo attach <bot-id> [--base-url <url>] [--space-id <id>] [--token <token>]
- *   rakazo approve <bot-id> <server-id> [--base-url <url>] [--space-id <id>] [--token <token>]
- *   rakazo deny <bot-id> <server-id> [--base-url <url>] [--space-id <id>] [--token <token>]
- *   rakazo steer <bot-id> <message> [--base-url <url>] [--space-id <id>] [--token <token>]
+ *   rakazo approve <bot-id> <server-id> [flags]
+ *   rakazo deny   <bot-id> <server-id> [flags]
+ *   rakazo steer  <bot-id> <message> [flags]
  *
  * Environment:
  *   RAKAZO_BASE_URL   default: http://127.0.0.1:3000/rpc
- *   RAKAZO_SPACE_ID   required; the space context for all operations
+ *   RAKAZO_SPACE_ID   required (unless logged in)
  *   RAKAZO_TOKEN      optional; Bearer token for auth
+ *
+ * Auth: stored credentials (~/.config/rakazo/credentials.json) are overridden
+ * by env vars and then by flags. Tokens are never printed.
  */
 
-import { attach } from "./commands/attach.js";
+import { randomBytes } from "node:crypto";
+import { chat } from "./chat.js";
 import { approve } from "./commands/approve.js";
+import { attach } from "./commands/attach.js";
 import { deny } from "./commands/deny.js";
 import { steer } from "./commands/steer.js";
+import { loadCredentials, removeCredentials, storeCredentials } from "./credentials.js";
+import { openBrowser, waitForCliCallback } from "./login-flow.js";
+import { cliError, emit, exitCodeFor } from "./output.js";
+import { orpcInvoke } from "./rpc.js";
 
-const BASE_URL = process.env.RAKAZO_BASE_URL ?? "http://127.0.0.1:3000/rpc";
+const BASE_URL = process.env.RAKAZO_BASE_URL;
+const DEFAULT_BASE_URL = "http://127.0.0.1:3000/rpc";
 const SPACE_ID = process.env.RAKAZO_SPACE_ID ?? "";
 const TOKEN = process.env.RAKAZO_TOKEN;
 
+function rpcBaseOf(origin: string): string {
+  const trimmed = origin.replace(/\/+$/, "");
+  return trimmed.endsWith("/rpc") ? trimmed : `${trimmed}/rpc`;
+}
+
 function usage(code = 1): never {
-  console.error(`@rakazo/cli — attach to sessions, manage approvals, steer bots.
+  console.error(`@rakazo/cli — chat with bots, attach to sessions, manage approvals, steer.
 
 Usage:
-  rakazo attach  <bot-id>           [--base-url <url>] [--space-id <id>] [--token <t>]
-  rakazo approve <bot-id> <server-id> [--base-url <url>] [--space-id <id>] [--token <t>]
-  rakazo deny   <bot-id> <server-id> [--base-url <url>] [--space-id <id>] [--token <t>]
-  rakazo steer  <bot-id> <message>   [--base-url <url>] [--space-id <id>] [--token <t>]
+  rakazo chat    <bot-id> "<message>"  [--json] [--timeout <ms>] [--thread-id <id>]
+  rakazo login   --server <url> --token <t> --space-id <id>
+  rakazo logout
+  rakazo status  [--json]
+  rakazo attach  <bot-id>             [--base-url <url>] [--space-id <id>] [--token <t>]
+  rakazo approve <bot-id> <server-id> [flags]
+  rakazo deny   <bot-id> <server-id> [flags]
+  rakazo steer  <bot-id> <message>    [flags]
 
 Environment:
   RAKAZO_BASE_URL  default: http://127.0.0.1:3000/rpc
-  RAKAZO_SPACE_ID  required
+  RAKAZO_SPACE_ID  required (unless stored by login)
   RAKAZO_TOKEN     optional Bearer token
 
+Connection flags (all commands): --base-url, --space-id, --token, --json.
+Tokens are stored at ~/.config/rakazo/credentials.json and never printed.
+
 Examples:
-  rakazo attach  bot_abc123
-  rakazo approve bot_abc123 srv_xyz789
-  rakazo deny   bot_abc123 srv_xyz789
+  rakazo login  --server https://rakazo.example.com --token tok_xxx --space-id space_1
+  rakazo chat   bot_abc123 "run the login tests and tell me what failed" --json
   rakazo steer  bot_abc123 "resume the build"
 `);
   process.exit(code);
 }
 
+interface Parsed {
+  remaining: string[];
+  baseUrl: string | undefined;
+  spaceId: string;
+  token: string | undefined;
+  json: boolean;
+  timeoutMs: number | undefined;
+  server: string | undefined;
+  threadId: string | undefined;
+}
+
+function parseFlags(list: string[]): Parsed {
+  const remaining: string[] = [];
+  const parsed: Parsed = {
+    remaining,
+    // Undefined unless the user passes --base-url/--server, so stored
+    // credentials and the builtin default keep their precedence.
+    baseUrl: undefined,
+    spaceId: SPACE_ID,
+    token: TOKEN,
+    json: false,
+    timeoutMs: undefined,
+    server: undefined,
+    threadId: undefined,
+  };
+  for (let i = 0; i < list.length; i++) {
+    const arg = list[i]!;
+    const value = () => {
+      if (i + 1 >= list.length) usage(2);
+      return list[++i]!;
+    };
+    if (arg === "--base-url" || arg === "--server") {
+      parsed.baseUrl = value();
+      if (arg === "--server") parsed.server = parsed.baseUrl;
+      continue;
+    }
+    if (arg === "--space-id") {
+      parsed.spaceId = value();
+      continue;
+    }
+    if (arg === "--token") {
+      parsed.token = value();
+      continue;
+    }
+    if (arg === "--json") {
+      parsed.json = true;
+      continue;
+    }
+    if (arg === "--timeout") {
+      const raw = value();
+      const ms = Number(raw);
+      if (!Number.isFinite(ms) || ms <= 0) {
+        emit(cliError("USAGE", `--timeout needs a positive number of milliseconds, got "${raw}"`), {
+          json: parsed.json,
+        });
+        process.exit(2);
+      }
+      parsed.timeoutMs = ms;
+      continue;
+    }
+    if (arg === "--thread-id") {
+      parsed.threadId = value();
+      continue;
+    }
+    remaining.push(arg);
+  }
+  return parsed;
+}
+
 async function main() {
   const [command, ...args] = process.argv.slice(2);
-
-  if (!SPACE_ID) {
-    console.error("Error: RAKAZO_SPACE_ID environment variable is required.\n");
-    usage(1);
-  }
+  if (command === "--help" || command === "-h") usage(0);
+  const parsed = parseFlags(args);
+  const stored = loadCredentials();
 
   if (!command) usage(0);
 
-  // Parse common flags: --base-url, --space-id, --token (all override env).
-  function parseFlags(list: string[]): {
-    remaining: string[];
-    baseUrl: string;
-    spaceId: string;
-    token: string | undefined;
-  } {
-    const remaining: string[] = [];
-    let baseUrl = BASE_URL;
-    let spaceId = SPACE_ID;
-    let token = TOKEN;
-    for (let i = 0; i < list.length; i++) {
-      const arg = list[i]!;
-      if (arg === "--base-url" && i + 1 < list.length) { baseUrl = list[++i]!; continue; }
-      if (arg === "--space-id" && i + 1 < list.length) { spaceId = list[++i]!; continue; }
-      if (arg === "--token" && i + 1 < list.length) { token = list[++i]!; continue; }
-      remaining.push(arg);
+  if (command === "login") {
+    if (!parsed.server) {
+      emit(cliError("USAGE", "login requires --server <url>"), { json: parsed.json });
+      process.exit(2);
     }
-    return { remaining, baseUrl, spaceId, token };
+    if (parsed.token && parsed.spaceId) {
+      storeCredentials({ server: parsed.server, token: parsed.token, spaceId: parsed.spaceId });
+      emit(
+        { ok: true, data: { server: parsed.server, spaceId: parsed.spaceId, tokenStored: true } },
+        { json: parsed.json, text: `Logged in to ${parsed.server} (token stored, never printed).` },
+      );
+      return;
+    }
+    // Browser handshake (007): authorize page delivers a scoped token to a
+    // loopback listener. Space id comes from the token's account after login.
+    const state = randomBytes(16).toString("hex");
+    const device = parsed.remaining[0] ?? "CLI";
+    const authUrl = `${parsed.server.replace(/\/+$/, "")}/cli/authorize?state=${state}&port=PORT&name=${encodeURIComponent(device)}`;
+    const result = await waitForCliCallback({
+      state,
+      timeoutMs: parsed.timeoutMs ?? 300_000,
+      onListening: (port) => {
+        const url = authUrl.replace("port=PORT", `port=${port}`);
+        console.error(`Opening your browser to authorize "${device}"…`);
+        console.error(`If it does not open, visit: ${url}`);
+        openBrowser(url);
+      },
+    });
+    if ("denied" in result) {
+      emit(cliError("AUTH_FAILED", "authorization denied in the browser"), { json: parsed.json });
+      process.exit(3);
+    }
+    if ("timeout" in result || !("token" in result) || !result.token) {
+      emit(cliError("TIMEOUT", "no browser approval within the time limit"), { json: parsed.json });
+      process.exit(6);
+    }
+    // Discover the token's space from the account itself.
+    let spaceId = "";
+    try {
+      const me = (await orpcInvoke(
+        rpcBaseOf(parsed.server),
+        "me",
+        {},
+        { authorization: `Bearer ${result.token}` },
+        fetch,
+      )) as { spaceId?: string };
+      spaceId = me.spaceId ?? "";
+    } catch {
+      spaceId = "";
+    }
+    if (!spaceId) {
+      emit(cliError("GENERAL", "could not resolve the account space for the new token"), {
+        json: parsed.json,
+      });
+      process.exit(1);
+    }
+    storeCredentials({ server: parsed.server, token: result.token, spaceId });
+    emit(
+      { ok: true, data: { server: parsed.server, spaceId, tokenStored: true } },
+      {
+        json: parsed.json,
+        text: `Logged in to ${parsed.server} as your account (token stored, never printed).`,
+      },
+    );
+    return;
+  }
+
+  if (command === "logout") {
+    removeCredentials();
+    emit(
+      { ok: true, data: { loggedOut: true } },
+      { json: parsed.json, text: "Logged out; stored credentials removed." },
+    );
+    return;
+  }
+
+  if (command === "status") {
+    const server = parsed.server ?? stored?.server ?? null;
+    const spaceId = parsed.spaceId || stored?.spaceId || null;
+    const tokenSet = Boolean(parsed.token ?? stored?.token ?? TOKEN);
+    emit(
+      {
+        ok: true,
+        data: {
+          server,
+          spaceId,
+          authenticated: tokenSet,
+          source: stored ? "stored" : TOKEN ? "env" : "none",
+        },
+      },
+      {
+        json: parsed.json,
+        text: `server: ${server ?? "not configured"}\nspace: ${spaceId ?? "not configured"}\nauthenticated: ${tokenSet ? "yes" : "no"}`,
+      },
+    );
+    return;
+  }
+
+  // Connection resolution for server calls: flags > env > stored credentials > builtin default.
+  // A bare server origin (from login) gains the /rpc base the client posts to.
+  const server = parsed.server ?? parsed.baseUrl ?? BASE_URL ?? stored?.server ?? DEFAULT_BASE_URL;
+  const origin = server.replace(/\/+$/, "");
+  const baseUrl = origin.endsWith("/rpc") ? origin : `${origin}/rpc`;
+  const spaceId = parsed.spaceId || stored?.spaceId || "";
+  const token = parsed.token ?? stored?.token ?? TOKEN;
+
+  if (!spaceId) {
+    console.error("Error: no space id. Set RAKAZO_SPACE_ID or run `rakazo login`.\n");
+    usage(1);
   }
 
   switch (command) {
+    case "chat": {
+      const rest = parsed.remaining;
+      if (rest.length < 2) {
+        emit(cliError("USAGE", "chat requires <bot-id> <message>"), { json: parsed.json });
+        process.exit(2);
+      }
+      const result = await chat({
+        botId: rest[0]!,
+        message: rest.slice(1).join(" "),
+        threadId: parsed.threadId,
+        baseUrl,
+        spaceId,
+        token,
+        timeoutMs: parsed.timeoutMs,
+      });
+      const redact = token ? [token] : [];
+      if (result.ok) {
+        emit(result, {
+          json: parsed.json,
+          text:
+            result.data.reply ||
+            `(run ${result.data.runStatus}${result.data.pendingInput ? ", waiting for your input" : ""})`,
+          redact,
+        });
+      } else {
+        emit(result, { json: parsed.json, redact });
+      }
+      process.exit(exitCodeFor(result.ok ? undefined : result.error));
+    }
     case "attach": {
-      const { remaining, baseUrl, spaceId, token } = parseFlags(args);
-      if (remaining.length < 1) {
+      if (parsed.remaining.length < 1) {
         console.error("Error: attach requires <bot-id>\n");
         usage(1);
       }
-      await attach({ botId: remaining[0]!, baseUrl, spaceId, token });
+      await attach({ botId: parsed.remaining[0]!, baseUrl, spaceId, token });
       break;
     }
     case "approve": {
-      const { remaining, baseUrl, spaceId, token } = parseFlags(args);
-      if (remaining.length < 2) {
+      if (parsed.remaining.length < 2) {
         console.error("Error: approve requires <bot-id> <server-id>\n");
         usage(1);
       }
-      await approve({ botId: remaining[0]!, serverId: remaining[1]!, baseUrl, spaceId, token });
+      await approve({
+        botId: parsed.remaining[0]!,
+        serverId: parsed.remaining[1]!,
+        baseUrl,
+        spaceId,
+        token,
+      });
       break;
     }
     case "deny": {
-      const { remaining, baseUrl, spaceId, token } = parseFlags(args);
-      if (remaining.length < 2) {
+      if (parsed.remaining.length < 2) {
         console.error("Error: deny requires <bot-id> <server-id>\n");
         usage(1);
       }
-      await deny({ botId: remaining[0]!, serverId: remaining[1]!, baseUrl, spaceId, token });
+      await deny({
+        botId: parsed.remaining[0]!,
+        serverId: parsed.remaining[1]!,
+        baseUrl,
+        spaceId,
+        token,
+      });
       break;
     }
     case "steer": {
-      const { remaining, baseUrl, spaceId, token } = parseFlags(args);
-      if (remaining.length < 2) {
+      if (parsed.remaining.length < 2) {
         console.error("Error: steer requires <bot-id> <message>\n");
         usage(1);
       }
-      await steer({ botId: remaining[0]!, message: remaining.slice(1).join(" "), baseUrl, spaceId, token });
+      await steer({
+        botId: parsed.remaining[0]!,
+        message: parsed.remaining.slice(1).join(" "),
+        baseUrl,
+        spaceId,
+        token,
+      });
       break;
     }
     default:

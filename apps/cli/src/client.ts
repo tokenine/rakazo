@@ -13,6 +13,7 @@
  */
 
 import type { MessageBlock } from "@rakazo/contracts";
+import { orpcInvoke } from "./rpc.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,7 +35,7 @@ export interface ThreadSnapshot {
 
 export interface ThreadMessage {
   id: string;
-  role: "user" | "agent" | "system";
+  role: "user" | "bot" | "system";
   blocks: MessageBlock[];
 }
 
@@ -47,10 +48,9 @@ export interface McpAssignment {
 }
 
 export interface SentMessage {
-  messageId: string;
-  role: "user";
-  content: MessageBlock[];
-  createdAt: string;
+  taskId: string;
+  runId: string;
+  seq: number;
 }
 
 /** Exposed as the public contract — consumers import this name directly. */
@@ -77,49 +77,6 @@ export interface ClientOptions {
 // ---------------------------------------------------------------------------
 // ORPC JSON-RPC 2.0 invoke
 // ---------------------------------------------------------------------------
-
-type JsonRpcRequest = {
-  jsonrpc: "2.0";
-  id: number;
-  method: string;
-  params: Record<string, unknown>;
-};
-
-type JsonRpcResponse = {
-  jsonrpc: "2.0";
-  id: number;
-  result?: unknown;
-  error?: { code: number; message: string };
-};
-
-async function orpcInvoke(
-  baseUrl: string,
-  method: string,
-  params: Record<string, unknown>,
-  headers: Record<string, string>,
-  fetchImpl: typeof globalThis.fetch,
-): Promise<unknown> {
-  const id = Math.floor(Math.random() * 1_000_000);
-  const body: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
-
-  const res = await fetchImpl(`${baseUrl}`, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} from ${baseUrl}`);
-  }
-
-  const data = (await res.json()) as JsonRpcResponse;
-
-  if (data.error) {
-    throw new Error(`ORPCError: ${data.error.message}`);
-  }
-
-  return data.result;
-}
 
 // ---------------------------------------------------------------------------
 // Client factory
@@ -151,7 +108,7 @@ export function createClient(opts: ClientOptions): Client {
       const result = await orpcInvoke(
         baseUrl,
         "threads.get",
-        { botId: input.botId, threadId: input.threadId ?? null },
+        input.threadId ? { botId: input.botId, threadId: input.threadId } : { botId: input.botId },
         headers,
         fetchImpl,
       );
@@ -192,14 +149,13 @@ export function createClient(opts: ClientOptions): Client {
     },
 
     async steer(input) {
-      const content: MessageBlock[] = [{ kind: "text", text: input.message }];
       const result = await orpcInvoke(
         baseUrl,
         "threads.send",
         {
           botId: input.botId,
-          threadId: input.threadId ?? null,
-          content,
+          ...(input.threadId ? { threadId: input.threadId } : {}),
+          text: input.message,
         },
         headers,
         fetchImpl,

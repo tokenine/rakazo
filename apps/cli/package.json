@@ -1,22 +1,48 @@
 {
-  "name": "@rakazo/cli",
+  "name": "rakazo",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
+  "bin": {
+    "rakazo": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm build",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "@orpc/client": "1.15.0",
-    "@rakazo/contracts": "workspace:*",
-    "zod": "3.24.4"
+    "test": "vitest run",
+    "postbuild": "chmod +x dist/index.js"
   },
   "devDependencies": {
+    "@rakazo/contracts": "workspace:*",
     "@types/node": "22.18.2",
     "tsx": "4.19.4",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
+  },
+  "description": "Rakazo CLI \u2014 chat with your Rakazo bots from any terminal or coding agent",
+  "keywords": [
+    "rakazo",
+    "cli",
+    "ai",
+    "agents",
+    "chat"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tokenine/rakazo.git",
+    "directory": "apps/cli"
+  },
+  "homepage": "https://github.com/tokenine/rakazo/tree/main/apps/cli#readme",
+  "bugs": {
+    "url": "https://github.com/tokenine/rakazo/issues"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

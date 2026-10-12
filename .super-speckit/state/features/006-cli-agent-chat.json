@@ -1,0 +1,157 @@
+{
+  "id": "006-cli-agent-chat",
+  "state": "candidate_ready",
+  "candidate_sha": "79802574f96d44d3c42159f7567f9544c4f466fb",
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": "specs/006-cli-agent-chat/spec.md",
+  "ui_change": false,
+  "journey_ux": {
+    "status": "not_required",
+    "report": null,
+    "candidate_sha": null
+  },
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/006-cli-agent-chat/purpose-map.md",
+    "decision": ".super-speckit/purpose/006-cli-agent-chat/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/006-cli-agent-chat/spec-grill.md"
+  },
+  "route": {
+    "kind": "normal",
+    "rationale": "New product surface (CLI chat loop, auth persistence, packaging) with known behavior and verified backend seams; no uncertain cross-boundary design."
+  },
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/006-cli-agent-chat/change-story.md"
+  },
+  "handoff": {
+    "path": ".super-speckit/handoffs/006-cli-ready-pending-release-gate.md",
+    "transfer": "same-environment",
+    "stage": "verified-candidate-awaiting-release-gate-decision",
+    "attempt_id": "qa-006-run10"
+  },
+  "decision_trail": {
+    "path": null
+  },
+  "verification_harness": {
+    "path": null
+  },
+  "static_review": {
+    "artifact": null
+  },
+  "corrective_enforcement": {
+    "artifact": null
+  },
+  "runs": [],
+  "bugs": [
+    {
+      "id": "bug-001-rpc-transport",
+      "status": "resolved",
+      "evidence": ".super-speckit/bugs/006-cli-rpc-transport.md",
+      "candidate_sha": "2ba86804907cff5e9ab32992d3418af57bc6456f",
+      "resolution": ".super-speckit/bugs/006-cli-rpc-transport.md"
+    }
+  ],
+  "delivery_contract": "playbook-v1",
+  "schema_version": 2,
+  "revision": 59,
+  "prerequisite_receipts": {
+    "research": {
+      "artifact": ".super-speckit/research/006-cli-agent-chat.md",
+      "digest": "8e79fc2ecbe437bd689c88e51b3e8a0ac775cc4d8fdf95d3ebb8bfb88a90f826"
+    },
+    "phase-contract": {
+      "artifact": "specs/006-cli-agent-chat/tasks.md",
+      "digest": "6538b710b369bcaa04df66aa698ebdbf4b270ab556b6c78897f6905399dfe59b"
+    },
+    "baseline-feedback": {
+      "artifact": ".super-speckit/evidence/006-cli-agent-chat/baseline-feedback.md",
+      "digest": "57a543c5684a10a9add7b10da14039ff522f3fa2bfa7fa8d66784f76dd017e70"
+    },
+    "architecture": {
+      "artifact": ".super-speckit/research/006-cli-agent-chat-architecture.md",
+      "digest": "75427c3d6995bc1ee6f02a6e1743a598a0a4e8db64c350f597b3533b627197d4"
+    },
+    "engineering-review": {
+      "artifact": ".super-speckit/review/006-cli-agent-chat.json",
+      "digest": "d708db9f91aede5ef2f5c7d44e9e0ad9afc080fb814f95a0499dabf44455a302"
+    }
+  },
+  "candidates": [
+    {
+      "sha": "2ba86804907cff5e9ab32992d3418af57bc6456f",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "402bc380a6e1be602e4ad40e5953cfbc744c61c3",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "f0d8eceb6cac34a23446591a0dd76af391b92d6d",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "55de22771c5eab606c03bc2dd85a69e0537493a1",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "35774cf9f15d2091ebf2fe4e4ec7730279f391a3",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "45d4423f5037a76a9381cabf192da52983fdb702",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "4d38fabf181157df02dbb1276ccde2207b662443",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "b4e6720f60a58bbe91c7aca3fd3c49199d8606a2",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "0a0e69d907c9725a03e1bc8fceaf57336ac3cd27",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "7ccd358bce0a7416eb20f11cfab6ed72189dcd05",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    },
+    {
+      "sha": "79802574f96d44d3c42159f7567f9544c4f466fb",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    }
+  ],
+  "qa_worktree": "/Users/poom-work/rakazo-qa-006-r10",
+  "attempt_history": [
+    "qa-006-run1",
+    "qa-006-run2",
+    "qa-006-run3",
+    "qa-006-run4",
+    "qa-006-run5",
+    "qa-006-run6",
+    "qa-006-run7",
+    "qa-006-run8",
+    "qa-006-run9",
+    "qa-006-run10"
+  ]
+}

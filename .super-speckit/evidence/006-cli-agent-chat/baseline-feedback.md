@@ -1,0 +1,2 @@
+# Baseline feedback loop: 006-cli-agent-chat
+Seam: apps/cli vitest suite with fake fetch (apps/cli/src/client.test.ts) — the smallest public seam that distinguishes correct from incorrect CLI behavior without a server. Baseline run `corepack pnpm --filter @rakazo/cli test` passes on main; the feature's first red test extends this suite with the chat command contract (T3) and command-layer envelope tests (T1). Runtime journeys later use the local compose stack per the project runbook.

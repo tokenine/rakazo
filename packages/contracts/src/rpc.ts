@@ -94,11 +94,11 @@ import {
 import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { Id, IsoDate } from "./ids.js";
 import { InspirationCaseSchema } from "./inspiration-catalog.js";
-import { CatalogEntrySchema } from "./marketplace-catalog.js";
 import {
   IntegrationProviderConfigSchema,
   IntegrationSetupStateSchema,
 } from "./integration-settings.js";
+import { CatalogEntrySchema } from "./marketplace-catalog.js";
 import { MessageReactionSchema } from "./reactions.js";
 import { RunsListOutputSchema } from "./runs.js";
 import { SearchQueryOutputSchema } from "./search.js";
@@ -221,6 +221,21 @@ export const appContract = {
     status: oc.output(ServerUpdateStatusSchema),
     check: oc.input(ServerUpdateRequestSchema).output(ServerUpdateCheckSchema),
     apply: oc.input(ServerUpdateRequestSchema).output(ServerUpdateRunSchema),
+  },
+  /** 007: scoped, revocable CLI tokens shown in account settings. */
+  cliTokens: {
+    list: oc.output(
+      z.array(
+        z.object({
+          id: Id,
+          name: z.string(),
+          createdAt: z.string(),
+          lastUsedAt: z.string().nullable(),
+          revokedAt: z.string().nullable(),
+        }),
+      ),
+    ),
+    revoke: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
   },
   models: {
     list: oc.output(z.array(ModelCatalogEntrySchema)),
@@ -1028,12 +1043,22 @@ export const appContract = {
           verificationCommands: z.array(z.string().min(1)).min(1),
         }),
       )
-      .output(z.object({ outcome: z.string(), verificationCommands: z.array(z.string()), recordedAt: z.string() })),
+      .output(
+        z.object({
+          outcome: z.string(),
+          verificationCommands: z.array(z.string()),
+          recordedAt: z.string(),
+        }),
+      ),
     get: oc
       .input(z.object({ sessionId: Id }))
       .output(
         z
-          .object({ outcome: z.string(), verificationCommands: z.array(z.string()), recordedAt: z.string() })
+          .object({
+            outcome: z.string(),
+            verificationCommands: z.array(z.string()),
+            recordedAt: z.string(),
+          })
           .nullable(),
       ),
   },
@@ -1054,40 +1079,34 @@ export const appContract = {
           status: z.string(),
         }),
       ),
-    list: oc
-      .input(z.object({ botId: Id }))
-      .output(
-        z.array(
-          z.object({
-            id: Id,
-            workspaceId: z.string(),
-            engine: z.string(),
-            status: z.string(),
-            title: z.string().nullable(),
-          }),
-        ),
-      ),
-    terminalUrl: oc
-      .input(z.object({ sessionId: Id }))
-      .output(
+    list: oc.input(z.object({ botId: Id })).output(
+      z.array(
         z.object({
-          url: z.string().nullable(),
-          /** Set when url is null because the computer's provider cannot serve this terminal. */
-          reason: z.string().optional(),
+          id: Id,
+          workspaceId: z.string(),
+          engine: z.string(),
+          status: z.string(),
+          title: z.string().nullable(),
         }),
       ),
-    listFiles: oc
-      .input(z.object({ sessionId: Id, path: z.string().default("/") }))
-      .output(
-        z.array(
-          z.object({
-            path: z.string(),
-            kind: z.enum(["file", "dir"]),
-            size: z.number(),
-            executable: z.boolean().optional(),
-          }),
-        ),
+    ),
+    terminalUrl: oc.input(z.object({ sessionId: Id })).output(
+      z.object({
+        url: z.string().nullable(),
+        /** Set when url is null because the computer's provider cannot serve this terminal. */
+        reason: z.string().optional(),
+      }),
+    ),
+    listFiles: oc.input(z.object({ sessionId: Id, path: z.string().default("/") })).output(
+      z.array(
+        z.object({
+          path: z.string(),
+          kind: z.enum(["file", "dir"]),
+          size: z.number(),
+          executable: z.boolean().optional(),
+        }),
       ),
+    ),
     readFile: oc
       .input(z.object({ sessionId: Id, path: z.string() }))
       .output(z.object({ path: z.string(), content: z.string() })),

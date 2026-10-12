@@ -4,6 +4,7 @@ import { Button, Skeleton } from "@rakazo/ui-web";
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { LoadingState } from "./components/ai/primitives";
+import { codeWorkspaceEnabled } from "./lib/feature-flags";
 import { authClient } from "./lib/auth";
 import { markAfterPaint, markOnce } from "./lib/performance";
 import {
@@ -118,7 +119,17 @@ function SessionApp() {
           />
           <Route
             path="/app/code/:sessionId"
-            element={user ? <CodeWorkspacePage /> : <Navigate to="/sign-in" replace />}
+            element={
+              user ? (
+                codeWorkspaceEnabled() ? (
+                  <CodeWorkspacePage />
+                ) : (
+                  <Navigate to="/app" replace />
+                )
+              ) : (
+                <Navigate to="/sign-in" replace />
+              )
+            }
           />
           <Route
             path="/app/artifacts/:artifactId"

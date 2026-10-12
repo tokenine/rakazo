@@ -598,12 +598,21 @@ export function terminalCommand(
   env = DEFAULT_DESKTOP_ENV,
   layout: ReturnType<typeof commandLayout> = screenPorts(0),
   launchCommand?: string,
+  session?: TerminalSession,
 ) {
   return [
-    startTerminalCommand(controlToken, terminalToken, cwd, env, layout, launchCommand),
+    startTerminalCommand(controlToken, terminalToken, cwd, env, layout, launchCommand, session),
     proxyEnvironmentCommand(),
     gatewayCommand(layout.controlPort),
   ].join("\n");
+}
+
+/** Workspace-session identity: lets a Code-workspace terminal outlive control rotations. */
+export interface TerminalSession {
+  /** Secret gating (re)starts of this terminal; issued per workspace lease by the API. */
+  token: string;
+  /** Stable key for the socket: same key reuses the running terminal, rotation replaces it. */
+  key: string;
 }
 
 /** Everything in `terminalCommand` except the shared screen gateway. */
@@ -614,33 +623,68 @@ export function startTerminalCommand(
   env = DEFAULT_DESKTOP_ENV,
   layout: ReturnType<typeof commandLayout> = screenPorts(0),
   launchCommand?: string,
+  session?: TerminalSession,
 ) {
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(terminalToken)) throw new Error("invalid terminal token");
+  if (session && !/^[A-Za-z0-9_-]{1,128}$/.test(session.token)) {
+    throw new Error("invalid session token");
+  }
+  if (session && !/^[A-Za-z0-9_-]{1,128}$/.test(session.key)) {
+    throw new Error("invalid session key");
+  }
   const display = layout.displayNumber;
   const tokenFile = `/tmp/rakazo/control-token-${display}`;
-  const socket = `/tmp/rakazo/sockets/terminal-${display}-${browserKeyForScreen(controlToken)}`;
+  const wsTokenFile = `/tmp/rakazo/ws-token-${display}`;
+  const socket = session
+    ? `/tmp/rakazo/sockets/terminal-ws-${display}-${browserKeyForScreen(session.key)}`
+    : `/tmp/rakazo/sockets/terminal-${display}-${browserKeyForScreen(controlToken)}`;
   const target = `${TARGETS}/terminal-${display}`;
   const next = `/tmp/rakazo/terminal-target-next-${display}`;
   const entry = `printf '%s: unix_socket:%s\\n' ${shellQuote(terminalToken)} ${socket}`;
+  // A workspace terminal is keyed on the session, so control-token rotation must not
+  // fail it: the control-token file check passes for the current controller, and the
+  // workspace-token file (bootstrapped on first start) keeps later re-attach calls
+  // authorized after control rotated away to the bot.
+  const tokenCheck = session
+    ? `if [ -f ${tokenFile} ] && [ "$(cat ${tokenFile})" = ${shellQuote(controlToken)} ]; then :;` +
+      ` elif [ -f ${wsTokenFile} ] && [ "$(cat ${wsTokenFile})" = ${shellQuote(session.token)} ]; then :;` +
+      ` else ${shellQuote("printf")} %s ${shellQuote(session.token)} > ${wsTokenFile}.next && mv ${wsTokenFile}.next ${wsTokenFile}; fi`
+    : `[ -f ${tokenFile} ] && [ "$(cat ${tokenFile})" = ${shellQuote(controlToken)} ] || exit 75`;
   return [
     // Callers differ (the Docker supervisor runs plain `bash -c`); an unpublished token must
     // fail here, not hand out a URL the gateway refuses.
     "set -e",
-    `[ -f ${tokenFile} ] && [ "$(cat ${tokenFile})" = ${shellQuote(controlToken)} ] || exit 75`,
+    tokenCheck,
     `if [ -S ${socket} ] && pgrep -f ${quoteLayout(terminalServerPattern(socket))} >/dev/null; then`,
     `  { cat ${target} 2>/dev/null || true; ${entry}; } >${next}`,
     "else",
-    stopTerminalCommand(layout),
+    session ? stopSessionTerminalCommand(layout, session.key) : stopTerminalCommand(layout),
     `  mkdir -p ${TARGETS} /tmp/rakazo/sockets`,
     // Displays share the program file; replace it whole so a starting server never reads half.
     `  printf %s ${shellQuote(TERMINAL_SERVER_PROGRAM)} >${TERMINAL_SERVER}.$$`,
     `  mv ${TERMINAL_SERVER}.$$ ${TERMINAL_SERVER}`,
-    `  HOME=${shellQuote(env.homeDir)} nohup python3 ${TERMINAL_SERVER} ${socket} ${shellQuote(cwd)} /tmp/rakazo/terminal-state-${display} ${shellQuote(launchCommand ?? "")} 8>&- 9>&- </dev/null >/tmp/rakazo/terminal-${display}.log 2>&1 &`,
+    `  HOME=${shellQuote(env.homeDir)} nohup python3 ${TERMINAL_SERVER} ${socket} ${shellQuote(cwd)} ${shellQuote(`/tmp/rakazo/terminal-state-${session ? "ws-" : ""}${display}`)} ${shellQuote(launchCommand ?? "")} 8>&- 9>&- </dev/null >/tmp/rakazo/terminal-${display}.log 2>&1 &`,
     `  for i in $(seq 1 50); do [ -S ${socket} ] && break; sleep 0.1; done`,
     `  [ -S ${socket} ] || exit 1`,
     `  ${entry} >${next}`,
     "fi",
     `mv ${next} ${target}`,
+  ].join("\n");
+}
+
+/** Stops only the workspace-session terminal for this display; control terminals are untouched. */
+export function stopSessionTerminalCommand(
+  layout: ReturnType<typeof commandLayout>,
+  sessionKey: string,
+) {
+  const display = layout.displayNumber;
+  const socket = `/tmp/rakazo/sockets/terminal-ws-${display}-${browserKeyForScreen(sessionKey)}`;
+  const pattern = quoteLayout(terminalServerPattern(socket));
+  return [
+    `pkill -f ${pattern} || true`,
+    `for i in $(seq 1 10); do pgrep -f ${pattern} >/dev/null || break; sleep 0.1; done`,
+    `pkill -KILL -f ${pattern} || true`,
+    `rm -f ${socket}`,
   ].join("\n");
 }
 

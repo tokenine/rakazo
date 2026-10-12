@@ -487,7 +487,10 @@ export function terminalHomeFilesCommand(
   files: Array<{ path: string; content: string }>,
 ): string {
   if (files.length === 0) return "";
-  const lines = ["set -e", "umask 177"];
+  // Owner-only files (600) AND traversable owner-only dirs (700): a umask whose
+  // write-bit complement strips the execute bit (e.g. 177) would leave mkdir'd
+  // directories unenterable, breaking the writes this command exists for.
+  const lines = ["set -e", "umask 77"];
   for (const file of files) {
     const segments = file.path.split("/");
     if (

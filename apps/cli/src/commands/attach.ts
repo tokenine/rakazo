@@ -7,9 +7,9 @@
  * Output: session list + any pending MCP approvals found in each thread.
  */
 
-import { createClient } from "../client.js";
-import type { Client } from "../client.js";
 import type { MessageBlock } from "@rakazo/contracts";
+import type { Client } from "../client.js";
+import { createClient } from "../client.js";
 
 export interface AttachOptions {
   botId: string;
@@ -43,8 +43,9 @@ export async function attach(opts: AttachOptions): Promise<void> {
     const thread = await client.getThread({ botId: opts.botId, threadId: session.id });
     const pendingApprovals = thread.messages
       .flatMap((msg) => msg.blocks)
-      .filter((b): b is Extract<MessageBlock, { kind: "mcp_approval" }> =>
-        b.kind === "mcp_approval" && b.status === "pending",
+      .filter(
+        (b): b is Extract<MessageBlock, { kind: "mcp_approval" }> =>
+          b.kind === "mcp_approval" && b.status === "pending",
       );
 
     if (pendingApprovals.length > 0) {

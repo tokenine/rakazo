@@ -3,6 +3,7 @@ import type { BotSession } from "@rakazo/contracts";
 import { Badge, Button, Input, Popover, PopoverContent, PopoverTrigger } from "@rakazo/ui-web";
 import { Check, ChevronDown, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { codeWorkspaceEnabled } from "../../lib/feature-flags";
 
 /** Coding engines a coding session can bind to (wire truth in the RPC contract). */
 export type CodingEngineChoice = "normal-pi" | "omp";
@@ -253,6 +254,7 @@ export function SessionSwitcher({
                 if (event.key === "Escape") setCreating(false);
               }}
             />
+            {codeWorkspaceEnabled() ? (
             <Button
               type="button"
               size="sm"
@@ -268,6 +270,7 @@ export function SessionSwitcher({
             >
               <Trans>Code</Trans>
             </Button>
+            ) : null}
             {coding !== null ? (
               <select
                 aria-label={t`Coding engine`}

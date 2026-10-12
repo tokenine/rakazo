@@ -273,6 +273,10 @@ export class DockerSandboxProvider implements SandboxProvider {
         // validates keys and never logs values.
         env: request.env ?? {},
         homeFiles: request.homeFiles ?? [],
+        // Workspace-session identity: keyed on the workspace lease so the terminal
+        // survives control rotations while the lease is valid.
+        sessionToken: request.session?.token ?? "",
+        sessionKey: request.session?.key ?? "",
       }),
       signal: context.signal,
     });

@@ -1,0 +1,9 @@
+{
+  "feature": "006-cli-agent-chat",
+  "status": "confirmed",
+  "map": "purpose-map.md",
+  "visual": "purpose-map.html",
+  "confirmed_by": "user (this session)",
+  "confirmed_at": "2026-10-12",
+  "confirmation": "User: 'i don't ask for direct use of computer i just want way to communicate with the bot ... so my agent can use and read it'; then confirmed the revised chat-loop change story: 'yes it is that what i want. continue'"
+}

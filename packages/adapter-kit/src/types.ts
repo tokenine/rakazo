@@ -137,6 +137,14 @@ export interface TerminalRequest {
    * NAME). Providers without a matching boundary ignore it.
    */
   homeFiles?: Array<{ path: string; content: string }>;
+  /**
+   * Workspace-session identity (optional). When present, the terminal is keyed on
+   * `sessionKey` instead of the rotating control token, so it survives control
+   * rotations while the caller holds a valid workspace lease; `sessionToken`
+   * authorizes (re)starts of that terminal independently of computer control.
+   * Providers that cannot honor it ignore both and keep control-token semantics.
+   */
+  session?: { token: string; key: string };
 }
 
 /**

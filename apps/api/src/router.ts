@@ -210,6 +210,7 @@ import {
   listSpaceArtifacts,
 } from "./artifacts.js";
 import { botProfileLabelsChanged, commitBotUpdate } from "./bot-update.js";
+import { cliTokensList, cliTokensRevoke } from "./cli-authorize.js";
 import {
   BotCodingWorkspace,
   BotNotFoundError,
@@ -1190,6 +1191,14 @@ export function createRouter(deps: RouterDeps) {
           mapUpdaterError(error);
         }
       }),
+    },
+    cliTokens: {
+      list: authed.cliTokens.list.handler(async ({ context }) =>
+        cliTokensList({ ...deps, actor: context.actor }),
+      ),
+      revoke: authed.cliTokens.revoke.handler(async ({ context, input }) =>
+        cliTokensRevoke({ ...deps, actor: context.actor }, input),
+      ),
     },
     experts: {
       list: authed.experts.list.handler(async () =>
@@ -5732,6 +5741,29 @@ export function createRouter(deps: RouterDeps) {
           return { url: null };
         }
         let bot = await repos.getBot(context.actor, session.botId);
+        // A workspace terminal is self-sufficient: wake a suspended/stopped computer
+        // instead of bouncing the user to "start the computer first". Same primitives
+        // as the boot RPC; a busy computer falls through to the running check below.
+        if (bot.computer && (!bot.computer.providerRef || bot.computer.state !== "running")) {
+          const wakeComputerId = bot.computer.id;
+          const wakeCtx = computerContext(context.actor, bot.id, "terminal-wake");
+          const wakeRunId = `terminal-wake:${randomUUID()}`;
+          try {
+            const wakeLease = await acquireComputerExecutionLease(deps.prisma, {
+              computerId: wakeComputerId,
+              runId: wakeRunId,
+              botId: bot.id,
+            });
+            await provisionComputer(deps, wakeComputerId, {
+              ...wakeCtx,
+              screenLeaseId: screenLeaseIdForRun(wakeLease, wakeRunId),
+            });
+            scheduleComputerSleep(deps.jobs, wakeComputerId);
+          } catch {
+            // Computer busy or unwakeable — the running gate below reports it.
+          }
+          bot = await repos.getBot(context.actor, session.botId);
+        }
         if (await expireStaleComputerControl(deps, bot.computer)) {
           bot = await repos.getBot(context.actor, session.botId);
         }
@@ -5744,20 +5776,16 @@ export function createRouter(deps: RouterDeps) {
         ) {
           return { url: null };
         }
-        // The lease buys input; without it the terminal streams view-only
-        // (the provider drops input frames server-side — R12/R7).
-        const hasLease =
-          hasActiveComputerControl(computer) &&
-          computer.controlBotId === bot.id &&
-          !!computer.controlLeaseId;
-        // B2: a provider that cannot enforce view-only server-side (no
-        // viewOnlyTerminal capability — desktop/daytona/e2b-class terminal
-        // URLs are raw interactive streams) must never be handed to a
-        // leaseless user. Interactive terminals still require the lease
-        // through connectTerminal's control token, so leased use is unchanged.
-        if (!hasLease && deps.sandbox.describe().capabilities.viewOnlyTerminal !== true) {
-          return { url: null, reason: "terminal not supported for this computer" };
-        }
+        // The control lease still buys the computer-control terminal. Independent of it,
+        // every space member with an omp session gets a dedicated workspace terminal:
+        // keyed on user+session (stable — control rotation never rekeys or relaunches
+        // it), interactive, and authorized by the same membership that already grants
+        // the session's readFile/gitGraph RPCs. It is scoped to this session's identity
+        // and dies with the computer, not with a lease.
+        const sessionTerminal = { token: `ws-${context.actor.userId}`, key: `${context.actor.userId}-${session.id}` };
+        // The dedicated workspace terminal is the interactive path for every provider
+        // with connectTerminal: authorized by space membership (the actor already
+        // passed the authed RPC gate) rather than by a transient control lease.
         // omp gets the bot's model setup: the key travels only as process env inside the
         // sandbox; models.yml (no secret inside) lands in the container HOME. OAuth-kind
         // credentials cannot be seeded this way and inject nothing.
@@ -5769,9 +5797,13 @@ export function createRouter(deps: RouterDeps) {
           .connectTerminal(
             toComputerRef(computer),
             {
-              controlToken: hasLease ? (computer.controlLeaseId ?? "") : "",
+              controlToken: computer.controlLeaseId ?? "",
               cwd: resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined),
-              viewOnly: !hasLease,
+              viewOnly: false,
+              // The dedicated workspace terminal: keyed on user+session so it survives
+              // control rotation, lease expiry, and takeovers. Chief keeps the computer
+              // under its own execution/control leases; this shell never rekeys.
+              session: sessionTerminal,
               // R13: the user never types the engine's launch command — the
               // terminal bootstraps bash with omp already running inside.
               launchCommand:
@@ -5792,7 +5824,7 @@ export function createRouter(deps: RouterDeps) {
         await keepComputerAwake(deps, computer.id);
         return {
           url: addScreenProxyCapability(
-            withViewOnly(terminal.url, !hasLease),
+            withViewOnly(terminal.url, false),
             deps.env.screenProxySecret,
             deps.env.webOrigin,
             {

@@ -83,6 +83,11 @@ msgstr ""
 msgid "{0}'s screen"
 msgstr "{0}s Bildschirm"
 
+#. placeholder {0}: kind.charAt(0).toUpperCase() + kind.slice(1)
+#: src/pages/MarketplacePage.tsx
+msgid "{0}s"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "{botName}’s computer"
 msgstr "Computer von {botName}"
@@ -141,6 +146,18 @@ msgstr ""
 msgid "{workingBotName} is working"
 msgstr "{workingBotName} arbeitet"
 
+#: src/pages/HubPage.tsx
+msgid "{ZONE_ACTIVITY}"
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "{ZONE_FIRST_ACTIONS}"
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "{ZONE_GALLERY}"
+msgstr ""
+
 #. placeholder {0}: mention.name
 #: src/pages/Shell.tsx
 msgid "@{0}"
@@ -160,6 +177,10 @@ msgstr ""
 
 #: src/pages/shell/bot-picker.tsx
 msgid "About spaces"
+msgstr ""
+
+#: src/pages/shell/acceptance-card.tsx
+msgid "Acceptance recorded"
 msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
@@ -336,6 +357,10 @@ msgstr "Agent-Computer"
 msgid "Agent connections"
 msgstr ""
 
+#: src/pages/MarketplacePage.tsx
+msgid "Agent installed successfully"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Agent wallets"
 msgstr ""
@@ -344,6 +369,7 @@ msgstr ""
 msgid "Agents:"
 msgstr "Agents:"
 
+#: src/pages/MarketplacePage.tsx
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "All"
 msgstr ""
@@ -586,7 +612,7 @@ msgstr "Avatar-Studio"
 msgid "Avatars"
 msgstr ""
 
-#: src/components/computer/FilesApp.tsx
+#: src/pages/CodeWorkspace.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/client-browser-panel.tsx
@@ -594,8 +620,17 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+#. placeholder {0}: bot.name
+#: src/pages/CodeWorkspace.tsx
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/shell/expert-create.tsx
 msgid "Back to experts"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Back to files"
 msgstr ""
 
 #: src/pages/Auth.tsx
@@ -635,6 +670,7 @@ msgstr "Bot"
 msgid "Bot"
 msgstr ""
 
+#: src/pages/CodeWorkspace.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen"
 msgstr "Bot-Bildschirm"
@@ -679,7 +715,6 @@ msgstr ""
 msgid "Browse MCP servers"
 msgstr ""
 
-#: src/components/computer/ComputerWorkspace.tsx
 #: src/pages/Shell.tsx
 msgid "Browser"
 msgstr "Browser"
@@ -707,8 +742,10 @@ msgstr "Server nicht erreichbar."
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/MarketplacePage.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/shell/session-switcher.tsx
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -749,6 +786,10 @@ msgstr ""
 #: src/pages/shell/message-cards.tsx
 msgid "Chart failed to render: {error}"
 msgstr "Diagramm konnte nicht angezeigt werden: {error}"
+
+#: src/pages/shell/code-mode-switch.tsx
+msgid "Chat"
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Chat apps"
@@ -831,6 +872,7 @@ msgid "Client secret"
 msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/MarketplacePage.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/PeerMessagesOverlay.tsx
 #: src/pages/RoutineEditor.tsx
@@ -838,10 +880,6 @@ msgstr ""
 #: src/pages/WindowChrome.tsx
 msgid "Close"
 msgstr "Schließen"
-
-#: src/components/computer/ComputerWorkspace.tsx
-msgid "Close {title}"
-msgstr "{title} schließen"
 
 #: src/pages/shell/message-cards.tsx
 msgid "Close chart"
@@ -903,8 +941,22 @@ msgid "Cloud"
 msgstr "Cloud"
 
 #: src/components/AskCard.tsx
+#: src/pages/shell/code-mode-switch.tsx
+#: src/pages/shell/session-switcher.tsx
 msgid "Code"
 msgstr "Code"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Coding engine"
+msgstr ""
+
+#: src/pages/shell/coding-strip.tsx
+msgid "Coding session"
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Coding session on this bot's workspace"
+msgstr ""
 
 #. placeholder {0}: group.title
 #. placeholder {0}: item.chat.name
@@ -981,8 +1033,13 @@ msgstr "Konfigurierte Server"
 
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/McpServersOverlay.tsx
+#: src/pages/shell/session-switcher.tsx
 msgid "Confirm delete"
 msgstr "Löschen bestätigen"
+
+#: src/pages/MarketplacePage.tsx
+msgid "Confirm Install"
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
@@ -1181,6 +1238,7 @@ msgstr "Anbieter konnte nicht verbunden werden"
 msgid "Could not connect this voice provider"
 msgstr "Stimmanbieter konnte nicht verbunden werden"
 
+#: src/pages/CodeWorkspace.tsx
 #: src/pages/Shell.tsx
 msgid "Could not connect to the computer screen"
 msgstr ""
@@ -1213,6 +1271,10 @@ msgstr ""
 msgid "Could not create the agent"
 msgstr ""
 
+#: src/pages/Shell.tsx
+msgid "Could not create the session"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Could not create your bot"
 msgstr "Dein Bot konnte nicht erstellt werden"
@@ -1239,6 +1301,10 @@ msgstr "Skill konnte nicht gelöscht werden"
 
 #: src/pages/shell/dialogs.tsx
 msgid "Could not delete space"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Could not delete the session"
 msgstr ""
 
 #: src/pages/Artifacts.tsx
@@ -1274,10 +1340,6 @@ msgstr "{0} konnte nicht heruntergeladen werden. Versuche es erneut."
 msgid "Could not download {name}. Try again."
 msgstr "{name} konnte nicht heruntergeladen werden. Versuche es erneut."
 
-#: src/components/computer/FilesApp.tsx
-msgid "Could not download file"
-msgstr "Datei konnte nicht heruntergeladen werden"
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not install connector"
 msgstr "Connector konnte nicht installiert werden"
@@ -1285,10 +1347,6 @@ msgstr "Connector konnte nicht installiert werden"
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not install skill"
 msgstr ""
-
-#: src/components/computer/FilesApp.tsx
-msgid "Could not list files"
-msgstr "Dateien konnten nicht geladen werden"
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load"
@@ -1363,10 +1421,6 @@ msgstr ""
 msgid "Could not load voice settings"
 msgstr "Stimmeinstellungen konnten nicht geladen werden"
 
-#: src/components/computer/FilesApp.tsx
-msgid "Could not open file"
-msgstr "Datei konnte nicht geöffnet werden"
-
 #: src/pages/LocalSettings.tsx
 msgid "Could not open local settings. Start the local server and create its owner account, then try again."
 msgstr ""
@@ -1415,6 +1469,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Could not rename section"
 msgstr "Abschnitt konnte nicht umbenannt werden"
+
+#: src/pages/Shell.tsx
+msgid "Could not rename the session"
+msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Could not render chart"
@@ -1499,6 +1557,10 @@ msgstr "OAuth konnte nicht gestartet werden"
 msgid "Could not start teaching"
 msgstr ""
 
+#: src/pages/Shell.tsx
+msgid "Could not start the coding session"
+msgstr ""
+
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "Antwort konnte nicht gesendet werden"
@@ -1530,10 +1592,6 @@ msgstr ""
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Could not update the default memory scope"
 msgstr "Standardbereich für Erinnerungen konnte nicht aktualisiert werden"
-
-#: src/components/computer/FilesApp.tsx
-msgid "Could not upload file"
-msgstr "Datei konnte nicht hochgeladen werden"
 
 #: src/pages/Auth.tsx
 msgid "Could not verify the code"
@@ -1606,7 +1664,6 @@ msgstr "Erstelle einen Abschnitt und verschiebe {0} dorthin."
 msgid "Create group"
 msgstr "Gruppe erstellen"
 
-#: src/pages/Shell.tsx
 #: src/pages/shell/bot-picker.tsx
 msgid "Create new Bot"
 msgstr "Neuen Bot erstellen"
@@ -1621,6 +1678,10 @@ msgstr "Neuen Space erstellen"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Create Routine"
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Create session"
 msgstr ""
 
 #: src/pages/SkillsConnectorsOverlay.tsx
@@ -1641,6 +1702,7 @@ msgid "Created by me"
 msgstr ""
 
 #: src/pages/GroupPanel.tsx
+#: src/pages/HubPage.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 #: src/pages/shell/expert-create.tsx
@@ -1670,6 +1732,10 @@ msgstr "Cron-Ausdruck"
 
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Curated, ready-to-use skills. Install one and every assistant can load it when a request matches."
+msgstr ""
+
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Custom server"
 msgstr ""
 
 #: src/pages/shell/dialogs.tsx
@@ -1750,6 +1816,10 @@ msgstr "Gruppe löschen"
 #: src/pages/shell/dialogs.tsx
 msgid "Delete memories too"
 msgstr "Erinnerungen ebenfalls löschen"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Delete session"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Delete space"
@@ -1845,15 +1915,12 @@ msgstr "Docker begrenzt für mehr Sicherheit den Zugriff auf deinen Computer. We
 msgid "Done"
 msgstr "Fertig"
 
-#: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
 msgid "Download"
 msgstr ""
 
-#. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
 #: src/components/ArtifactFileCard.tsx
-#: src/components/computer/FilesApp.tsx
 msgid "Download {0}"
 msgstr "{0} herunterladen"
 
@@ -2037,11 +2104,7 @@ msgstr "Fehlgeschlagen."
 msgid "Failure handling"
 msgstr "Fehlerbehandlung"
 
-#: src/components/computer/FilesApp.tsx
-msgid "File is too large to upload."
-msgstr "Datei ist zu groß zum Hochladen."
-
-#: src/components/computer/ComputerWorkspace.tsx
+#: src/pages/CodeWorkspace.tsx
 msgid "Files"
 msgstr "Dateien"
 
@@ -2116,6 +2179,10 @@ msgstr ""
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Getting ready"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Git"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -2252,6 +2319,18 @@ msgstr "Standard übernehmen"
 #: src/components/teach/SkillDraftCard.tsx
 msgid "Inputs"
 msgstr "Eingaben"
+
+#: src/pages/MarketplacePage.tsx
+msgid "Install"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Install refused"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Installing…"
+msgstr ""
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
@@ -2463,6 +2542,10 @@ msgstr "Abmelden"
 msgid "Low"
 msgstr "Niedrig"
 
+#: src/pages/HubPage.tsx
+msgid "Make similar"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Make sure nothing is still running on this computer."
 msgstr "Stelle sicher, dass auf diesem Computer nichts mehr läuft."
@@ -2528,6 +2611,15 @@ msgstr ""
 #: src/pages/McpServersOverlay.tsx
 msgid "MCP servers"
 msgstr "MCP-Server"
+
+#. placeholder {0}: state.preview.mcpServers.length
+#: src/pages/MarketplacePage.tsx
+msgid "MCP Servers ({0})"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "MCP servers will be installed with allowAllTools=false. Review endpoint URLs before confirming."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2754,6 +2846,10 @@ msgstr "Neuer offener Arbeitspunkt"
 msgid "New section"
 msgstr "Neuer Abschnitt"
 
+#: src/pages/shell/session-switcher.tsx
+msgid "New session"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "New skill"
@@ -2769,6 +2865,10 @@ msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "No agents yet — create your first one below"
 msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
@@ -2810,6 +2910,10 @@ msgstr ""
 #: src/components/ApprovalRulesSettings.tsx
 msgid "No exceptions. Actions run automatically."
 msgstr "Keine Ausnahmen. Aktionen werden automatisch ausgeführt."
+
+#: src/pages/CodeWorkspace.tsx
+msgid "No files yet."
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No group chats yet."
@@ -2860,6 +2964,10 @@ msgstr ""
 msgid "No results"
 msgstr "Keine Ergebnisse"
 
+#: src/pages/MarketplacePage.tsx
+msgid "No results for your search"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "No runs yet"
 msgstr ""
@@ -2891,6 +2999,10 @@ msgstr ""
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "Noch keine"
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Not a git repository."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Not connected"
@@ -3061,6 +3173,10 @@ msgstr "Anderes Modell…"
 msgid "PagerDuty incident"
 msgstr ""
 
+#: src/pages/CodeWorkspace.tsx
+msgid "Panels"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Park"
 msgstr "Zurückstellen"
@@ -3105,6 +3221,10 @@ msgstr "Wiedergabe…"
 msgid "POST to"
 msgstr ""
 
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Preset"
+msgstr ""
+
 #. placeholder {0}: props.name
 #: src/components/ArtifactFileCard.tsx
 msgid "Preview {0}"
@@ -3112,6 +3232,10 @@ msgstr "Vorschau von {0}"
 
 #: src/pages/Artifacts.tsx
 msgid "Preview isn't available for this file type — download it to view it."
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Primary"
 msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
@@ -3197,6 +3321,10 @@ msgstr "OAuth erneut verbinden"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Reconnecting"
 msgstr "Verbindung wird wiederhergestellt"
+
+#: src/pages/shell/acceptance-card.tsx
+msgid "Record acceptance"
+msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
@@ -3336,6 +3464,10 @@ msgstr "Wird entfernt…"
 msgid "Rename section"
 msgstr "Abschnitt umbenennen"
 
+#: src/pages/shell/session-switcher.tsx
+msgid "Rename session"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Reopen"
 msgstr "Erneut öffnen"
@@ -3428,6 +3560,14 @@ msgstr "Zurück zu Ai7"
 msgid "rev {0}"
 msgstr "Rev. {0}"
 
+#: src/pages/MarketplacePage.tsx
+msgid "Review Install"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Review the details before installing this agent."
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "Widerrufen"
@@ -3498,6 +3638,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Save"
 msgstr "Speichern"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Save name"
+msgstr ""
 
 #: src/components/AskCard.tsx
 #: src/components/teach/SkillDraftCard.tsx
@@ -3581,10 +3725,6 @@ msgstr "Modelle suchen"
 msgid "Search or type a URL"
 msgstr ""
 
-#: src/pages/ModelSettingsOverlay.tsx
-#~ msgid "Search providers"
-#~ msgstr "Anbieter suchen"
-
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Search skills"
 msgstr ""
@@ -3636,12 +3776,24 @@ msgstr ""
 msgid "Server name"
 msgstr "Servername"
 
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Server preset"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Server URL"
 msgstr "Server-URL"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Session name"
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Sessions"
+msgstr ""
 
 #: src/components/call/CallCard.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -3740,6 +3892,11 @@ msgstr ""
 msgid "Skills"
 msgstr "Skills"
 
+#. placeholder {0}: state.preview.skills.length
+#: src/pages/MarketplacePage.tsx
+msgid "Skills ({0})"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Skills & Connectors"
 msgstr ""
@@ -3768,6 +3925,14 @@ msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Some fields were flagged during security review:"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Space"
 msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
@@ -3921,9 +4086,13 @@ msgstr ""
 msgid "Teams not enabled"
 msgstr ""
 
-#: src/components/computer/ComputerWorkspace.tsx
+#: src/pages/CodeWorkspace.tsx
 msgid "Terminal"
 msgstr "Terminal"
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Terminal needs the computer running and your control."
+msgstr ""
 
 #: src/components/teach/SkillDraftCard.tsx
 msgid "Test"
@@ -3944,6 +4113,10 @@ msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "The last session cannot be deleted"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -4083,6 +4256,10 @@ msgstr "Nicht zugewiesen"
 msgid "Unavailable"
 msgstr ""
 
+#: src/pages/CodeWorkspace.tsx
+msgid "uncommitted"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Uninstall"
 msgstr ""
@@ -4156,7 +4333,6 @@ msgstr ""
 msgid "Updating…"
 msgstr ""
 
-#: src/components/computer/FilesApp.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Upload"
 msgstr "Hochladen"
@@ -4253,6 +4429,14 @@ msgstr ""
 #: src/pages/RoutineSchedule.tsx
 msgid "Weekdays"
 msgstr "Wochentage"
+
+#: src/pages/HubPage.tsx
+msgid "Welcome — let's get started"
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "Welcome back"
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "What about its memories?"

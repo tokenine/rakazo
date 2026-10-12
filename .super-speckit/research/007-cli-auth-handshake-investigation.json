@@ -1,0 +1,138 @@
+{
+  "base_sha": "79802574f96d44d3c42159f7567f9544c4f466fb",
+  "playbook": "feature",
+  "intent": "rakazo login issues a scoped, revocable CLI token via browser Allow/Deny approval, replacing token pasting",
+  "flow": "CLI listener + authorize URL \u2192 GET /cli/authorize (session-authed page) \u2192 user approves \u2192 server stores CliToken hash and delivers raw token once to the CLI loopback callback (or displays it in headless fallback) \u2192 CLI stores at 0600 \u2192 token authenticates via the actor-resolution choke point in app.ts \u2192 revocable from settings (rpc.cliTokens)",
+  "scope_rationale": "one DB table, one auth choke point, one page + two RPCs, settings panel, CLI login rework; chat/steer/attach unchanged; no mobile/desktop changes",
+  "unknowns": [],
+  "unresolved_blockers": [],
+  "conventions": [
+    {
+      "id": "conv-auth-chokepoint",
+      "rule": "CLI tokens resolve to the standard Actor only inside apps/api/src/app.ts actor resolution; routes never branch on credential kind",
+      "scope": "apps/api",
+      "source": "apps/api/src/app.ts",
+      "plan_application": "T1 extends the existing bearer resolution; no handler edits"
+    },
+    {
+      "id": "conv-token-hashed",
+      "rule": "raw tokens exist only at issuance; storage is SHA-256 hash in a revocable-grant row (CodingSecretGrant shape)",
+      "scope": "packages/db + apps/api",
+      "source": "packages/db/prisma/schema.prisma",
+      "plan_application": "T1 migration copies expiresAt/revokedAt semantics minus default expiry"
+    },
+    {
+      "id": "conv-callback-page",
+      "rule": "server HTML pages are self-contained mount* functions with window.close callback pages",
+      "scope": "apps/api",
+      "source": "apps/api/src/google-oauth-callback.ts",
+      "plan_application": "T2 models /cli/authorize on mountGoogleOAuthCallback"
+    },
+    {
+      "id": "conv-loopback-only",
+      "rule": "token delivery targets only 127.0.0.1/::1 with a one-time state nonce",
+      "scope": "apps/api + apps/cli",
+      "source": "apps/desktop/src/oauth-callback.ts",
+      "plan_application": "T2/T4 share the LOOPBACK_HOSTS rule; CLI owns the listener"
+    },
+    {
+      "id": "conv-ui-tokens",
+      "rule": "settings lists mirror ModelSettingsOverlay list+revoke; monochrome tokens, no new colors",
+      "scope": "apps/web",
+      "source": "apps/web/src/pages/ModelSettingsOverlay.tsx",
+      "plan_application": "T3 renders cliTokens.list with revoke"
+    }
+  ],
+  "evidence": [
+    {
+      "path": ".super-speckit/research/007-cli-auth-handshake.md",
+      "digest": "03fb34943bea9565c05e53f95bcf236bf434cfd02bc93bbce41edcd4810c9c00"
+    },
+    {
+      "path": ".super-speckit/grills/007-cli-auth-handshake/spec-grill.md",
+      "digest": "1ae594cfb14479fb01e5abf4c3f82eb09dacd93c9f7ef8d465c02d307f7a2ece"
+    },
+    {
+      "path": "apps/api/src/app.ts",
+      "digest": "9e874b591b1997c7c5cc94d40f6861527632d9db6d33d6022bb2a642089ad695"
+    },
+    {
+      "path": "packages/db/prisma/schema.prisma",
+      "digest": "a5c5d2c759cf5409c6d8dc0846ac838b6c195aec36ca583e1486b2db42796ba9"
+    },
+    {
+      "path": "apps/api/src/google-oauth-callback.ts",
+      "digest": "c0c576e7e665df5b4645633b95ccb348cab36f6a7fe35d05a9aca78f42389516"
+    },
+    {
+      "path": "apps/desktop/src/oauth-callback.ts",
+      "digest": "c9cd94e28c2bc39e615766ef1f1b80ce6cae5607c07d328a161ebf350e6c3874"
+    },
+    {
+      "path": "apps/web/src/pages/ModelSettingsOverlay.tsx",
+      "digest": "309c3e5700237b398b31e0e9da183ac685168760208975e056c34159e2a6c940"
+    }
+  ],
+  "playbook_digest": "3a62cc4a8cbcf144bb9dd05f05420a15be0d38b784d3b141bb730a5852f50a62",
+  "steps": [
+    {
+      "id": "s1-how",
+      "source_step": "1",
+      "status": "completed",
+      "evidence": [
+        {
+          "path": ".super-speckit/research/007-cli-auth-handshake.md",
+          "digest": "03fb34943bea9565c05e53f95bcf236bf434cfd02bc93bbce41edcd4810c9c00"
+        }
+      ]
+    },
+    {
+      "id": "s2-architect",
+      "source_step": "2",
+      "status": "completed",
+      "evidence": [
+        {
+          "path": ".super-speckit/grills/007-cli-auth-handshake/spec-grill.md",
+          "digest": "1ae594cfb14479fb01e5abf4c3f82eb09dacd93c9f7ef8d465c02d307f7a2ece"
+        }
+      ]
+    },
+    {
+      "id": "s3-checkpoint",
+      "source_step": "3",
+      "status": "completed",
+      "evidence": [
+        {
+          "path": "specs/007-cli-auth-handshake/plan.md",
+          "digest": "edfa1aaa67b1875fa520d12323cf6df875962d1f0707608d6cc0c40a21bf21a6"
+        }
+      ]
+    },
+    {
+      "id": "s4-delegate",
+      "source_step": "4",
+      "status": "pending"
+    },
+    {
+      "id": "s5-verify",
+      "source_step": "5",
+      "status": "pending"
+    },
+    {
+      "id": "s6-commits",
+      "source_step": "6",
+      "status": "pending"
+    },
+    {
+      "id": "s7-interrogate",
+      "source_step": "7",
+      "status": "skipped",
+      "reason": "Design resolved in grill (better-auth plugin evaluated and rejected; loopback + hashed storage chosen); no contested alternative remains."
+    },
+    {
+      "id": "s8-pr",
+      "source_step": "8",
+      "status": "pending"
+    }
+  ]
+}

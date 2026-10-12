@@ -1,0 +1,9 @@
+{
+  "feature": "007-cli-auth-handshake",
+  "status": "confirmed",
+  "map": "purpose-map.md",
+  "visual": "purpose-map.html",
+  "confirmed_by": "user (this session)",
+  "confirmed_at": "2026-10-12",
+  "confirmation": "User: 'it neee to be some auth' then invoked ask-super-speckit with 'run it' on the proposed browser-handshake change story"
+}
