@@ -105,6 +105,7 @@ function parseFlags(list: string[]): Parsed {
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
+  if (command === "--help" || command === "-h") usage(0);
   const parsed = parseFlags(args);
   const stored = loadCredentials();
 
