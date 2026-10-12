@@ -154,6 +154,7 @@ import { TeachCaptureOverlay } from "../components/teach/TeachCaptureOverlay";
 import { TeachComputerOverlayControl } from "../components/teach/TeachComputerOverlay";
 import { TeachRecordingChrome, TeachStopButton } from "../components/teach/TeachRecordingChrome";
 import { readActivityMode, writeActivityMode } from "../lib/activity-mode";
+import { codeWorkspaceEnabled } from "../lib/feature-flags";
 import type { ArtifactTarget } from "../lib/artifact-open";
 import { authClient } from "../lib/auth";
 import { takeInitialBootstrap } from "../lib/bootstrap";
@@ -3640,7 +3641,7 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
                 </span>
               </span>
             </button>
-            {!inGroup && active ? (
+            {!inGroup && active && codeWorkspaceEnabled() ? (
               <CodeModeSwitch botId={active.id} mode="chat" />
             ) : null}
             {!inGroup && active ? (
@@ -3668,7 +3669,7 @@ export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; 
               />
             ) : null}
           </div>
-          {active && !marketplaceEntry && !hubEntry ? (
+          {active && !marketplaceEntry && !hubEntry && codeWorkspaceEnabled() ? (
             <Suspense>
               <CodingSessionsStrip botId={active.id} refreshTick={codingSessionsTick} />
             </Suspense>

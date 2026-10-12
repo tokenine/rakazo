@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_DEFAULT_UI_LOCALE?: string;
+  readonly VITE_FEATURE_CODE_WORKSPACE?: string;
 }
 
 interface ImportMeta {
