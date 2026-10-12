@@ -13,6 +13,7 @@
  */
 
 import type { MessageBlock } from "@rakazo/contracts";
+import { rpcUrl } from "./rpc.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,7 +103,7 @@ async function orpcInvoke(
   const id = Math.floor(Math.random() * 1_000_000);
   const body: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
 
-  const res = await fetchImpl(`${baseUrl}`, {
+  const res = await fetchImpl(rpcUrl(baseUrl, method), {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),

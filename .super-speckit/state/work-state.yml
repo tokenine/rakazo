@@ -118,8 +118,8 @@ features:
     runs: []
     bugs: [{"id": "wake-resleep-idle-sweep", "status": "open", "evidence": ".super-speckit/bugs/wake-resleep-idle-sweep.md", "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"}, {"id": "omp-launch-docker-path", "status": "open", "evidence": ".super-speckit/bugs/omp-launch-docker-path.md", "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"}, {"id": "dbus-unknown-uid", "status": "resolved", "evidence": ".super-speckit/bugs/dbus-unknown-uid.md", "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3", "resolution": ".super-speckit/bugs/dbus-unknown-uid.md"}]
   - id: "006-cli-agent-chat"
-    state: "maker_running"
-    candidate_sha: null
+    state: "qa_running"
+    candidate_sha: "2ba86804907cff5e9ab32992d3418af57bc6456f"
     maker: "claude-maker"
     checker: "claude-checker"
     matrix: "specs/006-cli-agent-chat/spec.md"
@@ -139,4 +139,4 @@ features:
     journey_ux_status: "not_required"
     journey_ux_report: null
     runs: []
-    bugs: []
+    bugs: [{"id": "bug-001-rpc-transport", "status": "open", "evidence": ".super-speckit/bugs/006-cli-rpc-transport.md", "candidate_sha": "2ba86804907cff5e9ab32992d3418af57bc6456f"}]

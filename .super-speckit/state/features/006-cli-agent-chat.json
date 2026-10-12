@@ -1,7 +1,7 @@
 {
   "id": "006-cli-agent-chat",
-  "state": "maker_running",
-  "candidate_sha": null,
+  "state": "qa_running",
+  "candidate_sha": "2ba86804907cff5e9ab32992d3418af57bc6456f",
   "maker": "claude-maker",
   "checker": "claude-checker",
   "matrix": "specs/006-cli-agent-chat/spec.md",
@@ -47,10 +47,17 @@
     "artifact": null
   },
   "runs": [],
-  "bugs": [],
+  "bugs": [
+    {
+      "id": "bug-001-rpc-transport",
+      "status": "open",
+      "evidence": ".super-speckit/bugs/006-cli-rpc-transport.md",
+      "candidate_sha": "2ba86804907cff5e9ab32992d3418af57bc6456f"
+    }
+  ],
   "delivery_contract": "playbook-v1",
   "schema_version": 2,
-  "revision": 12,
+  "revision": 16,
   "prerequisite_receipts": {
     "research": {
       "artifact": ".super-speckit/research/006-cli-agent-chat.md",
@@ -58,7 +65,7 @@
     },
     "phase-contract": {
       "artifact": "specs/006-cli-agent-chat/tasks.md",
-      "digest": "bbdb54cefacb785f3c6650e67df60868c86f4e7b1bc48f77f6fa9345bebda755"
+      "digest": "6538b710b369bcaa04df66aa698ebdbf4b270ab556b6c78897f6905399dfe59b"
     },
     "baseline-feedback": {
       "artifact": ".super-speckit/evidence/006-cli-agent-chat/baseline-feedback.md",
@@ -68,5 +75,17 @@
       "artifact": ".super-speckit/research/006-cli-agent-chat-architecture.md",
       "digest": "75427c3d6995bc1ee6f02a6e1743a598a0a4e8db64c350f597b3533b627197d4"
     }
-  }
+  },
+  "candidates": [
+    {
+      "sha": "2ba86804907cff5e9ab32992d3418af57bc6456f",
+      "maker": "claude-maker",
+      "matrix_digest": "0253e0c42c6c427c38f9ce3123af51e401b3e74e0f8d31f55b0babdb82552466"
+    }
+  ],
+  "qa_worktree": "/Users/poom-work/rakazo-qa-006",
+  "qa_attempt": "qa-006-run1",
+  "attempt_history": [
+    "qa-006-run1"
+  ]
 }
