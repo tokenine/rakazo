@@ -108,6 +108,59 @@ export interface TerminalRequest {
   controlToken: string;
   /** Workspace-relative starting directory. */
   cwd?: string;
+  /**
+   * Reconnect to an existing session by its id.
+   * When absent, a new session is created.
+   * When provided, the server replays scrollback from the existing session.
+   */
+  sessionId?: string;
+  /**
+   * View-only session (004 T40): the provider must drop kind-0 input frames
+   * before they reach the PTY; resize stays allowed. Input requires the
+   * control lease, streaming does not.
+   */
+  viewOnly?: boolean;
+  /**
+   * T41: command to run inside the shell at session creation (e.g. `omp` so
+   * the user never types the engine's launch command). Spawn-time only —
+   * reconnecting an existing session never re-runs it.
+   */
+  launchCommand?: string;
+  /**
+   * Bounded process env for the terminal's shell (e.g. provider credentials that must
+   * never reach argv, files, or logs). Providers that cannot set spawn env ignore it.
+   */
+  env?: Record<string, string>;
+  /**
+   * Secret-free config files written under ~/.omp/ in the sandbox HOME before the
+   * terminal server starts (e.g. omp's models.yml, whose apiKey is only an env var
+   * NAME). Providers without a matching boundary ignore it.
+   */
+  homeFiles?: Array<{ path: string; content: string }>;
+}
+
+/**
+ * PTY session returned by SandboxProvider.connectTerminal.
+ * Provides a persistent session that survives reconnection — the same sessionId
+ * can be re-connected to retrieve scrollback history and continue input.
+ */
+export interface PtySession {
+  /** Unique id for this PTY session. Use sessionId in TerminalRequest to reconnect. */
+  sessionId: string;
+  /** WebSocket or VNC URL for the terminal UI. */
+  url: string;
+  /**
+   * Scrollback buffer replay on reconnect.
+   * Array of output lines emitted before this connection.
+   */
+  scrollback: string[];
+  /** Resize the terminal dimensions. */
+  resize(dim: { cols: number; rows: number }): Promise<void>;
+  /** Send text input to the PTY. */
+  sendInput(input: { kind: "text"; text: string }): Promise<void>;
+  /** Current terminal dimensions. */
+  cols: number;
+  rows: number;
 }
 
 export interface ScreenSession {
@@ -195,6 +248,30 @@ export interface SnapshotRef {
   createdAt: string;
 }
 
+/** Report from AgentHomeStore.restore (004-code-mode T11 versioned store). */
+export interface WorkspaceRestoreReport {
+  restoredRevision: string;
+  /** Paths materialized from the selected revision. */
+  restored: string[];
+  /** Paths whose newer live state was protected (changed/added/deleted after the revision). */
+  protected: string[];
+}
+
+/** Dirty-set query result (files differing from a selected revision). */
+export interface WorkspaceDirtySet {
+  changed: string[];
+  added: string[];
+  removed: string[];
+}
+
+export interface WorkspaceRevisionInfo {
+  id: string;
+  seq: number;
+  createdAt: string;
+  fileCount: number;
+  totalBytes: number;
+}
+
 export interface SandboxCapabilities {
   graphical: boolean;
   pty: boolean;
@@ -203,6 +280,14 @@ export interface SandboxCapabilities {
   persistentHome: boolean;
   /** Distinct graphical screens for concurrent Team bots on one computer. */
   multiScreen?: boolean;
+  /**
+   * connectTerminal enforces TerminalRequest.viewOnly server-side: kind-0
+   * input frames never reach the terminal, and any view-only reconnect
+   * permanently demotes the session. Providers without this flag hand out
+   * raw terminal URLs whose input cannot be gated per lease — the API must
+   * not serve them to leaseless users.
+   */
+  viewOnlyTerminal?: boolean;
 }
 
 export interface ConnectorTool {
@@ -539,6 +624,7 @@ export interface VoiceTranscribeRequest {
 
 export interface BackgroundJobPayloads {
   "run.continue": { runId: string };
+  "run.completed": { runId: string };
   "routine.wakeup": { routineId: string; scheduledFor: string };
   "computer.sleep": { computerId: string };
   "computer.update": { updateId: string };

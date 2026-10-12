@@ -9,7 +9,11 @@ import {
   sanitizeMessagingLabel,
 } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { appendEventInTransaction, createThreadMessageInTransaction } from "@rakazo/db";
+import {
+  PRIMARY_SESSION_ORDER,
+  appendEventInTransaction,
+  createThreadMessageInTransaction,
+} from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import { currentBotMessageHop } from "./bot-messages.js";
 
@@ -250,12 +254,18 @@ export async function messageConnectedAgent(
 
   const target = await deps.prisma.bot.findUnique({
     where: { id: targetIdentity.botId },
-    select: { id: true, name: true, archivedAt: true, thread: { select: { id: true } } },
+    select: {
+      id: true,
+      name: true,
+      archivedAt: true,
+      threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } },
+    },
   });
-  if (!target || target.archivedAt || !target.thread) {
+  const targetThread = target?.threads[0] ?? null;
+  if (!target || target.archivedAt || !targetThread) {
     return { ok: false, error: "that agent is not available" };
   }
-  const targetThreadId = target.thread.id;
+  const targetThreadId = targetThread.id;
   const deliveryKey = input.deliveryKey ? `agent-message:${input.deliveryKey}` : undefined;
   const wakePrompt = buildBotMessageWakePrompt({ from: sender, text: message });
 

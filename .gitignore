@@ -38,7 +38,7 @@ verify-report
 .astro
 .deploy.lock
 .last-deployed-revision
-design/
+/design/
 PRODUCT_PLAN.md
 
 # Lingui compiled catalogs — Vite plugin compiles .po at build time
@@ -46,4 +46,10 @@ apps/web/src/locales/**/*.mjs
 apps/web/src/locales/**/*.js
 apps/web/scripts/msgids.json
 playwright-report-www
+
+# graphiti pilot venv (local-only, never committed)
+.venv-graphiti/
 .wrangler/
+
+# hermetic pty-wiring test roots must never land in the repo working directory
+process-pty-wiring-*

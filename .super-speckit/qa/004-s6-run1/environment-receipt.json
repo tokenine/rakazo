@@ -1,0 +1,42 @@
+{
+  "run": "004-s6-run1",
+  "worktree": "/Users/poom-work/.super-speckit-worktrees/004-s6-run1",
+  "branch": "ss/qa/004-s6-run1",
+  "candidateHead": "924da3ba45a4ec4c4e74586f68b8a6fd24bccb78",
+  "baseForComparison": "0a39f8aca67f324a4db436ff63300166083c8656",
+  "node": "v22.23.2 (fnm)",
+  "pnpm": "9.15.0 (corepack)",
+  "os": "darwin 25.5.0 arm64",
+  "gates": {
+    "install": {
+      "command": "corepack pnpm install --frozen-lockfile",
+      "exitCode": 0
+    },
+    "dbGenerate": {
+      "command": "corepack pnpm --filter @rakazo/db generate",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "command": "corepack pnpm check",
+      "exitCode": 0,
+      "note": "cache-replayed run also verified with a forced uncached run: turbo run check --force -> exit 0, 24/24 tasks, 0 cached"
+    }
+  },
+  "lockfileIntegrity": {
+    "frozenInstallExit": 0,
+    "importerEntry": "pnpm-lock.yaml importer packages/adapters carries node-pty specifier 1.2.0-beta.15 -> version 1.2.0-beta.15 (line ~658)",
+    "packageEntry": "node-pty@1.2.0-beta.15 with integrity sha512-vORSzHXi4... (line ~7868)",
+    "snapshotEntry": "node-pty@1.2.0-beta.15 -> node-addon-api: 7.1.1 (line ~18363)",
+    "diffVsBase": "git diff 0a39f8ac..HEAD -- pnpm-lock.yaml adds exactly node-pty@1.2.0-beta.15 and node-addon-api@7.1.1 in importer/packages/snapshots; no truncation"
+  },
+  "baselineAdjudication": {
+    "method": "QA worktree detached at base 0a39f8ac, identical install + db-generate + vitest invocation, then returned to ss/qa/004-s6-run1",
+    "baseInstallExit": 0,
+    "baseSuiteExit": 1,
+    "note": "FAIL sets diffed line-by-line: IDENTICAL base vs candidate"
+  },
+  "candidate_sha": "2eb3d19d7c752f5b773c0ba508db96b997d6041a",
+  "checker": "claude-checker",
+  "attempt_id": "s6-run2",
+  "note": "Gates executed by the independent checker lane at 924da3ba (run1). Attempt re-registered as s6-run2 because the only delta 924da3ba..C2 is the verification-matrix markdown gaining explicit REQ- IDs (git diff verified single-file, 18 line rewrites); no code, test, or environment change."
+}

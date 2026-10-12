@@ -1,0 +1,12 @@
+     × publishes timed_out through trusted code with fake storage and credentials 100ms
+ ❯ infra/sandboxes/supervisor/src/computer-spec.test.ts (61 tests | 1 failed) 998ms
+     ✓ binds the embed WebSocket path to the current screen capability 3ms
+     ✓ has no small default cap and accepts optional operator limits 3ms
+     ✓ validates space computer limit 1ms
+     ✓ creates a VNC desktop, not an alpine sleep fallback 108ms
+     ✓ still publishes host ports when NetworkMode is a per-bot isolated network 1ms
+     ✓ keeps sanitized network names unique when botIds only differ by stripped characters 1ms
+--
+
+ FAIL  infra/sandboxes/supervisor/src/computer-spec.test.ts > graphical computer spec > selects a display-specific browser profile and preserves explicit profiles
+AssertionError: expected [ Array(15) ] to include '--user-data-dir=/tmp/rakazo-browser-w…'

@@ -5,8 +5,10 @@ import { loadRootEnv } from "@rakazo/core/node/load-root-env";
 loadRootEnv();
 
 import {
+  buildEngineRegistry,
   ChatSdkMessagingSurface,
-  CodexCatalogCache,
+  composeCodingSecrets,
+  createAcceptanceGateService,
   createBackgroundJobHandlers,
   createCloudAgentConnection,
   createConnectorStack,
@@ -40,6 +42,7 @@ import {
   pipedreamConfigFromEnv,
   reconcileCloudAgents,
   reconcileComputerUpdates,
+  reconcileIdleCodingSessions,
   reconcileTelegramUserBots,
   resolveDeploymentModel,
   resolvePiSessionRoot,
@@ -187,11 +190,18 @@ async function main() {
     });
   // One provider instance so emulator launches and polls share the same Map.
   const cloudAgent = createCloudAgentConnection();
+
+  // T37: granted-secret egress values for coding sessions.
+  // The shared cache is populated by the surfaces layer (resolveGrantedSecrets →
+  // Object.values(result.env) stored keyed by runId). The executor reads
+  // synchronously from this cache via composeCodingSecrets.
+  const codingSecretsCache = new Map<string, string[]>();
+  const codingSecrets = composeCodingSecrets(codingSecretsCache);
+
+  // T34: create the executor first (needed by the registry's machinery.continueRun)
   const executor = createRunExecutor({
     prisma,
     runtime,
-    // Live per-account Codex catalog; never refreshes or writes credentials.
-    codexCatalog: new CodexCatalogCache(),
     sandbox,
     memory: new MarkdownMemoryStore(prisma),
     memoryProviders,
@@ -199,17 +209,6 @@ async function main() {
     artifacts,
     connector: stack.connector,
     connectors: stack.connector,
-    listConnectedPluginSlugs: async (userId) => {
-      const provider = await integrationSettings.resolve("composio");
-      if (!provider) return [];
-      return provider.listConnectedExternalIds({
-        userId,
-        spaceId: "",
-        operationId: "connections.sync",
-        traceId: "connections.sync",
-        signal: AbortSignal.timeout(15_000),
-      });
-    },
     secrets: [
       deploymentModelKey ?? "",
       process.env.COMPOSIO_API_KEY ?? "",
@@ -226,6 +225,72 @@ async function main() {
     messaging: messaging ? createMessagingContextLoader(prisma) : undefined,
     web: createWebProvider(),
     cloudAgent,
+    // T34: acceptance gate for coding sessions — fail-closed until acceptance recorded
+    codingGate: createAcceptanceGateService({ prisma }),
+    // T37: granted-secret egress values for coding sessions
+    codingSecrets,
+  });
+
+  // T34: build the coding engine registry so session ops dispatch to the correct adapter.
+  // Stub OMP spawn until surfaces layer provides a real factory.
+  const registry = buildEngineRegistry({
+    prisma,
+    jobs,
+    events,
+    machinery: {
+      async continueRun(sessionId: string) {
+        const session = await prisma.codingSession.findUnique({
+          where: { id: sessionId },
+          select: { latestRunId: true },
+        });
+        if (session?.latestRunId) {
+          await executor.continueRun(session.latestRunId, process.pid.toString());
+          return { continued: true };
+        }
+        return { continued: false };
+      },
+      async abortRun(_runId: string) {
+        // Stubbed until surfaces layer wires real abort.
+        return { aborted: false };
+      },
+    },
+    inspectChanges: async (sessionId: string) => {
+      // T36: derive botId from the session row, then call home.changesSince.
+      // This is the same sourcing pattern used in reconcileCrash.
+      const session = await prisma.codingSession.findUnique({
+        where: { id: sessionId },
+        select: { botId: true },
+      });
+      if (!session?.botId) return { files: [] };
+      const bot = await prisma.bot.findUnique({
+        where: { id: session.botId },
+        select: { computer: { select: { homeRevision: true } } },
+      });
+      if (!bot?.computer?.homeRevision) return { files: [] };
+      try {
+        const dirtySet = await home.changesSince(session.botId, bot.computer.homeRevision);
+        // WorkspaceDirtySet added/removed/changed are string[] (path names)
+        const ds = dirtySet as unknown as {
+          added?: string[];
+          removed?: string[];
+          changed?: string[];
+        };
+        const files = [
+          ...(ds.added ?? []).map((p) => ({ path: String(p), status: "added" })),
+          ...(ds.removed ?? []).map((p) => ({ path: String(p), status: "removed" })),
+          ...(ds.changed ?? []).map((p) => ({ path: String(p), status: "changed" })),
+        ];
+        return { files };
+      } catch {
+        return { files: [] };
+      }
+    },
+    spawnOmp: async () => {
+      throw new Error("OMP spawn not available in worker — surfaces layer must provide");
+    },
+    approveTool: async () => {
+      throw new Error("Tool approval not available in worker composition");
+    },
   });
 
   const jobHandlers = createBackgroundJobHandlers({
@@ -243,6 +308,9 @@ async function main() {
     deploymentModelKey,
     messaging,
     cloudAgent,
+    // T34: engine registry for coding session dispatch
+    registry,
+    // T36: no ForgeClient in worker — GitHub credentials boundary lives in surfaces layer
   });
   // graphile-worker run() connects through the shared pool. createPool already
   // retries connect() on 53300 a finite number of times. Keep retrying start
@@ -270,6 +338,9 @@ async function main() {
     leadership: createPostgresReconciliationLeadership(pool),
     reconcileCloudAgents: () => reconcileCloudAgents({ prisma, jobs, cloudAgent }),
     reconcileComputerUpdates: () => reconcileComputerUpdates({ prisma, jobs }),
+    // S6 T30: idle coding sessions route through the computer sleep contract.
+    reconcileIdleCodingSessions: () =>
+      reconcileIdleCodingSessions({ prisma, sandbox, home, jobs, events }),
   });
   reconciler.start();
 

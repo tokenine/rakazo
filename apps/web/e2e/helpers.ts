@@ -24,19 +24,50 @@ export async function rpc<T>(page: Page, procedure: string, body: unknown): Prom
   return parsed.json as T;
 }
 
+/** Sign up and land on the onboarding page WITHOUT creating a bot (empty deployment). */
+export async function signupOnly(
+  page: Page,
+  email: string,
+  _password: string,
+  name: string,
+  testInfo?: TestInfo,
+) {
+  await page.goto("/sign-up");
+  await expect(page.getByRole("heading", { name: "Create your Ai7" })).toBeVisible();
+  if (testInfo) await captureScreenshot(page, testInfo, "01-sign-up");
+  await page.getByPlaceholder("Your name").fill(name);
+  await page.getByPlaceholder("Your email address").fill(email);
+  await page.getByRole("button", { name: "Continue with email" }).click();
+  await page.getByPlaceholder("6-digit code").fill(await otpFromEmulator(page, email));
+  await page.getByRole("button", { name: "Verify code" }).click();
+  // Land on onboarding — no bot created, so space.hasContent=false
+  await page.waitForURL(/\/(onboarding|app)/, { timeout: 20_000 });
+}
+
 export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
   await page.waitForURL(/\/(onboarding|app)/, { timeout: 20_000 });
-  // Optional Server integrations step (needsSetup). Skip when shown, then the
-  // first bot is created automatically — land in Chief's chat with no form.
+  // Optional steps before the first bot exists: Connect a model (me.needsModel)
+  // and Server integrations (needsSetup). Handle/skip when shown, then the first
+  // bot is created automatically — land in Chief's chat with no form.
   const integrations = page.getByRole("heading", { name: "Server integrations", exact: true });
+  const modelStep = page.getByRole("heading", { name: "Connect a model", exact: true });
   const chief = page.getByText("Chief").first();
-  await integrations.or(chief).or(page.getByText("Opening chat…")).waitFor({ timeout: 20_000 });
+  await modelStep
+    .or(integrations)
+    .or(chief)
+    .or(page.getByText("Opening chat…"))
+    .waitFor({ timeout: 20_000 });
   if ((await chief.isVisible().catch(() => false)) && page.url().includes("/app")) {
     if (testInfo) {
       await captureScreenshot(page, testInfo, "03-create-first-bot");
       await captureScreenshot(page, testInfo, "06-onboarding-complete");
     }
     return;
+  }
+  if (await modelStep.isVisible().catch(() => false)) {
+    await page.getByRole("textbox", { name: "API key" }).fill("fake-onboarding-key");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await integrations.or(chief).or(page.getByText("Opening chat…")).waitFor({ timeout: 20_000 });
   }
   if (await integrations.isVisible().catch(() => false)) {
     if (testInfo) await captureScreenshot(page, testInfo, "02-connect-apps");
@@ -72,15 +103,21 @@ export async function signup(
 
 /** Pull the newest OTP code sent to `email` from the dev-only emulator inbox. */
 export async function otpFromEmulator(page: Page, email: string): Promise<string> {
-  const response = await page.request.get("/api/dev/emails");
-  if (!response.ok()) throw new Error(`/api/dev/emails responded ${response.status()}`);
-  const messages = (await response.json()) as Array<{ to: string; text: string }>;
-  const sent = [...messages]
-    .reverse()
-    .find((message) => message.to.toLowerCase() === email.toLowerCase());
-  const code = sent?.text.match(/\b(\d{6})\b/)?.[1];
-  if (!code) throw new Error(`no OTP code captured for ${email}`);
-  return code;
+  const deadline = Date.now() + 5_000;
+  for (;;) {
+    const response = await page.request.get("/api/dev/emails");
+    if (!response.ok()) throw new Error(`/api/dev/emails responded ${response.status()}`);
+    const messages = (await response.json()) as Array<{ to: string; text: string }>;
+    const sent = [...messages]
+      .reverse()
+      .find((message) => message.to.toLowerCase() === email.toLowerCase());
+    const code = sent?.text.match(/\b(\d{6})\b/)?.[1];
+    if (code) return code;
+    // Delivery through the emulator resolves asynchronously after the send
+    // request returns; poll briefly instead of racing it.
+    if (Date.now() >= deadline) throw new Error(`no OTP code captured for ${email}`);
+    await page.waitForTimeout(50);
+  }
 }
 
 export async function captureScreenshot(page: Page, testInfo: TestInfo, name: string) {

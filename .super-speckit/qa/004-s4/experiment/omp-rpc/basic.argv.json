@@ -1,0 +1,1 @@
+["omp", "--mode", "rpc", "--no-session"]

@@ -14,5 +14,6 @@ export * from "./model-credentials.js";
 export * from "./repos.js";
 export * from "./scope.js";
 export * from "./spaces.js";
+export * from "./thread-listing.js";
 export * from "./transaction-retry.js";
 export * from "./voice-credentials.js";

@@ -67,7 +67,7 @@ function deps(
         .fn()
         .mockResolvedValue(
           options.bots ?? [
-            { id: "bot-target", name: "Analyst", title: "", thread: { id: "thread-target" } },
+            { id: "bot-target", name: "Analyst", title: "", threads: [{ id: "thread-target" }] },
           ],
         ),
     },
@@ -146,7 +146,7 @@ describe("messaging another bot", () => {
 
   it("refuses a bot messaging itself", async () => {
     const harness = deps({
-      bots: [{ id: "bot-sender", name: "Researcher", title: "", thread: { id: "thread-sender" } }],
+      bots: [{ id: "bot-sender", name: "Researcher", title: "", threads: [{ id: "thread-sender" }] }],
     });
     const sent = await messageBot(harness.deps, run, sender, {
       bot_id: "bot-sender",
@@ -247,8 +247,8 @@ describe("messaging another bot", () => {
   it("does not inherit a request reply link when messaging another bot", async () => {
     const harness = deps({
       bots: [
-        { id: "bot-target", name: "Analyst", title: "", thread: { id: "thread-target" } },
-        { id: "bot-other", name: "Writer", title: "", thread: { id: "thread-other" } },
+        { id: "bot-target", name: "Analyst", title: "", threads: [{ id: "thread-target" }] },
+        { id: "bot-other", name: "Writer", title: "", threads: [{ id: "thread-other" }] },
       ],
       hopBlocks: [
         {
@@ -331,8 +331,8 @@ describe("messaging another bot", () => {
   it("does not let a result label bypass the hop limit toward an unrelated bot", async () => {
     const harness = deps({
       bots: [
-        { id: "bot-target", name: "Analyst", title: "", thread: { id: "thread-target" } },
-        { id: "bot-other", name: "Writer", title: "", thread: { id: "thread-other" } },
+        { id: "bot-target", name: "Analyst", title: "", threads: [{ id: "thread-target" }] },
+        { id: "bot-other", name: "Writer", title: "", threads: [{ id: "thread-other" }] },
       ],
       hopBlocks: [
         {

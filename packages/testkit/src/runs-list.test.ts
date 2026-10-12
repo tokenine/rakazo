@@ -1,10 +1,11 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { EmailEmulator } from "@rakazo/adapters";
 import type { RunActivityRow } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sessionCookieHeader } from "./index.js";
+import { otpSignUp } from "./index.js";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 
@@ -14,6 +15,8 @@ process.env.AGENT_RUNTIME = "scripted";
 
 const hasDb = process.env.VERIFY_DATABASE === "1" && Boolean(process.env.DATABASE_URL);
 const describeRunsList = hasDb ? describe : describe.skip;
+
+const emails = new EmailEmulator();
 
 describeRunsList("runs.list activity tracker", () => {
   let app: App;
@@ -29,6 +32,7 @@ describeRunsList("runs.list activity tracker", () => {
       dataDir,
       sandboxProvider: "fake",
       agentRuntime: "scripted",
+      email: emails,
     });
     app = handles.app;
     prisma = handles.prisma;
@@ -192,7 +196,9 @@ async function seedRun(
   prompt: string,
   completedAt?: Date | null,
 ) {
-  const thread = await prisma.thread.findUniqueOrThrow({ where: { botId } });
+  const thread = await prisma.thread.findFirstOrThrow({
+    where: { botId, isPrimary: true },
+  });
   const task = await prisma.task.create({
     data: {
       spaceId: thread.spaceId,
@@ -218,13 +224,7 @@ async function seedRun(
 }
 
 async function signup(app: App, email: string, name: string) {
-  const response = await app.request("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
-    body: JSON.stringify({ email, password: "test-password-123", name }),
-  });
-  expect(response.status).toBeLessThan(400);
-  return sessionCookieHeader(response);
+  return otpSignUp(app, emails, email, name);
 }
 
 async function rpc<T>(app: App, cookie: string, proc: string, body: unknown = {}): Promise<T> {

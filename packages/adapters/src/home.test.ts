@@ -39,7 +39,8 @@ describe("LocalAgentHomeStore path containment", () => {
     for await (const file of store.exportHome("bot-1", context)) exported.push(file.path);
 
     expect(revision).toMatch(/^rev-/);
-    expect(store.describe().capabilities.revisions).toBe(false);
+    // 004-code-mode T11: the store keeps an append-only revision archive.
+    expect(store.describe().capabilities.revisions).toBe(true);
     expect(exported.sort()).toEqual([".revision", "result.txt"]);
   });
 

@@ -1,0 +1,10 @@
+{
+  "receipt": "graphiti-ingest/1",
+  "at": "2026-09-28T11:27:48+07:00",
+  "graphiti_ingested": 26,
+  "failed": [],
+  "stale_packets": [],
+  "observed_at_sha": "ef17f273c604a000a85f8dd6339c0d6d88e6542f",
+  "enabled_via": "--enable",
+  "note": "derived projection only; git history and files remain the time and truth authority"
+}

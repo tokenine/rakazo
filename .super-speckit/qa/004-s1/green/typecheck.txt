@@ -1,0 +1,11 @@
+004-code-mode S1 fix round 1 — tsc --noEmit for @rakazo/contracts, @rakazo/db,
+@rakazo/adapters (fix-round refresh).
+
+$ corepack pnpm exec tsc --noEmit -p packages/contracts/tsconfig.json
+exit code: 0
+
+$ corepack pnpm exec tsc --noEmit -p packages/db/tsconfig.json
+exit code: 0
+
+$ corepack pnpm exec tsc --noEmit -p packages/adapters/tsconfig.json
+exit code: 0

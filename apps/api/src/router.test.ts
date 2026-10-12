@@ -6,7 +6,7 @@ import {
   screenLeaseIdForRun,
 } from "@rakazo/adapters";
 import type { Actor, Bot } from "@rakazo/contracts";
-import { REPLY_QUOTE_MAX_LENGTH } from "@rakazo/contracts";
+import { INSPIRATION_CATALOG, REPLY_QUOTE_MAX_LENGTH } from "@rakazo/contracts";
 import { openScreenCapability } from "@rakazo/core/node/screen-capability";
 import type { PrismaClient } from "@rakazo/db";
 import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
@@ -297,7 +297,7 @@ describe("thread answer delivery", () => {
       bot: {
         findFirst: vi.fn().mockResolvedValue({
           id: "bot-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
           computer: null,
         }),
       },
@@ -913,7 +913,7 @@ describe("computer screen url", () => {
         findFirst: vi.fn().mockResolvedValue({
           id: "bot-1",
           screenGeneration: 2,
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
           computer: computerRow,
         }),
       },
@@ -1041,7 +1041,7 @@ describe("computer terminal and file transfer", () => {
         findFirst: vi.fn().mockResolvedValue({
           id: "bot-1",
           screenGeneration: 2,
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
           computer: {
             id: "computer-1",
             screenGeneration: 3,
@@ -2583,7 +2583,7 @@ describe("bot model auth on save", () => {
       teamChatRules: "",
       webhookSecretId: null,
       spawnKey: null,
-      thread: { id: "thread-1", unread: false, messages: [] },
+      threads: [{ id: "thread-1", unread: false, messages: [] }],
       computer: null,
       runs: [],
     };
@@ -2765,6 +2765,7 @@ describe("bot restore computer quota", () => {
           id: "bot-archived",
           computerId: "computer-archived",
           computer: { id: "computer-archived" },
+          threads: [{ id: "thread-1" }],
           userId: "user-1",
         }
       : null;
@@ -2884,7 +2885,7 @@ describe("routines.update", () => {
       },
       bot: {
         findFirst: vi.fn(async () =>
-          botArchived ? null : { id: "bot-1", thread: { id: "thread-1" }, computer: null },
+          botArchived ? null : { id: "bot-1", threads: [{ id: "thread-1" }], computer: null },
         ),
       },
     };
@@ -2973,7 +2974,7 @@ describe("threads.endCall", () => {
       bot: {
         findFirst: vi
           .fn()
-          .mockResolvedValue({ id: "bot-1", thread: { id: "thread-1" }, computer: null }),
+          .mockResolvedValue({ id: "bot-1", threads: [{ id: "thread-1" }], computer: null }),
       },
       taughtSkill: { findFirst: vi.fn().mockResolvedValue(null) },
       $transaction: vi.fn(async (run: (client: typeof tx) => unknown) => run(tx)),
@@ -3178,5 +3179,819 @@ describe("groups.archive", () => {
       }),
     );
     expect(calls).toEqual(["cancel run work", "release screen", "expire lease"]);
+  });
+});
+
+describe("threads session lifecycle rpc (V12/V13/V14)", () => {
+  interface SessionRow {
+    id: string;
+    botId: string | null;
+    spaceId: string;
+    userId: string;
+    name: string | null;
+    isPrimary: boolean;
+    unread: boolean;
+    createdAt: Date;
+    lastMessageAt: Date | null;
+  }
+
+  function row(overrides: Partial<SessionRow> = {}): SessionRow {
+    return {
+      id: "session-1",
+      botId: "bot-1",
+      spaceId: "workspace-1",
+      userId: "user-1",
+      name: null,
+      isPrimary: false,
+      unread: false,
+      createdAt: new Date("2026-09-20T00:00:00.000Z"),
+      lastMessageAt: null,
+      ...overrides,
+    };
+  }
+
+  /** Stateful fake prisma for the session CRUD + lifecycle event seams. */
+  function sessionsHarness(rows: SessionRow[]) {
+    const state = new Map(rows.map((session) => [session.id, { ...session }]));
+    const nextEventSeq = new Map(rows.map((session) => [session.id, 0]));
+    const eventCreate = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: `event-${String(eventSeqCounter++)}`,
+      createdAt: new Date("2026-09-28T00:00:00.000Z"),
+      ...data,
+    }));
+    let eventSeqCounter = 0;
+    const runFindFirst = vi.fn().mockResolvedValue(null);
+    const tx = {
+      thread: {
+        findFirst: vi.fn(
+          async ({ where }: { where: { id: string } }) => state.get(where.id) ?? null,
+        ),
+        findMany: vi.fn(async ({ where }: { where: { botId?: string } }) =>
+          [...state.values()].filter((session) => !where?.botId || session.botId === where.botId),
+        ),
+        create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+          const created = {
+            ...row(),
+            id: "session-new",
+            createdAt: new Date("2026-09-28T00:00:00.000Z"),
+            ...data,
+          } as SessionRow;
+          state.set(created.id, created);
+          nextEventSeq.set(created.id, 0);
+          return { ...created };
+        }),
+        update: vi.fn(
+          async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+            if ("nextEventSeq" in data) {
+              const seq = nextEventSeq.get(where.id) ?? 0;
+              nextEventSeq.set(where.id, seq + 1);
+              return { nextEventSeq: seq + 1 };
+            }
+            const target = state.get(where.id);
+            if (!target) throw new Error(`unknown thread ${where.id}`);
+            Object.assign(target, data);
+            return { ...target };
+          },
+        ),
+        delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+          const removed = state.get(where.id);
+          state.delete(where.id);
+          return removed ?? {};
+        }),
+      },
+      run: { findFirst: runFindFirst },
+      event: { create: eventCreate },
+    };
+    const prisma = {
+      bot: { findFirst: vi.fn().mockResolvedValue({ id: "bot-1" }) },
+      $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
+    } as unknown as PrismaClient;
+    const notify = vi.fn().mockResolvedValue(undefined);
+    const deps = {
+      prisma,
+      events: { notify },
+      env: {
+        defaultProvider: "fake",
+        defaultModel: "fake-model",
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "fake",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const actor = {
+      spaceId: "workspace-1",
+      userId: "user-1",
+      email: "user@rakazo.test",
+      isDeploymentOwner: true,
+    } satisfies Actor;
+    const handler = new RPCHandler(createRouter(deps));
+    const call = (procedure: string, json: unknown) =>
+      handler
+        .handle(
+          new Request(`http://127.0.0.1/rpc/threads/${procedure}`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ json }),
+          }),
+          { prefix: "/rpc", context: { actor } },
+        )
+        .then(({ response }) => response);
+    return { call, notify, state, runFindFirst, eventCreate, prisma };
+  }
+
+  it("creates a session and notifies every feed of session.created (V12)", async () => {
+    const harness = sessionsHarness([row({ id: "session-primary", isPrimary: true })]);
+
+    const response = await harness.call("createSession", { botId: "bot-1", name: "Deep dive" });
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { json: { id: string; name: string | null } };
+    expect(payload.json).toMatchObject({ id: "session-new", name: "Deep dive" });
+    expect(harness.notify.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "session-primary",
+      "session-new",
+    ]);
+  });
+
+  it("refuses deleting the last remaining session with a typed conflict (V13)", async () => {
+    const harness = sessionsHarness([row({ id: "session-only", isPrimary: true })]);
+
+    const response = await harness.call("deleteSession", { sessionId: "session-only" });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      json: expect.objectContaining({
+        code: "CONFLICT",
+        message: expect.stringMatching(/last remaining session/i),
+      }),
+    });
+    expect(harness.state.has("session-only")).toBe(true);
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it("refuses deleting a session that has an active run (V13)", async () => {
+    const harness = sessionsHarness([
+      row({ id: "session-primary", isPrimary: true }),
+      row({ id: "session-side" }),
+    ]);
+    harness.runFindFirst.mockResolvedValue({ id: "run-active" });
+
+    const response = await harness.call("deleteSession", { sessionId: "session-side" });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      json: expect.objectContaining({
+        code: "CONFLICT",
+        message: expect.stringMatching(/active run/i),
+      }),
+    });
+    expect(harness.state.has("session-side")).toBe(true);
+    expect(harness.eventCreate).not.toHaveBeenCalled();
+  });
+
+  it("deletes the primary, promotes the earliest sibling, and notifies the remaining feeds (V13)", async () => {
+    const harness = sessionsHarness([
+      row({
+        id: "session-primary",
+        isPrimary: true,
+        createdAt: new Date("2026-09-25T00:00:00.000Z"),
+      }),
+      row({ id: "session-older", createdAt: new Date("2026-09-21T00:00:00.000Z") }),
+      row({ id: "session-newer", createdAt: new Date("2026-09-26T00:00:00.000Z") }),
+    ]);
+
+    const response = await harness.call("deleteSession", { sessionId: "session-primary" });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ json: { ok: true } });
+    expect(harness.state.has("session-primary")).toBe(false);
+    expect(harness.state.get("session-older")?.isPrimary).toBe(true);
+    expect(harness.state.get("session-newer")?.isPrimary).toBe(false);
+    expect(harness.notify.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "session-older",
+      "session-newer",
+    ]);
+  });
+
+  it("denies session CRUD on bots outside the actor scope (V14)", async () => {
+    const harness = sessionsHarness([row({ id: "session-primary", isPrimary: true })]);
+    (harness.prisma.bot.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    const list = await harness.call("listSessions", { botId: "bot-1" });
+    const create = await harness.call("createSession", { botId: "bot-1", name: "X" });
+    const rename = await harness.call("renameSession", { sessionId: "session-1", name: "X" });
+    const remove = await harness.call("deleteSession", { sessionId: "session-1" });
+
+    for (const response of [list, create, rename, remove]) {
+      expect(response.status).toBeGreaterThanOrEqual(400);
+    }
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("inspiration catalog RPC", () => {
+  it("returns the bundled catalog over the RPC boundary (002 T17)", async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const prisma = {
+      user: {
+        update,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          email: "user@rakazo.test",
+          name: "Test User",
+          avatarStyle: "plain",
+          clientBrowserPreferred: false,
+        }),
+      },
+      spaceModelPreference: { findFirst: vi.fn().mockResolvedValue(null) },
+      deploymentSettings: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      env: {
+        defaultProvider: "fake",
+        defaultModel: "fake-model",
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "fake",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const actor = {
+      spaceId: "workspace-1",
+      userId: "user-1",
+      email: "user@rakazo.test",
+      isDeploymentOwner: true,
+    } satisfies Actor;
+    const handler = new RPCHandler(createRouter(deps));
+    const { response } = await handler.handle(
+      new Request("http://127.0.0.1/rpc/inspiration/list", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ json: {} }),
+      }),
+      { prefix: "/rpc", context: { actor } },
+    );
+    expect(response?.status).toBe(200);
+    const body = (await response?.json()) as { json: unknown };
+    expect(Array.isArray(body.json)).toBe(true);
+    expect(body.json).toEqual(INSPIRATION_CATALOG);
+  });
+});
+
+describe("coding session terminal", () => {
+  const actor = {
+    spaceId: "workspace-1",
+    userId: "user-1",
+    email: "user@rakazo.test",
+    isDeploymentOwner: true,
+  } satisfies Actor;
+  const session = {
+    id: "coding-1",
+    botId: "bot-1",
+    spaceId: "workspace-1",
+    engine: "omp",
+    status: "active",
+  };
+  const controlled = {
+    controlHolder: "user",
+    controlLeaseId: "lease-1",
+    controlLeaseExpiresAt: new Date(Date.now() + 60_000),
+    controlBotId: "bot-1",
+  };
+
+  function setup(
+    overrides: {
+      session?: Record<string, unknown> | null;
+      computer?: Record<string, unknown>;
+      bot?: Record<string, unknown>;
+      viewOnlyTerminal?: boolean;
+      /** Model credential plaintext (via a fake secrets.load) backing the bot's selection. */
+      credentialPlaintext?: string;
+    } = {},
+  ) {
+    const sandbox = {
+      describe: vi.fn(() => ({
+        id: "test",
+        contractVersion: "1",
+        adapterVersion: "0.0.0",
+        capabilities: {
+          graphical: false,
+          pty: true,
+          snapshots: false,
+          takeover: false,
+          persistentHome: true,
+          ...(overrides.viewOnlyTerminal === undefined
+            ? {}
+            : { viewOnlyTerminal: overrides.viewOnlyTerminal }),
+        },
+      })),
+      connectTerminal: vi.fn().mockResolvedValue({
+        url: "https://screen.example/vnc.html?path=websockify%3Ftoken%3Dterminal-1",
+      }),
+      readFile: vi.fn().mockResolvedValue(new TextEncoder().encode("hello")),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+    };
+    const prisma = {
+      codingSession: {
+        findFirst: vi.fn().mockResolvedValue(
+          overrides.session === null ? null : { ...session, ...overrides.session },
+        ),
+      },
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          modelProvider: null,
+          modelId: null,
+          ...overrides.bot,
+          screenGeneration: 2,
+          threads: [{ id: "thread-1" }],
+          computer: {
+            id: "computer-1",
+            screenGeneration: 3,
+            kind: "docker",
+            scope: "team",
+            state: "running",
+            providerRef: "sandbox-ref-1",
+            homeKey: "home-1",
+            controlHolder: "none",
+            controlLeaseId: null,
+            controlLeaseExpiresAt: null,
+            controlBotId: null,
+            controlRunId: null,
+            ...overrides.computer,
+          },
+        }),
+      },
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+      spaceModelPreference: {
+        findMany: vi.fn().mockResolvedValue(
+          overrides.bot?.modelProvider
+            ? [
+                {
+                  modelId: overrides.bot.modelId,
+                  isDefault: true,
+                  credential: {
+                    id: "cred-1",
+                    provider: overrides.bot.modelProvider,
+                    secretId: "secret-1",
+                    updatedAt: new Date(),
+                    createdAt: new Date(),
+                  },
+                },
+              ]
+            : [],
+        ),
+      },
+      userModelCredential: { findMany: vi.fn().mockResolvedValue([]) },
+      secret: {
+        findFirst: vi.fn().mockResolvedValue({ id: "secret-1", ciphertext: "cipher" }),
+      },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      sandbox,
+      secrets: { load: vi.fn(() => overrides.credentialPlaintext ?? "") },
+      jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
+      env: {
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "docker",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const handler = new RPCHandler(createRouter(deps));
+    const call = async () => {
+      const { response } = await handler.handle(
+        new Request("http://127.0.0.1/rpc/codingSessions/terminalUrl", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ json: { sessionId: "coding-1" } }),
+        }),
+        { prefix: "/rpc", context: { actor } },
+      );
+      return { status: response.status, body: await response.json() };
+    };
+    return { sandbox, call };
+  }
+
+  it("returns no url for sessions that are not an active omp session", async () => {
+    const pi = setup({ session: { engine: "normal-pi" } });
+    await expect(pi.call()).resolves.toMatchObject({ status: 200 });
+    expect(pi.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    const ended = setup({ session: { status: "ended" } });
+    await expect(ended.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null } },
+    });
+    expect(ended.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    const missing = setup({ session: null });
+    await expect(missing.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null } },
+    });
+  });
+
+  it("T40: streams the terminal view-only without the lease, interactive with it", async () => {
+    const released = setup({ viewOnlyTerminal: true });
+    const releasedResult = await released.call();
+    expect(releasedResult.status).toBe(200);
+    expect(released.sandbox.connectTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      { controlToken: "", cwd: "bots/bot-1", viewOnly: true, launchCommand: "omp" },
+      expect.anything(),
+    );
+    const releasedUrl = new URL(releasedResult.body.json.url);
+    expect(openScreenCapability(releasedUrl.pathname, "fake-test-secret")).toMatchObject({
+      scope: { botId: "bot-1", controlLeaseId: null },
+      target: { hostname: "screen.example", interactive: false },
+    });
+
+    const { sandbox, call } = setup({ computer: controlled });
+    const { status, body } = await call();
+    expect(status).toBe(200);
+    expect(sandbox.connectTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      { controlToken: "lease-1", cwd: "bots/bot-1", viewOnly: false, launchCommand: "omp" },
+      expect.anything(),
+    );
+    const url = new URL(body.json.url);
+    expect(url.origin).toBe("http://127.0.0.1:5173");
+    expect(openScreenCapability(url.pathname, "fake-test-secret")).toMatchObject({
+      scope: { botId: "bot-1", controlLeaseId: "lease-1" },
+      target: { hostname: "screen.example", interactive: true },
+    });
+  });
+
+  it("returns no url when the bot has no running computer", async () => {
+    const stopped = setup({
+      computer: { state: "stopped", providerRef: null, ...controlled },
+    });
+    await expect(stopped.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null } },
+    });
+    expect(stopped.sandbox.connectTerminal).not.toHaveBeenCalled();
+  });
+
+  it("B2: leaseless view-only terminals are refused on providers that cannot enforce view-only", async () => {
+    // No viewOnlyTerminal capability (desktop/daytona/e2b-class provider):
+    // handing a leaseless user the raw terminal URL would be an interactive
+    // shell — return a truthful null instead.
+    const enforcing = setup({ viewOnlyTerminal: false });
+    await expect(enforcing.call()).resolves.toMatchObject({
+      status: 200,
+      body: { json: { url: null, reason: "terminal not supported for this computer" } },
+    });
+    expect(enforcing.sandbox.connectTerminal).not.toHaveBeenCalled();
+
+    // Holding the lease keeps the interactive terminal on the same provider.
+    const leased = setup({ viewOnlyTerminal: false, computer: controlled });
+    const leasedResult = await leased.call();
+    expect(leasedResult.status).toBe(200);
+    expect(leased.sandbox.connectTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      { controlToken: "lease-1", cwd: "bots/bot-1", viewOnly: false, launchCommand: "omp" },
+      expect.anything(),
+    );
+    expect(new URL(leasedResult.body.json.url).origin).toBe("http://127.0.0.1:5173");
+  });
+
+  it("seeds omp with the bot's api-key credential as process env, never as a file or command", async () => {
+    const native = setup({
+      viewOnlyTerminal: true,
+      bot: { modelProvider: "anthropic", modelId: "claude-opus-4-8" },
+      credentialPlaintext: JSON.stringify({ kind: "api_key", key: "sk-test-secret" }),
+    });
+    const result = await native.call();
+    expect(result.status).toBe(200);
+    const request = native.sandbox.connectTerminal.mock.calls[0]?.[1];
+    expect(request).toMatchObject({
+      launchCommand: "omp --model anthropic/claude-opus-4-8",
+      env: { ANTHROPIC_API_KEY: "sk-test-secret" },
+    });
+    expect(request.homeFiles).toBeUndefined();
+
+    // Custom endpoints take omp's custom-provider route: models.yml names the env
+    // var; the key itself rides the env only.
+    const custom = setup({
+      viewOnlyTerminal: true,
+      bot: { modelProvider: "openai_compatible", modelId: "my-model" },
+      credentialPlaintext: JSON.stringify({
+        kind: "openai_compatible",
+        baseUrl: "https://gateway.example.com/v1",
+        apiKey: "sk-test-secret",
+      }),
+    });
+    await custom.call();
+    const customRequest = custom.sandbox.connectTerminal.mock.calls[0]?.[1];
+    expect(customRequest.env).toEqual({ RAKAZO_OMP_API_KEY: "sk-test-secret" });
+    expect(customRequest.launchCommand).toBe("omp --model rakazo/my-model");
+    const modelsYml = customRequest.homeFiles.find(
+      (file: { path: string }) => file.path === ".omp/agent/models.yml",
+    );
+    expect(modelsYml.content).toContain("apiKey: RAKAZO_OMP_API_KEY");
+    expect(modelsYml.content).toContain("baseUrl: https://gateway.example.com/v1");
+    expect(modelsYml.content).not.toContain("sk-test-secret");
+  });
+
+  it("injects nothing for oauth-kind credentials (omp shows no-model, truthfully)", async () => {
+    const oauth = setup({
+      viewOnlyTerminal: true,
+      bot: { modelProvider: "openai-codex", modelId: "gpt-5.5" },
+      credentialPlaintext: JSON.stringify({
+        kind: "oauth",
+        credential: { type: "oauth", access: "token", refresh: "r", expires: 9999999999 },
+      }),
+    });
+    await oauth.call();
+    const request = oauth.sandbox.connectTerminal.mock.calls[0]?.[1];
+    expect(request.env).toBeUndefined();
+    expect(request.homeFiles).toBeUndefined();
+    expect(request.launchCommand).toBe("omp");
+  });
+});
+describe("coding session git graph (T43)", () => {
+  const actor = {
+    spaceId: "workspace-1",
+    userId: "user-1",
+    email: "user@rakazo.test",
+    isDeploymentOwner: true,
+  } satisfies Actor;
+  const session = {
+    id: "coding-1",
+    botId: "bot-1",
+    spaceId: "workspace-1",
+    engine: "omp",
+    status: "active",
+  };
+
+  type FakeEvent = { type: string; data?: string; code?: number };
+
+  function setup(script: (argv: string[]) => FakeEvent[]) {
+    const sandbox = {
+      execute: vi.fn(async function* (
+        _computer: unknown,
+        request: { argv: string[] },
+      ) {
+        for (const event of script(request.argv)) yield event;
+      }),
+    };
+    const prisma = {
+      codingSession: { findFirst: vi.fn().mockResolvedValue({ ...session }) },
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          screenGeneration: 2,
+          threads: [{ id: "thread-1" }],
+          computer: {
+            id: "computer-1",
+            screenGeneration: 3,
+            kind: "process",
+            scope: "team",
+            state: "running",
+            providerRef: "sandbox-ref-1",
+            homeKey: "home-1",
+            controlHolder: "none",
+            controlLeaseId: null,
+            controlLeaseExpiresAt: null,
+            controlBotId: null,
+            controlRunId: null,
+          },
+        }),
+      },
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      sandbox,
+      jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
+      env: {
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "s",
+        sandboxProvider: "process",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const handler = new RPCHandler(createRouter(deps));
+    return async () => {
+      const { response } = await handler.handle(
+        new Request("http://127.0.0.1/rpc/codingSessions/gitGraph", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ json: { sessionId: "coding-1" } }),
+        }),
+        { prefix: "/rpc", context: { actor } },
+      );
+      return { status: response.status, body: await response.json(), sandbox };
+    };
+  }
+
+  const happy: FakeEvent[][] = {
+    rev: [{ type: "stdout", data: "true\n" }, { type: "exit", code: 0 }],
+    log: [
+      {
+        type: "stdout",
+        data:
+          "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0\x1fb2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1\x1fsecond\x1fTest Author\x1f2026-01-02T00:00:00Z\x1e" +
+          "b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1\x1f\x1ffirst\x1fTest Author\x1f2026-01-01T00:00:00Z\x1e",
+      },
+      { type: "exit", code: 0 },
+    ],
+    refs: [{ type: "stdout", data: "main\nfeature\n" }, { type: "exit", code: 0 }],
+    status: [{ type: "stdout", data: " M a.txt\n?? b.txt\n" }, { type: "exit", code: 0 }],
+  };
+
+  function scriptFor(parts: Record<string, FakeEvent[]>) {
+    return (argv: string[]): FakeEvent[] => {
+      const key = argv[1] ?? "";
+      if (key.startsWith("rev-parse")) return parts.rev ?? [{ type: "exit", code: 1 }];
+      if (key.startsWith("log")) return parts.log ?? [];
+      if (key.startsWith("for-each-ref")) return parts.refs ?? [];
+      if (key.startsWith("status")) return parts.status ?? [];
+      return [{ type: "exit", code: 1 }];
+    };
+  }
+
+  it("runs read-only git argv in the workspace and returns a compact graph", async () => {
+    const { status, body, sandbox } = await setup(scriptFor(happy))();
+    expect(status).toBe(200);
+    expect(body.json).toEqual({
+      commits: [
+        {
+          sha: "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0",
+          parents: ["b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1"],
+          subject: "second",
+          author: "Test Author",
+          date: "2026-01-02T00:00:00Z",
+        },
+        {
+          sha: "b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0a1",
+          parents: [],
+          subject: "first",
+          author: "Test Author",
+          date: "2026-01-01T00:00:00Z",
+        },
+      ],
+      refs: ["main", "feature"],
+      dirty: 2,
+      notRepo: false,
+    });
+    expect(sandbox.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      expect.objectContaining({ argv: expect.arrayContaining(["git"]) }),
+      expect.anything(),
+    );
+  });
+
+  it("returns a truthful empty state when the workspace is not a git repo", async () => {
+    const call = setup(
+      scriptFor({ rev: [{ type: "stdout", data: "fatal: not a git repository\n" }, { type: "exit", code: 128 }] }),
+    );
+    const { status, body } = await call();
+    expect(status).toBe(200);
+    expect(body.json).toEqual({ commits: [], refs: [], dirty: 0, notRepo: true });
+  });
+});
+
+describe("coding session workspace files (T42)", () => {
+  const actor = {
+    spaceId: "workspace-1",
+    userId: "user-1",
+    email: "user@rakazo.test",
+    isDeploymentOwner: true,
+  } satisfies Actor;
+  const session = {
+    id: "coding-1",
+    botId: "bot-1",
+    spaceId: "workspace-1",
+    engine: "omp",
+    status: "active",
+  };
+
+  function setup(
+    overrides: {
+      session?: Record<string, unknown> | null;
+      computer?: Record<string, unknown>;
+    } = {},
+  ) {
+    const sandbox = {
+      listFiles: vi
+        .fn()
+        .mockResolvedValue([
+          { path: "src", kind: "dir", size: 96 },
+          { path: "README.md", kind: "file", size: 12, executable: true },
+        ]),
+      readFile: vi.fn().mockResolvedValue(new TextEncoder().encode("hello world")),
+    };
+    const prisma = {
+      codingSession: {
+        findFirst: vi.fn().mockResolvedValue(
+          overrides.session === null ? null : { ...session, ...overrides.session },
+        ),
+      },
+      bot: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: "bot-1",
+          screenGeneration: 2,
+          threads: [{ id: "thread-1" }],
+          computer: {
+            id: "computer-1",
+            screenGeneration: 3,
+            kind: "process",
+            scope: "team",
+            state: "running",
+            providerRef: "sandbox-ref-1",
+            homeKey: "home-1",
+            controlHolder: "none",
+            controlLeaseId: null,
+            controlLeaseExpiresAt: null,
+            controlBotId: null,
+            controlRunId: null,
+            ...overrides.computer,
+          },
+        }),
+      },
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      computerExecutionLease: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaClient;
+    const deps = {
+      prisma,
+      sandbox,
+      jobs: { enqueue: vi.fn().mockResolvedValue(undefined) },
+      env: {
+        webOrigin: "http://127.0.0.1:5173",
+        screenProxySecret: "fake-test-secret",
+        sandboxProvider: "process",
+      },
+      dataDir: "/tmp/rakazo-router-test",
+    } as unknown as RouterDeps;
+    const handler = new RPCHandler(createRouter(deps));
+    const call = async (procedure: string, json: Record<string, unknown>) => {
+      const { response } = await handler.handle(
+        new Request(`http://127.0.0.1/rpc/codingSessions/${procedure}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ json: { sessionId: "coding-1", ...json } }),
+        }),
+        { prefix: "/rpc", context: { actor } },
+      );
+      return { status: response.status, body: await response.json() };
+    };
+    return { sandbox, call };
+  }
+
+  it("lists workspace entries relative to the workspace root", async () => {
+    const { sandbox, call } = await Promise.resolve(setup());
+    const { status, body } = await call("listFiles", { path: "src" });
+    expect(status).toBe(200);
+    expect(sandbox.listFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      "bots/bot-1/src",
+      expect.anything(),
+    );
+    expect(body.json).toEqual([
+      { path: "src", kind: "dir", size: 96 },
+      { path: "README.md", kind: "file", size: 12, executable: true },
+    ]);
+  });
+
+  it("reads a text file from the workspace with the size cap", async () => {
+    const { sandbox, call } = await Promise.resolve(setup());
+    const { status, body } = await call("readFile", { path: "README.md" });
+    expect(status).toBe(200);
+    expect(sandbox.readFile).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sandbox-ref-1" }),
+      "bots/bot-1/README.md",
+      expect.anything(),
+      { maxBytes: 2 * 1024 * 1024 },
+    );
+    expect(body.json).toEqual({ path: "README.md", content: "hello world" });
+  });
+
+  it("refuses files beyond the text cap truthfully", async () => {
+    const big = setup();
+    big.sandbox.readFile.mockRejectedValue(new Error("computer file exceeds 2097152 bytes"));
+    await expect(big.call("readFile", { path: "big.bin" })).resolves.toMatchObject({
+      status: 400,
+    });
+  });
+
+  it("requires a session in the actor's space", async () => {
+    const missing = setup({ session: null });
+    await expect(missing.call("listFiles", {})).resolves.toMatchObject({ status: 404 });
+    const wrongEngine = setup({ session: { engine: "normal-pi" } });
+    await expect(wrongEngine.call("readFile", { path: "x" })).resolves.toMatchObject({
+      status: 404,
+    });
+  });
+
+  it("refuses when the bot has no running workspace computer", async () => {
+    const stopped = setup({ computer: { state: "stopped", providerRef: null } });
+    await expect(stopped.call("listFiles", {})).resolves.toMatchObject({ status: 409 });
   });
 });

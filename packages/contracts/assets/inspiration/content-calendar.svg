@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" fill="none">
+  <!-- Calendar grid -->
+  <rect x="15" y="12" width="90" height="68" rx="6" stroke="#6B7280" stroke-width="2.5" fill="#1F2937"/>
+  <!-- Header bar -->
+  <rect x="15" y="12" width="90" height="16" rx="6" fill="#374151"/>
+  <rect x="15" y="22" width="90" height="6" fill="#374151"/>
+  <!-- Day labels -->
+  <rect x="22" y="35" width="8" height="3" rx="1.5" fill="#6B7280"/>
+  <rect x="38" y="35" width="8" height="3" rx="1.5" fill="#6B7280"/>
+  <rect x="54" y="35" width="8" height="3" rx="1.5" fill="#6B7280"/>
+  <rect x="70" y="35" width="8" height="3" rx="1.5" fill="#6B7280"/>
+  <rect x="86" y="35" width="8" height="3" rx="1.5" fill="#6B7280"/>
+  <!-- Content dots on calendar days -->
+  <circle cx="26" cy="46" r="4" fill="#6B7280"/>
+  <circle cx="42" cy="54" r="4" fill="#9CA3AF"/>
+  <circle cx="58" cy="46" r="4" fill="#4B5563"/>
+  <circle cx="74" cy="54" r="4" fill="#9CA3AF"/>
+  <circle cx="90" cy="46" r="4" fill="#6B7280"/>
+  <!-- Pen icon -->
+  <path d="M95 12 L108 25 L104 29 L91 16 Z" fill="#9CA3AF"/>
+  <path d="M100 22 L98 24 Z" fill="#6B7280"/>
+</svg>

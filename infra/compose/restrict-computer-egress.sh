@@ -188,18 +188,21 @@ apply_family() {
   local cmd="$1" rules=() line chain
   command -v "$cmd" >/dev/null 2>&1 || return 0
   wait_for_docker_user "$cmd"
-  mapfile -t rules < <("$2")
+  # bash 3.2 (macOS /bin/bash) has no mapfile; read line-by-line instead.
+  while IFS= read -r line || [[ -n $line ]]; do
+    rules+=("$line")
+  done < <("$2")
   local -a chain_names=()
-  local -A seen=()
+  # bash 3.2 has no associative arrays; membership strings stand in for the maps.
+  local seen=" "
   for line in "${rules[@]}"; do
     chain="${line%% *}"
-    if [[ -z ${seen[$chain]+x} ]]; then
-      seen[$chain]=1
-      chain_names+=("$chain")
-    fi
+    case $seen in
+      *" $chain "*) ;;
+      *) seen="$seen$chain "; chain_names+=("$chain") ;;
+    esac
   done
-  local -A rewrite=()
-  local chain_needs=0
+  local rewrite=" " chain_needs=0
   for chain in "${chain_names[@]}"; do
     local -a wanted=()
     for line in "${rules[@]}"; do
@@ -209,7 +212,7 @@ apply_family() {
     if chain_has_prefix "$cmd" "$chain" "${wanted[@]}"; then
       continue
     fi
-    rewrite[$chain]=1
+    rewrite="$rewrite$chain "
     chain_needs=1
   done
   if ((chain_needs == 0)); then
@@ -227,12 +230,18 @@ apply_family() {
   for ((i = ${#rules[@]} - 1; i >= 0; i--)); do
     line="${rules[i]}"
     chain="${line%% *}"
-    [[ -n ${rewrite[$chain]+x} ]] || continue
+    case $rewrite in
+      *" $chain "*) ;;
+      *) continue ;;
+    esac
     read -ra args <<<"${line#* }"
     "$cmd" -I "$chain" 1 "${args[@]}"
   done
   for chain in "${chain_names[@]}"; do
-    [[ -n ${rewrite[$chain]+x} ]] || continue
+    case $rewrite in
+      *" $chain "*) ;;
+      *) continue ;;
+    esac
     wanted=()
     for line in "${rules[@]}"; do
       [[ "${line%% *}" == "$chain" ]] || continue
@@ -292,7 +301,10 @@ host_has_ipv6() {
 # firewall binaries installed (offline checks, macOS workstations).
 print_family() {
   local cmd="$1" rules=() line i
-  mapfile -t rules < <("$2")
+  # bash 3.2 (macOS /bin/bash) has no mapfile; read line-by-line instead.
+  while IFS= read -r line || [[ -n $line ]]; do
+    rules+=("$line")
+  done < <("$2")
   for ((i = ${#rules[@]} - 1; i >= 0; i--)); do
     line="${rules[i]}"
     printf '%s -I %s 1 %s\n' "$cmd" "${line%% *}" "${line#* }"

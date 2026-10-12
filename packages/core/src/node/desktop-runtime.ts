@@ -597,9 +597,10 @@ export function terminalCommand(
   cwd: string,
   env = DEFAULT_DESKTOP_ENV,
   layout: ReturnType<typeof commandLayout> = screenPorts(0),
+  launchCommand?: string,
 ) {
   return [
-    startTerminalCommand(controlToken, terminalToken, cwd, env, layout),
+    startTerminalCommand(controlToken, terminalToken, cwd, env, layout, launchCommand),
     proxyEnvironmentCommand(),
     gatewayCommand(layout.controlPort),
   ].join("\n");
@@ -612,6 +613,7 @@ export function startTerminalCommand(
   cwd: string,
   env = DEFAULT_DESKTOP_ENV,
   layout: ReturnType<typeof commandLayout> = screenPorts(0),
+  launchCommand?: string,
 ) {
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(terminalToken)) throw new Error("invalid terminal token");
   const display = layout.displayNumber;
@@ -633,7 +635,7 @@ export function startTerminalCommand(
     // Displays share the program file; replace it whole so a starting server never reads half.
     `  printf %s ${shellQuote(TERMINAL_SERVER_PROGRAM)} >${TERMINAL_SERVER}.$$`,
     `  mv ${TERMINAL_SERVER}.$$ ${TERMINAL_SERVER}`,
-    `  HOME=${shellQuote(env.homeDir)} nohup python3 ${TERMINAL_SERVER} ${socket} ${shellQuote(cwd)} /tmp/rakazo/terminal-state-${display} 8>&- 9>&- </dev/null >/tmp/rakazo/terminal-${display}.log 2>&1 &`,
+    `  HOME=${shellQuote(env.homeDir)} nohup python3 ${TERMINAL_SERVER} ${socket} ${shellQuote(cwd)} /tmp/rakazo/terminal-state-${display} ${shellQuote(launchCommand ?? "")} 8>&- 9>&- </dev/null >/tmp/rakazo/terminal-${display}.log 2>&1 &`,
     `  for i in $(seq 1 50); do [ -S ${socket} ] && break; sleep 0.1; done`,
     `  [ -S ${socket} ] || exit 1`,
     `  ${entry} >${next}`,

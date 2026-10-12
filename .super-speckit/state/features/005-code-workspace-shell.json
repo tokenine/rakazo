@@ -1,0 +1,115 @@
+{
+  "id": "005-code-workspace-shell",
+  "state": "qa_running",
+  "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3",
+  "maker": "zcode-maker",
+  "checker": "zcode-checker",
+  "matrix": "specs/005-code-workspace-shell/verification-matrix.md",
+  "ui_change": true,
+  "journey_ux": {
+    "status": "not_required",
+    "report": null,
+    "candidate_sha": null
+  },
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/005-code-workspace-shell/purpose-map.md",
+    "decision": ".super-speckit/purpose/005-code-workspace-shell/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/005-code-workspace-shell/spec-grill.md"
+  },
+  "route": {
+    "kind": "normal",
+    "rationale": "UI + runtime wiring + security-sensitive spawn/lease changes: terminal auth demotion, provider capability gate, three new RPCs, new workspace route. Requirements R12/R13 tracked as slice 7 of specs/004-code-mode (spec amendment committed feac3b7a); playbook-led gates apply; delivery executed on the integration branch with grill .super-speckit/grills/004-code-mode/spec-grill-s7-shell.md."
+  },
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/005-code-workspace-shell/change-story.md"
+  },
+  "handoff": {
+    "path": null
+  },
+  "decision_trail": {
+    "path": null
+  },
+  "verification_harness": {
+    "path": null
+  },
+  "static_review": {
+    "artifact": null
+  },
+  "corrective_enforcement": {
+    "artifact": null
+  },
+  "runs": [],
+  "bugs": [
+    {
+      "id": "wake-resleep-idle-sweep",
+      "status": "open",
+      "evidence": ".super-speckit/bugs/wake-resleep-idle-sweep.md",
+      "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"
+    },
+    {
+      "id": "omp-launch-docker-path",
+      "status": "open",
+      "evidence": ".super-speckit/bugs/omp-launch-docker-path.md",
+      "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3"
+    },
+    {
+      "id": "dbus-unknown-uid",
+      "status": "resolved",
+      "evidence": ".super-speckit/bugs/dbus-unknown-uid.md",
+      "candidate_sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3",
+      "resolution": ".super-speckit/bugs/dbus-unknown-uid.md"
+    }
+  ],
+  "delivery_contract": "playbook-v1",
+  "schema_version": 2,
+  "revision": 33,
+  "prerequisite_receipts": {
+    "research": {
+      "artifact": ".super-speckit/state/receipts/005-code-workspace-shell/research.md",
+      "digest": "179c0e67ea0d4f3434755eba6f4d0418626180c64457ac41e91775e2e3d16a9e"
+    },
+    "architecture": {
+      "artifact": ".super-speckit/state/receipts/005-code-workspace-shell/architecture.md",
+      "digest": "079e31623e5a93d211fafeab2aefa882ceb258c0771ce0c37a5527d549f73f60"
+    },
+    "baseline-feedback": {
+      "artifact": ".super-speckit/state/receipts/005-code-workspace-shell/baseline-feedback.md",
+      "digest": "3971d5eac711edeabfd67bd4407535c43623406be4df0e2444c2bd7c29cfad3c"
+    },
+    "phase-contract": {
+      "artifact": ".super-speckit/state/receipts/005-code-workspace-shell/phase-contract.md",
+      "digest": "7e72f4cdce17e377f4c9b3fc68ed5207159196373bf6e6e4cededd24db040edf"
+    }
+  },
+  "candidates": [
+    {
+      "sha": "1a006530a7435b445b534b3a5cdf64c11b92d20d",
+      "maker": "zcode-maker",
+      "matrix_digest": "b33fca9ddafa0cc46c2d0e21ff33c27459c2cb227785b097e7e0de7a53318719"
+    },
+    {
+      "sha": "5371a9cf3b50c405d5d8f4e64dfa611908c1908c",
+      "maker": "zcode-maker",
+      "matrix_digest": "5d367375717c198858a3bb377099cc336fe1430998bf6bfc9fd508707d501c14"
+    },
+    {
+      "sha": "a72c2b4cf3b66f96f4bc6a3a1f9be9f355d9c1b3",
+      "maker": "zcode-maker",
+      "matrix_digest": "5d367375717c198858a3bb377099cc336fe1430998bf6bfc9fd508707d501c14"
+    }
+  ],
+  "qa_worktree": "/private/tmp/rakazo-qa-s7",
+  "attempt_history": [
+    "s7-shell-q1",
+    "s7-shell-q3"
+  ],
+  "qa_attempt": "s7-shell-q3"
+}

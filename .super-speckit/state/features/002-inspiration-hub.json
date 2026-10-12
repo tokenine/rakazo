@@ -1,0 +1,38 @@
+{
+  "id": "002-inspiration-hub",
+  "state": "blocked",
+  "candidate_sha": null,
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": "specs/002-inspiration-hub/spec.md",
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/002-inspiration-hub/purpose-map.md",
+    "decision": ".super-speckit/purpose/002-inspiration-hub/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/002-inspiration-hub/spec-grill.md"
+  },
+  "route": {
+    "kind": "normal",
+    "rationale": "Single deployable unit (web hub + bundled catalog + one RPC + small Welcome-token cleanup); mobile is a recorded degradation, not a build target; no data migration; fresh standalone surface with low blast radius. Not micro (new route/catalog/RPC/e2e), not milestone (no cross-surface build, no schema change)."
+  },
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/002-inspiration-hub/change-story.md"
+  },
+  "handoff": {
+    "path": null
+  },
+  "runs": [],
+  "bugs": [],
+  "migration_reason": "Legacy evidence must be revalidated",
+  "schema_version": 2,
+  "candidates": [],
+  "legacy_candidate_sha": "697a638f81d4f0e579bc67b3beec95b87392cd10",
+  "revision": 1
+}

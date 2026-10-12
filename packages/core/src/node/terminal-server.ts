@@ -4,9 +4,11 @@
  * bytes; input arrives as `[kind:u8][length:u32be][payload]` frames (see contracts/terminal).
  * Per-session files live in the state directory, which is removed when the server stops.
  */
-export const TERMINAL_SERVER_PROGRAM = `import fcntl, glob, os, pty, pwd, select, signal, socket, struct, sys, tempfile, termios
+export const TERMINAL_SERVER_PROGRAM = `import fcntl, glob, os, pty, pwd, select, signal, socket, struct, sys, tempfile, termios, time
 
 path, cwd, state = sys.argv[1], sys.argv[2], sys.argv[3]
+# Optional initial input (e.g. "omp"), typed into each new shell exactly once.
+launch = sys.argv[4] if len(sys.argv) > 4 else ""
 MAX_FRAME = 1 << 20
 
 def identity(env):
@@ -59,6 +61,22 @@ def serve(conn):
             os.chdir(os.path.expanduser("~"))
         shell = env.get("SHELL") or "/bin/bash"
         os.execvpe(shell, [shell, "-l"], env)
+    if launch:
+        # Wait for the shell's first output (its prompt) before typing: input written
+        # during startup can be swallowed by profile scripts before bash reads it.
+        deadline = time.time() + 3
+        try:
+            while time.time() < deadline:
+                ready, _, _ = select.select([fd], [], [], 0.2)
+                if fd in ready:
+                    data = os.read(fd, 65536)
+                    if not data:
+                        break
+                    break
+        except OSError:
+            pass
+        time.sleep(0.3)
+        write_all(fd, (launch + "\\n").encode())
     pending = b""
     try:
         while True:
@@ -111,6 +129,13 @@ try:
 except FileNotFoundError:
     pass
 os.makedirs(state, mode=0o700, exist_ok=True)
+# exist_ok never repairs a pre-existing directory: a dir created without the
+# execute bit (bad umask, earlier root-owned run) would silently kill every
+# later session at the first mkstemp, and serve() exits are invisible to clients.
+try:
+    os.chmod(state, 0o700)
+except OSError:
+    pass
 server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 previous = os.umask(0o077)
 server.bind(path)
@@ -121,9 +146,16 @@ while True:
     conn = server.accept()[0]
     if os.fork() == 0:
         server.close()
+        code = 0
         try:
             serve(conn)
+        except BaseException:
+            # os._exit would drop the traceback (and the reason a client saw an
+            # instant close); print it to stderr, which is the terminal's log.
+            import traceback
+            traceback.print_exc()
+            code = 1
         finally:
-            os._exit(0)
+            os._exit(code)
     conn.close()
 `;

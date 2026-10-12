@@ -1,0 +1,51 @@
+{
+  "run_id": "003-s1-run2",
+  "feature": "003-agent-marketplace",
+  "slice": "S1",
+  "candidate_sha": "3178940e5a55709fe7be3018541f541a15c6e211",
+  "checker": "omp-checker-003-s1-run2",
+  "host": {
+    "platform": "linux-gnu-arm64",
+    "os": "Linux 7.0.0-30-generic",
+    "cpu": "aarch64"
+  },
+  "readiness_checks": [
+    {
+      "id": "node-engine",
+      "requirement": "^22.22.2 || ^24.0.0 || >=26.0.0 (package.json engines, engine-strict=true)",
+      "observed": "system node v22.22.1 — NOT satisfied",
+      "resolution": "installed Node v22.23.3 (LTS Jod) to /opt/node-22.23.3 and used it for all gate commands",
+      "status": "pass"
+    },
+    {
+      "id": "pnpm-install",
+      "command": "pnpm install --frozen-lockfile",
+      "status": "pass",
+      "detail": "vitest 4.1.11, typescript 7.0.2, turbo 2.10.12 resolved from pnpm-lock.yaml"
+    },
+    {
+      "id": "prisma-client",
+      "command": "pnpm --filter @rakazo/db generate",
+      "status": "pass",
+      "detail": "Generated Prisma Client 7.10.0 to packages/db/src/generated/prisma (gitignored; required before any db-importing suite)"
+    },
+    {
+      "id": "worktree-isolation",
+      "command": "git worktree add --detach ss/qa/003-s1-run2 3178940e",
+      "status": "pass",
+      "detail": "clean checkout of the immutable candidate SHA; 0 modified files; maker tree untouched"
+    },
+    {
+      "id": "db-backed-suites",
+      "status": "not-run",
+      "detail": "The 32 api test files executed are unit/seam suites (mocked prisma). No live database was provisioned on this host in this run, so any matrix row whose only evidence is a live DB assertion is NOT VERIFIED by this receipt."
+    }
+  ],
+  "namespace": "ss-003-s1-run2",
+  "timestamps": {
+    "started_utc": "2026-09-28T17:58:00Z",
+    "completed_utc": "2026-09-28T18:04:00Z"
+  },
+  "redaction_check": "no credentials present; all HMAC material in probes uses a test-only constant",
+  "notes": "Prior run 003-s1-run1 evidence referenced /Users/poom-work (macOS) and could not be reproduced on this host. This receipt and run2 evidence are produced independently on linux-arm64."
+}

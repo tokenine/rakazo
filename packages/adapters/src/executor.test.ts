@@ -1194,7 +1194,7 @@ describe("createRunExecutor", () => {
       bot: {
         findUnique: vi.fn(async () => ({
           id: "bot-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
         })),
       },
       thread: {
@@ -1240,6 +1240,63 @@ describe("createRunExecutor", () => {
         runId: "run-1",
         threadId: "group-thread-1",
       }),
+    );
+  });
+
+  it("pins threadless routines to the bot's primary session, then earliest", async () => {
+    const scheduledAt = new Date(Date.now() - 1_000);
+    const enqueue = vi.fn(async () => undefined);
+    const cancel = vi.fn(async () => undefined);
+    const append = vi.fn(async () => undefined);
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    const taskCreate = vi.fn(async () => ({ id: "task-1" }));
+    const runCreate = vi.fn(async () => ({ id: "run-1" }));
+    const botFindUnique = vi.fn(async () => ({
+      id: "bot-1",
+      threads: [{ id: "thread-primary" }],
+    }));
+    const prisma = {
+      routine: {
+        findUnique: vi.fn(async () => ({
+          id: "routine-1",
+          spaceId: "ws-1",
+          botId: "bot-1",
+          userId: "user-1",
+          prompt: "say hi",
+          crons: [ONCE_ROUTINE_CRON],
+          timezone: "UTC",
+          active: true,
+          nextRunAt: scheduledAt,
+          threadId: null,
+        })),
+      },
+      bot: { findUnique: botFindUnique },
+      thread: { findFirst: vi.fn(async () => null) },
+      agentSkill: { findMany: vi.fn(async () => []) },
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          routine: { updateMany },
+          task: { create: taskCreate },
+          run: { create: runCreate },
+        }),
+      ),
+    } as unknown as PrismaClient;
+    const executor = createRunExecutor({
+      prisma,
+      jobs: { enqueue, cancel, close: vi.fn(async () => undefined) },
+      events: { append },
+    } as unknown as Parameters<typeof createRunExecutor>[0]);
+
+    await executor.wakeRoutine("routine-1", scheduledAt.toISOString());
+
+    expect(botFindUnique).toHaveBeenCalledWith({
+      where: { id: "bot-1" },
+      include: {
+        threads: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }], take: 1 },
+      },
+    });
+    expect(runCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ threadId: "thread-primary" }) }),
     );
   });
 
@@ -1313,7 +1370,7 @@ describe("createRunExecutor", () => {
       bot: {
         findUnique: vi.fn(async () => ({
           id: "bot-1",
-          thread: { id: "dm-thread-1" },
+          threads: [{ id: "dm-thread-1" }],
         })),
       },
       thread: { findFirst },
@@ -1378,7 +1435,7 @@ describe("createRunExecutor", () => {
       bot: {
         findUnique: vi.fn(async () => ({
           id: "bot-1",
-          thread: { id: "dm-thread-1" },
+          threads: [{ id: "dm-thread-1" }],
         })),
       },
       thread: { findFirst },
@@ -1451,7 +1508,7 @@ description: Prepare standup notes
       bot: {
         findUnique: vi.fn(async () => ({
           id: "bot-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
         })),
       },
       agentSkill: {
@@ -1512,7 +1569,7 @@ description: Prepare standup notes
       bot: {
         findUnique: vi.fn(async () => ({
           id: "bot-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
         })),
       },
       agentSkill: {
@@ -1568,7 +1625,7 @@ description: Prepare standup notes
       bot: {
         findUnique: vi.fn(async () => ({
           id: "bot-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
         })),
       },
       agentSkill: {

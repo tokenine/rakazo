@@ -1,0 +1,27 @@
+version: 1
+base_commit: d7a4e523cd5941e2775e2f5a5ce825bcb734d283
+base_branch: speckit-setup
+generated: 2026-09-28
+generator: super-speckit brownfield bootstrap (read-only evidence pass)
+sources:
+  - AGENTS.md
+  - docs/HANDOFF.md
+  - REBRAND-NOTES.md
+  - package.json / pnpm-workspace.yaml
+  - infra/compose/docker-compose.yml
+  - packages/db/prisma/schema.prisma
+  - apps/api/src/router.ts, app.ts
+  - apps/worker/src/index.ts
+  - packages/adapter-kit/src/interfaces.ts, types.ts, registry.ts
+  - packages/adapters/src/executor.ts, pi-runtime.ts, builtin-tools.ts, messaging-delivery.ts, telegram-keyed-adapter.ts, background-job-handlers.ts
+  - packages/auth/src/index.ts
+  - packages/core/src/secrets-guard.ts, messaging-prompts.ts
+  - apps/desktop/src/main.ts, client-browser/index.ts, client-browser/pane.ts
+  - apps/web/src/App.tsx, pages/Shell.tsx
+  - apps/mobile/lib/api.ts
+  - infra/sandboxes/computer/Dockerfile, rakazo-browser-kernel.mjs
+  - infra/sandboxes/supervisor/src/computer-spec.ts
+  - infra/updater/src/updater-logic.ts
+  - .github/workflows/
+evidence_method: four parallel read-only exploration passes over the listed sources; no runtime telemetry
+known_unknowns: risks-and-unknowns.md

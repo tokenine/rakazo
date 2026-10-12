@@ -1,0 +1,22 @@
+schema_version: "1.0"
+workflow:
+  id: "super-speckit"
+  name: "Super-SpecKit evidence-first delivery"
+  version: "0.1.0"
+  author: "super-speckit"
+  description: "Runs autonomous Spec Kit SDD with feedback loops, independent QA, and evidence-gated merge"
+requires:
+  speckit_version: ">=0.8.5"
+inputs:
+  feature:
+    type: string
+    required: true
+    prompt: "Feature request or feature ID"
+  ui_change:
+    type: boolean
+    default: false
+    prompt: "Does this change alter a user-facing interface?"
+steps:
+  - id: playbook-delivery
+    type: prompt
+    message: "Run ask-super-speckit for '{{ inputs.feature }}'. Read the playbook-delivery contract. Select PStack first; micro uses a persisted playbook and matrix, normal/milestone uses native Spec Kit. Record purpose-gate from actual user confirmation; run spec-grill for normal/milestone scope. Preserve confirmed purpose, research actual structure and primary guidance, record executable architecture constraints, use one code-writing checkout, and verify the exact candidate independently in a QA clone. Require real user journeys and engineering review. Persist long-run predicate, steps, authority, budget and checkpoints; observe a supported runner before promising unattended resume. Continue through diagnosis/fix/retest until complete or truthfully blocked. Release only within configured authority and retain evidence."

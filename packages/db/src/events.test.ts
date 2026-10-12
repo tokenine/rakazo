@@ -334,7 +334,7 @@ describe("finalizeComputerControlRelease", () => {
       bot: {
         findFirst: vi.fn().mockResolvedValue({
           computerId: "computer-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
         }),
       },
       run: {
@@ -414,7 +414,7 @@ describe("finalizeComputerControlRelease", () => {
       bot: {
         findFirst: vi.fn().mockResolvedValue({
           computerId: "computer-1",
-          thread: { id: "thread-1" },
+          threads: [{ id: "thread-1" }],
         }),
       },
       run: {

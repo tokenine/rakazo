@@ -3,6 +3,7 @@ import type { JobPublisher } from "@rakazo/adapter-kit";
 import { runContinueJob } from "@rakazo/adapter-kit";
 import type { EncryptedSecretStore } from "@rakazo/adapters";
 import type { PrismaClient } from "@rakazo/db";
+import { PRIMARY_SESSION_ORDER } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 
 export const WEBHOOK_MAX_BODY_BYTES = 64 * 1024;
@@ -103,11 +104,12 @@ export async function loadWebhookTarget(
       spaceId: true,
       userId: true,
       webhookSecretId: true,
-      thread: { select: { id: true } },
+      threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } },
     },
   });
 
-  if (!bot?.thread || !bot.webhookSecretId) return null;
+  const primaryThread = bot?.threads[0];
+  if (!primaryThread || !bot.webhookSecretId) return null;
 
   const secret = await deps.prisma.secret.findUnique({
     where: { id: bot.webhookSecretId },
@@ -129,7 +131,7 @@ export async function loadWebhookTarget(
       userId: bot.userId,
       webhookSecretId: bot.webhookSecretId,
     },
-    threadId: bot.thread.id,
+    threadId: primaryThread.id,
     expected,
   };
 }

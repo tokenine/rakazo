@@ -104,6 +104,7 @@ import {
   isTooManyDatabaseConnections,
   loadRunHistoryMessages,
   type McpServer,
+  PRIMARY_SESSION_ORDER,
   type Prisma,
   type PrismaClient,
   parseComputerMode,
@@ -187,6 +188,13 @@ import { executeCloudAgentTool } from "./cloud-agent-service.js";
 import { validCloudAgentArgs } from "./cloud-agent-tools.js";
 import { selectCloudAgentTools } from "./cloud-agent-tools-select.js";
 import {
+  acceptanceRefusalReason,
+  CODING_READ_ONLY_TOOLS,
+  type CodingAcceptanceGate,
+} from "./coding-acceptance-gate.js";
+import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
+import { SecretEgressFilter } from "./coding-secrets-egress.js";
+import {
   collectLogIds,
   mergeConnectedPlugins,
   needsLivePluginSync,
@@ -216,6 +224,7 @@ import { checkpointRunComputerWorkspace } from "./computer-workspace.js";
 import { redactConnectorPayload, sanitizeConnectorError } from "./connector-safety.js";
 import { formatCurrentTimeInstruction } from "./current-time.js";
 import { resolveDeploymentModel } from "./deployment-model.js";
+import { finalizeRunSetupFailure, runSetupRetryDecision } from "./executor-setup-retry.js";
 import { handoffToGroupBot, loadGroupContext } from "./group-handoff.js";
 import {
   COMPACTION_BATCH_SIZE,
@@ -320,13 +329,17 @@ import {
 } from "./skill-tools.js";
 import {
   continueRunClaimFence,
-  DESKTOP_HELD_FOR_TAKEOVER_MESSAGE,
   refreshTakeoverContinuePlan,
   TAKEOVER_RESUME_CHECKPOINTS,
   type TakeoverResumeCheckpoint,
   takeoverCheckpointOf,
   takeoverContinuePlan,
 } from "./takeover-resume.js";
+import {
+  DESKTOP_HELD_FOR_TAKEOVER_MESSAGE,
+  recheckWorkspaceAgainstTakeoverBaseline,
+  takeoverHeldToolMessage,
+} from "./takeover-settle.js";
 import { TASK_CATALOG_GUIDANCE, taskCatalogFromTool } from "./task-catalog.js";
 import { getActiveTeachingSession, parsePlaybook } from "./teaching-session.js";
 import {
@@ -623,6 +636,16 @@ export interface ExecutorDeps {
   /** Allow RFC1918 / Docker-network MCP URLs when the deployment owner enabled the escape. */
   mcpAllowPrivateEndpoint?: boolean;
   /** Remote cloud coding agents. Null/omit means tools stay uninjected. */
+  /** 004-code-mode: coding acceptance gate. Present only for coding-session runs. */
+  codingGate?: CodingAcceptanceGate;
+  /**
+   * 004-code-mode S3 (T17): granted-secret egress values for the run, when
+   * the run belongs to a coding session with an active secrets grant. Shell
+   * command results for coding sessions are redacted with the TRANSFORM-AWARE
+   * deny-list filter (literal + base64/hex/URL); non-coding runs keep the
+   * legacy literal-only behavior (scoped replacement per the task).
+   */
+  codingSecrets?: { egressValuesForRun(runId: string): string[] };
   cloudAgent?: CloudAgentConnection | null;
   /** Optional Auto Review verifier. When omitted, the factory selects from env (llm | jev | scripted). */
   autoReview?: AutoReviewProvider;
@@ -1026,17 +1049,20 @@ export function createRunExecutor(deps: ExecutorDeps) {
       if (await deferFutureRoutine(deps.jobs, routineId, scheduledAt)) return;
       const bot = await deps.prisma.bot.findUnique({
         where: { id: routine.botId },
-        include: { thread: true },
+        include: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1 } },
       });
+      // Archiving pauses a bot's routines; re-pause one that slipped back to active.
       if (bot?.archivedAt) {
-        // Archiving pauses a bot's routines; re-pause one that slipped back to active.
         await deps.prisma.routine.updateMany({
           where: { id: routine.id, active: true },
           data: { active: false, nextRunAt: null },
         });
         return;
       }
-      if (!bot?.thread) return;
+      // Legacy threadless routines pin to the bot's primary session.
+      if (!bot) return;
+      const primaryThread = bot.threads[0] ?? null;
+      if (!primaryThread) return;
       const targetThread = routine.threadId
         ? await deps.prisma.thread.findFirst({
             where: {
@@ -1055,7 +1081,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
             select: { id: true },
           })
         : null;
-      const thread = targetThread ?? bot.thread;
+      const thread = targetThread ?? primaryThread;
       // A schedule with no valid parseable cron among its crons (e.g. a
       // legacy row accepted before cron validation was added) fires the
       // already-due run once, then nextRunAt stays null and the routine
@@ -1510,42 +1536,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
         const runModelProvider = selected.provider ?? runtimeFallback?.provider;
         const runModelId = selected.id ?? runtimeFallback?.id;
         const failRunBeforeModel = async (message: string) => {
-          const failed = await deps.events.finalizeRun({
-            spaceId: run.spaceId,
-            threadId: thread.id,
-            botId: bot.id,
-            runId,
-            taskId: run.taskId,
-            attemptId: attempt.id,
-            leaseOwner: workerId,
-            leaseFence: fence,
-            outcome: "failed",
-            error: message,
-          });
-          if (!failed) return;
-          if (failed.continuationRunId) {
-            await deps.jobs
-              .enqueue(runContinueJob(failed.continuationRunId))
-              .catch((error) => getLogger().error("steering continuation enqueue", error));
-          }
-          if (run.trigger === "bot_message") {
-            await returnBotMessageOutcome(
-              deps,
-              { ...run, sourceMessageId: run.sourceMessageId },
-              { id: bot.id, name: bot.name },
-              `Could not complete the delegated request: ${message}`,
-              "status",
-            ).catch((error) => getLogger().error("bot message failure return", error));
-          }
-          if (!failed.continuationRunId) {
-            await notifyRun(deps, run, {
-              kind: "failure",
-              title: `${bot.name} failed`,
-              body: message,
-              botId: bot.id,
-              threadId: thread.id,
-            });
-          }
+          await finalizeRunSetupFailure(
+            deps,
+            {
+              run,
+              bot: { id: bot.id, name: bot.name },
+              attemptId: attempt.id,
+              workerId,
+              fence,
+            },
+            message,
+          );
         };
         if (!runModelProvider || !runModelId) {
           await failRunBeforeModel(MISSING_MODEL_MESSAGE);
@@ -1663,6 +1664,35 @@ export function createRunExecutor(deps: ExecutorDeps) {
         const callEndRun = run.trigger === "call_end";
         const callClientNonceForRun = callEndRun ? run.clientNonce : sourceClientNonce;
         const voiceCall = callEndRun || isCallClientNonce(sourceClientNonce);
+        // 004-code-mode T12 (V4): pre-resume workspace recheck vs the takeover
+        // baseline. Divergence (manual edits while the user held the screen) is
+        // reported as protected in the continuation prompt — never silently
+        // clobbered, never implied rolled back. Best-effort: a failed recheck
+        // must not fail run setup.
+        let takeoverWorkspaceRecheckNote: string | undefined;
+        if (
+          (heldForTakeover || takeoverResume) &&
+          storedComputer &&
+          deps.home &&
+          typeof (deps.home as { changesSince?: unknown }).changesSince === "function"
+        ) {
+          try {
+            const recheck = await recheckWorkspaceAgainstTakeoverBaseline(
+              deps.home as Parameters<typeof recheckWorkspaceAgainstTakeoverBaseline>[0],
+              {
+                homeKey: String((storedComputer as { homeKey?: unknown }).homeKey ?? ""),
+                homeRevision:
+                  ((storedComputer as { homeRevision?: unknown }).homeRevision as
+                    | string
+                    | null
+                    | undefined) ?? null,
+              },
+            );
+            if (recheck?.diverged) takeoverWorkspaceRecheckNote = recheck.note;
+          } catch {
+            // Unusable baseline: skip the recheck rather than guess.
+          }
+        }
         const graphicalToolsAllowed = graphical && acceptsImages && !heldForTakeover;
         // User-level "built-in browser" preference (desktop app setting): while
         // the user's desktop app is actually online (fresh heartbeat), deny the
@@ -1911,6 +1941,20 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
           if (IMAGE_RETURNING_COMPUTER_TOOLS.has(name) && !acceptsImages) {
             return { error: MODEL_CANNOT_SEE_MESSAGE };
+          }
+          if (deps.codingGate) {
+            // 004-code-mode T4: acceptance-artifact gate at the authorization
+            // point. Deny-by-default (HIGH-1 fix): only CODING_READ_ONLY_TOOLS
+            // pass without a recorded acceptance artifact. Refuses explicitly
+            // before any effect is recorded or executed.
+            const gateVerdict = await deps.codingGate.check({ runId, toolName: name, args });
+            if (!gateVerdict.allowed) return { error: gateVerdict.reason };
+          } else if (run.trigger === CODING_SESSION_TRIGGER && !CODING_READ_ONLY_TOOLS.has(name)) {
+            // 004-code-mode fix (HIGH-1): FAIL CLOSED — a coding_session run
+            // with no gate installed must never be silently ungated. Only the
+            // read-only allowlist passes; everything else is refused until a
+            // gate records acceptance. Non-coding runs keep legacy behavior.
+            return { error: acceptanceRefusalReason(name) };
           }
           let connectorCall: ConnectorCall = {
             tool: name,
@@ -2579,6 +2623,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
             }
           }
           if (name === "write_file") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold —
+            // the guard records an explicit exit instead of racing the user's work.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("write_file") });
+            }
             const filePath = String(args.path ?? "notes/result.txt");
             const content = new TextEncoder().encode(textContentArg(args.content, ""));
             workspaceCheckpoint.markDirty();
@@ -2728,6 +2777,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             }
           }
           if (name === "shell") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("shell") });
+            }
             const command = String(args.command ?? args.cmd ?? "");
             if (
               graphical &&
@@ -2784,7 +2837,31 @@ export function createRunExecutor(deps: ExecutorDeps) {
                 context,
                 timeoutMs,
               );
-              const redacted = redactAgentCommandResult(result, runSecrets);
+              // 004-code-mode S3 (T17): coding sessions redact with the
+              // transform-aware egress filter over run secrets PLUS granted
+              // secrets; non-coding runs keep the legacy literal-only form.
+              const codingEgressValues =
+                run.trigger === CODING_SESSION_TRIGGER
+                  ? (deps.codingSecrets?.egressValuesForRun(runId) ?? [])
+                  : [];
+              let redacted: { code: number | null; stdout: string; stderr: string };
+              if (codingEgressValues.length > 0) {
+                // S3 fix r2 (MED-1): the granted values ALSO ride runSecrets, so
+                // the existing literal redactors cover transcripts, progress,
+                // review payloads, and memory from this point on. TRANSFORM
+                // coverage (base64/hex/percent) stays scoped to coding shell
+                // results (below) and checkpoints (home egressFilter) until S5
+                // wires the full egress path — see the EVIDENCE S5 wiring item.
+                const additions = codingEgressValues.filter((value) => !runSecrets.includes(value));
+                if (additions.length > 0) {
+                  runSecrets.push(...additions);
+                  progressRedactor = createStreamingRedactor(runSecrets);
+                }
+                const egress = new SecretEgressFilter([...runSecrets, ...codingEgressValues]);
+                redacted = egress.filterCommandResult(result);
+              } else {
+                redacted = redactAgentCommandResult(result, runSecrets);
+              }
               await appendComputerCommand({
                 ...commandEvent,
                 status: "done",
@@ -3018,6 +3095,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             return finish(removed);
           }
           if (name === "schedule_create") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("schedule_create") });
+            }
             const created = await createScheduleFromTool(deps, {
               spaceId: run.spaceId,
               botId: bot.id,
@@ -3122,6 +3203,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             );
           }
           if (name === "add_mcp_server") {
+            // 004-code-mode T12 (V4/G1): settle-or-block during a takeover hold.
+            if (heldForTakeover) {
+              return finish({ error: takeoverHeldToolMessage("add_mcp_server") });
+            }
             const parsed = parseMcpServerToolArgs(args);
             if (!parsed) {
               return finish({
@@ -3977,6 +4062,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
           replyContext,
           basePrompt,
           takeoverResume?.promptNote,
+          takeoverWorkspaceRecheckNote,
           approvalContinuation,
           // A hang-up turn is read, not heard: no spoken-reply constraint.
           voiceCall && !callEndRun ? VOICE_CALL_INSTRUCTION : undefined,
@@ -4025,7 +4111,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
                     userId: run.userId,
                     archivedAt: null,
                     id: { not: bot.id },
-                    thread: { isNot: null },
+                    threads: { some: {} },
                   },
                   select: { id: true, name: true, title: true, description: true },
                   orderBy: { createdAt: "asc" },
@@ -4744,15 +4830,42 @@ export function createRunExecutor(deps: ExecutorDeps) {
             setupError instanceof Error && setupError.cause instanceof Error
               ? `: ${setupError.cause.message}`
               : "";
-          getLogger().error(
-            "run setup failed",
-            redactSecrets(
-              setupError instanceof Error
-                ? `${setupError.message}${causeMessage}`
-                : String(setupError),
-              runSecrets,
-            ),
+          const detail = redactSecrets(
+            setupError instanceof Error
+              ? `${setupError.message}${causeMessage}`
+              : String(setupError),
+            runSecrets,
           );
+          getLogger().error("run setup failed", detail);
+          if (
+            runSetupRetryDecision(
+              await deps.prisma.attempt.count({ where: { runId, status: "setup_failed" } }),
+              retryForever,
+            ) === "fail"
+          ) {
+            await deps.prisma.attempt
+              .update({
+                where: { id: attempt.id },
+                data: { status: "setup_failed", error: detail, finishedAt: new Date() },
+              })
+              .catch(() => undefined);
+            const bot = await deps.prisma.bot.findUniqueOrThrow({
+              where: { id: run.botId },
+              select: { id: true, name: true },
+            });
+            await finalizeRunSetupFailure(
+              deps,
+              {
+                run,
+                bot: { id: bot.id, name: bot.name },
+                attemptId: attempt.id,
+                workerId,
+                fence,
+              },
+              detail,
+            );
+            return;
+          }
         }
         const released = await writeComputerRunRequeue(
           deps,
@@ -4895,8 +5008,8 @@ export async function runNotificationsEnabled(
   return Boolean(source && (source.thread.groupId || source.bot.notifyOnFinish));
 }
 
-async function notifyRun(
-  deps: ExecutorDeps,
+export async function notifyRun(
+  deps: Pick<ExecutorDeps, "prisma" | "notifications">,
   run: { spaceId: string; userId: string; botId: string; threadId: string },
   message: NotificationMessage,
 ) {

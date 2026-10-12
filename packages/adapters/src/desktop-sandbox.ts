@@ -298,7 +298,13 @@ export class DesktopSandboxProvider implements SandboxProvider {
 
   private requiredBox(computer: ComputerRef): DesktopBox {
     const box = this.boxFor(computer);
-    if (!box) throw new Error("computer not found");
+    // Named so isSandboxGoneError recognizes it: a box lost across restarts is a
+    // gone sandbox, and the API clears the dead computer row instead of 500ing.
+    if (!box) {
+      throw Object.assign(new Error(`sandbox ${computer.id} is not running`), {
+        name: "SandboxNotFoundError",
+      });
+    }
     return box;
   }
 

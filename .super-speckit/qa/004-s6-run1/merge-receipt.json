@@ -1,0 +1,9 @@
+{
+  "run": "004-s6-run1",
+  "candidate_sha": "924da3ba45a4ec4c4e74586f68b8a6fd24bccb78",
+  "checker": "qa-engineer-checker",
+  "result": "pass",
+  "reason": "READY: frozen-lockfile install 0, check 24/24 uncached, 17/17 new tests (real-PTY row satisfied on darwin), adapters FAIL-set vs directly measured base 0a39f8ac EMPTY (19 pre-existing environmental at both), api 611 passed; two informational findings recorded (latent production terminal caller; maker count correction 19/27)",
+  "evidence": ".super-speckit/qa/004-s6-run1/",
+  "merged_as": "f69e93f6"
+}

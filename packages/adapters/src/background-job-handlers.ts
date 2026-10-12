@@ -9,20 +9,68 @@ import type {
 import { messagingDeliverJob } from "@rakazo/adapter-kit";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { LocalArtifactStore } from "./artifacts.js";
 import type { CloudAgentConnection } from "./cloud-agent-factory.js";
 import { pollCloudAgent } from "./cloud-agent-poll.js";
+import type { AcceptanceGateService } from "./coding-acceptance-gate.js";
+import { createAcceptanceGateService } from "./coding-acceptance-gate.js";
+import type { EngineRegistry } from "./coding-engine.js";
+import { CODING_SESSION_TRIGGER } from "./coding-pi-adapter.js";
+import type { ForgeClient } from "./coding-repo-to-pr.js";
+import {
+  createProcessCommandRunner,
+  createWorkspaceDiffProvider,
+  runRepoToPr,
+} from "./coding-repo-to-pr.js";
+import {
+  DeadlinePassedError,
+  checkDeadline,
+  checkBudget,
+  createSessionServiceDeps,
+  reconcileCrash,
+  recordActivity,
+} from "./coding-session-service.js";
 import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
-import type { createRunExecutor } from "./executor.js";
 import { compactHistory } from "./history-compaction.js";
+import { resolveAgentHomePath } from "./home.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
 import type { EncryptedSecretStore } from "./secrets.js";
 import { expireTaughtSkillTeaching } from "./teaching-session.js";
 
+/** The subset of the executor that background-job-handlers consumes. */
+interface BackgroundJobExecutor {
+  continueRun(runId: string, workerId: string): Promise<void>;
+  wakeRoutine(routineId: string, scheduledFor: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Production service functions for T35/T36 — callable from the API layer
+// ---------------------------------------------------------------------------
+
+/**
+ * T35 production: record an acceptance artifact for a coding session.
+ * Called by the API layer when the user agrees to the outcome and verification
+ * commands. The gate stays fail-closed until this is called.
+ */
+export async function recordCodingSessionAcceptance(
+  deps: {
+    prisma: PrismaClient;
+  },
+  input: {
+    sessionId: string;
+    outcome: string;
+    verificationCommands: string[];
+  },
+): Promise<void> {
+  const gate = createAcceptanceGateService({ prisma: deps.prisma });
+  await gate.record(input);
+}
+
 export function createBackgroundJobHandlers(deps: {
-  executor: ReturnType<typeof createRunExecutor>;
+  executor: BackgroundJobExecutor;
   prisma: PrismaClient;
   sandbox: SandboxProvider;
   home: AgentHomeStore;
@@ -36,6 +84,26 @@ export function createBackgroundJobHandlers(deps: {
   dataDir?: string;
   messaging?: MessagingSurface;
   cloudAgent?: CloudAgentConnection | null;
+  /** 004 T34: engine registry for coding session creation and dispatch. */
+  registry?: EngineRegistry;
+  /**
+   * 004 T35: acceptance gate service for recording acceptance artifacts.
+   * Wired from createAcceptanceGateService({ prisma }) in the composition root.
+   */
+  codingGate?: AcceptanceGateService;
+  /**
+   * 004 T37: granted-secret egress values for coding sessions.
+   * { egressValuesForRun(runId): string[] }
+   * Wired from composeCodingSecrets(cache) in the composition root.
+   */
+  codingSecrets?: { egressValuesForRun(runId: string): string[] };
+  /**
+   * 004 T36: ForgeClient for opening GitHub PRs.
+   * Boundary declaration: GitHub credentials live in the surfaces/CLI layer
+   * (GitHub OAuth). Worker composition does not have a ForgeClient — the
+   * run.completed handler guards on its presence and skips if absent.
+   */
+  forge?: ForgeClient;
 }): BackgroundJobHandlers {
   const deliverMessaging = async (runId?: string) => {
     if (!deps.messaging) return;
@@ -61,6 +129,69 @@ export function createBackgroundJobHandlers(deps: {
 
   return {
     "run.continue": async (payload) => {
+      // T38: reconcile crash state before retry for coding sessions.
+      // Errors here are non-fatal — reconciliation is best-effort.
+      let codingSessionId: string | null = null;
+      try {
+        const run = await deps.prisma.run.findUnique({
+          where: { id: payload.runId },
+          select: { trigger: true, status: true },
+        });
+        if (run?.trigger === CODING_SESSION_TRIGGER && run.status === "crashed") {
+          const session = await deps.prisma.codingSession.findFirst({
+            where: { latestRunId: payload.runId },
+            select: { id: true, botId: true },
+          });
+          if (session?.botId) {
+            codingSessionId = session.id;
+            const bot = await deps.prisma.bot.findUnique({
+              where: { id: session.botId },
+              select: { computer: { select: { homeRevision: true } } },
+            });
+            const homeRevision = bot?.computer?.homeRevision ?? undefined;
+            const codingDeps = createSessionServiceDeps({
+              prisma: deps.prisma,
+              registry: deps.registry,
+              homeStore: deps.home,
+            });
+            await reconcileCrash(codingDeps, session.id, homeRevision);
+          }
+        }
+      } catch (err) {
+        getLogger().error("T38 reconcileCrash failed", err);
+      }
+
+      // T30 V19: gate budget and deadline BEFORE the run continues.
+      // Also record activity on each run step so idle-suspend fires.
+      if (codingSessionId) {
+        const codingDeps = createSessionServiceDeps({
+          prisma: deps.prisma,
+          registry: deps.registry,
+          homeStore: deps.home,
+        });
+        try {
+          await checkDeadline(codingDeps, { sessionId: codingSessionId });
+        } catch (err) {
+          if (err instanceof DeadlinePassedError) {
+            getLogger().warn("T30 deadline passed, refusing run continuation", {
+              sessionId: codingSessionId,
+              deadlineAt: err.deadlineAt,
+            });
+            return; // Do NOT call continueRun — session is done
+          }
+          throw err;
+        }
+        const budgetOk = await checkBudget(codingDeps, { sessionId: codingSessionId });
+        if (!budgetOk) {
+          getLogger().warn("T30 budget exhausted, refusing run continuation", {
+            sessionId: codingSessionId,
+          });
+          return; // Do NOT call continueRun — session is done
+        }
+        // Budget and deadline OK — record activity for idle tracking
+        await recordActivity(codingDeps, { sessionId: codingSessionId });
+      }
+
       await deps.executor.continueRun(payload.runId, deps.workerId);
       // Automatic messaging mirror: once the run's bot messages are durable,
       // copy them into the outbox. Never let mirror failures fail the run.
@@ -102,6 +233,93 @@ export function createBackgroundJobHandlers(deps: {
     "skill.teaching-expire": async (payload) => {
       await expireTaughtSkillTeaching(deps, payload.skillId);
     },
+    // T36: fires when a coding run reaches terminal completed state.
+    // Triggers repo-to-PR if workspace credential + acceptance artifact present.
+    // Surfaces layer enqueues this after recording the acceptance.
+    "run.completed": async (payload) => {
+      const run = await deps.prisma.run.findUnique({
+        where: { id: payload.runId },
+        select: { trigger: true, status: true, botId: true },
+      });
+      if (run?.trigger !== CODING_SESSION_TRIGGER) return;
+      const session = await deps.prisma.codingSession.findFirst({
+        where: { latestRunId: payload.runId },
+        select: { id: true, acceptance: true, botId: true, workspaceId: true },
+      });
+      if (!session) return;
+      // Only trigger PR flow when acceptance has been recorded
+      if (!session.acceptance) return;
+      // runRepoToPr requires ForgeClient (GitHub credentials) which is a
+      // hard boundary: it lives in the surfaces/CLI layer that owns the
+      // GitHub OAuth flow. Declare the boundary here per Change 2 protocol.
+      if (!deps.forge) {
+        getLogger().warn("T36 run.completed: no ForgeClient — GitHub credentials boundary", {
+          sessionId: session.id,
+          runId: payload.runId,
+        });
+        return;
+      }
+      // Resolve the workspace directory from the home store.
+      if (!deps.home || !deps.dataDir) {
+        getLogger().error(
+          "T36 run.completed: missing home store or dataDir for workspace resolution",
+          {
+            sessionId: session.id,
+            runId: payload.runId,
+          },
+        );
+        return;
+      }
+      const bot = await deps.prisma.bot.findUnique({
+        where: { id: session.botId },
+        select: { computer: { select: { homeKey: true } } },
+      });
+      if (!bot?.computer?.homeKey) {
+        getLogger().error("T36 run.completed: bot has no homeKey", {
+          sessionId: session.id,
+          runId: payload.runId,
+        });
+        return;
+      }
+      const workspaceDir = resolveAgentHomePath(deps.home, bot.computer.homeKey, deps.dataDir);
+      const diff = createWorkspaceDiffProvider(workspaceDir);
+      const commandRunner = createProcessCommandRunner();
+      const artifacts = new LocalArtifactStore(deps.dataDir);
+      try {
+        const outcome = await runRepoToPr(
+          {
+            prisma: deps.prisma,
+            secretStore: deps.secretStore,
+            diff,
+            artifacts,
+            commandRunner,
+            forge: deps.forge,
+          },
+          {
+            sessionId: session.id,
+            repoDir: workspaceDir,
+            implement: async () => {
+              // The run has already completed — implement is a no-op.
+              // The diff is captured relative to the snapshot taken before completion.
+            },
+          },
+        );
+        getLogger().info("T36 runRepoToPr completed", {
+          sessionId: session.id,
+          runId: payload.runId,
+          prUrl: outcome.pr.url,
+          diffFiles: outcome.diff.files.length,
+          verificationRecords: outcome.verification.length,
+        });
+      } catch (err) {
+        // Never re-throw from a background job handler — it would crash the runner.
+        // Log the failure and let the session row hold the last known state.
+        getLogger().error("T36 runRepoToPr failed", err, {
+          sessionId: session.id,
+          runId: payload.runId,
+        });
+      }
+    },
     "cloud_agent.poll": async (payload) => {
       await pollCloudAgent(
         {
@@ -121,7 +339,6 @@ export function createBackgroundJobHandlers(deps: {
           jobs: deps.jobs,
           memoryProviders: deps.memoryProviders,
           deploymentModelKey: deps.deploymentModelKey,
-          ...(deps.executor.resolveModel ? { resolveModel: deps.executor.resolveModel } : {}),
         },
         payload.threadId,
       );

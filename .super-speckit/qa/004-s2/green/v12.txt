@@ -1,0 +1,32 @@
+# GREEN evidence — matrix row V12 (T8 code-mode doctor preflight)
+# UTC: 2026-10-01T06:41:41Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/coding-doctor.test.ts
+# UTC: 2026-10-01T06:41:41Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/coding-doctor.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 139[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 06:41:42
+[2m   Duration [22m 523ms[2m (transform 126ms, setup 39ms, import 144ms, tests 139ms, environment 0ms)[22m
+
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm exec tsx scripts/code-mode-doctor.ts  (live team-box doctor pass incl. ON secrets-state line)
+# UTC: 2026-10-01T06:41:42Z
+code-mode doctor — driver: process (trusted-code threat model, D-Q9)
+  PASS Spawn limits enforceable (ulimit/nice) — ulimit -t/-v/-u/-f and nice -n 5 applied in a spawned shell (exit 0)
+  PASS Per-task tree creation + isolation — created and isolated cm-doctor-a-workspace and cm-doctor-b-workspace under rakazo-doctor-WfbZI3
+  PASS Env scrub active at spawn — canary absent, declared passed (allowlist-only child env)
+  secrets state: ON — reason: driver 'process' owns the spawn boundary; injection happens at process spawn/bootstrap env only (D-Q10 §2), so the injection guarantee holds
+  v1 constants: lease TTL default 10 minutes; default credential name github_token
+verdict: PASS
+# GREEN addendum — V12/V3 re-verified after the nproc-default fix (4096; 512 starved fork under shared-box load)
+# UTC: 2026-10-01T07:36:49Z
+code-mode doctor — driver: process (trusted-code threat model, D-Q9)
+  PASS Spawn limits enforceable (ulimit/nice) — ulimit -t/-v/-u/-f and nice -n 5 applied in a spawned shell (exit 0)
+  PASS Per-task tree creation + isolation — created and isolated cm-doctor-a-workspace and cm-doctor-b-workspace under rakazo-doctor-vDxqZU
+  PASS Env scrub active at spawn — canary absent, declared passed (allowlist-only child env)
+  secrets state: ON — reason: driver 'process' owns the spawn boundary; injection happens at process spawn/bootstrap env only (D-Q10 §2), so the injection guarantee holds
+  v1 constants: lease TTL default 10 minutes; default credential name github_token
+verdict: PASS

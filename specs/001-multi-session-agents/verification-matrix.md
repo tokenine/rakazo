@@ -1,0 +1,35 @@
+# Verification matrix — 001 Multi-session agents
+
+Route: milestone. Slices: S1 schema+resolution+legacy pinning · S2 sessions RPC + web switcher + events · S3 mobile session screen · S4 guardrails + aggregates + closure.
+Grill evidence: .super-speckit/grills/001-multi-session-agents/spec-grill.md
+
+| # | Requirement (spec ref) | Verification | Evidence expected | Slice |
+| --- | --- | --- | --- | --- |
+| V1 | REQ-R1 create/list sessions | API test: create 2 named sessions for one bot; list returns both, ordered lastMessageAt desc nulls last, createdAt desc (tie + empty-session cases) | vitest assertion output | S1/S2 |
+| V2 | REQ-R2 independent history/serialization | API test: message session A and B alternately; separate message lists; both accept runs while busy-guard filters per thread | vitest | S1 |
+| V3 | REQ-R2 computer lease exception | Existing computer-lifecycle tests still pass (per-bot serialization untouched) | vitest suite pass | S1 |
+| V4 | REQ-R6 lossless migration | Integration test: DB with existing bot thread → migrate → thread is primary, messages intact, bot DTO threadId unchanged; partial unique index `(botId) WHERE is_primary` exists; migration re-run idempotent | test-integration | S1 |
+| V5 | REQ-R5 messaging regression | API test: inbound DM lands on primary session; peer DM delivery unchanged | vitest | S1 |
+| V6 | REQ-R3 switch/rename/delete | E2E web: switch sessions, rename, delete non-primary, last-session guard | Playwright spec | S2 |
+| V7 | REQ-R4 compaction-aware resume | E2E web: history (summary + tail) intact after reload; mobile test asserts session list renders (or recorded degradation) | Playwright + mobile test | S2/S3 |
+| V8 | Legacy compatibility | Existing router/web e2e suites pass unmodified (botId-only inputs land on primary) | CI suites | S1-S3 |
+| V9 | Addressing (grill #1) | API test: threads/send + threads/get with explicit non-primary threadId; botId-only resolves to primary | vitest | S1 |
+| V10 | Legacy pinning (grill #3) | Grep gate over `packages/` + `apps/`: zero unscoped `thread.findFirst(`, `thread.findUniqueOrThrow(`, or `thread.findFirstOrThrow(` where-clauses keyed on `botId` alone — every botId-only thread lookup must carry `isPrimary: true` (id-/groupId-scoped lookups exempt); all 7 product sites pinned via `PRIMARY_SESSION_ORDER` or `isPrimary: true`; CI grep + vitest | CI grep + vitest | S1 |
+| V11 | Primary invariant (grill #3) | DB test: inserting a second `isPrimary` row for one bot violates the partial index; helper `getPrimaryThread` returns the row | vitest DB assertion | S1 |
+| V12 | Session lifecycle events (grill #9) | API test: session.created/renamed/deleted emitted on the thread event feed; second subscribed client updates list without reload | vitest + Playwright | S2 |
+| V13 | Deletion rules (grill #5/#6) | API test: delete with active run → explicit error, lease + other sessions intact; delete primary with siblings → earliest createdAt promoted in same tx; delete last remaining session → refused | vitest | S2 |
+| V14 | Owner scoping (grill #4) | API test: non-owner space member cannot list/create/rename/delete another user's bot sessions (mirror repos.getBot scoping) | vitest | S2 |
+| V15 | Mobile session screen (grill Q2) | Device/manual: per-bot session list screen renders, create + switch work; thread.tsx opens the chosen session | mobile test or recorded manual evidence | S3 |
+| V16 | Sidebar aggregates (grill #9) | API test: bot unread = OR over sessions; preview + run status from primary session; bots/duplicate clones primary only | vitest | S4 |
+| V17 | Lease teardown guard (grill #5) | Integration test: deleting a session never mutates ComputerExecutionLease rows or other sessions' runs | vitest | S4 |
+| V18 | Known v1 behaviors documented | QA report lists accepted v1 behaviors (bot-level memory shared across sessions; clearThread bot.updatedAt bump) as explicit not-applicable/not-verified rows | QA summary | S4 |
+
+## Known v1 behaviors (accepted — not bugs, not in scope for this milestone)
+
+These behaviors are intentional in v1 and have documented reversal paths if user research shows they should change.
+
+| Behavior | Reversal path |
+|---|---|
+| Bot-level memory is shared across all of a bot's sessions (the `memoryScope` field is `shared` by default for bots with multiple sessions). R2 does not list memory isolation as a requirement. | Revisit on user signal: scope memory per-session (requires `memoryScope` on `Thread`, new UI affordances, and migration of existing bot memories). |
+| `bots/duplicate` clones only the primary session; secondary sessions of the source bot are not duplicated. This was a deliberate product decision during S4. | Add a `deep: boolean` option to the duplicate RPC that also clones non-primary sessions. |
+| `clearThread` bumps `bot.updatedAt` (not `thread.updatedAt`), keeping the bot-level timestamp used for staleness/changed detection in the codebase. | Move the `updatedAt` bump to the thread level if per-session staleness tracking is needed. |

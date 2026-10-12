@@ -1,5 +1,5 @@
 import { isIP } from "node:net";
-import { OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
+import { OPENAI_COMPATIBLE_PRESETS, OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
 import { isCloudMetadataAddress, isLinkLocalAddress, isPrivateAddress } from "./network-address.js";
 
 export { OPENAI_COMPATIBLE_PROVIDER_ID };
@@ -104,6 +104,20 @@ export function assertHttpsForKeyedOpenAiCompatibleUrl(
   );
 }
 
+/** Shipped preset endpoints are product-curated HTTPS URLs and bypass the public
+ * gate. Request URLs carry the full chat path on the preset origin, so match by
+ * origin plus path prefix rather than exact equality. */
+function isPresetEndpoint(url: URL): boolean {
+  if (url.protocol !== "https:") return false;
+  return OPENAI_COMPATIBLE_PRESETS.some((preset) => {
+    const base = new URL(preset.baseUrl);
+    return (
+      url.origin === base.origin &&
+      (url.pathname === base.pathname || url.pathname.startsWith(`${base.pathname}/`))
+    );
+  });
+}
+
 export function assertAllowedOpenAiCompatibleRequestUrl(
   raw: string,
   opts?: { allowPublic?: boolean },
@@ -125,7 +139,7 @@ export function assertAllowedOpenAiCompatibleRequestUrl(
     throw new Error("Base URL targets a blocked metadata or link-local host");
   }
   const allowPublic = opts?.allowPublic ?? openAiCompatAllowPublicHosts();
-  if (isPrivateOpenAiCompatibleHostname(hostname)) return url;
+  if (isPrivateOpenAiCompatibleHostname(hostname) || isPresetEndpoint(url)) return url;
   if (!allowPublic) {
     throw new Error(
       "Public model endpoints are blocked. Set RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC=1 to allow them. A private reverse proxy on localhost or an RFC1918 address does not need that gate.",

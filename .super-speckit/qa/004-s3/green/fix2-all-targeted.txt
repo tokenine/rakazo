@@ -1,0 +1,27 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [32m✓[39m packages/adapters/src/coding-project-secrets.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 4429[2mms[22m[39m
+     [33m[2m✓[22m[39m enforces the per-workspace credential limit (same ceiling as bot_secrets) [33m 3999[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-secret-grants.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 1487[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/home-revisions.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 250[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-takeover-settle.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 144[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/home-races.test.ts [2m([22m[2m15 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 151[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-secrets-flow.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 130[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/home.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/process-sandbox-secrets.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor.test.ts [2m([22m[2m60 tests[22m[2m)[22m[32m 82[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-coding-secrets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-coding-gate.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-secrets-egress.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-secrets-audit.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-doctor-secrets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-session-service.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/executor-completion.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m packages/adapters/src/coding-secrets-doc.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[2m      Tests [22m [1m[32m217 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (218)[39m
+[2m   Start at [22m 10:44:48
+[2m   Duration [22m 28.09s[2m (transform 2.62s, setup 144ms, import 17.60s, tests 7.19s, environment 2ms)[22m
+

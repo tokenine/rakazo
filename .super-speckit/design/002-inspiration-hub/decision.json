@@ -1,0 +1,11 @@
+{
+  "feature": "002-inspiration-hub",
+  "status": "decided",
+  "prototype": "prototype.html",
+  "brief": "design-brief.md",
+  "design_system_sources": [],
+  "external_sources": [],
+  "decision_by": "coordinator (autonomous per execution policy; design-first mandatory per spec)",
+  "decision_at": null,
+  "notes": "Zones/cards/copy budget fixed in design-brief; AutoClaw screenshots absent from repo \u2014 purpose-map diagrams + constitution are the design authority (investigator-proven). Reference screenshots may refine within constraints later. Reversible: gallery rail can become grid without contract changes."
+}

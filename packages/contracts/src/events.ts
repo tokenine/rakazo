@@ -16,6 +16,9 @@ export const ProductEventType = z.enum([
   "thread.computer",
   "thread.subagent",
   "thread.cloud_agent",
+  "session.created",
+  "session.renamed",
+  "session.deleted",
   "thread.call.ended",
   "run.started",
   "run.checkpointed",
@@ -50,6 +53,9 @@ export const ProductEventType = z.enum([
   "group.handoff",
   /** Liveness only: never persisted, never applied to a snapshot, always seq 0. */
   "heartbeat",
+  // 004-code-mode Slice 1: coding session surface events.
+  "coding_session.prompted",
+  "coding_session.stopped",
 ]);
 export type ProductEventType = z.infer<typeof ProductEventType>;
 

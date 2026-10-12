@@ -1,0 +1,23 @@
+004-code-mode S1 fix round 1 — biome, HONEST SCOPED RUN (MED-1):
+correction vs the candidate evidence: at 43b1484e biome reported 4 errors in
+3 new files (organizeImports + format); those were real. The claim of a clean
+scoped run was false. This file is the refreshed, unmodified command output.
+Command:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm exec biome check \
+    packages/adapters/src/coding-acceptance-gate.ts \
+    packages/adapters/src/coding-acceptance-gate.test.ts \
+    packages/adapters/src/coding-engine.ts \
+    packages/adapters/src/coding-engine.test.ts \
+    packages/adapters/src/coding-pi-adapter.ts \
+    packages/adapters/src/coding-pi-adapter.test.ts \
+    packages/adapters/src/coding-repo-to-pr.ts \
+    packages/adapters/src/coding-repo-to-pr.test.ts \
+    packages/adapters/src/coding-session-service.ts \
+    packages/adapters/src/coding-session-service.test.ts \
+    packages/adapters/src/coding-session.postgres.test.ts \
+    packages/adapters/src/executor-coding-gate.test.ts \
+    packages/adapters/src/executor.ts \
+    packages/db/src/coding-migration.test.ts
+Exit code: 0
+
+Checked 14 files in 179ms. No fixes applied.

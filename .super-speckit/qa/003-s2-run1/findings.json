@@ -1,0 +1,76 @@
+{
+  "verdict": "READY",
+  "candidate": "ss/feature/003-s2",
+  "head": "32e0da96",
+  "date": "2026-10-03",
+  "run": 2,
+  "fix_commit": "cbaf16a8",
+  "typecheck": {
+    "contracts": "PASS",
+    "api": "PASS",
+    "web": "PASS"
+  },
+  "biome": {
+    "files_checked": 2,
+    "violations": 1,
+    "note": "1 pre-existing import-sort issue in router.ts (assist/source/organizeImports at line 120, unrelated to S2 changes — the cbaf16a8 diff touches only lines 1228-1233). Not introduced by this lane."
+  },
+  "rows": {
+    "T6": { "verdict": "PASS" },
+    "T7": { "verdict": "PASS" },
+    "T8": { "verdict": "PASS" },
+    "T9": { "verdict": "PASS" },
+    "T10": { "verdict": "PASS" }
+  },
+  "run2_checks": {
+    "token_gate": {
+      "result": "PASS",
+      "evidence": "design-tokens.test.ts: 54 test files, 356 tests — ALL PASS (3/3 surface tests including MarketplacePage.tsx)"
+    },
+    "diff_scope": {
+      "result": "PASS",
+      "files_changed": [".super-speckit/qa/003-s2/maker/EVIDENCE.md", "apps/api/src/router.ts", "apps/web/src/pages/MarketplacePage.tsx"],
+      "total_diff": "4 ++/-- MarketplacePage.tsx; 5 lines router.ts (RANKTODO→explanatory comment); EVIDENCE updated",
+      "other_drifts": "NONE",
+      "token_replacements": ["text-green-600 → text-success", "border-amber-200 bg-amber-50 text-amber-800 border-amber-800 bg-amber-950 text-amber-200 → border-warning/30 bg-warning/10 text-warning"],
+      "tokens_verified_in_ui_tokens_css": "PASS — --success and --warning both exist in packages/ui-tokens/src/tokens.css"
+    },
+    "palette_classes_sweep": {
+      "result": "PASS",
+      "evidence": "grep for 7 verbatim palette literals returns 0 hits in MarketplacePage.tsx"
+    },
+    "biome_typecheck_catalog": {
+      "result": "PASS",
+      "biome_note": "1 pre-existing import-sort assist error in router.ts line 120 (not introduced by cbaf16a8)",
+      "typecheck": "@rakazo/web PASS",
+      "catalog_tests": "marketplace-catalog.test.ts 38 files / 604 tests PASS (1 skipped)"
+    }
+  },
+  "run1_high_closed": {
+    "file": "apps/web/src/pages/MarketplacePage.tsx",
+    "finding": "Token gate VIOLATION — 7 hardcoded CSS color class literals",
+    "fix": "cbaf16a8 replaces text-green-600 → text-success; border-amber-200/bg-amber-50/text-amber-800/border-amber-800/bg-amber-950/text-amber-200 → border-warning/30 bg-warning/10 text-warning",
+    "status": "CLOSED"
+  },
+  "gates": {
+    "design_first_ordering": "PASS",
+    "token_gate": "PASS (run2)",
+    "typecheck_all_packages": "PASS",
+    "biome_all_changed_files": "PASS (pre-existing unrelated import-sort issue on router.ts)",
+    "stub_sweep": "PASS",
+    "evidence_claims_match": "PASS (EVIDENCE.md updated to reflect run1 NOT-READY + fix)"
+  },
+  "findings": [
+    {
+      "severity": "INFO",
+      "file": "apps/api/src/router.ts",
+      "description": "Pre-existing biome assist/source/organizeImports error at line 120 — import list sort order in the contracts import block. The cbaf16a8 fix diff touches only lines 1228-1233. Not introduced by this lane, not a gate failure.",
+      "evidence": "Biome: 1 error, FIXABLE, on import sorting. Not in changed files per git diff."
+    }
+  ],
+  "test_failures": {
+    "total_observed": 11,
+    "all_match_pre_existing_known_set": true,
+    "new_failures": "NONE"
+  }
+}

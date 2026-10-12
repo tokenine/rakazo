@@ -149,7 +149,7 @@ it("opens on the shell tab and connects when control is already held", async () 
   const view = await renderTerminal(true);
   try {
     expect(activeTab()).toBe("Shell");
-    expect(terminalUrl.impl).toHaveBeenCalledWith({ botId: "bot-1" });
+    expect(terminalUrl.impl).toHaveBeenCalledWith({ botId: "bot-1" }, { signal: expect.any(AbortSignal) });
   } finally {
     await view.cleanup();
   }

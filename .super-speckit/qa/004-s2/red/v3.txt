@@ -1,0 +1,81 @@
+# RED evidence — matrix row V3, T9 provider portion (process-sandbox provider; T10 matrix appends below)
+# UTC: 2026-10-01T06:44:20Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/process-sandbox.test.ts
+# UTC: 2026-10-01T06:44:20Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/process-sandbox.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-sandbox.test.ts[2m [ packages/adapters/src/process-sandbox.test.ts ][22m
+[31m[1mError[22m: Cannot find module './process-sandbox.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/process-sandbox.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/process-sandbox.test.ts:[2m6:1[22m[39m
+    [90m  4|[39m import type { AdapterContext, ProcessEvent } from "@rakazo/adapter-kit…
+    [90m  5|[39m [35mimport[39m { afterEach[33m,[39m describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  6|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  7|[39m   [33mDEFAULT_PROCESS_TASK_LIMITS[39m[33m,[39m
+    [90m  8|[39m   [33mProcessSandboxProvider[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 06:44:21
+[2m   Duration [22m 331ms[2m (transform 65ms, setup 42ms, import 0ms, tests 0ms, environment 0ms)[22m
+
+# 
+# RED evidence — matrix row V3, T10 collision fixture matrix portion
+# UTC: 2026-10-01T06:52:09Z
+# command: COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm vitest run packages/adapters/src/process-collision-matrix.test.ts
+# UTC: 2026-10-01T06:52:09Z
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/process-collision-matrix.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 30101[2mms[22m[39m
+     [32m✓[39m class: workspace/data dirs are id-prefixed and disjoint[32m 10[2mms[22m[39m
+[31m     [31m×[31m class: per-task process-group naming is applied at spawn[39m[32m 65[2mms[22m[39m
+     [32m✓[39m class: service/db names are namespaced per task[32m 1[2mms[22m[39m
+     [32m✓[39m class: listening ports — dynamic bind + retry, distinct simultaneous allocations[32m 16[2mms[22m[39m
+[31m     [31m×[31m zero collisions end-to-end: two real task servers serve concurrently on distinct ports[39m[33m 30006[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-collision-matrix.test.ts[2m > [22mcollision fixture matrix — two tasks, one bot, zero collisions (V3)[2m > [22mclass: per-task process-group naming is applied at spawn
+[31m[1mAssertionError[22m: expected 'bash' to be 'cm-task-a' // Object.is equality[39m
+
+Expected: [32m"cm-task-a"[39m
+Received: [31m"bash"[39m
+
+[36m [2m❯[22m packages/adapters/src/process-collision-matrix.test.ts:[2m83:32[22m[39m
+    [90m 81|[39m     const outA = await collect(provider.execute(a.ref, { argv: ["bash"…
+    [90m 82|[39m     const outB = await collect(provider.execute(b.ref, { argv: ["bash"…
+    [90m 83|[39m     [34mexpect[39m(outA[33m.[39mstdout[33m.[39m[34mtrim[39m())[33m.[39m[34mtoBe[39m([32m"cm-task-a"[39m)[33m;[39m
+    [90m   |[39m                                [31m^[39m
+    [90m 84|[39m     [34mexpect[39m(outB[33m.[39mstdout[33m.[39m[34mtrim[39m())[33m.[39m[34mtoBe[39m([32m"cm-task-b"[39m)[33m;[39m
+    [90m 85|[39m     [34mexpect[39m(a[33m.[39mprocessGroupName)[33m.[39mnot[33m.[39m[34mtoBe[39m(b[33m.[39mprocessGroupName)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/process-collision-matrix.test.ts[2m > [22mcollision fixture matrix — two tasks, one bot, zero collisions (V3)[2m > [22mzero collisions end-to-end: two real task servers serve concurrently on distinct ports
+[31m[1mError[22m: Test timed out in 30000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m packages/adapters/src/process-collision-matrix.test.ts:[2m112:3[22m[39m
+    [90m110|[39m   })[33m;[39m
+    [90m111|[39m
+    [90m112|[39m   it("zero collisions end-to-end: two real task servers serve concurre…
+    [90m   |[39m   [31m^[39m
+    [90m113|[39m     [35mconst[39m { provider[33m,[39m a[33m,[39m b } [33m=[39m [35mawait[39m [34mmatrixFixture[39m()[33m;[39m
+    [90m114|[39m     [35mconst[39m portA [33m=[39m [35mawait[39m provider[33m.[39m[34mallocatePort[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 06:52:11
+[2m   Duration [22m 32.02s[2m (transform 1.06s, setup 51ms, import 1.62s, tests 30.10s, environment 0ms)[22m
+

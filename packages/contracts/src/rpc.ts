@@ -1,5 +1,11 @@
 import { eventIterator, oc } from "@orpc/contract";
 import * as z from "zod";
+import {
+  AgentBundleSchema,
+  BUNDLE_MAX_BYTES,
+  ImportCommitInputSchema,
+  ImportPreviewSchema,
+} from "./agent-bundle.js";
 import { AiConsentQuerySchema, AiConsentStatusSchema } from "./ai-consent.js";
 import {
   ARTIFACT_DESCRIPTION_MAX_LENGTH,
@@ -22,6 +28,7 @@ import {
   BotMcpServerSchema,
   BotSchema,
   BotSectionSchema,
+  BotSessionSchema,
   CapabilityInstallSchema,
   ComputerModeSchema,
   ComputerReleaseReasonSchema,
@@ -86,6 +93,8 @@ import {
 } from "./domain.js";
 import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { Id, IsoDate } from "./ids.js";
+import { InspirationCaseSchema } from "./inspiration-catalog.js";
+import { CatalogEntrySchema } from "./marketplace-catalog.js";
 import {
   IntegrationProviderConfigSchema,
   IntegrationSetupStateSchema,
@@ -102,6 +111,8 @@ const threadTarget = z
   .object({
     botId: Id.optional(),
     groupId: Id.optional(),
+    /** Explicit session within a bot target; omitted resolves to the primary session. */
+    threadId: Id.optional(),
   })
   .superRefine((input, ctx) => {
     const hasBot = Boolean(input.botId);
@@ -257,6 +268,22 @@ export const appContract = {
     /** Bundled connector presets (remote MCP) shown as cards in Integrations. */
     connectors: oc.output(z.array(ExpertConnectorSummarySchema)),
   },
+  inspiration: {
+    list: oc.output(z.array(InspirationCaseSchema)),
+  },
+  marketplace: {
+    /**
+     * List all marketplace catalog entries, merged from all configured sources.
+     * A source that fails yields an inconclusive skipped item and does not block
+     * other results.
+     */
+    list: oc.output(
+      z.object({
+        entries: z.array(CatalogEntrySchema),
+        version: z.string(),
+      }),
+    ),
+  },
   bots: {
     list: oc.output(z.array(BotSchema)),
     listArchived: oc.output(z.array(BotSchema)),
@@ -380,6 +407,24 @@ export const appContract = {
       .output(z.object({ ok: z.literal(true) })),
     markRead: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
     markUnread: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
+    listSessions: oc.input(z.object({ botId: Id })).output(z.array(BotSessionSchema)),
+    createSession: oc
+      .input(
+        z.object({
+          botId: Id,
+          name: z.string().trim().min(1).max(80).optional(),
+        }),
+      )
+      .output(BotSessionSchema),
+    renameSession: oc
+      .input(
+        z.object({
+          sessionId: Id,
+          name: z.string().trim().min(1).max(80),
+        }),
+      )
+      .output(BotSessionSchema),
+    deleteSession: oc.input(z.object({ sessionId: Id })).output(z.object({ ok: z.literal(true) })),
   },
   computer: {
     status: oc.input(botId).output(ComputerStatusSchema),
@@ -889,6 +934,29 @@ export const appContract = {
   export: {
     bot: oc.input(botId).output(ExportManifestSchema),
   },
+  /**
+   * Agent marketplace — two-phase import and cross-instance export.
+   * Preview shows the manifest; commit requires the HMAC-signed import token.
+   */
+  agents: {
+    /**
+     * Phase 1 — parse and validate a bundle, return a reviewable preview
+     * plus a time-limited HMAC token binding the bundle hash.
+     */
+    previewImport: oc
+      .input(z.object({ bundleJson: z.string().max(BUNDLE_MAX_BYTES) }))
+      .output(ImportPreviewSchema),
+    /**
+     * Phase 2 — commit an import previously previewed.
+     * Re-validates the token and bundle hash before creating any records.
+     */
+    import: oc.input(ImportCommitInputSchema).output(BotSchema),
+    /**
+     * Export a bot as a marketplace bundle.
+     * Refuses bots whose instructions or skill content contain embedded secrets.
+     */
+    export: oc.input(botId).output(AgentBundleSchema),
+  },
   notifications: {
     registerPush: oc
       .input(z.object({ token: z.string().min(8).max(512) }))
@@ -950,6 +1018,111 @@ export const appContract = {
   wallet: {
     get: oc.input(z.object({})).output(WalletOverviewSchema),
     pair: oc.input(z.object({ botId: Id })).output(WalletPairingSchema),
+  },
+  codingAcceptance: {
+    record: oc
+      .input(
+        z.object({
+          sessionId: Id,
+          outcome: z.string().min(1),
+          verificationCommands: z.array(z.string().min(1)).min(1),
+        }),
+      )
+      .output(z.object({ outcome: z.string(), verificationCommands: z.array(z.string()), recordedAt: z.string() })),
+    get: oc
+      .input(z.object({ sessionId: Id }))
+      .output(
+        z
+          .object({ outcome: z.string(), verificationCommands: z.array(z.string()), recordedAt: z.string() })
+          .nullable(),
+      ),
+  },
+  codingSessions: {
+    create: oc
+      .input(
+        z.object({
+          botId: Id,
+          engine: z.enum(["normal-pi", "omp"]),
+          title: z.string().max(200).optional(),
+        }),
+      )
+      .output(
+        z.object({
+          id: Id,
+          workspaceId: z.string(),
+          engine: z.enum(["normal-pi", "omp"]),
+          status: z.string(),
+        }),
+      ),
+    list: oc
+      .input(z.object({ botId: Id }))
+      .output(
+        z.array(
+          z.object({
+            id: Id,
+            workspaceId: z.string(),
+            engine: z.string(),
+            status: z.string(),
+            title: z.string().nullable(),
+          }),
+        ),
+      ),
+    terminalUrl: oc
+      .input(z.object({ sessionId: Id }))
+      .output(
+        z.object({
+          url: z.string().nullable(),
+          /** Set when url is null because the computer's provider cannot serve this terminal. */
+          reason: z.string().optional(),
+        }),
+      ),
+    listFiles: oc
+      .input(z.object({ sessionId: Id, path: z.string().default("/") }))
+      .output(
+        z.array(
+          z.object({
+            path: z.string(),
+            kind: z.enum(["file", "dir"]),
+            size: z.number(),
+            executable: z.boolean().optional(),
+          }),
+        ),
+      ),
+    readFile: oc
+      .input(z.object({ sessionId: Id, path: z.string() }))
+      .output(z.object({ path: z.string(), content: z.string() })),
+    gitGraph: oc.input(z.object({ sessionId: Id })).output(
+      z.object({
+        commits: z.array(
+          z.object({
+            sha: z.string(),
+            parents: z.array(z.string()),
+            subject: z.string(),
+            author: z.string(),
+            date: z.string(),
+          }),
+        ),
+        refs: z.array(z.string()),
+        dirty: z.number(),
+        notRepo: z.boolean(),
+      }),
+    ),
+  },
+  preview: {
+    get: oc.input(z.object({ previewId: Id })).output(
+      z.object({
+        id: Id,
+        workspaceId: z.string(),
+        createdAt: z.string(),
+        expiresAt: z.string().nullable(),
+      }),
+    ),
+    create: oc
+      .input(z.object({ expiresAt: z.string().optional() }))
+      .output(z.object({ previewId: Id, token: z.string() })),
+    revoke: oc
+      .input(z.object({ previewId: Id, userId: z.string().min(1) }))
+      .output(z.object({ ok: z.literal(true) })),
   },
 };
 

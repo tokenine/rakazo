@@ -51,7 +51,7 @@ pnpm --filter @rakazo/desktop exec electron-builder --mac --universal --publish 
 
 ## 2.5 Sign-up whitelist (LIVE on demo since 2026-09-28)
 
-The deployment runs in **allowlist mode**: `deployment_settings.signupsEnabled=true` + `signupAllowlist='dome@tel.co.th,@dome.cloud,dome@tokenine.co'` (`signupPolicyInitialized=true` ⇒ DB beats env). Exact-email entries allow one address, `@domain` entries allow every address of that exact domain (no subdomains), empty list = open. Enforcement (better-auth hooks in `packages/auth/src/index.ts`): new emails are checked at BOTH `/email-otp/send-verification-otp` and `/sign-in/email-otp` (`400 "Email is not allowed to register"` — English, no Thai yet); **existing accounts are never blocked from signing in** (deliberate — owner decision 2026-09-28); the first-session bootstrap re-checks policy before claiming owner. Manage entries in Settings → Sign-ups (owner-only UI, textarea, newline/comma separated) — effective immediately, no restart. Direct SQL also works (`UPDATE deployment_settings SET "signupAllowlist"=...`). Requires the email provider to be configured or OTP endpoints 400 before the policy even runs.
+The deployment runs in **allowlist mode**: `deployment_settings.signupsEnabled=true` + `signupAllowlist='<redacted — owner-managed, see Settings → Sign-ups>'` (`signupPolicyInitialized=true` ⇒ DB beats env). Exact-email entries allow one address, `@domain` entries allow every address of that exact domain (no subdomains), empty list = open. Enforcement (better-auth hooks in `packages/auth/src/index.ts`): new emails are checked at BOTH `/email-otp/send-verification-otp` and `/sign-in/email-otp` (`400 "Email is not allowed to reg
 
 ## 3. Screen embeds (black-screen fix — keep this pattern)
 

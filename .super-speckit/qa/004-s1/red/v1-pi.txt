@@ -1,0 +1,134 @@
+# RED evidence — matrix row v1-pi
+# captured at first run, before any implementation existed
+# full output: red/all-s1-tests.txt
+# coding-pi-adapter.test.ts:  ❯ packages/adapters/src/coding-pi-adapter.test.ts (0 test) |  FAIL  packages/adapters/src/coding-pi-adapter.test.ts [ packages/adapters/src/coding-pi-adapter.test.ts ]
+# coding-engine.test.ts:  ❯ packages/adapters/src/coding-engine.test.ts (0 test) |  FAIL  packages/adapters/src/coding-engine.test.ts [ packages/adapters/src/coding-engine.test.ts ]
+
+
+ RUN  v4.1.11 /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo
+
+ ❯ packages/adapters/src/coding-repo-to-pr.test.ts (0 test)
+ ❯ packages/adapters/src/coding-pi-adapter.test.ts (0 test)
+ ❯ packages/adapters/src/coding-session-service.test.ts (0 test)
+ ❯ packages/adapters/src/coding-engine.test.ts (0 test)
+ ❯ packages/adapters/src/executor-coding-gate.test.ts (3 tests | 1 failed) 71ms
+     × refuses a gated tool call before execution and reports the refusal explicitly 53ms
+     ✓ lets the call through when the gate allows (acceptance recorded) 9ms
+     ✓ leaves runs untouched when no coding gate is installed (default behavior) 7ms
+ ❯ packages/adapters/src/coding-acceptance-gate.test.ts (0 test)
+ ❯ packages/db/src/coding-migration.test.ts (0 test)
+ ❯ packages/adapters/src/coding-session.postgres.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/adapters/src/coding-acceptance-gate.test.ts [ packages/adapters/src/coding-acceptance-gate.test.ts ]
+Error: Cannot find module './coding-acceptance-gate.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-acceptance-gate.test.ts
+ ❯ packages/adapters/src/coding-acceptance-gate.test.ts:3:1
+      1| import { describe, expect, it } from "vitest";
+      2| import type { PrismaClient } from "@rakazo/db";
+      3| import {
+       | ^
+      4|   ACCEPTANCE_REFUSAL_HINT,
+      5|   createAcceptanceGateService,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  packages/adapters/src/coding-engine.test.ts [ packages/adapters/src/coding-engine.test.ts ]
+Error: Cannot find module './coding-engine.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-engine.test.ts
+ ❯ packages/adapters/src/coding-engine.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import {
+       | ^
+      3|   CODING_ENGINE_IDS,
+      4|   ContinuationRefusedError,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  packages/adapters/src/coding-pi-adapter.test.ts [ packages/adapters/src/coding-pi-adapter.test.ts ]
+Error: Cannot find module './coding-engine.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-pi-adapter.test.ts
+ ❯ packages/adapters/src/coding-pi-adapter.test.ts:4:1
+      2| import { runContinueJob } from "@rakazo/adapter-kit";
+      3| import type { PrismaClient } from "@rakazo/db";
+      4| import { EngineMismatchError } from "./coding-engine.js";
+       | ^
+      5| import { createCodingPiAdapter, type CodingRunMachinery } from "./codi…
+      6|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  packages/adapters/src/coding-repo-to-pr.test.ts [ packages/adapters/src/coding-repo-to-pr.test.ts ]
+Error: Cannot find module './coding-repo-to-pr.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-repo-to-pr.test.ts
+ ❯ packages/adapters/src/coding-repo-to-pr.test.ts:8:1
+      6| import type { PrismaClient } from "@rakazo/db";
+      7| import { LocalArtifactStore } from "./artifacts.js";
+      8| import {
+       | ^
+      9|   MissingWorkspaceCredentialError,
+     10|   VerificationFailedError,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  packages/adapters/src/coding-session-service.test.ts [ packages/adapters/src/coding-session-service.test.ts ]
+Error: Cannot find module './coding-session-service.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-session-service.test.ts
+ ❯ packages/adapters/src/coding-session-service.test.ts:3:1
+      1| import { describe, expect, it } from "vitest";
+      2| import type { PrismaClient } from "@rakazo/db";
+      3| import {
+       | ^
+      4|   ContinuationRefusedError,
+      5|   WorkspaceBusyError,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  packages/adapters/src/coding-session.postgres.test.ts [ packages/adapters/src/coding-session.postgres.test.ts ]
+Error: Cannot find module './coding-session-service.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-session.postgres.test.ts
+ ❯ packages/adapters/src/coding-session.postgres.test.ts:4:1
+      2| import { createDb, type PrismaClient } from "@rakazo/db";
+      3| import { afterAll, beforeAll, describe, expect, it } from "vitest";
+      4| import {
+       | ^
+      5|   WorkspaceBusyError,
+      6|   continueCodingSession,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  packages/db/src/coding-migration.test.ts [ packages/db/src/coding-migration.test.ts ]
+Error: ENOENT: no such file or directory, open '/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/db/prisma/migrations/20261001050500_coding_sessions_lease/migration.sql'
+ ❯ packages/db/src/coding-migration.test.ts:10:22
+      8| const migrationsDir = join(prismaDir, "migrations");
+      9| const migrationName = "20261001050500_coding_sessions_lease";
+     10| const migrationSql = readFileSync(join(migrationsDir, migrationName, "…
+       |                      ^
+     11| const schemaSql = readFileSync(join(prismaDir, "schema.prisma"), "utf8…
+     12|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/adapters/src/executor-coding-gate.test.ts > coding acceptance gate at the executor tool authorization point (T4) > refuses a gated tool call before execution and reports the refusal explicitly
+AssertionError: expected [ { tool: 'demo_write_item', …(3) } ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ packages/adapters/src/executor-coding-gate.test.ts:158:24
+    156|     const f = fixture({ codingGate: gate });
+    157|     await f.run();
+    158|     expect(f.executed).toHaveLength(0);
+       |                        ^
+    159|     expect(f.results[0]).toMatchObject({
+    160|       error: expect.stringMatching(/acceptance/i),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  8 failed (8)
+      Tests  1 failed | 2 passed (3)
+   Start at  05:10:02
+   Duration  8.59s (transform 2.19s, setup 88ms, import 6.01s, tests 71ms, environment 1ms)
+

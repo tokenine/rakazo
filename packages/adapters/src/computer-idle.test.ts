@@ -502,7 +502,7 @@ function idleHarness(
     run: { findFirst: vi.fn().mockResolvedValue(null) },
     agentHome: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     bot: {
-      findMany: vi.fn().mockResolvedValue([{ id: "bot", thread: { id: "thread" } }]),
+      findMany: vi.fn().mockResolvedValue([{ id: "bot", threads: [{ id: "thread" }] }]),
     },
   };
   const sandbox = {

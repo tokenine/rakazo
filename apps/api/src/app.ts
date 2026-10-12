@@ -61,6 +61,7 @@ import {
   pushTokenPath,
   reconcileCloudAgents,
   reconcileComputerUpdates,
+  reconcileIdleCodingSessions,
   removePiUserSessions,
   ScriptedAgentRuntime,
   SmtpEmailProvider,
@@ -489,6 +490,9 @@ export async function createApp(
         jobs,
         reconcileCloudAgents: () => reconcileCloudAgents({ prisma, jobs, cloudAgent }),
         reconcileComputerUpdates: () => reconcileComputerUpdates({ prisma, jobs }),
+        // S6 T30: idle coding sessions route through the computer sleep contract.
+        reconcileIdleCodingSessions: () =>
+          reconcileIdleCodingSessions({ prisma, sandbox, home, jobs, events }),
       })
     : undefined;
   reconciler?.start();
@@ -552,6 +556,7 @@ export async function createApp(
       telegramBotToken: env.telegramBotToken,
       telegramWebhookSecret: env.telegramWebhookSecret,
       messagingPublicOrigin: env.messagingPublicOrigin,
+      marketplaceImportSecret: env.marketplaceImportSecret,
       mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint,
     },
   });
@@ -575,11 +580,13 @@ export async function createApp(
       otp: Boolean(email),
     }),
   );
-  if (localEmailEmulator && env.nodeEnv === "development") {
+  if ((env.nodeEnv === "development" || env.nodeEnv === "test") && email instanceof EmailEmulator) {
+    // Dev/test-only inbox for the emulator backing this app — including an injected
+    // emulator (test harness), so OTP e2e signups can read codes offline.
     app.get(
       "/api/dev/emails",
       () =>
-        new Response(JSON.stringify(localEmailEmulator.sent), {
+        new Response(JSON.stringify(email.sent), {
           headers: { "cache-control": "no-store", "content-type": "application/json" },
         }),
     );

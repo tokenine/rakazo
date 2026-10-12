@@ -53,6 +53,9 @@ async function main() {
     const webOrigin = `http://127.0.0.1:${webPort}`;
 
     process.env.DATABASE_URL = databaseUrl;
+    // The OTP e2e signup helper reads codes from /api/dev/emails, which the API
+    // only mounts for its email emulator in development mode.
+    process.env.NODE_ENV = "development";
     process.env.REALTIME_DATABASE_URL = databaseUrl;
     process.env.VERIFY_DATABASE = "1";
     process.env.WAKEUP_DRIVER = "memory";
@@ -93,6 +96,7 @@ async function main() {
         "packages/testkit/src/eval-customer-support.postgres.test.ts",
         "packages/testkit/src/journeys.test.ts",
         "packages/testkit/src/authorization.test.ts",
+        "packages/testkit/src/sessions.postgres.test.ts",
         "packages/testkit/src/attachments.test.ts",
         "packages/testkit/src/voice.test.ts",
         "packages/testkit/src/search.test.ts",

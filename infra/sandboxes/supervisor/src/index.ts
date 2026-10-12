@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
@@ -19,6 +18,7 @@ import { Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { streamText } from "hono/streaming";
 import { z } from "zod";
+import { type DockerImageBuildClient, ensureComputerImageBuilt } from "./computer-image.js";
 import {
   assertVolumeSubpathSupport,
   COMPUTER_GID,
@@ -82,6 +82,8 @@ import {
   stopExtraScreenCommand,
   teardownReleasedScreen,
   terminalCommand,
+  terminalHomeFilesCommand,
+
   toSandboxInput,
   withKeyedLock,
   workspaceTarget,
@@ -713,13 +715,34 @@ app.post("/computers/:id/screen-mode", async (c) => {
 });
 
 app.post("/computers/:id/terminal", async (c) => {
-  const body = z
-    .object({
-      controlToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
-      cwd: z.string().max(4096).default(""),
-    })
-    .parse(await c.req.json());
   try {
+    // Inside the try so a rejected body (including an invalid launch command) answers 400.
+    const body = z
+      .object({
+        controlToken: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
+        cwd: z.string().max(4096).default(""),
+        // Validated at the boundary; terminalCommand still shell-quotes it before it reaches
+        // bash inside the container.
+        launchCommand: z
+          .string()
+          .max(256)
+          .regex(/^[A-Za-z0-9_@%+=:,./ -]*$/, "invalid launch command")
+          .default(""),
+        // Provider credentials travel as process env (inherited by the terminal server's
+        // pty shell) and never as argv, files, or log output; keys are bounded names and
+        // values are never logged.
+        env: z
+          .record(z.string().regex(/^[A-Z_][A-Z0-9_]{0,63}$/), z.string().max(4096))
+          .refine((env) => Object.keys(env).length <= 16, "too many env vars")
+          .optional(),
+        // Secret-free config files written under ~/.omp/ before the server starts
+        // (path policy enforced again by terminalHomeFilesCommand).
+        homeFiles: z
+          .array(z.object({ path: z.string().max(512), content: z.string().max(8192) }))
+          .max(8)
+          .optional(),
+      })
+      .parse(await c.req.json());
     const id = c.req.param("id");
     const botId = c.req.header("x-rakazo-bot-id");
     const { container, info } = await managedContainer(
@@ -743,9 +766,26 @@ app.post("/computers/:id/terminal", async (c) => {
         [
           "bash",
           "-c",
-          terminalCommand(body.controlToken, terminalToken, cwd, undefined, screen.layout),
+          [
+            terminalHomeFilesCommand(body.homeFiles ?? []),
+            terminalCommand(
+              body.controlToken,
+              terminalToken,
+              cwd,
+              undefined,
+              screen.layout,
+              body.launchCommand || undefined,
+            ),
+          ]
+            .filter(Boolean)
+            .join("\n"),
         ],
-        { env: computerCommandEnv(screen.layout) },
+        {
+          env: [
+            ...computerCommandEnv(screen.layout),
+            ...Object.entries(body.env ?? {}).map(([key, value]) => `${key}=${value}`),
+          ],
+        },
       );
       if (result.code === 75) throw new TerminalControlReleasedError();
       if (result.code !== 0) throw new Error(result.stderr || "terminal failed to start");
@@ -964,21 +1004,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
 
 async function ensureComputerImage() {
   if (!imageReady) {
-    imageReady = (async () => {
-      try {
-        await docker.getImage(COMPUTER_IMAGE).inspect();
-        return;
-      } catch {
-        // build below
-      }
-      const dockerfile = path.join(computerContext, "Dockerfile");
-      if (!existsSync(dockerfile)) {
-        throw new Error(
-          `Missing ${COMPUTER_IMAGE}. Build it with: docker build -t ${COMPUTER_IMAGE} infra/sandboxes/computer`,
-        );
-      }
-      const stream = await docker.buildImage(
-        {
+    imageReady = ensureComputerImageBuilt(
+      docker as unknown as DockerImageBuildClient,
+      {
+        tag: COMPUTER_IMAGE,
+        dockerfile: path.join(computerContext, "Dockerfile"),
+        buildContext: {
           context: computerContext,
           src: [
             "Dockerfile",
@@ -996,13 +1027,13 @@ async function ensureComputerImage() {
             "fluxbox.menu",
           ],
         },
-        { t: COMPUTER_IMAGE },
-      );
-      await new Promise<void>((resolve, reject) => {
-        docker.modem.followProgress(stream, (err) => (err ? reject(err) : resolve()));
-      });
-      await docker.getImage(COMPUTER_IMAGE).inspect();
-    })();
+      },
+      // A failed build must be retryable: keep the rejection only for callers
+      // already awaiting it, then clear the memo so the next provision rebuilds.
+    ).catch((error: unknown) => {
+      imageReady = undefined;
+      throw error;
+    });
   }
   await imageReady;
 }

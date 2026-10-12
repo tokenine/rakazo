@@ -1,0 +1,45 @@
+{
+  "id": "001-multi-session-agents",
+  "state": "blocked",
+  "candidate_sha": null,
+  "maker": "claude-maker",
+  "checker": "claude-checker",
+  "matrix": "specs/001-multi-session-agents/spec.md",
+  "purpose": {
+    "status": "confirmed",
+    "map": ".super-speckit/purpose/001-multi-session-agents/purpose-map.md",
+    "decision": ".super-speckit/purpose/001-multi-session-agents/decision.json"
+  },
+  "grill": {
+    "status": "complete",
+    "artifact": ".super-speckit/grills/001-multi-session-agents/spec-grill.md"
+  },
+  "runs": [],
+  "bugs": [],
+  "atlas": {
+    "path": ".super-speckit/atlas/README.md",
+    "graph": ".super-speckit/atlas/system-map.mmd"
+  },
+  "change_story": {
+    "path": ".super-speckit/atlas/changes/001-multi-session-agents/change-story.md"
+  },
+  "route": {
+    "kind": "milestone",
+    "rationale": "Multi-surface vertical change (db schema+migration, contracts, api RPC group, web switcher, mobile session screen, realtime events) with 2 blocker-class findings (addressing scheme, Prisma relation flip), 7 nondeterministic legacy routing sites, data migration with Telegram-regression risk, and per-slice reassessment needed (lease/Telegram/authz invariants). Exceeds normal depth; not micro."
+  },
+  "handoff": {
+    "path": ".super-speckit/handoffs/001-s2-merged-s3-next.md",
+    "transfer": "same-environment",
+    "stage": "s2-merged",
+    "attempt_id": "001-s3-lane"
+  },
+  "reassessment": {
+    "path": ".super-speckit/qa/release-summary-001.md",
+    "decision": "keep"
+  },
+  "migration_reason": "Legacy evidence must be revalidated",
+  "schema_version": 2,
+  "candidates": [],
+  "legacy_candidate_sha": "730d717a3d9ecad66b51942b0ec5564168f6aa28",
+  "revision": 1
+}

@@ -3,6 +3,7 @@ import { computerControlExpireJobKey } from "@rakazo/adapter-kit";
 import { type ComputerUpdate, ComputerUpdateSchema } from "@rakazo/contracts";
 import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
 import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+import { PRIMARY_SESSION_ORDER } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import {
   enqueueTakeoverContinuation,
@@ -502,12 +503,13 @@ async function recordTakeoverHandback(
   try {
     const bot = await deps.prisma.bot.findFirst({
       where: { id: botId },
-      select: { thread: { select: { id: true } } },
+      select: { threads: { orderBy: PRIMARY_SESSION_ORDER, take: 1, select: { id: true } } },
     });
-    if (!bot?.thread) return;
+    const primaryThread = bot?.threads[0];
+    if (!primaryThread) return;
     await deps.events.append({
       spaceId: handback.spaceId,
-      threadId: bot.thread.id,
+      threadId: primaryThread.id,
       botId,
       ...(runId ? { runId } : {}),
       type: "computer.takeover.released",

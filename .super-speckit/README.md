@@ -1,0 +1,151 @@
+# super-speckit
+
+`super-speckit` combines PStack-led execution, selective Spec Kit planning, Dune-inspired architecture constraints, and independent product and engineering acceptance. One code-writing owner uses the current checkout; independent QA runs the exact committed candidate in a disposable standalone clone. Worktrees remain optional compatibility tools.
+
+Bounded micro fixes use a persisted playbook and requirement matrix. Normal and milestone work retains Spec Kit's spec.md, plan.md and tasks.md. Relevant research and executable architecture rules precede code. Running-app journeys and independent engineering review precede release. See [delivery contract](skills/ask-super-speckit/references/playbook-delivery.md) and [implementation plan](docs/playbook-delivery-plan.md).
+
+Long runs retain a completion predicate, steps, checkpoints, budget and recovery rules. Unattended resume requires a configured and observed host runner; copied prompts do not provide one.
+
+## What this first version includes
+
+- one code-writing owner in the current checkout, with explicitly isolated parallel writers when needed;
+- disposable QA clones created from the candidate commit, never from the maker's dirty tree;
+- a requirements-to-verification matrix and machine-readable run state;
+- deterministic gates (format, lint, unit, integration, build), Playwright E2E, optional API/DB assertions, and exploratory browser QA;
+- OCR as an independent static-review lane with triage, never as a runtime pass;
+- evidence capture and a reproducibility rule before a QA failure becomes a bug;
+- a design-first HTML preview, design-system brief, and approval record before UI implementation;
+- policy-selected gates, environment-readiness receipts, immutable proof packs, and bounded repair loops;
+- an autonomous orchestrator that chooses and runs the next safe stage, self-heals through diagnosis/fix/retest loops, and records external blockers truthfully.
+- a visual Purpose Map with one human gate for outcome, affected people, success signal, and non-goals; followed by an adversarial, evidence-labeled Spec Grill that resolves technical detail autonomously.
+- a GSD-inspired continuity layer: scope routing, a diagram-first Project Atlas, visual Change Stories, slice reassessment, and state-verified local↔cloud handoffs.
+- a required Rakazo-led manual browser Journey UX Loop for UI changes: declared journeys are rerun after every confirmed UX fix until the latest candidate has no confirmed defect in the tested scope.
+- GSD-style phase contracts, plan-quality checks, durable handoffs, and milestone audits—without replacing Spec Kit’s core artifacts or independent QA.
+- optional Codex Cloud delegation for bounded research, maker, and bug-fix work; cloud output returns through a fresh local independent QA lane.
+- a durable bug artifact, regression test obligation, independent retest, project QA summary, and explicit unverified items.
+- a root-cause diagnosis lane that requires a tight reproduction for codebase failures and browser-runtime evidence for rendered-app failures.
+- a native feedback-loop rule: every change begins by finding and running a real public-seam signal—red-green tests where possible, otherwise an equivalent browser, API, DB, replay, simulator, visual, differential, performance, or bounded-observation loop.
+- a project-local verification harness and feature map that make launch, readiness, test-data isolation, live smoke checks, evidence, and cleanup repeatable rather than tribal knowledge.
+- PStack-inspired recurring-failure enforcement, independent multi-lens static review, and compact decision trails—kept subordinate to runtime proof and the Spec Kit lifecycle.
+- command-backed state authority: agents re-check native artifacts, feature state, Git, and proof packs before and after material stages instead of trusting conversation memory.
+- a premium UI lane: a pinned design-intelligence catalog plus focused skills for composition, interactions, navigation, forms, accessibility, content, usability, research, and design-system architecture.
+- a pinned Ponytail maker lane that reuses code, standard libraries, native platform features, and installed dependencies before adding the smallest necessary code.
+
+It is intentionally an extension, not a competing fork of the Spec Kit CLI. The upstream project changes quickly; install normal Spec Kit first and keep its commands current.
+
+## One-command installation
+
+Install the public bootstrap skill with:
+
+```bash
+npx skills add https://github.com/Poom5741/super-speckit/tree/main/installable/super-speckit
+```
+
+Then invoke `$super-speckit-installer` in the target repository. It installs the complete kit to `.super-speckit/`, creates a project `super-speckit.yml` if absent, initializes the YAML work-state manifest, and registers the four intended project skills in `.agents/skills/`: `$super-speckit`, `$ask-super-speckit`, `$super-speckit-design-first`, and `$super-speckit-final-manual-review`. The direct folder URL avoids exposing internal and vendored skills as unrelated installation choices. Pin an exact commit or tag URL for reproducible installations. Identical reinstalls preserve project configuration and evidence. Use `--upgrade` for deliberate bundle updates; changed installed files are reported rather than silently replaced, and prior bundle files are backed up.
+
+If you installed an older version that exposes only `$super-speckit-installer`, run its `scripts/install_project.py --target . --register-only` command once to repair the project entry points.
+
+## Install into a Spec Kit repository
+
+1. For normal/milestone planning, initialise or update native Spec Kit (`specify init ...`). Bounded micro delivery can use the compact playbook route.
+2. Copy this directory into the repository as `.super-speckit/`, or place it in your agent's skills directory and invoke `$super-speckit`.
+3. Copy `config/super-speckit.yml` to the repository root as `super-speckit.yml` and set real commands, URLs, seed/reset behavior, design-system sources, and any protected data rules.
+4. Add the short policy in `templates/constitution-addon.md` to `.specify/memory/constitution.md`.
+5. Run `python3 scripts/super_speckit.py init --repo .` and commit the generated baseline state/config.
+
+Optionally install the native workflow with `specify workflow add workflows/` (or package this directory). It autonomously progresses through design, implementation, feedback loops, proof, repair, and release based on recorded evidence.
+
+Requirements: Git, Python 3.9+, a test runner, and for browser gates Playwright plus an application start command. OCR is configured as an external command/API adapter; no credentials are stored in this kit.
+
+## Start with `ask-super-speckit`
+
+Optional [TikTok work-break mode](skills/tiktok-work-break/SKILL.md) opens a managed TikTok tab during independent work, closes it before a question needing your judgment, and reopens it after your answer. Ask to enable it for the current chat.
+
+The internal [Rakazo manual QA skill](skills/rakazo-manual-qa/SKILL.md) asks for your instance on first testing use and keeps connection and active-task details in the Git-ignored project file `.super-speckit/qa/rakazo-session.json`. It drives setup, browser dispatch, user journeys, bounded exploratory stress checks, evidence collection, teardown, and retests. Optional project connection settings live under `manual_journey_agent.rakazo` in `super-speckit.yml`.
+
+For tech or blockchain hackathons, ask it to discover or validate an idea. The internal [hackathon skill](skills/hackathon/SKILL.md) compares user problems, current event rules, relevant prize winners, and demo feasibility. It produces a discovery brief and routes requested implementation into normal delivery. Its methods are winner-informed; the skill has no documented prize-winning usage yet.
+
+`ask-super-speckit` is the only normal entry point. Give it a feature, defect, idea, or constraint; it drafts a visual Purpose Map, records the user-confirmed goal, asking only when intent is missing, then reads the evidence, chooses the next safe stage, and autonomously carries the work through to a verified result. The human confirms purpose—not technical implementation. It records every material decision, uses independent QA, and self-heals failed work instead of waiting for routine approval.
+
+For a UI-facing change it begins with `design-first`: produce a static HTML prototype and `design-brief.md`, compare it against any declared design system, record an evidence-backed autonomous design decision, and continue. The prototype is a decision artifact—not production code. If an external designer is available, it emits a portable prompt/hand-off bundle for v0, Google Stitch, or Claude Design; their output is imported and reviewed like any other untrusted design input.
+
+## Daily flow
+
+```text
+request → PStack playbook + recorded user purpose → scope route
+  ├─ micro → playbook + requirement matrix
+  └─ normal/milestone → Spec Kit spec/plan/tasks + grill/understanding
+  ↓
+research + architecture constraints + baseline → single-owner implementation
+  ↓
+committed candidate → independent QA clone → user journeys + engineering review
+  ├─ failure → diagnosis → fix → new candidate → independent retest
+  └─ pass → configured release → evidence handback
+```
+
+
+Use `commands/` as agent slash-command definitions or adapt them to your integration. The orchestrator is an inspectable state/evidence system with autonomous execution enabled by configuration.
+
+`ask-super-speckit` remains the only normal entry point. Atlas, routing, reassessment, transfer, recovery, and verification are internal stages selected from the checked work state; users do not need to memorize or sequence commands.
+
+## Continue on Pi or another machine
+
+Commit and push the project after a material stage. Super-SpecKit keeps one rolling `.super-speckit/continuation.yml` beside the existing state files; it records the current feature, stage, next action, candidate SHA, branch/worktree, evidence, and unknowns. On Pi, pull the repository and invoke `$ask-super-speckit` normally. It reads the continuation, reruns strict state validation, verifies the recorded SHA, then resumes the safe next action. It does not need a new handoff document for an ordinary machine switch.
+
+Use a full transfer handoff only for a true cloud/vendor transfer or a change in authority boundary. The continuation file is deliberately repository-local and contains no credentials or model-session data.
+
+For a UI change, it also runs the Journey UX Loop after normal independent QA. [Rakazo](https://github.com/elie222/rakazo) is the default independent browser checker: Super-SpecKit prepares a bounded task packet for a private Rakazo Computer and clean browser profile, and accepts only QA evidence—not product-code edits—from the reviewer. A project may configure a reviewed local dispatch adapter; without one the work is honestly blocked for Rakazo dispatch rather than pretending an API exists. Rakazo repeats the declared user journeys after every confirmed fix. A UI candidate cannot become merge-ready without a passing Journey UX report linked to its latest SHA; the honest result is “no confirmed UX defect in the declared journey scope,” never “there are no UX bugs.”
+
+## Complete PStack engineering toolkit
+
+The complete pinned [PStack 0.15.13](https://github.com/cursor/plugins/tree/e5a8186d7b43be8d6ac4452440fbead5f1a51c70/pstack) source is preserved under `vendor/pstack/`, outside host skill discovery. Its 51 skills, 23 playbooks, two agents and dormant automation are mapped through explicit adapters behind `ask-super-speckit`. Spec Kit remains the requirements/plan/tasks backbone; native immutable-candidate QA remains the release contract.
+
+Use `python3 scripts/pstack_adapter.py inventory` to check bundle coverage and hashes. `route <playbook>` selects the native adapter contract; `read <playbook>` supplies the pinned source with fidelity overrides. Relevant leaves load progressively under adaptive rigor. Copied source and route coverage do not imply live provider certification.
+
+ZCode is the primary host. Project `.agents/skills` entry points are supported; host discovery checks user-level shadowing. Codex and Pi use reviewed CLI adapters, and ordinary host switches use shared continuation and command-validated state. OMP and Cursor are optional detected hosts. No global skills/configuration or external automation are enabled by installation.
+
+Read [integration methods](docs/pstack-integration.md) and [certification evidence](docs/pstack-certification.md) for executable runtime controls, complete route coverage, intentional differences, and observed limitations. Benny and make-bot-ui remain dormant until configured and authorized.
+
+## Ponytail minimal implementation
+
+For maker, bug-fix, and refactor slices, Super-SpecKit runs the pinned [Ponytail](https://github.com/DietrichGebert/ponytail) ladder after it understands the relevant flow: skip speculative work, reuse code, standard library, native platform feature, installed dependency, one line, then the smallest new code. This reduces unnecessary code and token use, but is never permission to skip required behavior, security/privacy, trust-boundary validation, data-loss protection, accessibility, migration safety, or independent verification.
+
+## OMP teams
+
+When [OMP](https://github.com/unsigned-gg/omp) is available, `ask-super-speckit` enables an adaptive native worker team by default. It fans out only dependency-independent work—Atlas/contract discovery, test/QA design, isolated maker partitions, or static review—then keeps the supervisor preparing evidence and QA instead of waiting behind one worker. It does not fan out small tasks, allow shared mutable maker worktrees, or weaken independent checker QA.
+
+Atlas value is not assumed. Use `super-speckit.evaluate-atlas` with blinded control-versus-Atlas tasks and independent QA before claiming that it improves agent comprehension or delivery.
+
+## Safety and operating rules
+
+- QA may write only `.super-speckit/qa/`, `.super-speckit/bugs/`, and ephemeral files in its own checkout. It must not edit, commit, or rebase the maker checkout.
+- QA checks out an immutable candidate SHA in a freshly created standalone clone or explicitly selected worktree. It must reset fixtures, use isolated test accounts/namespaces, and delete the disposable checkout afterward unless evidence requires preservation.
+- A failed automated test with stable evidence can be filed immediately. A flaky or exploratory observation must be reproduced under the configured rule before becoming a confirmed bug.
+- OCR findings are triaged as `fix`, `accepted-risk`, `false-positive`, or `needs-review`; only `fix` blocks merge. OCR cannot satisfy any runtime matrix row.
+- A confirmed bug cannot close until its regression test is added or an explicit exception is recorded, the fix is independently retested, and required gates pass.
+- With `merge.autonomous_when_ready: true`, the orchestrator merges only after all configured evidence gates pass. Missing external authority, access, or environment evidence becomes a truthful blocked state, never a guessed decision.
+
+## Commands and artifacts
+
+See [commands](commands/README.md), [design-first skill](skills/design-first/SKILL.md), [orchestrator skill](skills/ask-super-speckit/SKILL.md), [schemas](schemas/README.md), [orchestration rules](docs/orchestration.md), [state machine](docs/state-machine.md), and the [worked example](examples/feature-042.md).
+
+The shipped upstream design and debugging skills and their pinned source revisions are listed in [sources.lock.json](sources.lock.json). The locally authored final review procedure is [final-manual-review](skills/final-manual-review/SKILL.md); it is intentionally limited to human/AI handoff, evidence, waiting, and bug-routing mechanics. Rakazo integration is intentionally adapter-based: its live-model/manual browser verification is real-run evidence, while an unavailable run remains unverified rather than passing.
+
+See [compatibility map](docs/compatibility-map.md) for what was selectively adopted from GSD, Matt Pocock’s engineering skills, MAQA, AWO/Orka, UI/UX Pro Max, Frontend Agent Skills, and the design workflow suite—and what was intentionally kept out to avoid conflicts.
+
+See the [debugging skill landscape](docs/debug-skill-landscape.md) for the selected codebase/runtime diagnosis routing and the upstream skills evaluated but intentionally not duplicated.
+
+## Codex Cloud delegation
+
+Enable `delegation.enabled` and set a Codex Cloud environment ID in the project configuration. `super-speckit.delegate-cloud` creates a redacted, bounded pack from a durable handoff, submits it with `codex cloud exec`, and records the cloud task ID. `collect-cloud` reviews the diff before any application. Cloud work is a maker lane only: its result always enters a fresh independent QA checkout, so a cloud agent never grades its own implementation. Centillex Desk can use the same pack as an optional local cross-vendor transport.
+
+## Verify the kit itself
+
+```bash
+python3 -m unittest discover -s tests -v
+python3 scripts/super_speckit.py validate --repo .
+```
+
+## Upstream influences
+
+This design preserves Spec Kit's artifact-driven SDD and convergence model. It takes the isolated per-feature worktree/coordinator idea from MAQA, but replaces its static-only QA gate with an independent clean runtime lane. Its exploratory role split is inspired by `sdlc-skills` manual-qa, condensed into a portable role protocol. See `docs/references.md` for pinned links and integration notes.

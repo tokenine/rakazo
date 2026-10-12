@@ -6,6 +6,7 @@ import type {
   AgentSkillCatalogEntry,
   Bot,
   BotSection,
+  BotSession,
   ComputerMode,
   ComputerReleaseReason,
   ComputerStatus,
@@ -147,7 +148,6 @@ import {
 import { ComputerUpdateProgress } from "../components/ComputerUpdateProgress";
 import { CallCard } from "../components/call/CallCard";
 import { VoiceChatCard } from "../components/call/VoiceChatCard";
-import { ComputerWorkspace } from "../components/computer/ComputerWorkspace";
 import { MessageHoverMetadata } from "../components/MessageHoverMetadata";
 import { SkillDraftCard } from "../components/teach/SkillDraftCard";
 import { TeachCaptureOverlay } from "../components/teach/TeachCaptureOverlay";
@@ -251,6 +251,8 @@ import {
   ChoiceCard,
   McpApprovalCard,
 } from "./shell/message-cards";
+import { SessionSwitcher } from "./shell/session-switcher";
+import { CodeModeSwitch } from "./shell/code-mode-switch";
 import { WindowChrome } from "./WindowChrome";
 
 const BotContextMenu = lazy(() =>
@@ -270,6 +272,9 @@ const PeerMessagesOverlay = lazy(() =>
 const PluginsOverlay = lazy(() =>
   import("./PluginsOverlay").then((module) => ({ default: module.PluginsOverlay })),
 );
+const CodingSessionsStrip = lazy(() =>
+  import("./shell/coding-strip").then((module) => ({ default: module.CodingSessionsStrip })),
+);
 const SkillsConnectorsOverlay = lazy(() =>
   import("./SkillsConnectorsOverlay").then((module) => ({
     default: module.SkillsConnectorsOverlay,
@@ -278,6 +283,8 @@ const SkillsConnectorsOverlay = lazy(() =>
 const McpServersOverlay = lazy(() =>
   import("./McpServersOverlay").then((module) => ({ default: module.McpServersOverlay })),
 );
+const HubPage = lazy(() => import("./HubPage").then((module) => ({ default: module.HubPage })));
+const MarketplacePage = lazy(() => import("./MarketplacePage").then((module) => ({ default: module.MarketplacePage })));
 
 type Panel =
   | "computer"
@@ -408,9 +415,9 @@ function readCollapsedRosterParents(userId: string | null | undefined): Set<stri
   return readCollapsedIdSet(collapsedRosterParentsStorageKey(userId));
 }
 
-export function ShellPage() {
+export function ShellPage({ hubEntry, marketplaceEntry }: { hubEntry?: boolean; marketplaceEntry?: boolean }) {
   const { t } = useLingui();
-  const { botId, groupId } = useParams();
+  const { botId, groupId, threadId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   // Mirrors searchParams for effects that only need to read it once on run,
@@ -475,6 +482,18 @@ export function ShellPage() {
   } | null>(null);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [routinesBotId, setRoutinesBotId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<BotSession[]>([]);
+  const [sessionsBotId, setSessionsBotId] = useState<string | null>(null);
+  const sessionsBotIdRef = useRef<string | null>(null);
+  const refreshSessions = useCallback(async (targetBotId: string) => {
+    try {
+      const list = await rpc.threads.listSessions({ botId: targetBotId });
+      if (sessionsBotIdRef.current !== targetBotId) return;
+      setSessions(list);
+    } catch {
+      // Offline or deleted bot; the next session event or bot switch retries.
+    }
+  }, []);
   const [taughtSkills, setTaughtSkills] = useState<TaughtSkill[]>([]);
   const [taughtSkillsBotId, setTaughtSkillsBotId] = useState<string | null>(null);
   const [agentSkills, setAgentSkills] = useState<AgentSkillCatalogEntry[]>([]);
@@ -543,6 +562,7 @@ export function ShellPage() {
     commitSnapshot(update(snapshotRef.current));
   }
   const [pluginsOpen, setPluginsOpen] = useState(false);
+  const [codingSessionsTick, setCodingSessionsTick] = useState(0);
   const [skillsConnectorsOpen, setSkillsConnectorsOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -761,10 +781,25 @@ export function ShellPage() {
   const recordingSkill = activeTaughtSkills.find((skill) => skill.status === "recording") ?? null;
   const routeBotId = useRef<string | undefined>(botId);
   routeBotId.current = botId;
+  // The explicitly viewed session (route /app/:botId/:threadId); undefined = primary.
+  const routeThreadId = useRef<string | undefined>(threadId);
+  routeThreadId.current = threadId;
   const routeGroupId = useRef<string | undefined>(groupId);
   routeGroupId.current = groupId;
   const activeBotId = useRef<string | undefined>(inGroup ? undefined : active?.id);
   activeBotId.current = inGroup ? undefined : active?.id;
+  const activeThreadId = useRef<string | undefined>(inGroup ? undefined : threadId);
+  activeThreadId.current = inGroup ? undefined : threadId;
+  /**
+   * Thread addressing for the bot chat surface: the viewed session when `id` is
+   * the active bot, else the bot's primary session (teaching flows, sidebar
+   * context menus, other bots keep today's behavior).
+   */
+  function threadTargetForBot(id: string): { botId: string; threadId?: string } {
+    return activeBotId.current === id && activeThreadId.current
+      ? { botId: id, threadId: activeThreadId.current }
+      : { botId: id };
+  }
   const activeGroupId = useRef<string | undefined>(groupId);
   activeGroupId.current = groupId;
   const screenRequest = useRef(0);
@@ -784,10 +819,17 @@ export function ShellPage() {
     });
   }, []);
   const markBotRead = useCallback(
-    async (id: string) => {
-      await rpc.threads.markRead({ botId: id });
+    async (id: string, threadId?: string) => {
+      await rpc.threads.markRead(threadId ? { botId: id, threadId } : { botId: id });
       manuallyUnread.current.delete(id);
       updateBotUnread(id, false);
+      if (threadId) {
+        setSessions((current) =>
+          current.map((session) =>
+            session.id === threadId ? { ...session, unread: false } : session,
+          ),
+        );
+      }
     },
     [updateBotUnread],
   );
@@ -810,7 +852,10 @@ export function ShellPage() {
     (id: string) => {
       if (manuallyUnread.current.has(id)) return;
       if (document.visibilityState === "visible" && document.hasFocus()) {
-        void markBotRead(id).catch(() => undefined);
+        const viewedThreadId = activeThreadId.current;
+        const sessionThreadId =
+          viewedThreadId && activeBotId.current === id ? viewedThreadId : undefined;
+        void markBotRead(id, sessionThreadId).catch(() => undefined);
       }
     },
     [markBotRead],
@@ -920,6 +965,8 @@ export function ShellPage() {
         botsRefreshApplied.current = request;
         if (
           includeArchived &&
+          !hubEntry &&
+          !marketplaceEntry &&
           list.length === 0 &&
           archived?.length === 0 &&
           groupList.length === 0 &&
@@ -940,7 +987,14 @@ export function ShellPage() {
           return;
         }
         const currentBotId = routeBotId.current;
-        if (!currentBotId || !list.some((bot) => bot.id === currentBotId)) {
+        // Hub and marketplace are intentional non-thread views: a background
+        // refresh (a run event, focus, a bot rename) must not yank the user
+        // into a chat just because the URL has no bot id.
+        if (
+          !hubEntry &&
+          !marketplaceEntry &&
+          (!currentBotId || !list.some((bot) => bot.id === currentBotId))
+        ) {
           navigate(firstThreadRoute(list, groupList), { replace: true });
         }
       } finally {
@@ -999,7 +1053,7 @@ export function ShellPage() {
     const request = ++threadRefreshEpoch.current;
     // Apply threads.get as soon as it returns so stop/takeover status is not held behind
     // routines/skills/screen fetches (progress can advance the cursor meanwhile).
-    const snap = await rpc.threads.get({ botId: id }, signal ? { signal } : undefined);
+    const snap = await rpc.threads.get(threadTargetForBot(id), signal ? { signal } : undefined);
     markOnce("rk:renderer:thread-response");
     if (
       activeBotId.current !== id ||
@@ -1088,7 +1142,7 @@ export function ShellPage() {
     setLoadingOlder(true);
     try {
       const page = await rpc.threads.messages({
-        ...(targetGroupId ? { groupId: targetGroupId } : { botId: targetBotId! }),
+        ...(targetGroupId ? { groupId: targetGroupId } : threadTargetForBot(targetBotId!)),
         before,
       });
       if (
@@ -1142,16 +1196,24 @@ export function ShellPage() {
           setInitialBotsLoaded(true);
         }
         if (!groupId && bootstrap.thread) {
-          bootstrappedThread.current = bootstrap.thread;
-          commitSnapshot(bootstrap.thread);
-          commitComputer(bootstrap.thread.computer ?? null);
-          setRoutines(bootstrap.routines);
-          setRoutinesBotId(bootstrap.thread.botId ?? null);
+          // A session route must not flash the primary snapshot: the bootstrap
+          // prefetch only knows the bot; the subscription effect loads the
+          // addressed session.
+          const routeSessionId = routeThreadId.current;
+          if (!routeSessionId || bootstrap.thread.threadId === routeSessionId) {
+            bootstrappedThread.current = bootstrap.thread;
+            commitSnapshot(bootstrap.thread);
+            commitComputer(bootstrap.thread.computer ?? null);
+            setRoutines(bootstrap.routines);
+            setRoutinesBotId(bootstrap.thread.botId ?? null);
+          }
           markOnce("rk:renderer:bots-response");
           markOnce("rk:renderer:thread-response");
         }
         if (!applyBotLists) return;
         if (
+          !hubEntry &&
+          !marketplaceEntry &&
           bootstrap.bots.length === 0 &&
           bootstrap.archivedBots.length === 0 &&
           groupList.length === 0 &&
@@ -1168,7 +1230,7 @@ export function ShellPage() {
           return;
         }
         const selectedBotId = bootstrap.thread?.botId ?? bootstrap.bots[0]?.id;
-        if (selectedBotId && selectedBotId !== botId) {
+        if (selectedBotId && selectedBotId !== botId && !hubEntry && !marketplaceEntry) {
           navigate(`/app/${selectedBotId}`, { replace: true });
         }
       })
@@ -1263,6 +1325,69 @@ export function ShellPage() {
   ]);
 
   useEffect(() => {
+    if (inGroup || !active) {
+      sessionsBotIdRef.current = null;
+      setSessionsBotId(null);
+      setSessions([]);
+      return;
+    }
+    sessionsBotIdRef.current = active.id;
+    setSessionsBotId(active.id);
+    setSessions([]);
+    void refreshSessions(active.id);
+  }, [inGroup, active?.id, refreshSessions]);
+
+  async function createSessionAndView(
+    targetBotId: string,
+    name: string,
+    coding?: "normal-pi" | "omp",
+  ) {
+    if (coding) {
+      try {
+        await rpc.codingSessions.create({ botId: targetBotId, engine: coding, title: name });
+        setCodingSessionsTick((tick) => tick + 1);
+      } catch (error) {
+        setSendError(error instanceof Error ? error.message : t`Could not start the coding session`);
+      }
+      return;
+    }
+    try {
+      const created = await rpc.threads.createSession({ botId: targetBotId, name });
+      // Await refresh so the new session is in the sessions list before navigating.
+      // Without this, the re-mount from navigation races with this refresh and
+      // the stale sessions list (primary-only) renders in the switcher.
+      await refreshSessions(targetBotId);
+      navigate(`/app/${targetBotId}/${created.id}`);
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : t`Could not create the session`);
+    }
+  }
+
+  async function renameSessionAndView(targetBotId: string, sessionId: string, name: string) {
+    try {
+      await rpc.threads.renameSession({ sessionId, name });
+      await refreshSessions(targetBotId);
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : t`Could not rename the session`);
+    }
+  }
+
+  async function deleteSessionAndView(targetBotId: string, session: BotSession) {
+    try {
+      await rpc.threads.deleteSession({ sessionId: session.id });
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : t`Could not delete the session`);
+      void refreshSessions(targetBotId);
+      return;
+    }
+    await refreshSessions(targetBotId);
+    const viewedThreadId = routeThreadId.current ?? snapshotRef.current?.threadId;
+    if (session.id === viewedThreadId) {
+      navigate(`/app/${targetBotId}`, { replace: true });
+    }
+  }
+
+  useEffect(() => {
     if (!active) return;
     // Opening a bot clears the manual unread flag so it can auto-read again.
     manuallyUnread.current.delete(active.id);
@@ -1305,18 +1430,25 @@ export function ShellPage() {
         const primed = bootstrappedThread.current;
         bootstrappedThread.current = null;
         // Pending search jumps load the around-page separately; avoid replacing it with latest.
-        return primed?.botId === active.id
+        return primed?.botId === active.id && (!threadId || primed.threadId === threadId)
           ? primed
           : pendingJump
-            ? rpc.threads.get({ botId: active.id }, { signal: threadSnapshotSignal(abort.signal) })
+            ? rpc.threads.get(threadTargetForBot(active.id), {
+                signal: threadSnapshotSignal(abort.signal),
+              })
             : refreshThread(active.id, threadSnapshotSignal(abort.signal));
       },
       loadHead: () =>
-        rpc.threads.head({ botId: active.id }, { signal: threadSnapshotSignal(abort.signal) }),
+        rpc.threads.head(threadTargetForBot(active.id), {
+          signal: threadSnapshotSignal(abort.signal),
+        }),
       refresh: () => refreshThread(active.id, threadSnapshotSignal(abort.signal)),
       currentSnapshot: () => snapshotRef.current,
       subscribe: (cursor) =>
-        rpc.threads.subscribe({ botId: active.id, cursor }, { signal: abort.signal }),
+        rpc.threads.subscribe(
+          { ...threadTargetForBot(active.id), cursor },
+          { signal: abort.signal },
+        ),
       beforeEvent: (event) => {
         if (isRunTerminalEvent(event) && event.runId) {
           terminalRunReceipts.current.add(event.runId);
@@ -1343,6 +1475,22 @@ export function ShellPage() {
           expandedHistoryThread.current = null;
           pinnedAroundRef.current = null;
           historyEpoch.current += 1;
+        }
+        if (
+          event.type === "session.created" ||
+          event.type === "session.renamed" ||
+          event.type === "session.deleted"
+        ) {
+          // Session lifecycle events fan out to every feed of the bot (V12):
+          // refresh the switcher list without reloading the view.
+          void refreshSessions(active.id);
+          if (
+            event.type === "session.deleted" &&
+            event.payload.threadId === snapshotRef.current?.threadId
+          ) {
+            // Another surface deleted the session being viewed; fall back to primary.
+            navigate(`/app/${active.id}`, { replace: true });
+          }
         }
         if (event.type === "bot.archived") {
           void refreshBots(true).catch(() => undefined);
@@ -1378,7 +1526,14 @@ export function ShellPage() {
     return () => {
       abort.abort();
     };
-  }, [active?.id, markBotReadIfVisible, notifyBrowserForEvent]);
+  }, [
+    active?.id,
+    threadId,
+    markBotReadIfVisible,
+    notifyBrowserForEvent,
+    refreshSessions,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (!groupId || !activeGroup) return;
@@ -1486,7 +1641,7 @@ export function ShellPage() {
                 id: bootstrapMe.spaceId,
                 name: "Personal",
                 isDefault: true,
-                hasContent: true,
+                hasContent: bots.length > 0 || groups.length > 0,
                 canDelete: false,
                 bots,
                 groups,
@@ -1995,7 +2150,7 @@ export function ShellPage() {
       const groupId = activeGroupId.current;
       if (!botId && !groupId) return;
       await rpc.threads.answer({
-        ...(groupId ? { groupId } : { botId: botId! }),
+        ...(groupId ? { groupId } : threadTargetForBot(botId!)),
         runId: message.runId ?? "",
         messageId: message.id,
         answer: text,
@@ -2016,7 +2171,7 @@ export function ShellPage() {
       if (!botId && !groupId) return;
       try {
         await rpc.threads.react({
-          ...(groupId ? { groupId } : { botId: botId! }),
+          ...(groupId ? { groupId } : threadTargetForBot(botId!)),
           messageId: message.id,
           reaction,
           clientNonce: newClientNonce(),
@@ -2162,7 +2317,7 @@ export function ShellPage() {
           });
         } else if (botTarget) {
           const sent = await rpc.threads.send({
-            botId: botTarget,
+            ...threadTargetForBot(botTarget),
             clientNonce,
             text: trimmed || undefined,
             mentions: plan.mentionPayload.length ? plan.mentionPayload : undefined,
@@ -2253,7 +2408,7 @@ export function ShellPage() {
       if (!botTarget) return;
       setSendError(null);
       try {
-        await rpc.threads.stop({ botId: botTarget });
+        await rpc.threads.stop(threadTargetForBot(botTarget));
       } catch (error) {
         if (activeBotId.current === botTarget) {
           setSendError(error instanceof Error ? error.message : t`Failed to stop`);
@@ -3311,6 +3466,7 @@ export function ShellPage() {
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger
             data-testid="user-menu-trigger"
+            aria-label={userName}
             className="flex items-center gap-[11px] px-[18px] py-3.5"
           >
             <span className="grid h-8 w-8 place-items-center rounded-full bg-accent text-[12px] text-foreground/75">
@@ -3484,7 +3640,39 @@ export function ShellPage() {
                 </span>
               </span>
             </button>
+            {!inGroup && active ? (
+              <CodeModeSwitch botId={active.id} mode="chat" />
+            ) : null}
+            {!inGroup && active ? (
+              <SessionSwitcher
+                activeThreadId={threadId ?? activeSnapshot?.threadId}
+                sessions={sessionsBotId === active.id ? sessions : []}
+                onSelect={(sessionId) => {
+                  if (sessionId === (threadId ?? activeSnapshot?.threadId)) return;
+                  // The primary session keeps the canonical bot URL (threadId
+                  // absent resolves primary); other sessions address explicitly.
+                  const selectedPrimary = sessions.some(
+                    (session) => session.id === sessionId && session.isPrimary,
+                  );
+                  navigate(
+                    selectedPrimary ? `/app/${active.id}` : `/app/${active.id}/${sessionId}`,
+                  );
+                }}
+                onCreate={(session, coding) => {
+                  void createSessionAndView(active.id, session.name ?? "", coding);
+                }}
+                onRename={(sessionId, name) =>
+                  void renameSessionAndView(active.id, sessionId, name)
+                }
+                onDelete={(session) => void deleteSessionAndView(active.id, session)}
+              />
+            ) : null}
           </div>
+          {active && !marketplaceEntry && !hubEntry ? (
+            <Suspense>
+              <CodingSessionsStrip botId={active.id} refreshTick={codingSessionsTick} />
+            </Suspense>
+          ) : null}
           <div className="flex items-center gap-1">
             {!inGroup && active ? (
               <button
@@ -3521,13 +3709,14 @@ export function ShellPage() {
             ) : null}
           </div>
         </div>
-        {!active && !activeGroup && initialBotsLoaded ? (
-          <div className="grid flex-1 place-items-center">
-            <Button onClick={() => setPanel("create")}>
-              <Plus size={16} aria-hidden="true" />
-              <Trans>Create new Bot</Trans>
-            </Button>
-          </div>
+        {marketplaceEntry ? (
+          <Suspense>
+            <MarketplacePage />
+          </Suspense>
+        ) : hubEntry || (!active && !activeGroup && initialBotsLoaded) ? (
+          <Suspense>
+            <HubPage hasContent={spaces.some((s) => s.hasContent)} bots={bots} />
+          </Suspense>
         ) : (
           <Transcript
             key={activeSnapshot?.threadId}
@@ -3575,7 +3764,7 @@ export function ShellPage() {
         ) : null}
         {active || activeGroup ? (
           <Composer
-            key={inGroup ? `group:${groupId}` : `bot:${active?.id}`}
+            key={inGroup ? `group:${groupId}` : `bot:${active?.id}:${threadId ?? "primary"}`}
             activeName={inGroup ? (activeGroup?.name ?? activeSnapshot?.groupName) : active?.name}
             running={composerRunning}
             disabled={Boolean(recordingSkill)}
@@ -4361,7 +4550,7 @@ export function ShellPage() {
             onConfirm={async () => {
               await rpc.threads.clear(
                 clearTarget.kind === "bot"
-                  ? { botId: clearTarget.chat.id }
+                  ? threadTargetForBot(clearTarget.chat.id)
                   : { groupId: clearTarget.chat.id },
               );
               if (
@@ -4614,19 +4803,6 @@ export function ShellPage() {
               </div>
             ) : null}
             <div className="relative min-h-0 flex-1 bg-background">
-              <ComputerWorkspace
-                botId={computerBot.id}
-                computer={computer}
-                hasControl={hasControl}
-                dock={!recordingSkill}
-                onTakeControl={
-                  computer?.state === "running" &&
-                  !hasControl &&
-                  !computerTakeoverBlocked(computer, snapshot?.run?.status)
-                    ? () => openComputer(computerBot.id)
-                    : undefined
-                }
-              >
                 {computer?.kind === "desktop" ? (
                   <DesktopKindEmptyState className="grid h-full place-items-center px-8 text-center text-sm text-muted-foreground/80" />
                 ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
@@ -4659,7 +4835,6 @@ export function ShellPage() {
                         : computerLabel(computer?.mode, computerBot.name))}
                   </div>
                 )}
-              </ComputerWorkspace>
             </div>
           </div>
         </div>

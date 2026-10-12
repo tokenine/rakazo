@@ -1,0 +1,18 @@
+{
+  "worktree": "ss/qa/004-s5-run1",
+  "base_branch": "ss/feature/004-s5",
+  "base_sha": "8b55445d",
+  "created_at": "2026-10-03T12:00:00Z",
+  "setup": {
+    "pnpm_install": "done (--no-frozen-lockfile, peer warnings non-fatal)",
+    "prisma_generate": "done (packages/db, Prisma 7.10.0, ./src/generated/prisma)"
+  },
+  "canonical_known_19": [
+    "coding-doctor 1",
+    "coding-omp-protocol 5",
+    "coding-secrets-flow 1",
+    "process-collision-matrix 2",
+    "process-sandbox-secrets 3",
+    "process-sandbox 7"
+  ]
+}

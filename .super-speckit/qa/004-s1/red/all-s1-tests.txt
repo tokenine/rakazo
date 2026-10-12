@@ -1,0 +1,128 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo[39m
+
+ [31m❯[39m packages/adapters/src/coding-repo-to-pr.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/adapters/src/coding-pi-adapter.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/adapters/src/coding-session-service.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/adapters/src/coding-engine.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/adapters/src/executor-coding-gate.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 71[2mms[22m[39m
+[31m     [31m×[31m refuses a gated tool call before execution and reports the refusal explicitly[39m[32m 53[2mms[22m[39m
+     [32m✓[39m lets the call through when the gate allows (acceptance recorded)[32m 9[2mms[22m[39m
+     [32m✓[39m leaves runs untouched when no coding gate is installed (default behavior)[32m 7[2mms[22m[39m
+ [31m❯[39m packages/adapters/src/coding-acceptance-gate.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/db/src/coding-migration.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/adapters/src/coding-session.postgres.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 7 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-acceptance-gate.test.ts[2m [ packages/adapters/src/coding-acceptance-gate.test.ts ][22m
+[31m[1mError[22m: Cannot find module './coding-acceptance-gate.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-acceptance-gate.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/coding-acceptance-gate.test.ts:[2m3:1[22m[39m
+    [90m  1|[39m [35mimport[39m { describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  2|[39m [35mimport[39m type { [33mPrismaClient[39m } [35mfrom[39m [32m"@rakazo/db"[39m[33m;[39m
+    [90m  3|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  4|[39m   [33mACCEPTANCE_REFUSAL_HINT[39m[33m,[39m
+    [90m  5|[39m   createAcceptanceGateService[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-engine.test.ts[2m [ packages/adapters/src/coding-engine.test.ts ][22m
+[31m[1mError[22m: Cannot find module './coding-engine.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-engine.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/coding-engine.test.ts:[2m2:1[22m[39m
+    [90m  1|[39m [35mimport[39m { describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  2|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  3|[39m   [33mCODING_ENGINE_IDS[39m[33m,[39m
+    [90m  4|[39m   [33mContinuationRefusedError[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-pi-adapter.test.ts[2m [ packages/adapters/src/coding-pi-adapter.test.ts ][22m
+[31m[1mError[22m: Cannot find module './coding-engine.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-pi-adapter.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/coding-pi-adapter.test.ts:[2m4:1[22m[39m
+    [90m  2|[39m [35mimport[39m { runContinueJob } [35mfrom[39m [32m"@rakazo/adapter-kit"[39m[33m;[39m
+    [90m  3|[39m [35mimport[39m type { [33mPrismaClient[39m } [35mfrom[39m [32m"@rakazo/db"[39m[33m;[39m
+    [90m  4|[39m [35mimport[39m { [33mEngineMismatchError[39m } [35mfrom[39m [32m"./coding-engine.js"[39m[33m;[39m
+    [90m   |[39m [31m^[39m
+    [90m  5|[39m import { createCodingPiAdapter, type CodingRunMachinery } from "./codi…
+    [90m  6|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-repo-to-pr.test.ts[2m [ packages/adapters/src/coding-repo-to-pr.test.ts ][22m
+[31m[1mError[22m: Cannot find module './coding-repo-to-pr.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-repo-to-pr.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/coding-repo-to-pr.test.ts:[2m8:1[22m[39m
+    [90m  6|[39m [35mimport[39m type { [33mPrismaClient[39m } [35mfrom[39m [32m"@rakazo/db"[39m[33m;[39m
+    [90m  7|[39m [35mimport[39m { [33mLocalArtifactStore[39m } [35mfrom[39m [32m"./artifacts.js"[39m[33m;[39m
+    [90m  8|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  9|[39m   [33mMissingWorkspaceCredentialError[39m[33m,[39m
+    [90m 10|[39m   [33mVerificationFailedError[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-session-service.test.ts[2m [ packages/adapters/src/coding-session-service.test.ts ][22m
+[31m[1mError[22m: Cannot find module './coding-session-service.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-session-service.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/coding-session-service.test.ts:[2m3:1[22m[39m
+    [90m  1|[39m [35mimport[39m { describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  2|[39m [35mimport[39m type { [33mPrismaClient[39m } [35mfrom[39m [32m"@rakazo/db"[39m[33m;[39m
+    [90m  3|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  4|[39m   [33mContinuationRefusedError[39m[33m,[39m
+    [90m  5|[39m   [33mWorkspaceBusyError[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/coding-session.postgres.test.ts[2m [ packages/adapters/src/coding-session.postgres.test.ts ][22m
+[31m[1mError[22m: Cannot find module './coding-session-service.js' imported from /home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/adapters/src/coding-session.postgres.test.ts[39m
+[36m [2m❯[22m packages/adapters/src/coding-session.postgres.test.ts:[2m4:1[22m[39m
+    [90m  2|[39m [35mimport[39m { createDb[33m,[39m type [33mPrismaClient[39m } [35mfrom[39m [32m"@rakazo/db"[39m[33m;[39m
+    [90m  3|[39m [35mimport[39m { afterAll[33m,[39m beforeAll[33m,[39m describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  4|[39m [35mimport[39m {
+    [90m   |[39m [31m^[39m
+    [90m  5|[39m   [33mWorkspaceBusyError[39m[33m,[39m
+    [90m  6|[39m   continueCodingSession[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/db/src/coding-migration.test.ts[2m [ packages/db/src/coding-migration.test.ts ][22m
+[31m[1mError[22m: ENOENT: no such file or directory, open '/home/rakazo/bots/cmugu5zq900dp11o7fei9hl0r/rakazo/packages/db/prisma/migrations/20261001050500_coding_sessions_lease/migration.sql'[39m
+[36m [2m❯[22m packages/db/src/coding-migration.test.ts:[2m10:22[22m[39m
+    [90m  8|[39m [35mconst[39m migrationsDir [33m=[39m [34mjoin[39m(prismaDir[33m,[39m [32m"migrations"[39m)[33m;[39m
+    [90m  9|[39m [35mconst[39m migrationName [33m=[39m [32m"20261001050500_coding_sessions_lease"[39m[33m;[39m
+    [90m 10|[39m const migrationSql = readFileSync(join(migrationsDir, migrationName, "…
+    [90m   |[39m                      [31m^[39m
+    [90m 11|[39m const schemaSql = readFileSync(join(prismaDir, "schema.prisma"), "utf8…
+    [90m 12|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/adapters/src/executor-coding-gate.test.ts[2m > [22mcoding acceptance gate at the executor tool authorization point (T4)[2m > [22mrefuses a gated tool call before execution and reports the refusal explicitly
+[31m[1mAssertionError[22m: expected [ { tool: 'demo_write_item', …(3) } ] to have a length of +0 but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m packages/adapters/src/executor-coding-gate.test.ts:[2m158:24[22m[39m
+    [90m156|[39m     [35mconst[39m f [33m=[39m [34mfixture[39m({ codingGate[33m:[39m gate })[33m;[39m
+    [90m157|[39m     [35mawait[39m f[33m.[39m[34mrun[39m()[33m;[39m
+    [90m158|[39m     [34mexpect[39m(f[33m.[39mexecuted)[33m.[39m[34mtoHaveLength[39m([34m0[39m)[33m;[39m
+    [90m   |[39m                        [31m^[39m
+    [90m159|[39m     [34mexpect[39m(f[33m.[39mresults[[34m0[39m])[33m.[39m[34mtoMatchObject[39m({
+    [90m160|[39m       error[33m:[39m expect[33m.[39m[34mstringMatching[39m([36m/acceptance/i[39m)[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m8 failed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 05:10:02
+[2m   Duration [22m 8.59s[2m (transform 2.19s, setup 88ms, import 6.01s, tests 71ms, environment 1ms)[22m
+

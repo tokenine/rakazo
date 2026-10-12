@@ -1,0 +1,40 @@
+004-code-mode S1 — evidence note (fix round 1, LOW-5 scope honesty)
+
+WHAT BACKS WHAT
+- The Slice-1 matrix rows (V1 pi, V2 pi, V13, V14, V15) are all backed by the
+  SAME full-suite vitest captures, not per-row runs:
+  - candidate round: green/all-s1-tests.txt
+  - fix round 1:     green/fixes-round1.txt
+  The former per-row green files (v1-pi.txt, v2-pi.txt, v13.txt, v14.txt,
+  v15.txt) were byte-for-byte copies of the candidate's full-suite run and
+  have been removed; they overstated per-row evidence.
+- green/biome.txt is the honest SCOPED biome run over every new/touched file,
+  with the command and exit code recorded. Correction vs the candidate note:
+  at 43b1484e biome reported 4 errors in 3 new files (organizeImports +
+  format) — the earlier implied-clean claim was wrong; those errors are now
+  fixed and the file shows the real, refreshed output (MED-1).
+- green/typecheck.txt is the fresh tsc --noEmit result for @rakazo/contracts,
+  @rakazo/db, @rakazo/adapters.
+
+WHERE THE DEEPER ASSERTIONS LIVE
+- V13 (concurrency: two sessions cannot own one workspace; atomic takeover)
+  and V15 (run-level stop before continuation) assertions live at the
+  fake-prisma / service-lane level; coding-session.postgres.test.ts adds the
+  DB-level versions and SELF-SKIPS offline (VERIFY_DATABASE + DATABASE_URL).
+- Fix round 1 closes part of this gap at the fake lane: the MED-3
+  interleaved test ("exactly one of two concurrent takeovers of an expired
+  lease wins") plus the stale-fence refusal test now exercise the exact
+  interleavings the atomic conditional update guards, against a
+  per-transaction-rollback fake.
+
+FIX-ROUND REGRESSION COVERAGE (tests folded per checker finding)
+- HIGH-1: deny-by-default gate + executor fail-closed (coding-acceptance-gate
+  + executor-coding-gate suites).
+- MED-2: touch renews a held lease; refuses after loss (service + adapter).
+- MED-3: interleaved double-takeover exactly-one-winner; creation-path race.
+- MED-4: continuation is one transaction — mid-sequence throw leaves no
+  partial state; continuation of a non-stopped original refused.
+- LOW-1: requestedEngine mismatch -> typed EngineMismatchError.
+- LOW-2: stale-fence takeover refuses instead of stomping.
+- LOW-3: latestRunId index migration assertions (coding-migration suite).
+- LOW-4: threadless session refuses instead of fabricating threadId "null".

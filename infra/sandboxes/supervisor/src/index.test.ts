@@ -42,6 +42,7 @@ import {
   screenReleaseStopCommand,
   shouldReplayComputerActions,
   stopExtraScreenCommand,
+  terminalHomeFilesCommand,
   teardownReleasedScreen,
   withKeyedLock,
 } from "./supervisor-logic.js";
@@ -227,6 +228,72 @@ describe("sandbox supervisor HTTP boundary", () => {
       });
       expect(response.status, JSON.stringify(body)).toBeGreaterThanOrEqual(400);
       expect(response.ok).toBe(false);
+    }
+  });
+
+  it("rejects terminal launch commands that are not a safe plain command", async () => {
+    for (const launchCommand of ["rm -rf /", `a`.repeat(257), "echo $(id)", "x; y"]) {
+      const response = await supervisorApp.request("/computers/id/terminal", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ controlToken: "ok-token", launchCommand }),
+      });
+      expect(response.status, launchCommand).toBe(400);
+      await expect(response.text()).resolves.toContain("launchCommand");
+    }
+  });
+
+  it("rejects terminal env injections that are not bounded provider-style variables", async () => {
+    for (const env of [
+      { "lower-case": "x" },
+      { "1STARTS_DIGIT": "x" },
+      { "HAS SPACE": "x" },
+      { TOO_LONG: "x".repeat(4097) },
+      Object.fromEntries(Array.from({ length: 17 }, (_, i) => [`VAR_${i}`, "x"])),
+    ]) {
+      const response = await supervisorApp.request("/computers/id/terminal", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ controlToken: "ok-token", env }),
+      });
+      expect(response.status, JSON.stringify(Object.keys(env))).toBe(400);
+    }
+  });
+
+  it("rejects terminal home files that escape ~/.omp or carry unsafe paths", async () => {
+    for (const homeFiles of [
+      [{ path: "/etc/passwd", content: "x" }],
+      [{ path: "../escape", content: "x" }],
+      [{ path: ".omp/../../escape", content: "x" }],
+      [{ path: ".ssh/authorized_keys", content: "x" }],
+      [{ path: ".omp/agent/models.yml", content: "x".repeat(8193) }],
+      Array.from({ length: 9 }, (_, i) => ({ path: `.omp/f${i}`, content: "x" })),
+    ]) {
+      const response = await supervisorApp.request("/computers/id/terminal", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ controlToken: "ok-token", homeFiles }),
+      });
+      expect(response.status, JSON.stringify(homeFiles)).toBe(400);
+    }
+  });
+
+  it("writes terminal home files under $HOME with owner-only permissions", () => {
+    const command = terminalHomeFilesCommand([
+      { path: ".omp/agent/models.yml", content: "providers: {}\n" },
+    ]);
+    expect(command).toContain("mkdir -p \"$HOME/.omp/agent\"");
+    expect(command).toContain("umask 177");
+    expect(command).toContain("'providers: {}\n'");
+    expect(command).toContain(" >\"$HOME/.omp/agent/models.yml\"");
+  });
+
+  it("refuses to build home-file commands that escape ~/.omp", () => {
+    for (const path of ["/etc/passwd", "../escape", ".omp/../../escape", ".ssh/keys", "omp/x"]) {
+      expect(
+        () => terminalHomeFilesCommand([{ path, content: "x" }]),
+        path,
+      ).toThrow();
     }
   });
 

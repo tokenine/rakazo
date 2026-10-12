@@ -24,6 +24,7 @@ const SHELL_RECONNECT_ATTEMPTS = 3;
 const SHELL_RECONNECT_DELAY_MS = 1_000;
 /** A shell connection that lasted this long counts as working again. */
 const SHELL_STABLE_MS = 10_000;
+const SHELL_URL_TIMEOUT_MS = 10_000;
 
 type View = "activity" | "shell";
 
@@ -188,9 +189,50 @@ function ActivityTerminal({ botId, hidden }: { botId: string; hidden: boolean })
 }
 
 function ShellTerminal({ botId, hidden }: { botId: string; hidden: boolean }) {
+  return (
+    <LiveTerminal
+      hidden={hidden}
+      testId="computer-shell"
+      fetchUrl={(signal) => rpc.computer.terminalUrl({ botId }, { signal })}
+    />
+  );
+}
+
+/** Native shell for an active omp coding session, bound to the session's sandbox workspace. */
+export function CodingSessionTerminal({
+  sessionId,
+  hidden,
+  interactive = true,
+}: {
+  sessionId: string;
+  hidden: boolean;
+  /** False for a view-only stream (no control lease): output scrolls, input is disabled. */
+  interactive?: boolean;
+}) {
+  return (
+    <LiveTerminal
+      hidden={hidden}
+      interactive={interactive}
+      testId="coding-session-terminal"
+      fetchUrl={() => rpc.codingSessions.terminalUrl({ sessionId })}
+    />
+  );
+}
+
+function LiveTerminal({
+  hidden,
+  testId,
+  fetchUrl,
+  interactive = true,
+}: {
+  hidden: boolean;
+  testId: string;
+  fetchUrl: (signal: AbortSignal) => Promise<{ url: string | null }>;
+  interactive?: boolean;
+}) {
   const { t } = useLingui();
   const host = useRef<HTMLDivElement>(null);
-  const terminal = useXterm(host, true);
+  const terminal = useXterm(host, interactive);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -208,8 +250,7 @@ function ShellTerminal({ botId, hidden }: { botId: string; hidden: boolean }) {
       terminal.onResize(({ cols, rows }) => send(encodeTerminalResize(cols, rows))),
     ];
     const connect = () => {
-      rpc.computer
-        .terminalUrl({ botId })
+      fetchUrl(AbortSignal.timeout(SHELL_URL_TIMEOUT_MS))
         .then(({ url }) => {
           if (cancelled || !url) return;
           const target = terminalSocketUrl(url, window.location.href);
@@ -251,13 +292,13 @@ function ShellTerminal({ botId, hidden }: { botId: string; hidden: boolean }) {
       for (const disposer of disposers) disposer.dispose();
       socket?.close();
     };
-  }, [terminal, botId, t]);
+  }, [terminal, t, fetchUrl]);
 
   useEffect(() => {
-    if (!hidden) terminal?.focus();
-  }, [hidden, terminal]);
+    if (!hidden && interactive) terminal?.focus();
+  }, [hidden, interactive, terminal]);
 
-  return <TerminalPane host={host} error={error} hidden={hidden} testId="computer-shell" />;
+  return <TerminalPane host={host} error={error} hidden={hidden} testId={testId} />;
 }
 
 function TerminalPane({

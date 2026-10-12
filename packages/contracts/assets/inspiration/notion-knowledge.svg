@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" fill="none">
+  <!-- Notion-like page -->
+  <rect x="22" y="8" width="76" height="74" rx="5" stroke="#6B7280" stroke-width="2.5" fill="#1F2937"/>
+  <!-- Cover block -->
+  <rect x="22" y="8" width="76" height="20" rx="5" fill="#374151"/>
+  <!-- Page title placeholder -->
+  <rect x="32" y="34" width="40" height="5" rx="2.5" fill="#6B7280"/>
+  <!-- Content blocks -->
+  <rect x="32" y="46" width="56" height="3" rx="1.5" fill="#4B5563"/>
+  <rect x="32" y="53" width="44" height="3" rx="1.5" fill="#4B5563"/>
+  <rect x="32" y="60" width="50" height="3" rx="1.5" fill="#4B5563"/>
+  <rect x="32" y="67" width="35" height="3" rx="1.5" fill="#4B5563"/>
+  <!-- Star bookmark -->
+  <path d="M88 8 L88 28" stroke="#6B7280" stroke-width="2"/>
+  <path d="M85 11 L91 11 L88 17 Z" fill="#9CA3AF"/>
+</svg>

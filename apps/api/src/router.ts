@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { implement, ORPCError } from "@orpc/server";
 import type {
   AdapterContext,
@@ -35,6 +35,7 @@ import {
   applyTeachingDesktopInput,
   archiveBot,
   assertSafeRemoteUrl,
+  buildGitGraph,
   buildMcpCredentialBlob,
   buildModelConnectPlaintext,
   CHATGPT_OAUTH_PROVIDER,
@@ -48,6 +49,7 @@ import {
   computerSupportsTerminal,
   computerSupportsUpdate,
   computerUpdateView,
+  createAcceptanceGateService,
   createUserTelegramPlatform,
   createVoiceProvider,
   defaultCatalogModelId,
@@ -70,6 +72,7 @@ import {
   mapScratchpadItem,
   modelCredentialAuthKindsForSpace,
   modelCredentialDto,
+  ompTerminalInjection,
   parseModelSecret,
   pickReusableConnection,
   planLiveConnectionSync,
@@ -106,7 +109,9 @@ import {
 import type { Auth } from "@rakazo/auth";
 import type {
   Actor,
+  AgentBundle,
   Bot,
+  CatalogEntry,
   ComputerReleaseReason,
   ComputerStatus,
   McpServer,
@@ -115,16 +120,22 @@ import type {
   SpaceNavigation,
 } from "@rakazo/contracts";
 import {
+  AgentBundleSchema,
   ATTACHMENT_MAX_BYTES,
   appContract,
+  BUNDLED_CATALOG,
   ComputerCommandSchema,
+  createMarketplaceCatalog,
+  createOperatorCatalogSource,
   EXPERT_AVATARS,
   EXPERT_CATALOG,
   EXPERT_MCP_PRESETS,
   EXPERT_SKILLS,
   findExpert,
   foldComputerCommands,
+  INSPIRATION_CATALOG,
   IntegrationProviderIdSchema,
+  MARKETPLACE_CATALOG_VERSION,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,
 } from "@rakazo/contracts";
@@ -164,6 +175,7 @@ import {
   InvalidSpaceNameError,
   IsolationError,
   issueMessagingLinkCode,
+  LastSessionError,
   lockOwnedGroup,
   newestModelCredentialOrder,
   newestVoiceCredentialOrder,
@@ -172,6 +184,8 @@ import {
   releaseSpaceDeletionClaim,
   renewSpaceDeletionClaim,
   restoreBotUnderComputerQuota,
+  SessionActiveRunError,
+  type SessionEventNotice,
   SPACE_DELETION_CLAIM_TIMEOUT_MS,
   SpaceDeletionInProgressError,
   SpaceLimitError,
@@ -197,10 +211,17 @@ import {
 } from "./artifacts.js";
 import { botProfileLabelsChanged, commitBotUpdate } from "./bot-update.js";
 import {
+  BotCodingWorkspace,
+  BotNotFoundError,
+  createBotCodingSession,
+  listBotCodingSessions,
+} from "./coding-sessions.js";
+import {
   executionBlocksUserTakeover,
   resolveBusyBotName,
   toComputerStatus,
 } from "./computer-status.js";
+import { detectCredentialPatterns } from "./credential-patterns.js";
 import { searchIntegrationCatalog } from "./integration-catalog.js";
 import {
   dismissMcpServerApprovals,
@@ -222,6 +243,7 @@ import {
   promptFocus,
   startOnboarding,
 } from "./onboarding.js";
+import { createPreviewService } from "./previews.js";
 import { listSpaceRuns } from "./runs.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";
 import { querySpaceSearch } from "./search.js";
@@ -270,6 +292,94 @@ const THREAD_MESSAGE_PAGE_SIZE = 100;
 /** Silence longer than this on a thread stream is indistinguishable from a dead socket. */
 export const HEARTBEAT_MS = 20_000;
 const EXPORT_MESSAGE_PAGE_SIZE = 500;
+
+/**
+ * Load the plaintext values of the space's stored agent secrets for an export scan.
+ *
+ * Fail-closed: if any secret cannot be decrypted the export is refused. Returning
+ * a partial (or empty) list would silently weaken the scan, which is exactly the
+ * failure recorded in BUG-003-S1-02.
+ */
+async function loadExportSecretValues(deps: RouterDeps, actor: Actor): Promise<string[]> {
+  const rows = await deps.prisma.agentSecret.findMany({
+    where: { spaceId: actor.spaceId },
+    select: { id: true, secretId: true, secret: { select: { ciphertext: true } } },
+  });
+  const values: string[] = [];
+  for (const row of rows) {
+    try {
+      values.push(deps.secrets.load(row.secret.ciphertext, row.secretId));
+    } catch (error) {
+      throw new ORPCError("BAD_REQUEST", {
+        message: `Export refused: cannot verify whether stored secret "${row.id}" is embedded. ${error instanceof Error ? error.message : "decryption failed"}`,
+      });
+    }
+  }
+  return values;
+}
+
+/**
+ * In-memory cache for phase-1 preview bundles, keyed by bundle hash.
+ *
+ * Entries are retained until commit, so a preview that is never committed would
+ * otherwise pin its bundle for the process lifetime. A token is only valid for
+ * 10 minutes, so expiring slightly after that cannot break a legitimate commit
+ * and bounds memory.
+ *
+ * Memory bound: at most IMPORT_PREVIEW_CACHE_MAX_ENTRIES entries are retained.
+ * Each bundle is capped at BUNDLE_MAX_BYTES (2 MB by default in @rakazo/contracts),
+ * so the cache holds at most 50 × 2 MB ≈ 100 MB in the worst case.
+ * See AGENT-BUNDLE-006.
+ */
+const importPreviewCache = new Map<
+  string,
+  { bundle: unknown; actorSpaceId: string; actorUserId: string; expiresAt: number }
+>();
+
+/** Preview entries outlive the 10-minute token, so a commit can still land. */
+const IMPORT_PREVIEW_TTL_MS = 12 * 60 * 1000;
+
+/**
+ * Maximum number of preview entries retained in the process-wide cache.
+ *
+ * Derived: BUNDLE_MAX_BYTES (2 MB) × 50 entries ≈ 100 MB process memory.
+ * The TTL (12 min) and per-actor cache key (AGENT-BUNDLE-008) are unchanged.
+ * See AGENT-BUNDLE-006.
+ */
+const IMPORT_PREVIEW_CACHE_MAX_ENTRIES = 50;
+
+/**
+ * Preview cache key scoped by actor.
+ *
+ * Keying on the bundle hash alone let a second actor who previewed the identical
+ * bytes overwrite or consume the first actor's entry, so a valid import could
+ * fail for reasons unrelated to its own content. The actor comparison below
+ * stayed as a second check; scoping the key is what prevents the clobber.
+ * See AGENT-BUNDLE-008.
+ */
+function importPreviewCacheKey(
+  actor: Pick<Actor, "spaceId" | "userId">,
+  bundleHash: string,
+): string {
+  return `${actor.spaceId}:${actor.userId}:${bundleHash}`;
+}
+
+function pruneImportPreviewCache(now: number): void {
+  // Phase 1: evict expired entries
+  for (const [key, entry] of importPreviewCache) {
+    if (entry.expiresAt <= now) importPreviewCache.delete(key);
+  }
+  // Phase 2: if still over capacity, evict oldest-to-expire first
+  if (importPreviewCache.size > IMPORT_PREVIEW_CACHE_MAX_ENTRIES) {
+    const sorted = [...importPreviewCache.entries()].sort(
+      (a, b) => a[1].expiresAt - b[1].expiresAt,
+    );
+    const toRemove = importPreviewCache.size - IMPORT_PREVIEW_CACHE_MAX_ENTRIES;
+    for (let i = 0; i < toRemove; i++) {
+      importPreviewCache.delete(sorted[i]![0]);
+    }
+  }
+}
 
 async function reconcilePendingConnections(
   prisma: PrismaClient,
@@ -564,6 +674,8 @@ export interface RouterDeps {
     telegramBotToken?: string;
     telegramWebhookSecret?: string;
     messagingPublicOrigin?: string;
+    marketplaceImportSecret?: string;
+    marketplaceOperatorUrls?: string[];
     mcpAllowPrivateEndpoint?: boolean;
   };
 }
@@ -598,6 +710,128 @@ function mapSpaceLifecycleError(error: unknown): unknown {
     return new ORPCError("BAD_REQUEST", { message: error.message });
   }
   return error;
+}
+
+/** Fan a committed session lifecycle event out to every subscribed feed (V12). */
+async function notifySessionEvents(
+  events: ThreadEvents,
+  notifications: SessionEventNotice[],
+): Promise<void> {
+  await Promise.all(
+    notifications.map((notice) => events.notify(notice.threadId, notice.seq)),
+  ).catch((error) => {
+    getLogger().error("session lifecycle realtime notification", error);
+  });
+}
+
+/**
+ * Failure-safe percent-decoder. Returns `undefined` when the string cannot be
+ * decoded — a malformed escape (`%ZZ`) or a syntactically valid escape that
+ * decodes to invalid UTF-8 (`%FF`, truncated `%E0%A4`, overlong or surrogate
+ * encodings).
+ */
+function safeDecodePath(raw: string): string | undefined {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * A well-formed percent escape: `%` followed by two hex digits.
+ */
+const WELL_FORMED_ESCAPE = /%[0-9A-Fa-f]{2}/;
+
+/**
+ * The endpoint-path secret control.
+ *
+ * This replaces six rounds of "enumerate the representations a path can take and
+ * check each". That approach cannot converge: percent-encoding is self-similar,
+ * NFKC can synthesise new escapes from fullwidth percent signs, and each segment
+ * can sit at its own decode depth — so the representation space is unbounded and
+ * every finite enumeration was bypassed (BUG-003-S1-10 and the five findings it
+ * absorbed).
+ *
+ * The convergent design is a policy about the path, not a search over it:
+ *
+ *   An endpoint path is decoded ONCE. If that leaves a well-formed escape, or if
+ *   normalisation would synthesise one, the path is refused.
+ *
+ * Decoding once is not an arbitrary choice — it is the only decoding that has
+ * meaning. A URL path is percent-encoded exactly once; a consumer that decodes it
+ * again is decoding data, not a path. So anything a second decode would reveal is
+ * not a representation of this path at all, and refusing it costs nothing that is
+ * real. Concretely, three things are refused:
+ *
+ *   - the path cannot be decoded (malformed `%ZZ`, or a valid escape producing
+ *     invalid UTF-8 such as `%FF`);
+ *   - decoding leaves a well-formed escape, i.e. the path was nested
+ *     (`%252F`, `%252525…`) — deep nesting, mixed per-segment depths and encoded
+ *     slashes between segments all land here;
+ *   - NFKC would CREATE a well-formed escape that was not there, which is how a
+ *     fullwidth percent sign (`％73`) turns into `%73` (SEC-003-S1-20). Refusing
+ *     only the synthesised case is what keeps a plain `%20` or a literal `100%25`
+ *     working.
+ *
+ * What survives is a path with no escapes at all, so the representation set is
+ * exactly four strings — raw, decoded, and their NFKC forms — and the secret match
+ * runs over those. That set is closed because the policy removed the operations
+ * that generated the unbounded space, not because the enumeration got better.
+ *
+ * The false-positive cost is bounded and accepted: a path that needs nested
+ * encoding is refused. Plain encoding (`%20`, `%C3%A9`, a literal `100%25`) is
+ * fine, and those are what real MCP endpoints actually use.
+ */
+function endpointPathRefuses(endpoint: string, storedSecrets: readonly string[]): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    // Defensive: the import side already turns a parse failure into BAD_REQUEST.
+    return false;
+  }
+
+  const raw = url.pathname;
+  const decoded = safeDecodePath(raw);
+  if (decoded === undefined) return true; // malformed, or decodes to invalid UTF-8
+  const normalisedRaw = raw.normalize("NFKC");
+  const normalisedDecoded = decoded.normalize("NFKC");
+
+  // The policy boundary: a well-formed escape surviving the one decode means the
+  // path was nested; normalisation synthesising one means the path was obfuscated
+  // behind a compatibility character.
+  if (WELL_FORMED_ESCAPE.test(decoded)) return true;
+  if (WELL_FORMED_ESCAPE.test(normalisedRaw) && !WELL_FORMED_ESCAPE.test(raw)) return true;
+  if (WELL_FORMED_ESCAPE.test(normalisedDecoded) && !WELL_FORMED_ESCAPE.test(decoded)) return true;
+
+  // Secret match over the representation set. Both sides are NFKC-normalised so
+  // an NFD-stored secret cannot escape.
+  const forms = [raw, decoded, normalisedRaw, normalisedDecoded];
+  const normalisedSecrets = storedSecrets.map((secret) => secret.normalize("NFKC"));
+  for (const form of forms) {
+    for (const secret of normalisedSecrets) {
+      if (form.includes(secret)) return true;
+    }
+  }
+
+  // Provider-token patterns run on BOTH the raw and the decoded form, per segment.
+  //
+  // Decoding can erase a match: the GitHub pattern ends in `\b`, and `_` is a word
+  // character, so `ghp_<token>%5F` decodes to `ghp_<token>_` whose trailing
+  // underscore defeats the boundary. The raw form still has the boundary, which is
+  // exactly why it is scanned too. (This was lost in the rewrite and restored after
+  // SEC-003-S1-21.)
+  //
+  // They stay per segment because the patterns are prefix-anchored and legitimate
+  // paths like /mcp and /api/v1/mcp must pass.
+  for (const form of [raw, decoded]) {
+    for (const segment of form.split("/")) {
+      if (segment && detectCredentialPatterns(segment).length > 0) return true;
+    }
+  }
+
+  return false;
 }
 
 const BOT_INTRO_PROMPT =
@@ -669,6 +903,7 @@ export function createRouter(deps: RouterDeps) {
     dataDir: deps.dataDir,
   });
   const agentSkills = createAgentSkillsService(deps.prisma);
+  const codingAcceptanceGate = createAcceptanceGateService({ prisma: deps.prisma });
 
   const authed = os.use(async ({ context, next }) => {
     if (!context.actor) throw new ORPCError("UNAUTHORIZED");
@@ -996,6 +1231,29 @@ export function createRouter(deps: RouterDeps) {
           endpoint: preset.endpoint,
         })),
       ),
+    },
+    inspiration: {
+      list: authed.inspiration.list.handler(async () => INSPIRATION_CATALOG),
+    },
+    marketplace: {
+      list: authed.marketplace.list.handler(async () => {
+        // Build the source list: bundled always active; operator URLs come from env.
+        // Per-space operator catalog URLs (per deployment) are a natural extension
+        // via the existing env pattern — no schema change needed for v1.
+        const sources = [BUNDLED_CATALOG];
+        if (deps.env.marketplaceOperatorUrls) {
+          for (const url of deps.env.marketplaceOperatorUrls) {
+            try {
+              sources.push(createOperatorCatalogSource(url));
+            } catch {
+              // Invalid URL in env — skip this source; the merge is graceful.
+            }
+          }
+        }
+        const catalog = createMarketplaceCatalog(sources);
+        const entries = await (catalog.list() as Promise<CatalogEntry[]>);
+        return { entries, version: MARKETPLACE_CATALOG_VERSION };
+      }),
     },
     models: {
       list: authed.models.list.handler(async ({ context }) => {
@@ -2252,6 +2510,34 @@ export function createRouter(deps: RouterDeps) {
       markUnread: authed.threads.markUnread.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         await setThreadUnreadState(deps.prisma, context.actor, target, true);
+        return { ok: true as const };
+      }),
+      listSessions: authed.threads.listSessions.handler(async ({ context, input }) =>
+        repos.listSessions(context.actor, input.botId),
+      ),
+      createSession: authed.threads.createSession.handler(async ({ context, input }) => {
+        const created = await repos.createSession(context.actor, input.botId, {
+          name: input.name,
+        });
+        await notifySessionEvents(deps.events, created.notifications);
+        return created.session;
+      }),
+      renameSession: authed.threads.renameSession.handler(async ({ context, input }) => {
+        const renamed = await repos.renameSession(context.actor, input.sessionId, input.name);
+        await notifySessionEvents(deps.events, renamed.notifications);
+        return renamed.session;
+      }),
+      deleteSession: authed.threads.deleteSession.handler(async ({ context, input }) => {
+        let notifications: SessionEventNotice[];
+        try {
+          notifications = (await repos.deleteSession(context.actor, input.sessionId)).notifications;
+        } catch (error) {
+          if (error instanceof LastSessionError || error instanceof SessionActiveRunError) {
+            throw new ORPCError("CONFLICT", { message: error.message });
+          }
+          throw error;
+        }
+        await notifySessionEvents(deps.events, notifications);
         return { ok: true as const };
       }),
     },
@@ -5338,6 +5624,188 @@ export function createRouter(deps: RouterDeps) {
         ),
       ),
     },
+    codingAcceptance: {
+      record: authed.codingAcceptance.record.handler(async ({ input }) => {
+        return codingAcceptanceGate.record({
+          sessionId: input.sessionId,
+          outcome: input.outcome,
+          verificationCommands: input.verificationCommands,
+        });
+      }),
+      get: authed.codingAcceptance.get.handler(async ({ input }) => {
+        return codingAcceptanceGate.get(input.sessionId);
+      }),
+    },
+    codingSessions: {
+      create: authed.codingSessions.create.handler(async ({ context, input }) => {
+        try {
+          return await createBotCodingSession({ prisma: deps.prisma }, context.actor, input);
+        } catch (error) {
+          if (error instanceof BotNotFoundError) {
+            throw new ORPCError("NOT_FOUND", { message: error.message });
+          }
+          if (error instanceof BotCodingWorkspace) {
+            throw new ORPCError("CONFLICT", {
+              message: "This bot already has an active coding session on its workspace",
+            });
+          }
+          throw error;
+        }
+      }),
+      list: authed.codingSessions.list.handler(async ({ context, input }) => {
+        return listBotCodingSessions({ prisma: deps.prisma }, context.actor, input.botId);
+      }),
+      listFiles: authed.codingSessions.listFiles.handler(async ({ context, input }) => {
+        const { computer, bot } = await codingSessionComputer(
+          deps.prisma,
+          repos,
+          context.actor,
+          input.sessionId,
+        );
+        const computerMode = parseComputerMode(computer.scope);
+        const storedPath = resolveBotWorkspacePath(computerMode, bot.id, input.path);
+        const entries = await deps.sandbox.listFiles(
+          toComputerRef(computer),
+          storedPath,
+          computerContext(context.actor, bot.id, "files"),
+        );
+        return entries.map((entry) => ({
+          ...entry,
+          path: displayBotWorkspacePath(computerMode, bot.id, input.path, entry.path),
+        }));
+      }),
+      readFile: authed.codingSessions.readFile.handler(async ({ context, input }) => {
+        const { computer, bot } = await codingSessionComputer(
+          deps.prisma,
+          repos,
+          context.actor,
+          input.sessionId,
+        );
+        const computerMode = parseComputerMode(computer.scope);
+        const storedPath = resolveBotWorkspacePath(computerMode, bot.id, input.path);
+        const bytes = await deps.sandbox
+          .readFile(
+            toComputerRef(computer),
+            storedPath,
+            computerContext(context.actor, bot.id, "read"),
+            { maxBytes: MAX_COMPUTER_TEXT_FILE_BYTES },
+          )
+          .catch((error: unknown) => {
+            if (error instanceof Error && /exceeds|too large/i.test(error.message)) {
+              throw new ORPCError("BAD_REQUEST", { message: "file is too large to preview" });
+            }
+            throw error;
+          });
+        const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        return { path: input.path, content };
+      }),
+      gitGraph: authed.codingSessions.gitGraph.handler(async ({ context, input }) => {
+        const { computer, bot } = await codingSessionComputer(
+          deps.prisma,
+          repos,
+          context.actor,
+          input.sessionId,
+        );
+        const cwd = resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined);
+        const ctx = computerContext(context.actor, bot.id, "git");
+        // Read-only git argv, executed inside the session's workspace.
+        const run = async (argv: string[]) => {
+          let stdout = "";
+          let exitStatus = 1;
+          for await (const event of deps.sandbox.execute(
+            toComputerRef(computer),
+            { argv, cwd },
+            ctx,
+          )) {
+            if (event.type === "stdout") stdout += event.data;
+            if (event.type === "exit") exitStatus = event.code;
+          }
+          return { exitStatus, stdout };
+        };
+        return buildGitGraph(run);
+      }),
+      terminalUrl: authed.codingSessions.terminalUrl.handler(async ({ context, input }) => {
+        const session = await deps.prisma.codingSession.findFirst({
+          where: { id: input.sessionId, spaceId: context.actor.spaceId },
+        });
+        if (!session || session.engine !== "omp" || session.status !== "active") {
+          return { url: null };
+        }
+        let bot = await repos.getBot(context.actor, session.botId);
+        if (await expireStaleComputerControl(deps, bot.computer)) {
+          bot = await repos.getBot(context.actor, session.botId);
+        }
+        const computer = bot.computer;
+        if (
+          !computer?.providerRef ||
+          computer.state !== "running" ||
+          !deps.sandbox.connectTerminal ||
+          !computerSupportsTerminal(computer.kind)
+        ) {
+          return { url: null };
+        }
+        // The lease buys input; without it the terminal streams view-only
+        // (the provider drops input frames server-side — R12/R7).
+        const hasLease =
+          hasActiveComputerControl(computer) &&
+          computer.controlBotId === bot.id &&
+          !!computer.controlLeaseId;
+        // B2: a provider that cannot enforce view-only server-side (no
+        // viewOnlyTerminal capability — desktop/daytona/e2b-class terminal
+        // URLs are raw interactive streams) must never be handed to a
+        // leaseless user. Interactive terminals still require the lease
+        // through connectTerminal's control token, so leased use is unchanged.
+        if (!hasLease && deps.sandbox.describe().capabilities.viewOnlyTerminal !== true) {
+          return { url: null, reason: "terminal not supported for this computer" };
+        }
+        // omp gets the bot's model setup: the key travels only as process env inside the
+        // sandbox; models.yml (no secret inside) lands in the container HOME. OAuth-kind
+        // credentials cannot be seeded this way and inject nothing.
+        const injection =
+          session.engine === "omp"
+            ? await ompTerminalInjectionForBot(deps, context.actor, bot)
+            : {};
+        const terminal = await deps.sandbox
+          .connectTerminal(
+            toComputerRef(computer),
+            {
+              controlToken: hasLease ? (computer.controlLeaseId ?? "") : "",
+              cwd: resolveBotWorkspaceCwd(parseComputerMode(computer.scope), bot.id, undefined),
+              viewOnly: !hasLease,
+              // R13: the user never types the engine's launch command — the
+              // terminal bootstraps bash with omp already running inside.
+              launchCommand:
+                session.engine === "omp" ? (injection.launchCommand ?? "omp") : undefined,
+              ...(injection.env ? { env: injection.env } : {}),
+              ...(injection.homeFiles ? { homeFiles: injection.homeFiles } : {}),
+            },
+            await computerScreenContext(
+              deps.prisma,
+              context.actor,
+              computer.id,
+              bot.id,
+              "terminal",
+            ),
+          )
+          .catch((error: unknown) => clearGoneSandbox(deps, computer, error));
+        if (!terminal) return { url: null };
+        await keepComputerAwake(deps, computer.id);
+        return {
+          url: addScreenProxyCapability(
+            withViewOnly(terminal.url, !hasLease),
+            deps.env.screenProxySecret,
+            deps.env.webOrigin,
+            {
+              botId: bot.id,
+              computerId: computer.id,
+              botGeneration: bot.screenGeneration,
+              computerGeneration: computer.screenGeneration,
+              controlLeaseId: computer.controlLeaseId,
+            },
+          ),
+        };
+      }),
+    },
     clientBrowser: {
       heartbeat: authed.clientBrowser.heartbeat.handler(async ({ context, input }) => {
         await deps.prisma.clientBrowserSession.upsert({
@@ -5634,6 +6102,507 @@ export function createRouter(deps: RouterDeps) {
         };
       }),
     },
+    agents: {
+      /**
+       * Phase 1 — parse and validate a bundle, return a reviewable preview
+       * plus a time-limited HMAC token binding the bundle hash.
+       */
+      previewImport: authed.agents.previewImport.handler(async ({ context, input }) => {
+        const secret = deps.env.marketplaceImportSecret;
+        if (!secret) {
+          throw new ORPCError("FAILED_PRECONDITION", {
+            message: "Marketplace import is not configured on this server",
+          });
+        }
+        // Parse with strict: catches prototype-pollution keys and unknown top-level fields.
+        let bundle: unknown;
+        try {
+          bundle = JSON.parse(input.bundleJson);
+        } catch {
+          throw new ORPCError("BAD_REQUEST", { message: "Bundle must be valid JSON" });
+        }
+        const parsed = AgentBundleSchema.strict().safeParse(bundle);
+        if (!parsed.success) {
+          const issues = parsed.error.issues.map((i) => i.message).join("; ");
+          throw new ORPCError("BAD_REQUEST", { message: `Invalid bundle: ${issues}` });
+        }
+        const b = parsed.data;
+
+        // containsSecret scan over free-text fields (fail-closed).
+        const flaggedFields: string[] = [];
+        const freeTexts = [
+          { path: "manifest.instructions", value: b.manifest.instructions },
+          { path: "manifest.description", value: b.manifest.description },
+          ...b.skills.flatMap((s) => [
+            { path: `skill[${s.name}].description`, value: s.description },
+            { path: `skill[${s.name}].content`, value: s.content },
+          ]),
+        ];
+        for (const { path, value } of freeTexts) {
+          if (value && containsSecret(value, [])) {
+            flaggedFields.push(path);
+          }
+        }
+
+        // BUG-003-S1-07 (import direction): a bundle endpoint must not carry a value
+        // the importing actor holds in their secret store. This check lives in the API
+        // layer during previewImport — the contracts refine (AGENT-BUNDLE-005) has no access
+        // to the actor's secrets, so it cannot perform this check. previewImport is the
+        // first actor-relative gate, runs before any cache is written, and import re-uses
+        // the same parsed bundle without re-running content validation, so this is the
+        // only place this check can live.
+        const actorSecrets = await loadExportSecretValues(deps, context.actor);
+        for (const mcp of b.mcpServers) {
+          try {
+            // McpRemoteEndpointSchema accepts malformed percent-escapes; validate the raw
+            // endpoint string and return 4xx rather than letting a decode throw.
+            if (/%(?![0-9A-Fa-f]{2})/.test(mcp.endpoint) || mcp.endpoint.endsWith("%")) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: `Import refused: bundle MCP server "${mcp.slug}" endpoint contains a malformed percent-escape.`,
+              });
+            }
+            if (endpointPathRefuses(mcp.endpoint, actorSecrets)) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: `Import refused: bundle MCP server "${mcp.slug}" has a credential in its endpoint path that matches a secret stored in this space.`,
+              });
+            }
+          } catch (error) {
+            if (error instanceof ORPCError) throw error;
+            // AGENT-BUNDLE-005 already validated the URL in the contracts layer, so
+            // a parse failure here means the bundle is malformed in a way the schema
+            // didn't catch. Treat it as a bad request rather than crashing.
+            throw new ORPCError("BAD_REQUEST", {
+              message: `Import refused: bundle MCP server "${mcp.slug}" has an endpoint that is not a valid URL`,
+            });
+          }
+        }
+
+        // Generate HMAC-bound import token.
+        const bundleHash = createHash("sha256").update(input.bundleJson).digest("hex");
+        const expiryMs = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const hmac = createHmac("sha256", secret).update(`${bundleHash}.${expiryMs}`).digest("hex");
+        const importToken = `${bundleHash}.${expiryMs}.${hmac}`;
+
+        // Cache the parsed bundle for the commit phase (valid for this actor + space only).
+        const now = Date.now();
+        pruneImportPreviewCache(now);
+        importPreviewCache.set(importPreviewCacheKey(context.actor, bundleHash), {
+          bundle: b,
+          actorSpaceId: context.actor.spaceId,
+          actorUserId: context.actor.userId,
+          expiresAt: now + IMPORT_PREVIEW_TTL_MS,
+        });
+
+        return {
+          manifest: b.manifest,
+          skills: b.skills,
+          mcpServers: b.mcpServers,
+          avatarKey: b.avatarKey,
+          importToken,
+          secretFlaggedFields: flaggedFields.length > 0 ? flaggedFields : undefined,
+        };
+      }),
+
+      /**
+       * Phase 2 — commit an import previously previewed.
+       * Re-validates the token and bundle hash before creating any records.
+       */
+      import: authed.agents.import.handler(async ({ context, input }) => {
+        // Prune before any early return. Token-expiry and format failures used to
+        // return before the prune, so a burst of previews that were never committed
+        // could stay resident until some other request happened to prune.
+        pruneImportPreviewCache(Date.now());
+        const secret = deps.env.marketplaceImportSecret;
+        if (!secret) {
+          throw new ORPCError("FAILED_PRECONDITION", {
+            message: "Marketplace import is not configured on this server",
+          });
+        }
+        const tokenParts = input.importToken.split(".");
+        if (tokenParts.length !== 3) {
+          throw new ORPCError("UNAUTHORIZED", { message: "Invalid import token format" });
+        }
+        const [bundleHash, expiryMsStr, providedHmac] = tokenParts;
+        if (!bundleHash || !expiryMsStr || !providedHmac) {
+          throw new ORPCError("UNAUTHORIZED", { message: "Invalid import token format" });
+        }
+        const expiryMs = Number(expiryMsStr);
+        if (!Number.isFinite(expiryMs) || Date.now() > expiryMs) {
+          throw new ORPCError("UNAUTHORIZED", { message: "Import token has expired" });
+        }
+        const expectedHmac = createHmac("sha256", secret)
+          .update(`${bundleHash}.${expiryMs}`)
+          .digest("hex");
+        // timingSafeEqual throws on a length mismatch, so a malformed (non-64-char)
+        // digest must be rejected as a plain client error before the constant-time
+        // comparison. See .super-speckit/bugs/003-S1-token-hmac-crash.md.
+        if (!/^[0-9a-f]{64}$/.test(providedHmac)) {
+          throw new ORPCError("UNAUTHORIZED", { message: "Invalid import token" });
+        }
+        const expectedDigest = Buffer.from(expectedHmac, "utf8");
+        const providedDigest = Buffer.from(providedHmac, "utf8");
+        if (
+          providedDigest.length !== expectedDigest.length ||
+          !timingSafeEqual(expectedDigest, providedDigest)
+        ) {
+          throw new ORPCError("UNAUTHORIZED", { message: "Invalid import token" });
+        }
+
+        // Retrieve the bundle from the in-memory preview cache.
+        pruneImportPreviewCache(Date.now());
+        const cacheKey = importPreviewCacheKey(context.actor, bundleHash);
+        const cached = importPreviewCache.get(cacheKey);
+        importPreviewCache.delete(cacheKey);
+        if (
+          !cached ||
+          cached.actorSpaceId !== context.actor.spaceId ||
+          cached.actorUserId !== context.actor.userId
+        ) {
+          throw new ORPCError("UNAUTHORIZED", {
+            message: "Preview has expired — call previewImport again",
+          });
+        }
+        const parsed = AgentBundleSchema.strict().safeParse(cached.bundle);
+        if (!parsed.success) {
+          throw new ORPCError("BAD_REQUEST", { message: "Bundle is no longer valid" });
+        }
+        const b = parsed.data;
+
+        // Validate every MCP entry BEFORE any write.
+        //
+        // These refusals previously ran inside the persistence loop, so a bundle
+        // that failed them had already created a bot and skills — the caller saw a
+        // 4xx while a partial import remained in the database. Validating up front
+        // keeps a refused import genuinely refused.
+        // See .super-speckit/bugs/003-S1-mcp-slug-capability-confusion.md (sibling
+        // finding AGENT-BUNDLE-009).
+        for (const mcp of b.mcpServers) {
+          if (mcp.transport === "stdio" || mcp.command || (mcp.args?.length ?? 0) > 0) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `MCP server "${mcp.slug}": stdio bundles are not importable because a bundle cannot be trusted to supply a command line. Add this server locally instead.`,
+            });
+          }
+        }
+        const conflictingServers = await deps.prisma.mcpServer.findMany({
+          where: {
+            spaceId: context.actor.spaceId,
+            userId: context.actor.userId,
+            slug: { in: b.mcpServers.map((mcp) => mcp.slug) },
+          },
+          select: { slug: true, transport: true, endpoint: true, secretId: true },
+        });
+        const existingBySlug: Record<
+          string,
+          { transport: string; endpoint: string; secretId: string | null }
+        > = {};
+        for (const row of conflictingServers) {
+          existingBySlug[row.slug] = {
+            transport: row.transport,
+            endpoint: row.endpoint ?? "",
+            secretId: row.secretId,
+          };
+        }
+        for (const mcp of b.mcpServers) {
+          const existing = existingBySlug[mcp.slug];
+          if (
+            existing &&
+            (existing.transport !== mcp.transport || existing.endpoint !== mcp.endpoint)
+          ) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `MCP server "${mcp.slug}" already exists with a different endpoint or transport. Rename the bundle's server or remove the conflicting one; a bundle cannot take over an existing server.`,
+            });
+          }
+          // Option B (BUG-003-S1-05): a bundle may not attach tools to a server
+          // that carries a credential the bundle did not supply. Refuse reuse when
+          // the existing server has a secretId set.
+          if (existing && existing.secretId !== null) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `MCP server "${mcp.slug}" is already configured with a credential and cannot be reused by a bundle. Remove the existing server or choose a different slug for the bundle's server.`,
+            });
+          }
+        }
+
+        // Create bot via the existing repos machinery.
+        const bot = await repos
+          .createBot(context.actor, {
+            name: b.manifest.name,
+            title: b.manifest.title ?? "",
+            description: b.manifest.description ?? "",
+            instructions: b.manifest.instructions ?? "",
+            notifyOnFinish: true,
+            color: b.manifest.color,
+            modelProvider: b.manifest.modelProvider ?? null,
+            modelId: b.manifest.modelId ?? null,
+            thinkingLevel: b.manifest.thinkingLevel ?? null,
+            expertKey: b.manifest.expertKey ?? null,
+            avatarKey: b.avatarKey ?? b.manifest.avatarKey ?? null,
+          })
+          .catch((error: unknown) => {
+            throw mapSpaceLifecycleError(error);
+          });
+
+        // Import skills — source forced to 'user', name-collision handled.
+        for (const skill of b.skills) {
+          const existing = await deps.prisma.agentSkill.findFirst({
+            where: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              name: { equals: skill.name, mode: "insensitive" },
+            },
+          });
+          if (existing) {
+            // Idempotent skip: same content → no-op; different content → disambiguate.
+            if (existing.description === skill.description && existing.content === skill.content) {
+              continue;
+            }
+            const suffix = `-${Date.now()}`;
+            await deps.prisma.agentSkill.create({
+              data: {
+                spaceId: context.actor.spaceId,
+                userId: context.actor.userId,
+                name: `${skill.name}${suffix}`,
+                description: skill.description,
+                content: skill.content,
+                source: "user",
+              },
+            });
+          } else {
+            await deps.prisma.agentSkill.create({
+              data: {
+                spaceId: context.actor.spaceId,
+                userId: context.actor.userId,
+                name: skill.name,
+                description: skill.description,
+                content: skill.content,
+                source: "user",
+              },
+            });
+          }
+        }
+
+        // Import MCP servers — create McpServer + BotMcpServer with allowAllTools=false.
+        // Both the stdio refusal and the slug-collision refusal already ran above,
+        // before any write, so this loop only persists.
+        for (const mcp of b.mcpServers) {
+          const existingServer = await deps.prisma.mcpServer.findFirst({
+            where: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              slug: mcp.slug,
+            },
+          });
+          const server =
+            existingServer ??
+            (await deps.prisma.mcpServer.create({
+              data: {
+                spaceId: context.actor.spaceId,
+                userId: context.actor.userId,
+                slug: mcp.slug,
+                name: mcp.name,
+                description: mcp.description ?? "",
+                transport: mcp.transport,
+                endpoint: mcp.endpoint,
+                command: mcp.command ?? null,
+                args: mcp.args ?? [],
+                enabled: true,
+                env: {} as Prisma.InputJsonValue,
+                headers: {} as Prisma.InputJsonValue,
+              },
+            }));
+          // BotMcpServer: allowAllTools=false, allowedTools=declaredTools.
+          const allowedTools: string[] = mcp.declaredTools ?? [];
+          await deps.prisma.botMcpServer.upsert({
+            where: {
+              botId_serverId: { botId: bot.id, serverId: server.id },
+            },
+            create: {
+              spaceId: context.actor.spaceId,
+              userId: context.actor.userId,
+              botId: bot.id,
+              serverId: server.id,
+              allowAllTools: false,
+              allowedTools: allowedTools as Prisma.InputJsonValue,
+            },
+            update: {
+              allowAllTools: false,
+              allowedTools: allowedTools as Prisma.InputJsonValue,
+            },
+          });
+        }
+
+        // CapabilityInstall audit row (R4 enforcement point).
+        //
+        // Only real CapabilityInstall columns are written. `botId` and
+        // `secretConfigured` are not on the model and were rejected by Prisma at
+        // runtime; the import's own secret is not carried in a portable bundle,
+        // so there is no secret reference to record. The imported bot is reachable
+        // via config for audit purposes.
+        await deps.prisma.capabilityInstall.create({
+          data: {
+            spaceId: context.actor.spaceId,
+            userId: context.actor.userId,
+            kind: "plugin",
+            name: b.manifest.name,
+            source: "marketplace",
+            version: b.version,
+            digest: bundleHash,
+            config: { botId: bot.id } as Prisma.InputJsonValue,
+          },
+        });
+
+        return bot;
+      }),
+
+      /**
+       * Export a bot as a marketplace bundle.
+       * Refuses bots whose instructions or skill content contain embedded secrets.
+       */
+      export: authed.agents.export.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        if (!bot.thread || !bot.computer) throw new IsolationError();
+
+        // Fail-closed secret scan over free-text fields.
+        //
+        // Two detectors are OR'd:
+        //  1. containsSecret against the space's real stored secret values, which
+        //     catches credentials this deployment actually holds, and
+        //  2. credential-shaped patterns, which catches a credential the user
+        //     pasted in that was never stored.
+        //
+        // If the stored secrets cannot be loaded the export is refused rather
+        // than silently downgraded to pattern-only: an empty secret list must
+        // never mean "scan passed". See BUG-003-S1-02, where passing [] made
+        // containsSecret return false for every input and the refusal below was
+        // unreachable.
+        const storedSecrets = await loadExportSecretValues(deps, context.actor);
+        const flaggedFields: string[] = [];
+        const scan = (text: string) =>
+          containsSecret(text, storedSecrets) || detectCredentialPatterns(text).length > 0;
+        if (bot.instructions && scan(bot.instructions)) {
+          flaggedFields.push("bot.instructions");
+        }
+        if (bot.description && scan(bot.description)) {
+          flaggedFields.push("bot.description");
+        }
+
+        // Scan agent skills.
+        const agentSkills = await deps.prisma.agentSkill.findMany({
+          where: { spaceId: context.actor.spaceId, userId: context.actor.userId },
+        });
+        for (const skill of agentSkills) {
+          if (skill.description && scan(skill.description)) {
+            flaggedFields.push(`skill[${skill.name}].description`);
+          }
+          if (skill.content && scan(skill.content)) {
+            flaggedFields.push(`skill[${skill.name}].content`);
+          }
+        }
+
+        if (flaggedFields.length > 0) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: `Export refused: embedded secret detected in: ${flaggedFields.join(", ")}`,
+          });
+        }
+
+        // Fetch bot's MCP server assignments.
+        const assignments = await deps.prisma.botMcpServer.findMany({
+          where: { botId: bot.id, spaceId: context.actor.spaceId },
+          include: { server: true },
+        });
+
+        // MCP endpoints are copied into the portable bundle verbatim, and the
+        // free-text scan above does not cover them. A URL may legitimately carry a
+        // credential in its query string, so refuse rather than republish it.
+        // See AGENT-BUNDLE-004.
+        for (const assignment of assignments) {
+          const endpoint = assignment.server.endpoint;
+          if (!endpoint) continue;
+          let url: URL;
+          try {
+            url = new URL(endpoint);
+          } catch {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `Export refused: MCP server "${assignment.server.slug}" has an endpoint that is not a valid URL`,
+            });
+          }
+          if (url.username || url.password || url.search) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `Export refused: MCP server "${assignment.server.slug}" has credentials or query parameters in its endpoint. Move them to a stored secret before exporting.`,
+            });
+          }
+          // Reject credentials embedded in the pathname itself, e.g. https://host/token/SECRET.
+          // A normal path like /mcp or /api/v1 is fine.  endpointPathRefuses applies two
+          // independent controls to every representation of the whole decoded pathname:
+          //   1. containsSecret — substring match against all NFKC-normalised stored secrets
+          //      (whole-path, not per-segment, to close the segment-boundary bypass), and
+          //   2. detectCredentialPatterns — per-segment scan for provider-prefix tokens.
+          // Bounded repeated decoding catches nested encoding; a malformed escape falls back
+          // to the literal input rather than throwing.
+          // Additionally, McpRemoteEndpointSchema accepts malformed percent-escapes
+          // (proved by runtime probe), so we validate the raw endpoint string here and
+          // return 4xx rather than letting any internal decode throw a 500.
+          // A malformed escape is a bare % or a % not followed by exactly two hex digits.
+          // The negative lookahead %(![0-9A-Fa-f]{2}) matches any % that is NOT followed
+          // by two hex digits, catching %ZZ, bare %, and truncated escapes.
+          if (
+            /%(?![0-9A-Fa-f]{2})/.test(assignment.server.endpoint ?? "") ||
+            (assignment.server.endpoint ?? "").endsWith("%")
+          ) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `Export refused: MCP server "${assignment.server.slug}" endpoint contains a malformed percent-escape.`,
+            });
+          }
+          if (endpointPathRefuses(assignment.server.endpoint ?? "", storedSecrets)) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `Export refused: MCP server "${assignment.server.slug}" has credentials embedded in its endpoint path. Move them to a stored secret before exporting.`,
+            });
+          }
+        }
+
+        const bundle: AgentBundle = {
+          version: "1",
+          exportedAt: new Date().toISOString(),
+          manifest: {
+            name: bot.name,
+            title: bot.title,
+            description: bot.description,
+            instructions: bot.instructions,
+            avatarKey: bot.avatarKey ?? undefined,
+            expertKey: bot.expertKey ?? undefined,
+            modelProvider: bot.modelProvider ?? undefined,
+            modelId: bot.modelId ?? undefined,
+            thinkingLevel: (bot.thinkingLevel ?? undefined) as
+              | "off"
+              | "low"
+              | "medium"
+              | "high"
+              | undefined,
+            color: bot.color ?? undefined,
+          },
+          skills: agentSkills.map((s) => ({
+            name: s.name,
+            description: s.description,
+            content: s.content,
+          })),
+          mcpServers: assignments.map((a) => {
+            const s = a.server;
+            return {
+              slug: s.slug,
+              name: s.name,
+              description: s.description,
+              transport: s.transport as "streamable_http" | "sse" | "stdio",
+              endpoint: s.endpoint ?? "",
+              command: s.command ?? undefined,
+              args: Array.isArray(s.args) ? (s.args as string[]) : undefined,
+              declaredTools: (a.allowedTools as string[] | null) ?? undefined,
+            };
+          }),
+          avatarKey: bot.avatarKey ?? undefined,
+        };
+
+        return bundle;
+      }),
+    },
     notifications: {
       registerPush: authed.notifications.registerPush.handler(async ({ context, input }) => {
         await savePushToken(deps.dataDir, context.actor.userId, input.token);
@@ -5653,6 +6622,30 @@ export function createRouter(deps: RouterDeps) {
       list: authed.runs.list.handler(async ({ context, input }) => ({
         runs: await listSpaceRuns(deps.prisma, context.actor, input.filter),
       })),
+    },
+    preview: {
+      get: authed.preview.get.handler(async ({ context, input }) => {
+        const service = createPreviewService(deps.prisma);
+        const result = await service.getPreview(input.previewId, context.actor);
+        if (!result) throw new ORPCError("NOT_FOUND");
+        return {
+          id: result.id,
+          workspaceId: result.workspaceId,
+          createdAt: result.createdAt.toISOString(),
+          expiresAt: result.expiresAt ? result.expiresAt.toISOString() : null,
+        };
+      }),
+      create: authed.preview.create.handler(async ({ context, input }) => {
+        const service = createPreviewService(deps.prisma);
+        return service.create(context.actor, {
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+        });
+      }),
+      revoke: authed.preview.revoke.handler(async ({ context, input }) => {
+        const service = createPreviewService(deps.prisma);
+        await service.revokeAccess(input.previewId, input.userId);
+        return { ok: true as const };
+      }),
     },
     voice: {
       catalog: authed.voice.catalog.handler(async () => listVoiceCatalog()),
@@ -6339,6 +7332,40 @@ function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw signal.reason ?? new Error("Request cancelled");
 }
 
+/**
+ * The bot's selected model credential, translated for an omp coding terminal. Reuses the
+ * same accessor a run uses (findModelCredential + the encrypted secret store); only
+ * api-key-style credentials yield an injection, and the plaintext never leaves this call.
+ */
+async function ompTerminalInjectionForBot(
+  deps: { prisma: PrismaClient; secrets: Pick<EncryptedSecretStore, "load"> },
+  actor: Pick<Actor, "userId" | "spaceId">,
+  bot: { modelProvider: string | null; modelId: string | null },
+): Promise<ReturnType<typeof ompTerminalInjection>> {
+  try {
+    // The bot's own model wins; otherwise the space default — the same
+    // precedence the run machinery applies to a plain chat.
+    const selected =
+      bot.modelProvider && bot.modelId
+        ? await findModelCredential(deps.prisma, actor, bot.modelProvider, bot.modelId)
+        : await findDefaultModelCredential(deps.prisma, actor);
+    if (!selected?.secretId) return {};
+    const secret = await deps.prisma.secret.findFirst({
+      where: { id: selected.secretId, userId: actor.userId, spaceId: null },
+      select: { id: true, ciphertext: true },
+    });
+    if (!secret) return {};
+    return ompTerminalInjection({
+      provider: selected.provider,
+      modelId: selected.defaultModel ?? "",
+      plaintext: deps.secrets.load(secret.ciphertext, secret.id),
+    });
+  } catch {
+    // An unreadable credential must not break the terminal; omp shows no-model.
+    return {};
+  }
+}
+
 function nextRoutineDate(crons: string[], timezone: string): Date {
   let next: Date | null;
   try {
@@ -6417,6 +7444,31 @@ async function keepComputerAwake(deps: RouterDeps, computerId: string) {
     data: { updatedAt: new Date() },
   });
   scheduleComputerSleep(deps.jobs, computerId);
+}
+
+/**
+ * T42/T43 shared auth for the codingSessions workspace RPCs: the session must
+ * live in the actor's space and be an active omp session, and the workspace
+ * computer must be running (same gate as the terminal URL).
+ */
+async function codingSessionComputer(
+  prisma: PrismaClient,
+  repos: ReturnType<typeof createRepos>,
+  actor: Actor,
+  sessionId: string,
+) {
+  const session = await prisma.codingSession.findFirst({
+    where: { id: sessionId, spaceId: actor.spaceId },
+  });
+  if (!session || session.engine !== "omp" || session.status !== "active") {
+    throw new ORPCError("NOT_FOUND", { message: "No active coding session." });
+  }
+  const bot = await repos.getBot(actor, session.botId);
+  const computer = bot.computer;
+  if (!computer?.providerRef || computer.state !== "running") {
+    throw new ORPCError("CONFLICT", { message: "Start the computer first." });
+  }
+  return { session, bot, computer };
 }
 
 function withViewOnly(url: string, viewOnly: boolean) {
