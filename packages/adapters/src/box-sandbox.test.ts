@@ -491,7 +491,7 @@ describe("FakeSandboxProvider gone-box errors", () => {
     const provider = new FakeSandboxProvider();
     await expect(
       provider.connectTerminal(
-        { id: "computer-gone", kind: "headless" },
+        { id: "computer-gone", botId: "bot-1", kind: "fake", providerRef: "gone" },
         { controlToken: "lease" },
         { userId: "user-1", screenLeaseId: "screen-1" } as never,
       ),
