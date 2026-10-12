@@ -30,7 +30,8 @@ import { deny } from "./commands/deny.js";
 import { steer } from "./commands/steer.js";
 import { cliError, emit, exitCodeFor } from "./output.js";
 
-const BASE_URL = process.env.RAKAZO_BASE_URL ?? "http://127.0.0.1:3000/rpc";
+const BASE_URL = process.env.RAKAZO_BASE_URL;
+const DEFAULT_BASE_URL = "http://127.0.0.1:3000/rpc";
 const SPACE_ID = process.env.RAKAZO_SPACE_ID ?? "";
 const TOKEN = process.env.RAKAZO_TOKEN;
 
@@ -78,7 +79,7 @@ function parseFlags(list: string[]): Parsed {
   const remaining: string[] = [];
   const parsed: Parsed = {
     remaining,
-    baseUrl: BASE_URL,
+    baseUrl: BASE_URL ?? DEFAULT_BASE_URL,
     spaceId: SPACE_ID,
     token: TOKEN,
     json: false,
@@ -157,8 +158,8 @@ async function main() {
     return;
   }
 
-  // Connection resolution for server calls: flags > env > stored credentials.
-  const baseUrl = parsed.server ?? parsed.baseUrl;
+  // Connection resolution for server calls: flags > env > stored credentials > builtin default.
+  const baseUrl = parsed.server ?? parsed.baseUrl ?? stored?.server ?? DEFAULT_BASE_URL;
   const spaceId = parsed.spaceId || stored?.spaceId || "";
   const token = parsed.token ?? stored?.token ?? TOKEN;
 
