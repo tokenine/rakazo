@@ -65,15 +65,13 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
 
   let sent: SendResult;
   try {
-    sent = (await orpcInvoke(
-      opts.baseUrl,
-      "threads.send",
-      { botId: opts.botId, threadId: opts.threadId ?? null, text: opts.message },
-      headers,
-      fetchImpl,
-    )) as SendResult;
+    const params: Record<string, unknown> = { botId: opts.botId, text: opts.message };
+    if (opts.threadId) params.threadId = opts.threadId;
+    sent = (await orpcInvoke(opts.baseUrl, "threads.send", params, headers, fetchImpl)) as SendResult;
   } catch (err) {
-    return cliError("GENERAL", err instanceof Error ? err.message : String(err));
+    const message = err instanceof Error ? err.message : String(err);
+    const cause = err instanceof Error && err.cause ? `: ${String(err.cause)}` : "";
+    return cliError("GENERAL", `${message}${cause}`);
   }
 
   const deadline = Date.now() + timeoutMs;
@@ -84,15 +82,19 @@ export async function chat(opts: ChatOptions): Promise<Envelope<ChatResult>> {
 
     let snap: Snapshot;
     try {
+      const params: Record<string, unknown> = { botId: opts.botId };
+      if (opts.threadId) params.threadId = opts.threadId;
       snap = (await orpcInvoke(
         opts.baseUrl,
         "threads.get",
-        { botId: opts.botId, threadId: opts.threadId ?? null },
+        params,
         headers,
         fetchImpl,
       )) as Snapshot;
     } catch (err) {
-      return cliError("GENERAL", err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      const cause = err instanceof Error && err.cause ? `: ${String(err.cause)}` : "";
+      return cliError("GENERAL", `${message}${cause}`);
     }
 
     // The run that answers this turn: match by id, fall back to the snapshot's

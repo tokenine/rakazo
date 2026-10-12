@@ -66,7 +66,7 @@ Examples:
 
 interface Parsed {
   remaining: string[];
-  baseUrl: string;
+  baseUrl: string | undefined;
   spaceId: string;
   token: string | undefined;
   json: boolean;
@@ -79,7 +79,9 @@ function parseFlags(list: string[]): Parsed {
   const remaining: string[] = [];
   const parsed: Parsed = {
     remaining,
-    baseUrl: BASE_URL ?? DEFAULT_BASE_URL,
+    // Undefined unless the user passes --base-url/--server, so stored
+    // credentials and the builtin default keep their precedence.
+    baseUrl: undefined,
     spaceId: SPACE_ID,
     token: TOKEN,
     json: false,
@@ -160,7 +162,7 @@ async function main() {
 
   // Connection resolution for server calls: flags > env > stored credentials > builtin default.
   // A bare server origin (from login) gains the /rpc base the client posts to.
-  const server = parsed.server ?? parsed.baseUrl ?? stored?.server ?? DEFAULT_BASE_URL;
+  const server = parsed.server ?? parsed.baseUrl ?? BASE_URL ?? stored?.server ?? DEFAULT_BASE_URL;
   const baseUrl = server.endsWith("/rpc") ? server : `${server.replace(/\/+$/, "")}/rpc`;
   const spaceId = parsed.spaceId || stored?.spaceId || "";
   const token = parsed.token ?? stored?.token ?? TOKEN;
