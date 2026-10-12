@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import http from "node:http";
 import net from "node:net";
 import { resolveSupervisorToken } from "@rakazo/core";
@@ -283,9 +285,26 @@ describe("sandbox supervisor HTTP boundary", () => {
       { path: ".omp/agent/models.yml", content: "providers: {}\n" },
     ]);
     expect(command).toContain("mkdir -p \"$HOME/.omp/agent\"");
-    expect(command).toContain("umask 177");
+    // 077 keeps created directories traversable (700) while files stay owner-only (600).
+    expect(command).toContain("umask 77");
     expect(command).toContain("'providers: {}\n'");
     expect(command).toContain(" >\"$HOME/.omp/agent/models.yml\"");
+  });
+
+  it("leaves created home-file directories traversable so the writes succeed", () => {
+    // Regression: umask 177 stripped the directory execute bit, so ~/.omp/agent
+    // was created unenterable and the models.yml write failed with EACCES.
+    const home = mkdtempSync(join(tmpdir(), "archify-home-"));
+    const command = terminalHomeFilesCommand([
+      { path: ".omp/agent/models.yml", content: "providers: {}\n" },
+    ]);
+    const result = spawnSync("bash", ["-c", `HOME=${home}; ${command}`], { encoding: "utf8" });
+    expect(result.status).toBe(0);
+    const dir = statSync(join(home, ".omp", "agent"));
+    expect(dir.mode & 0o700).toBe(0o700);
+    expect(dir.mode & 0o077).toBe(0);
+    const file = statSync(join(home, ".omp", "agent", "models.yml"));
+    expect(file.mode & 0o077).toBe(0);
   });
 
   it("refuses to build home-file commands that escape ~/.omp", () => {

@@ -6,6 +6,9 @@ WORKDIR /app
 COPY --chmod=755 . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @rakazo/db generate
+# Compile the committed PO catalogs before the Vite build: without this the Lingui
+# plugin ships hashes as message ids and the UI renders raw codes like "AJUD6L".
+RUN pnpm --filter @rakazo/web intl:compile
 RUN RAKAZO_ALLOW_DEV_SECRETS=1 pnpm --filter @rakazo/web build
 RUN install -d -m 750 -o node -g node /data /app/apps/web/node_modules/.vite-temp
 ARG GIT_SHA

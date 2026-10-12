@@ -83,6 +83,11 @@ msgstr ""
 msgid "{0}'s screen"
 msgstr "{0}의 화면"
 
+#. placeholder {0}: kind.charAt(0).toUpperCase() + kind.slice(1)
+#: src/pages/MarketplacePage.tsx
+msgid "{0}s"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "{botName}’s computer"
 msgstr "{botName}의 컴퓨터"
@@ -141,6 +146,18 @@ msgstr ""
 msgid "{workingBotName} is working"
 msgstr "{workingBotName} 작업 중"
 
+#: src/pages/HubPage.tsx
+msgid "{ZONE_ACTIVITY}"
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "{ZONE_FIRST_ACTIONS}"
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "{ZONE_GALLERY}"
+msgstr ""
+
 #. placeholder {0}: mention.name
 #: src/pages/Shell.tsx
 msgid "@{0}"
@@ -160,6 +177,10 @@ msgstr ""
 
 #: src/pages/shell/bot-picker.tsx
 msgid "About spaces"
+msgstr ""
+
+#: src/pages/shell/acceptance-card.tsx
+msgid "Acceptance recorded"
 msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
@@ -336,6 +357,10 @@ msgstr "Agent 컴퓨터"
 msgid "Agent connections"
 msgstr "Agent 연결"
 
+#: src/pages/MarketplacePage.tsx
+msgid "Agent installed successfully"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Agent wallets"
 msgstr ""
@@ -344,6 +369,7 @@ msgstr ""
 msgid "Agents:"
 msgstr "사용 Bot:"
 
+#: src/pages/MarketplacePage.tsx
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "All"
 msgstr ""
@@ -586,7 +612,7 @@ msgstr "아바타 스튜디오"
 msgid "Avatars"
 msgstr "아바타"
 
-#: src/components/computer/FilesApp.tsx
+#: src/pages/CodeWorkspace.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/client-browser-panel.tsx
@@ -594,8 +620,17 @@ msgstr "아바타"
 msgid "Back"
 msgstr "뒤로"
 
+#. placeholder {0}: bot.name
+#: src/pages/CodeWorkspace.tsx
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/shell/expert-create.tsx
 msgid "Back to experts"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Back to files"
 msgstr ""
 
 #: src/pages/Auth.tsx
@@ -635,6 +670,7 @@ msgstr "봇"
 msgid "Bot"
 msgstr "Bot"
 
+#: src/pages/CodeWorkspace.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen"
 msgstr "Bot 화면"
@@ -679,7 +715,6 @@ msgstr ""
 msgid "Browse MCP servers"
 msgstr ""
 
-#: src/components/computer/ComputerWorkspace.tsx
 #: src/pages/Shell.tsx
 msgid "Browser"
 msgstr ""
@@ -707,8 +742,10 @@ msgstr "서버에 연결할 수 없습니다."
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/MarketplacePage.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/shell/dialogs.tsx
+#: src/pages/shell/session-switcher.tsx
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Cancel"
 msgstr "취소"
@@ -749,6 +786,10 @@ msgstr "채널"
 #: src/pages/shell/message-cards.tsx
 msgid "Chart failed to render: {error}"
 msgstr "차트를 표시하지 못했습니다: {error}"
+
+#: src/pages/shell/code-mode-switch.tsx
+msgid "Chat"
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Chat apps"
@@ -831,6 +872,7 @@ msgid "Client secret"
 msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
+#: src/pages/MarketplacePage.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/PeerMessagesOverlay.tsx
 #: src/pages/RoutineEditor.tsx
@@ -838,10 +880,6 @@ msgstr ""
 #: src/pages/WindowChrome.tsx
 msgid "Close"
 msgstr "닫기"
-
-#: src/components/computer/ComputerWorkspace.tsx
-msgid "Close {title}"
-msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Close chart"
@@ -903,8 +941,22 @@ msgid "Cloud"
 msgstr "클라우드"
 
 #: src/components/AskCard.tsx
+#: src/pages/shell/code-mode-switch.tsx
+#: src/pages/shell/session-switcher.tsx
 msgid "Code"
 msgstr "코드"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Coding engine"
+msgstr ""
+
+#: src/pages/shell/coding-strip.tsx
+msgid "Coding session"
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Coding session on this bot's workspace"
+msgstr ""
 
 #. placeholder {0}: group.title
 #. placeholder {0}: item.chat.name
@@ -981,8 +1033,13 @@ msgstr "연결된 서버"
 
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/McpServersOverlay.tsx
+#: src/pages/shell/session-switcher.tsx
 msgid "Confirm delete"
 msgstr "삭제 확인"
+
+#: src/pages/MarketplacePage.tsx
+msgid "Confirm Install"
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
@@ -1181,6 +1238,7 @@ msgstr "AI 서비스에 연결하지 못했습니다."
 msgid "Could not connect this voice provider"
 msgstr "음성 서비스에 연결하지 못했습니다."
 
+#: src/pages/CodeWorkspace.tsx
 #: src/pages/Shell.tsx
 msgid "Could not connect to the computer screen"
 msgstr ""
@@ -1213,6 +1271,10 @@ msgstr "스페이스를 만들 수 없습니다"
 msgid "Could not create the agent"
 msgstr ""
 
+#: src/pages/Shell.tsx
+msgid "Could not create the session"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Could not create your bot"
 msgstr "Bot을 만들지 못했습니다."
@@ -1239,6 +1301,10 @@ msgstr "스킬을 삭제하지 못했습니다"
 
 #: src/pages/shell/dialogs.tsx
 msgid "Could not delete space"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Could not delete the session"
 msgstr ""
 
 #: src/pages/Artifacts.tsx
@@ -1274,20 +1340,12 @@ msgstr "{0}을 다운로드하지 못했습니다. 다시 시도해 주세요."
 msgid "Could not download {name}. Try again."
 msgstr "{name}을 다운로드하지 못했습니다. 다시 시도해 주세요."
 
-#: src/components/computer/FilesApp.tsx
-msgid "Could not download file"
-msgstr ""
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not install connector"
 msgstr "도구 연결을 추가하지 못했습니다."
 
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Could not install skill"
-msgstr ""
-
-#: src/components/computer/FilesApp.tsx
-msgid "Could not list files"
 msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
@@ -1363,10 +1421,6 @@ msgstr "업데이트 상태를 불러올 수 없습니다"
 msgid "Could not load voice settings"
 msgstr "음성 설정을 불러오지 못했습니다."
 
-#: src/components/computer/FilesApp.tsx
-msgid "Could not open file"
-msgstr ""
-
 #: src/pages/LocalSettings.tsx
 msgid "Could not open local settings. Start the local server and create its owner account, then try again."
 msgstr ""
@@ -1415,6 +1469,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Could not rename section"
 msgstr "섹션 이름을 바꿀 수 없습니다"
+
+#: src/pages/Shell.tsx
+msgid "Could not rename the session"
+msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Could not render chart"
@@ -1499,6 +1557,10 @@ msgstr "OAuth 인증을 시작하지 못했습니다."
 msgid "Could not start teaching"
 msgstr "가르치기를 시작하지 못했습니다."
 
+#: src/pages/Shell.tsx
+msgid "Could not start the coding session"
+msgstr ""
+
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "답변을 보내지 못했습니다."
@@ -1530,10 +1592,6 @@ msgstr ""
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Could not update the default memory scope"
 msgstr "기본 기억 범위를 변경하지 못했습니다."
-
-#: src/components/computer/FilesApp.tsx
-msgid "Could not upload file"
-msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Could not verify the code"
@@ -1606,7 +1664,6 @@ msgstr "새 섹션을 만들고 {0}을 옮깁니다."
 msgid "Create group"
 msgstr "그룹 만들기"
 
-#: src/pages/Shell.tsx
 #: src/pages/shell/bot-picker.tsx
 msgid "Create new Bot"
 msgstr "새 Bot 만들기"
@@ -1622,6 +1679,10 @@ msgstr "새 스페이스 만들기"
 #: src/pages/RoutineEditor.tsx
 msgid "Create Routine"
 msgstr "자동 실행 만들기"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Create session"
+msgstr ""
 
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Create skill"
@@ -1641,6 +1702,7 @@ msgid "Created by me"
 msgstr ""
 
 #: src/pages/GroupPanel.tsx
+#: src/pages/HubPage.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/dialogs.tsx
 #: src/pages/shell/expert-create.tsx
@@ -1670,6 +1732,10 @@ msgstr "Cron 표현식"
 
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Curated, ready-to-use skills. Install one and every assistant can load it when a request matches."
+msgstr ""
+
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Custom server"
 msgstr ""
 
 #: src/pages/shell/dialogs.tsx
@@ -1750,6 +1816,10 @@ msgstr "그룹 삭제"
 #: src/pages/shell/dialogs.tsx
 msgid "Delete memories too"
 msgstr "기억도 함께 삭제"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Delete session"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Delete space"
@@ -1845,15 +1915,12 @@ msgstr "Docker는 보안을 위해 컴퓨터 접근을 제한합니다. {hostLab
 msgid "Done"
 msgstr "완료"
 
-#: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
 msgid "Download"
 msgstr ""
 
-#. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
 #: src/components/ArtifactFileCard.tsx
-#: src/components/computer/FilesApp.tsx
 msgid "Download {0}"
 msgstr "{0} 다운로드"
 
@@ -2037,11 +2104,7 @@ msgstr "실패했습니다."
 msgid "Failure handling"
 msgstr "실패했을 때 처리"
 
-#: src/components/computer/FilesApp.tsx
-msgid "File is too large to upload."
-msgstr ""
-
-#: src/components/computer/ComputerWorkspace.tsx
+#: src/pages/CodeWorkspace.tsx
 msgid "Files"
 msgstr ""
 
@@ -2116,6 +2179,10 @@ msgstr ""
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Getting ready"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Git"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -2252,6 +2319,18 @@ msgstr "기본 설정 사용"
 #: src/components/teach/SkillDraftCard.tsx
 msgid "Inputs"
 msgstr "입력값"
+
+#: src/pages/MarketplacePage.tsx
+msgid "Install"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Install refused"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Installing…"
+msgstr ""
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
@@ -2463,6 +2542,10 @@ msgstr "로그아웃"
 msgid "Low"
 msgstr "낮음"
 
+#: src/pages/HubPage.tsx
+msgid "Make similar"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Make sure nothing is still running on this computer."
 msgstr "이 컴퓨터에서 실행 중인 작업이 없는지 확인하세요."
@@ -2528,6 +2611,15 @@ msgstr ""
 #: src/pages/McpServersOverlay.tsx
 msgid "MCP servers"
 msgstr "MCP 서버"
+
+#. placeholder {0}: state.preview.mcpServers.length
+#: src/pages/MarketplacePage.tsx
+msgid "MCP Servers ({0})"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "MCP servers will be installed with allowAllTools=false. Review endpoint URLs before confirming."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2754,6 +2846,10 @@ msgstr "새 진행 작업"
 msgid "New section"
 msgstr "새 섹션"
 
+#: src/pages/shell/session-switcher.tsx
+msgid "New session"
+msgstr ""
+
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "New skill"
@@ -2770,6 +2866,10 @@ msgstr "새 스페이스"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "아직 Agent 연결이 없습니다."
+
+#: src/pages/HubPage.tsx
+msgid "No agents yet — create your first one below"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -2810,6 +2910,10 @@ msgstr ""
 #: src/components/ApprovalRulesSettings.tsx
 msgid "No exceptions. Actions run automatically."
 msgstr "별도 확인 규칙이 없습니다. 작업이 자동으로 실행됩니다."
+
+#: src/pages/CodeWorkspace.tsx
+msgid "No files yet."
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No group chats yet."
@@ -2860,6 +2964,10 @@ msgstr ""
 msgid "No results"
 msgstr "검색 결과가 없습니다"
 
+#: src/pages/MarketplacePage.tsx
+msgid "No results for your search"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "No runs yet"
 msgstr "아직 실행 기록이 없습니다"
@@ -2891,6 +2999,10 @@ msgstr ""
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "아직 없음"
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Not a git repository."
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Not connected"
@@ -3061,6 +3173,10 @@ msgstr "다른 모델 직접 입력…"
 msgid "PagerDuty incident"
 msgstr "PagerDuty 인시던트"
 
+#: src/pages/CodeWorkspace.tsx
+msgid "Panels"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Park"
 msgstr "보류"
@@ -3105,6 +3221,10 @@ msgstr "재생 중…"
 msgid "POST to"
 msgstr "POST 대상"
 
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Preset"
+msgstr ""
+
 #. placeholder {0}: props.name
 #: src/components/ArtifactFileCard.tsx
 msgid "Preview {0}"
@@ -3112,6 +3232,10 @@ msgstr "{0} 미리보기"
 
 #: src/pages/Artifacts.tsx
 msgid "Preview isn't available for this file type — download it to view it."
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Primary"
 msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
@@ -3197,6 +3321,10 @@ msgstr "OAuth 다시 연결"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Reconnecting"
 msgstr "다시 연결 중"
+
+#: src/pages/shell/acceptance-card.tsx
+msgid "Record acceptance"
+msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
@@ -3336,6 +3464,10 @@ msgstr "삭제 중…"
 msgid "Rename section"
 msgstr "섹션 이름 바꾸기"
 
+#: src/pages/shell/session-switcher.tsx
+msgid "Rename session"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Reopen"
 msgstr "다시 열기"
@@ -3428,6 +3560,14 @@ msgstr "Rakazo로 돌아가기"
 msgid "rev {0}"
 msgstr "리비전 {0}"
 
+#: src/pages/MarketplacePage.tsx
+msgid "Review Install"
+msgstr ""
+
+#: src/pages/MarketplacePage.tsx
+msgid "Review the details before installing this agent."
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "연결 해제"
@@ -3498,6 +3638,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Save"
 msgstr "저장"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Save name"
+msgstr ""
 
 #: src/components/AskCard.tsx
 #: src/components/teach/SkillDraftCard.tsx
@@ -3581,10 +3725,6 @@ msgstr "모델 검색"
 msgid "Search or type a URL"
 msgstr ""
 
-#: src/pages/ModelSettingsOverlay.tsx
-#~ msgid "Search providers"
-#~ msgstr "AI 서비스 검색"
-
 #: src/pages/SkillsConnectorsOverlay.tsx
 msgid "Search skills"
 msgstr ""
@@ -3636,12 +3776,24 @@ msgstr ""
 msgid "Server name"
 msgstr "서버 이름"
 
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Server preset"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Server URL"
 msgstr "서버 URL"
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Session name"
+msgstr ""
+
+#: src/pages/shell/session-switcher.tsx
+msgid "Sessions"
+msgstr ""
 
 #: src/components/call/CallCard.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -3740,6 +3892,11 @@ msgstr ""
 msgid "Skills"
 msgstr "스킬"
 
+#. placeholder {0}: state.preview.skills.length
+#: src/pages/MarketplacePage.tsx
+msgid "Skills ({0})"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Skills & Connectors"
 msgstr ""
@@ -3769,6 +3926,14 @@ msgstr ""
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"
 msgstr "소프트웨어 업데이트"
+
+#: src/pages/MarketplacePage.tsx
+msgid "Some fields were flagged during security review:"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Space"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Space default"
@@ -3921,8 +4086,12 @@ msgstr "Teams 메시지"
 msgid "Teams not enabled"
 msgstr ""
 
-#: src/components/computer/ComputerWorkspace.tsx
+#: src/pages/CodeWorkspace.tsx
 msgid "Terminal"
+msgstr ""
+
+#: src/pages/CodeWorkspace.tsx
+msgid "Terminal needs the computer running and your control."
 msgstr ""
 
 #: src/components/teach/SkillDraftCard.tsx
@@ -3945,6 +4114,10 @@ msgstr ""
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr "API가 다시 작동하지 않습니다. 이 페이지를 새로 고침하세요."
+
+#: src/pages/shell/session-switcher.tsx
+msgid "The last session cannot be deleted"
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "The pairing link did not appear in time — try again or ask the bot in its chat."
@@ -4083,6 +4256,10 @@ msgstr "섹션 없음"
 msgid "Unavailable"
 msgstr "사용할 수 없음"
 
+#: src/pages/CodeWorkspace.tsx
+msgid "uncommitted"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Uninstall"
 msgstr ""
@@ -4156,7 +4333,6 @@ msgstr ""
 msgid "Updating…"
 msgstr "업데이트 중…"
 
-#: src/components/computer/FilesApp.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Upload"
 msgstr "업로드"
@@ -4253,6 +4429,14 @@ msgstr ""
 #: src/pages/RoutineSchedule.tsx
 msgid "Weekdays"
 msgstr "주중"
+
+#: src/pages/HubPage.tsx
+msgid "Welcome — let's get started"
+msgstr ""
+
+#: src/pages/HubPage.tsx
+msgid "Welcome back"
+msgstr ""
 
 #: src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
